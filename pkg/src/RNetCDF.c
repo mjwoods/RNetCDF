@@ -2,7 +2,7 @@
  *									       *
  *  Name:       RNetCDF.c						       *
  *									       *
- *  Version:    1.6.2-2							       *
+ *  Version:    1.6.3-1							       *
  *									       *
  *  Purpose:    NetCDF interface for R.					       *
  *									       *
