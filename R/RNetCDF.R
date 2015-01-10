@@ -2,7 +2,7 @@
 #										#
 #  Name:       RNetCDF.R							#
 #										#
-#  Version:    1.6.3-1								#
+#  Version:    1.6.3-2								#
 #										#
 #  Purpose:    NetCDF interface for R.						#
 #										#
@@ -993,7 +993,7 @@ var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0,
     }
 
     #-- Get the data dimensions if start and count contain NAs -----------------#
-    if(varinfo$ndims == 0) {
+    if(ndims == 0) {
 	start[1] <- 1
 	count[1] <- 1
     }
@@ -1003,20 +1003,25 @@ var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0,
     if(any(is.na(count)) && length(count) > 1)
         stop("count contains NAs and length(count) not 1", call.=FALSE)
 
-    if(any(is.na(start)) && varinfo$ndims > 0)
+    if(any(is.na(start)) && ndims > 0)
         start <- rep(1, ndims)
-    if(any(is.na(count)) && varinfo$ndims > 0) {
+    if(any(is.na(count)) && ndims > 0) {
         if(is.null(dim(data)))
 	    count <- length(data)
 	else 
 	    count <- dim(data)
 
-        if(varinfo$type == "NC_CHAR")
-	    count <- c(max(nchar(data)), count)
+        if(varinfo$type == "NC_CHAR") {
+          if (ndims==1) {
+            count <- max(nchar(data,type="bytes"))
+          } else {
+	    count <- c(max(nchar(data,type="bytes")), count)
+          }
+        }
     }
 
     #-- Switch from R to C convention ------------------------------------------#
-    if(varinfo$ndims > 0) {
+    if(ndims > 0) {
 	c.start <- start[length(start):1] - 1
 	c.count <- count[length(count):1]    
     } else {
@@ -1028,7 +1033,7 @@ var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0,
     }
 
     #-- Check for correct number of dimensions in start and count --------------#
-    if(varinfo$ndims > 0)
+    if(ndims > 0)
 	if(length(c.start) != ndims || length(c.count) != ndims)
             stop("Length of start/count is not ndims", call.=FALSE)
 
@@ -1037,15 +1042,19 @@ var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0,
         stop("Mismatch in count and length(data)", call.=FALSE)
 
     #-- Checks and definitions for character data ------------------------------#
-    if(is.character(data) && varinfo$ndims > 0) {
-        lastdim   <- varinfo$dimids[1]                       ## R to C convention
+    if(is.character(data) && ndims > 0) {
+        # Maximum string length is first R dim or last C dim:
+        lastdim   <- varinfo$dimids[1]
 	maxstrlen <- dim.inq.nc(ncfile, lastdim)$length
-    
-        if(length(data) != prod(c.count[1:(ndims-1)]))    ## already C convention
-	    stop("Mismatch in count and length(data)", call.=FALSE)
-	
-	if(max(nchar(data)) > maxstrlen)
+	if(max(nchar(data,type="bytes")) > maxstrlen) {
 	    stop("max(nchar(data)) exceeding variable limits", call.=FALSE)
+        }
+
+        # Number of strings is product of dimensions
+        # excluding first R dim or last C dim:
+        if (ndims > 1 && length(data) != prod(c.count[-ndims])) {
+	    stop("Mismatch in count and length(data)", call.=FALSE)
+        }
     }
 
     if(is.character(data)) {
