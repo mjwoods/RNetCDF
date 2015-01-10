@@ -2,13 +2,13 @@
  *									       *
  *  Name:       RNetCDF.c						       *
  *									       *
- *  Version:    1.1-1							       *
+ *  Version:    1.1-2							       *
  *									       *
  *  Purpose:    NetCDF interface for R.					       *
  *									       *
  *  Author:     Pavel Michna (michna@giub.unibe.ch)			       *
  *									       *
- *  Copyright:  (C) 2004 Pavel Michna                                          *
+ *  Copyright:  (C) 2004-2005 Pavel Michna                                     *
  *									       *
  *=============================================================================*
  *									       *
@@ -34,6 +34,7 @@
  *  pm       12/06/04   First implementation				       *
  *  pm       09/07/04   Support scalar variables   		               *
  *  pm       21/07/04   Changed error handling	                               *
+ *  pm       03/01/05   Corrected minor bugs	                               *
  *									       *
 \*=============================================================================*/
 
@@ -1005,6 +1006,7 @@ SEXP R_nc_sync (SEXP ncid)
     SET_STRING_ELT(retlistnames, 1, mkChar("errmsg")); 
     setAttrib(retlist, R_NamesSymbol, retlistnames); 
 
+    status = -1;
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
     SET_STRING_ELT (retlist, 1, mkString(""));
 
@@ -1205,6 +1207,7 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
     SET_STRING_ELT(retlistnames, 2, mkChar("data")); 
     setAttrib(retlist, R_NamesSymbol, retlistnames); 
 
+    status = -1;
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
     SET_STRING_ELT (retlist, 1, mkString(""));
 
