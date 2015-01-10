@@ -18,11 +18,9 @@
 
 \value{A vector of type \code{character} if the on-disk type is \code{NC_CHAR}, otherwise \code{numeric}. No distinction is made between the different storage types of numeric objects.}
 
-\note{\code{NC_BYTE} is always interpreted as signed.}
-
 \references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
 
-\note\code{NC_BYTE} is always interpreted as signed.}
+\note{\code{NC_BYTE} is always interpreted as signed.}
 
 \author{Pavel Michna}
 

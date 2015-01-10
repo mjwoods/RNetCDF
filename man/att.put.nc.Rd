@@ -22,7 +22,7 @@
 
 \references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
 
-\note\code{NC_BYTE} is always interpreted as signed.}
+\note{\code{NC_BYTE} is always interpreted as signed.}
 
 \author{Pavel Michna}
 

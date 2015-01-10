@@ -2,7 +2,7 @@
 #										#
 #  Name:       RNetCDF.R							#
 #										#
-#  Version:    1.0-4								#
+#  Version:    1.1-1								#
 #										#
 #  Purpose:    NetCDF interface for R.						#
 #										#
@@ -35,6 +35,7 @@
 #  pm       09/07/04   Support scalar variables	    		                #
 #  pm       21/07/04   Changed error handling					#
 #  pm       28/07/04   Minor modifications					#
+#  pm       12/09/04   New na.mode=3 and collapse=TRUE/FALSE in var.get.nc()	#
 #										#
 #===============================================================================#
 
@@ -727,7 +728,8 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions)
 #  var.get.nc()                                                                 #
 #-------------------------------------------------------------------------------#
 
-var.get.nc <- function(ncfile, variable, start=NA, count=NA, na.mode=0)
+var.get.nc <- function(ncfile, variable, start=NA, count=NA, na.mode=0,
+                       collapse=TRUE)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(class(ncfile) == "NetCDF")
@@ -735,7 +737,7 @@ var.get.nc <- function(ncfile, variable, start=NA, count=NA, na.mode=0)
     stopifnot(is.numeric(start) || is.logical(start))
     stopifnot(is.numeric(count) || is.logical(count))
     
-    if(!any(na.mode == c(0,1,2)))
+    if(!any(na.mode == c(0,1,2,3)))
         stop("Wrong na.mode", call.=FALSE)
 
     #-- Inquire the variable ---------------------------------------------------#
@@ -819,19 +821,29 @@ var.get.nc <- function(ncfile, variable, start=NA, count=NA, na.mode=0)
 
 	    if(varinfo$type != "NC_CHAR") {
 		for(i in 1:ndims)       ## R convention because ndims has R order
-        	    if(count[i] > 1) {
-                	count.dim <- append(count.dim, count[i])
+		    if(collapse == TRUE) {
+                	if(count[i] > 1) {
+			    count.dim <- append(count.dim, count[i])
+			    dimflag   <- 1
+			}
+		    } else {
+                   	count.dim <- append(count.dim, count[i])
 			dimflag   <- 1
 		    }
 	    } else {
 		for(i in 2:ndims)                   ## First dim is string lenght
-        	    if(count[i] > 1) {
-                	count.dim <- append(count.dim, count[i])
+		    if(collapse == TRUE) {
+                	if(count[i] > 1) {
+			    count.dim <- append(count.dim, count[i])
+			    dimflag   <- 1
+			}
+		    } else {
+                   	count.dim <- append(count.dim, count[i])
 			dimflag   <- 1
 		    }
 	    }
         }
-	        
+
 	#-- Convert missing value to NA if defined in NetCDF file --------------#
 	tolerance <- 1*10^-5                              ## Allow rounding error
 	na.flag   <- 0
@@ -870,7 +882,7 @@ var.get.nc <- function(ncfile, variable, start=NA, count=NA, na.mode=0)
 	    na.flag  <- 1
 	}
 
-        if(na.flag == 1 && varinfo$type != "NC_CHAR")
+        if(na.flag == 1 && na.mode != 3 && varinfo$type != "NC_CHAR")
 	    nc$data[abs(nc$data-na.value) < tolerance] <- NA  
 	
     #-- Return object if no error ----------------------------------------------#

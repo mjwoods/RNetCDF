@@ -21,57 +21,74 @@ if test "${HAVE_UDUNITS}" = FALSE; then
     exit 1
 fi
 
-
+HAVE_NETCDF_H=FALSE
 if test -z "${NETCDF_PATH}"; then
     AC_CHECK_FILE(/usr/local/include/netcdf.h,
-        [USR_LOCAL_NETCDF=TRUE], [USR_LOCAL_NETCDF=FALSE])
-        if test "${USR_LOCAL_NETCDF}" = TRUE; then
-	    NETCDF_INCDIR="/usr/local/include"
-	    NETCDF_LIBDIR="/usr/local/lib"
-	    NETCDF_LIBNAME="netcdf"
-        fi
-    AC_CHECK_FILE(/usr/include/netcdf.h,
-        [USR_NETCDF=TRUE], [USR_NETCDF=FALSE])
-        if test "${USR_NETCDF}" = TRUE; then
+        [USR_LOCAL_NETCDF_H=TRUE], [USR_LOCAL_NETCDF_H=FALSE])
+    if test "${USR_LOCAL_NETCDF_H}" = TRUE; then
+	NETCDF_INCDIR="/usr/local/include"
+	NETCDF_LIBDIR="/usr/local/lib"
+	NETCDF_LIBNAME="netcdf"
+	HAVE_NETCDF_H=TRUE
+    elif test "${HAVE_NETCDF_H}" = FALSE; then
+        AC_CHECK_FILE(/usr/include/netcdf.h,
+            [USR_NETCDF_H=TRUE], [USR_NETCDF_H=FALSE])
+        if test "${USR_NETCDF_H}" = TRUE; then
 	    NETCDF_INCDIR="/usr/include"
 	    NETCDF_LIBDIR="/usr/lib"
 	    NETCDF_LIBNAME="netcdf"
-        fi
+	    HAVE_NETCDF_H=TRUE
+	fi
+    fi
 else
     NETCDF_INCDIR="${NETCDF_PATH}/include"
     NETCDF_LIBDIR="${NETCDF_PATH}/lib"
     NETCDF_LIBNAME="netcdf"
+    AC_CHECK_FILE(${NETCDF_INCDIR}/netcdf.h,
+        [INCDIR_NETCDF_H=TRUE], [INCDIR_NETCDF_H=FALSE])
+    if test "${INCDIR_NETCDF_H}" = TRUE; then
+        HAVE_NETCDF_H=TRUE
+    fi
+    
 fi
 
-if test -z "${UDUNITS_PATH}"; then
-    AC_CHECK_FILE(/usr/local/include/udunits.h,
-        [USR_LOCAL_UDUNITS=TRUE], [USR_LOCAL_UDUNITS=FALSE])
-        if test "${USR_LOCAL_UDUNITS}" = TRUE; then
-	    UDUNITS_INCDIR="/usr/local/include"
-	    UDUNITS_LIBDIR="/usr/local/lib"
-	    UDUNITS_LIBNAME="udunits"
-        fi
-    AC_CHECK_FILE(/usr/include/udunits.h,
-        [USR_UDUNITS=TRUE], [USR_UDUNITS=FALSE])
-        if test "${USR_UDUNITS}" = TRUE; then
-	    UDUNITS_INCDIR="/usr/include"
-	    UDUNITS_LIBDIR="/usr/lib"
-	    UDUNITS_LIBNAME="udunits"
-        fi
-else
-    UDUNITS_INCDIR="${UDUNITS_PATH}/include"
-    UDUNITS_LIBDIR="${UDUNITS_PATH}/lib"
-    UDUNITS_LIBNAME="udunits"
-fi
-
-
-AC_CHECK_FILE(${NETCDF_INCDIR}/netcdf.h, [HAVE_NETCDF_H=TRUE], [HAVE_NETCDF_H=FALSE])
 if test "${HAVE_NETCDF_H}" = FALSE; then
     AC_MSG_ERROR(netcdf.h not found)
     exit 1
 fi
 
-AC_CHECK_FILE(${UDUNITS_INCDIR}/udunits.h, [HAVE_UDUNITS_H=TRUE], [HAVE_UDUNITS_H=FALSE])
+
+HAVE_UDUNITS_H=FALSE
+if test -z "${UDUNITS_PATH}"; then
+    AC_CHECK_FILE(/usr/local/include/udunits.h,
+        [USR_LOCAL_UDUNITS_H=TRUE], [USR_LOCAL_UDUNITS_H=FALSE])
+    if test "${USR_LOCAL_UDUNITS_H}" = TRUE; then
+	UDUNITS_INCDIR="/usr/local/include"
+	UDUNITS_LIBDIR="/usr/local/lib"
+	UDUNITS_LIBNAME="udunits"
+	HAVE_UDUNITS_H=TRUE
+    elif test "${HAVE_UDUNITS_H}" = FALSE; then
+        AC_CHECK_FILE(/usr/include/udunits.h,
+            [USR_UDUNITS_H=TRUE], [USR_UDUNITS_H=FALSE])
+        if test "${USR_UDUNITS_H}" = TRUE; then
+	    UDUNITS_INCDIR="/usr/include"
+	    UDUNITS_LIBDIR="/usr/lib"
+	    UDUNITS_LIBNAME="udunits"
+	    HAVE_UDUNITS_H=TRUE
+	fi
+    fi
+else
+    UDUNITS_INCDIR="${UDUNITS_PATH}/include"
+    UDUNITS_LIBDIR="${UDUNITS_PATH}/lib"
+    UDUNITS_LIBNAME="udunits"
+    AC_CHECK_FILE(${UDUNITS_INCDIR}/udunits.h,
+        [INCDIR_UDUNITS_H=TRUE], [INCDIR_UDUNITS_H=FALSE])
+    if test "${USR_UDUNITS_H}" = TRUE; then
+        HAVE_UDUNITS_H=TRUE
+    fi
+    
+fi
+
 if test "${HAVE_UDUNITS_H}" = FALSE; then
     AC_MSG_ERROR(udunits.h not found)
     exit 1
