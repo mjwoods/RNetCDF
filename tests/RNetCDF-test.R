@@ -2,13 +2,14 @@
 #                                                                               #
 #  Name:       RNetCDF-test.R                                                   #
 #                                                                               #
-#  Version:    1.5.3-1                                                          #
+#  Version:    1.6.1-2                                                          #
 #                                                                               #
 #  Purpose:    Test functions to the NetCDF interface for R.                    #
 #                                                                               #
 #  Author:     Pavel Michna (michna@giub.unibe.ch)                              #
+#              Milton Woods (m.woods@bom.gov.au)                                #
 #                                                                               #
-#  Copyright:  (C) 2010-2011 Pavel Michna                                       #
+#  Copyright:  (C) 2010-2012 Pavel Michna                                       #
 #                                                                               #
 #===============================================================================#
 #                                                                               #
@@ -32,6 +33,7 @@
 #  Author   Date       Description                                              #
 #  ------   ----       -----------                                              #
 #  pm       29/12/10   First implementation                                     #
+#  mw       18/07/12   Test packed variables                                    #
 #                                                                               #
 #===============================================================================#
 
@@ -65,19 +67,26 @@ dim.def.nc(nc, "max_string_length", 32)
 ##  Create three variables, one as coordinate variable
 var.def.nc(nc, "time", "NC_INT", "time")
 var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1))
+var.def.nc(nc, "packvar", "NC_BYTE", c("station"))
 var.def.nc(nc, "name", "NC_CHAR", c("max_string_length", "station"))
 
 ##  Put some missing_value attribute for temperature
 att.put.nc(nc, "temperature", "missing_value", "NC_DOUBLE", -99999.9)
 
+## Define the packing used by packvar
+att.put.nc(nc, "packvar", "scale_factor", "NC_DOUBLE", 10)
+att.put.nc(nc, "packvar", "add_offset", "NC_DOUBLE", -5)
+
 ##  Define variable values
 mytime        <- c(1:2)
 mytemperature <- c(1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, NA, NA, 9.9)
+mypackvar     <- seq_len(5)*10-5
 myname        <- c("alfa", "bravo", "charlie", "delta", "echo")
 
 ##  Put the data
 var.put.nc(nc, "time", mytime, 1, length(mytime))
 var.put.nc(nc, "temperature", mytemperature, c(1,1), c(5,2))
+var.put.nc(nc, "packvar", mypackvar, pack=TRUE)
 var.put.nc(nc, "name", myname, c(1,1), c(32,5))
 
 sync.nc(nc)
@@ -154,6 +163,17 @@ if(sum(y %in% x) == 2) {
 } else
     cat("failed\n")
 
+#-- Test 7 (read unpacked) -----------------------------------------------------#
+cat("Test 7 ... ")
+
+y <- var.get.nc(nc, "packvar", unpack=TRUE)
+
+if(isTRUE(all.equal(mypackvar, as.vector(y)))) {
+    cat("OK\n")
+    nccount <- nccount + 1
+} else
+    cat("failed\n")
+
 #-- Close file -----------------------------------------------------------------#
 close.nc(nc)
 
@@ -225,9 +245,9 @@ if(round(x, 6) == round(y, 6)) {
 #-------------------------------------------------------------------------------#
 #  Overall summary                                                              #
 #-------------------------------------------------------------------------------#
-cat("Totally ", nccount+utcount, "/ 10 tests passed. ")
+cat("Totally ", nccount+utcount, "/ 11 tests passed. ")
 
-if(nccount != 6)
+if(nccount != 7)
     stop("Some NetCDF tests failed.", call.=FALSE)
 
 if(utcount != 4)

@@ -2,12 +2,12 @@
 #										#
 #  Name:       RNetCDF.R							#
 #										#
-#  Version:    1.5.3-1								#
+#  Version:    1.6.1-2								#
 #										#
 #  Purpose:    NetCDF interface for R.						#
 #										#
 #  Author:     Pavel Michna (michna@giub.unibe.ch)				#
-#              Milton Woods (milton.woods@csiro.au)                             #
+#              Milton Woods (m.woods@bom.gov.au)                                #
 #										#
 #  Copyright:  (C) 2004-2012 Pavel Michna					#
 #										#
@@ -43,6 +43,8 @@
 #  pm       24/11/10   Added new option enddef to att and dim/var definitions   #
 #  pm       01/12/10   Removed option enddef, checking in C code for mode       #
 #  pm       14/02/12   Corrected bug in att.delete.nc                           #
+#  pm       02/06/12   Added function read.nc()                                 #
+#  pm       16/07/12   Added packing/unpacking of data (code from mw)           #
 #										#
 #===============================================================================#
 
@@ -749,13 +751,14 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions)
 #-------------------------------------------------------------------------------#
 
 var.get.nc <- function(ncfile, variable, start=NA, count=NA, na.mode=0,
-                       collapse=TRUE)
+                       collapse=TRUE, unpack=FALSE)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(class(ncfile) == "NetCDF")
     stopifnot(is.character(variable) || is.numeric(variable))
     stopifnot(is.numeric(start) || is.logical(start))
     stopifnot(is.numeric(count) || is.logical(count))
+    stopifnot(is.logical(unpack))
     
     if(!any(na.mode == c(0,1,2,3)))
         stop("Wrong na.mode", call.=FALSE)
@@ -903,7 +906,21 @@ var.get.nc <- function(ncfile, variable, start=NA, count=NA, na.mode=0,
 	}
 
         if(na.flag == 1 && na.mode != 3 && varinfo$type != "NC_CHAR")
-	    nc$data[abs(nc$data-na.value) < tolerance] <- NA  
+	    nc$data[abs(nc$data-na.value) < tolerance] <- NA 
+
+	#-- Unpack variables if requested (missing values are preserved) -------#
+        if(unpack) {
+            offset <- try(att.inq.nc(ncfile, varinfo$name, "add_offset"),
+                          silent=TRUE)
+            scale  <- try(att.inq.nc(ncfile, varinfo$name, "scale_factor"),
+                          silent=TRUE)
+            if((!inherits(offset, "try-error")) &&
+               (!inherits(scale,  "try-error"))) {
+	        add_offset   <- att.get.nc(ncfile, varinfo$name, "add_offset")
+		scale_factor <- att.get.nc(ncfile, varinfo$name, "scale_factor")
+                nc$data      <- nc$data*scale_factor+add_offset
+            }
+        }
 	
     #-- Return object if no error ----------------------------------------------#
 	ifelse(dimflag == 0, dim(nc$data) <- (1), dim(nc$data) <- count.dim)
@@ -958,7 +975,8 @@ var.inq.nc <- function(ncfile, variable)
 #  var.put.nc()                                                                 #
 #-------------------------------------------------------------------------------#
 
-var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0)
+var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0,
+                       pack=FALSE)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(class(ncfile) == "NetCDF")
@@ -966,6 +984,7 @@ var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0)
     stopifnot(is.numeric(data) || is.character(data) || is.logical(data))
     stopifnot(is.numeric(start) || is.logical(start))
     stopifnot(is.numeric(count) || is.logical(count))
+    stopifnot(is.logical(pack))
     
     if(!any(na.mode == c(0,1,2)))
         stop("Wrong na.mode", call.=FALSE)
@@ -1049,6 +1068,20 @@ var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0)
 	varsize    <- vector()
 	varsize[1] <- prod(count)
 	varsize[2] <- count[1]
+    }
+
+    #-- Pack variables if requested (missing values are preserved) -------------#
+    if(pack) {
+        offset <- try(att.inq.nc(ncfile, varinfo$name, "add_offset"),
+		      silent=TRUE)
+        scale  <- try(att.inq.nc(ncfile, varinfo$name, "scale_factor"),
+		      silent=TRUE)
+        if((!inherits(offset, "try-error")) &&
+	   (!inherits(scale,  "try-error"))) {
+	    add_offset   <- att.get.nc(ncfile, varinfo$name, "add_offset")
+	    scale_factor <- att.get.nc(ncfile, varinfo$name, "scale_factor")
+	    data         <- (data-add_offset)*(1/scale_factor)
+        }
     }
 
     #-- Convert missing value to NA if defined in NetCDF file ------------------#
@@ -1150,6 +1183,34 @@ var.rename.nc <- function(ncfile, variable, newname)
 
     if(nc$status != 0)
         stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  read.nc()                                                                    #
+#-------------------------------------------------------------------------------#
+
+read.nc <- function(ncfile, unpack=TRUE)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF")
+    stopifnot(is.logical(unpack))
+
+    #-- Initialise storage -----------------------------------------------------#
+    nvars    <- file.inq.nc(ncfile)$nvars
+    varnames <- character(nvars)
+    retlist  <- vector("list", nvars)
+
+    #-- Read data from each variable -------------------------------------------#
+    for(i in seq_len(nvars)) {
+        retlist[[i]] <- var.get.nc(ncfile, i-1, unpack=unpack)
+        varnames[i]  <- var.inq.nc(ncfile, i-1)$name
+    }
+
+    #-- Set names of list elements ---------------------------------------------#
+    names(retlist) <- varnames
+
+    return(retlist)
 }
 
 

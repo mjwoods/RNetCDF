@@ -2,12 +2,12 @@
  *									       *
  *  Name:       RNetCDF.c						       *
  *									       *
- *  Version:    1.5.3-1							       *
+ *  Version:    1.6.1-2							       *
  *									       *
  *  Purpose:    NetCDF interface for R.					       *
  *									       *
  *  Author:     Pavel Michna (michna@giub.unibe.ch)			       *
- *              Milton Woods (milton.woods@csiro.au)                           *
+ *              Milton Woods (m.woods@bom.gov.au)                              *
  *									       *
  *  Copyright:  (C) 2004-2012 Pavel Michna                                     *
  *									       *
