@@ -1,9 +1,3 @@
-##  PKG_LIBS=-L/usr/local/include -lnetcdf \
-##      -L/usr/local/include -ludunits
-##  PKG_CPPFLAGS=-I/usr/local/lib \
-##      -I/usr/local/lib
+PKG_CPPFLAGS = @CPPFLAGS@
+PKG_LIBS = @LIBS@
 
-PKG_LIBS=-L@NETCDF_LIBDIR@ -l@NETCDF_LIBNAME@ \
-    -L@UDUNITS_LIBDIR@ -l@UDUNITS_LIBNAME@ 
-PKG_CPPFLAGS=-I@NETCDF_INCDIR@ \
-    -I@UDUNITS_INCDIR@

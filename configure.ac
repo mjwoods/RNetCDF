@@ -1,4 +1,42 @@
-AC_INIT(R/load.R.in)
+AC_INIT([RNetCDF], 1.2-1, [michna@giub.unibe.ch])
+
+
+## Optional include paths for netcdf and/or udunits libraries
+
+AC_ARG_WITH([netcdf-include],
+    AC_HELP_STRING([--with-netcdf-include=INCLUDE_PATH],
+                   [the location of netcdf header files]),
+    [netcdf_include_path=$withval])
+if test [ -n "$netcdf_include_path" ] ; then
+   AC_SUBST([CPPFLAGS],["-I${netcdf_include_path} ${CPPFLAGS}"])
+fi
+
+AC_ARG_WITH([netcdf-lib],
+    AC_HELP_STRING([--with-netcdf-lib=LIB_PATH],
+                   [the location of netcdf libraries]),
+    [netcdf_lib_path=$withval])
+if test [ -n "$netcdf_lib_path" ] ; then
+   AC_SUBST([LIBS],["-L${netcdf_lib_path} ${LIBS}"])
+fi
+
+AC_ARG_WITH([udunits-include],
+    AC_HELP_STRING([--with-udunits-include=INCLUDE_PATH],
+                   [the location of udunits header files]),
+    [udunits_include_path=$withval])
+if test [ -n "$udunits_include_path" ] ; then
+   AC_SUBST([CPPFLAGS],["-I${udunits_include_path} ${CPPFLAGS}"])
+fi
+
+AC_ARG_WITH([udunits-lib],
+    AC_HELP_STRING([--with-udunits-lib=LIB_PATH],
+                   [the location of udunits libraries]),
+    [udunits_lib_path=$withval])
+if test [ -n "$udunits_lib_path" ] ; then
+   AC_SUBST([LIBS],["-L${udunits_lib_path} ${LIBS}"])
+fi
+
+
+## Find the compiler and compiler options to use
 
 : ${R_HOME=`R RHOME`}
 if test -z "${R_HOME}"; then
@@ -21,89 +59,25 @@ if test "${HAVE_UDUNITS}" = FALSE; then
     exit 1
 fi
 
-HAVE_NETCDF_H=FALSE
-if test -z "${NETCDF_PATH}"; then
-    AC_CHECK_FILE(/usr/local/include/netcdf.h,
-        [USR_LOCAL_NETCDF_H=TRUE], [USR_LOCAL_NETCDF_H=FALSE])
-    if test "${USR_LOCAL_NETCDF_H}" = TRUE; then
-	NETCDF_INCDIR="/usr/local/include"
-	NETCDF_LIBDIR="/usr/local/lib"
-	NETCDF_LIBNAME="netcdf"
-	HAVE_NETCDF_H=TRUE
-    elif test "${HAVE_NETCDF_H}" = FALSE; then
-        AC_CHECK_FILE(/usr/include/netcdf.h,
-            [USR_NETCDF_H=TRUE], [USR_NETCDF_H=FALSE])
-        if test "${USR_NETCDF_H}" = TRUE; then
-	    NETCDF_INCDIR="/usr/include"
-	    NETCDF_LIBDIR="/usr/lib"
-	    NETCDF_LIBNAME="netcdf"
-	    HAVE_NETCDF_H=TRUE
-	fi
-    fi
-else
-    NETCDF_INCDIR="${NETCDF_PATH}/include"
-    NETCDF_LIBDIR="${NETCDF_PATH}/lib"
-    NETCDF_LIBNAME="netcdf"
-    AC_CHECK_FILE(${NETCDF_INCDIR}/netcdf.h,
-        [INCDIR_NETCDF_H=TRUE], [INCDIR_NETCDF_H=FALSE])
-    if test "${INCDIR_NETCDF_H}" = TRUE; then
-        HAVE_NETCDF_H=TRUE
-    fi
-    
-fi
 
-if test "${HAVE_NETCDF_H}" = FALSE; then
-    AC_MSG_ERROR(netcdf.h not found)
+AC_CHECK_HEADERS(netcdf.h)
+if test "${ac_cv_header_netcdf_h}" = no; then
+    AC_MSG_ERROR(netcdf header netcdf.h not found)
     exit 1
 fi
 
-
-HAVE_UDUNITS_H=FALSE
-if test -z "${UDUNITS_PATH}"; then
-    AC_CHECK_FILE(/usr/local/include/udunits.h,
-        [USR_LOCAL_UDUNITS_H=TRUE], [USR_LOCAL_UDUNITS_H=FALSE])
-    if test "${USR_LOCAL_UDUNITS_H}" = TRUE; then
-	UDUNITS_INCDIR="/usr/local/include"
-	UDUNITS_LIBDIR="/usr/local/lib"
-	UDUNITS_LIBNAME="udunits"
-	HAVE_UDUNITS_H=TRUE
-    elif test "${HAVE_UDUNITS_H}" = FALSE; then
-        AC_CHECK_FILE(/usr/include/udunits.h,
-            [USR_UDUNITS_H=TRUE], [USR_UDUNITS_H=FALSE])
-        if test "${USR_UDUNITS_H}" = TRUE; then
-	    UDUNITS_INCDIR="/usr/include"
-	    UDUNITS_LIBDIR="/usr/lib"
-	    UDUNITS_LIBNAME="udunits"
-	    HAVE_UDUNITS_H=TRUE
-	fi
-    fi
-else
-    UDUNITS_INCDIR="${UDUNITS_PATH}/include"
-    UDUNITS_LIBDIR="${UDUNITS_PATH}/lib"
-    UDUNITS_LIBNAME="udunits"
-    AC_CHECK_FILE(${UDUNITS_INCDIR}/udunits.h,
-        [INCDIR_UDUNITS_H=TRUE], [INCDIR_UDUNITS_H=FALSE])
-    if test "${INCDIR_UDUNITS_H}" = TRUE; then
-        HAVE_UDUNITS_H=TRUE
-    fi
-    
-fi
-
-if test "${HAVE_UDUNITS_H}" = FALSE; then
-    AC_MSG_ERROR(udunits.h not found)
+AC_CHECK_HEADERS(udunits.h)
+if test "${ac_cv_header_udunits_h}" = no; then
+    AC_MSG_ERROR(udunits header udunits.h not found)
     exit 1
 fi
 
+AC_SUBST([LIBS],["${LIBS} -lnetcdf -ludunits"])
 
-AC_SUBST(HAVE_NETCDF)
-AC_SUBST(NETCDF_INCDIR)
-AC_SUBST(NETCDF_LIBDIR)
-AC_SUBST(NETCDF_LIBNAME)
 
-AC_SUBST(HAVE_UDUNITS)
-AC_SUBST(UDUNITS_INCDIR)
-AC_SUBST(UDUNITS_LIBDIR)
-AC_SUBST(UDUNITS_LIBNAME)
+## Do substitution
 
-AC_OUTPUT(R/load.R
-          src/Makevars)
+AC_SUBST(CPPFLAGS)
+AC_SUBST(LIBS)
+AC_OUTPUT(src/Makevars)
+
