@@ -2,14 +2,14 @@
 #										#
 #  Name:       RNetCDF.R							#
 #										#
-#  Version:    1.5.0-1								#
+#  Version:    1.5.2-2								#
 #										#
 #  Purpose:    NetCDF interface for R.						#
 #										#
 #  Author:     Pavel Michna (michna@giub.unibe.ch)				#
 #              Milton Woods (milton.woods@csiro.au)                             #
 #										#
-#  Copyright:  (C) 2004-2010 Pavel Michna					#
+#  Copyright:  (C) 2004-2011 Pavel Michna					#
 #										#
 #===============================================================================#
 #										#

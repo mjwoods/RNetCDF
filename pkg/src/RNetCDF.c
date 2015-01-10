@@ -2,14 +2,14 @@
  *									       *
  *  Name:       RNetCDF.c						       *
  *									       *
- *  Version:    1.5.0-1							       *
+ *  Version:    1.5.2-2							       *
  *									       *
  *  Purpose:    NetCDF interface for R.					       *
  *									       *
  *  Author:     Pavel Michna (michna@giub.unibe.ch)			       *
  *              Milton Woods (milton.woods@csiro.au)                           *
  *									       *
- *  Copyright:  (C) 2004-2010 Pavel Michna                                     *
+ *  Copyright:  (C) 2004-2011 Pavel Michna                                     *
  *									       *
  *=============================================================================*
  *									       *
@@ -47,6 +47,8 @@
  *  pm       03/12/10   Minor bug corrections at possible memory leaks         *
  *  pm       15/12/10   Minor bug corrections                                  *
  *  pm       25/12/10   Added UDUNITS-2 message override handling (R_ut_init)  *
+ *  pm       04/01/11   Corrected string handling in R_nc_get_vara_text        *
+ *  pm       05/01/11   Removed extra zeroing after Calloc                     *
  *									       *
 \*=============================================================================*/
 
@@ -1266,7 +1268,6 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
     /*-- Create output object and initialize return values --------------------*/
     tx_len = INTEGER(varsize)[1];
     tx_num = INTEGER(varsize)[0]/tx_len;
-    tx_str = Calloc(tx_len, char);
     
     PROTECT(retlist = allocVector(VECSXP, 3));
     SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
@@ -1283,9 +1284,7 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
     SET_VECTOR_ELT (retlist, 1, mkString(""));
 
-    data = Calloc(INTEGER(varsize)[0], char);
-    for(i=0; i<INTEGER(varsize)[0]; i++)
-        data[i] = '\0';
+    data = Calloc(INTEGER(varsize)[0], char);                 /*-- Is zeroed --*/
 
     /*-- Get ndims for this var -----------------------------------------------*/
     status = nc_inq_varndims(INTEGER(ncid)[0], INTEGER(varid)[0], &ndims);
@@ -1293,7 +1292,6 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
 	REAL(VECTOR_ELT(retlist, 0))[0] = status;
         UNPROTECT(2);
-	Free(tx_str);
 	Free(data);
 	return(retlist);
     }
@@ -1316,7 +1314,6 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
         REAL(VECTOR_ELT(retlist, 0))[0] = status;
 	UNPROTECT(2);
-	Free(tx_str);
 	Free(data);
 	return(retlist);
     }
@@ -1328,15 +1325,16 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
 	REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
         UNPROTECT(2);
-	Free(tx_str);
 	Free(data);
 	return(retlist);
     }
    
     /*-- Copy from C to R object ----------------------------------------------*/
+    tx_str = Calloc(tx_len+1, char);                    /*-- String handling --*/
     for(i=0; i<tx_num; i++) {
         for(j=0; j<tx_len; j++)
             tx_str[j] = data[i*tx_len+j];
+	tx_str[j+1] = '\0';                             /*-- String handling --*/
 	SET_STRING_ELT(VECTOR_ELT(retlist, 2), i, mkChar(tx_str));
     }
 
@@ -1590,14 +1588,9 @@ SEXP R_nc_put_vara_text (SEXP ncid, SEXP varid, SEXP start,
     }
 
     /*-- Copy from R to C object ----------------------------------------------*/
-    ncdata = Calloc(tx_len*tx_num, char);
-    tx_str = Calloc(tx_len, char);
-    
-    for(i=0; i<tx_len*tx_num; i++)
-        ncdata[i] = '\0';
-    for(i=0; i<tx_len; i++)
-        tx_str[i] = '\0';
-    
+    ncdata = Calloc(tx_len*tx_num, char);                     /*-- Is zeroed --*/
+    tx_str = Calloc(tx_len, char);                            /*-- Is zeroed --*/
+        
     for(i=0; i<tx_num; i++) {
         strcpy(tx_str, CHAR(STRING_ELT(data, i)));
 	for(j=0; j<tx_len; j++) {
