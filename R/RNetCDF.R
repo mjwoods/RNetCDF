@@ -2,13 +2,14 @@
 #										#
 #  Name:       RNetCDF.R							#
 #										#
-#  Version:    1.2-1								#
+#  Version:    1.5.0-1								#
 #										#
 #  Purpose:    NetCDF interface for R.						#
 #										#
 #  Author:     Pavel Michna (michna@giub.unibe.ch)				#
+#              Milton Woods (milton.woods@csiro.au)                             #
 #										#
-#  Copyright:  (C) 2004-2006 Pavel Michna					#
+#  Copyright:  (C) 2004-2010 Pavel Michna					#
 #										#
 #===============================================================================#
 #										#
@@ -37,6 +38,10 @@
 #  pm       28/07/04   Minor modifications					#
 #  pm       12/09/04   New na.mode=3 and collapse=TRUE/FALSE in var.get.nc()	#
 #  pm       24/07/06   Handling dates in string form (udunits)           	#
+#  mw       14/04/08   Added new modes (large, prefill, share)                  #
+#                      to nc_open and nc_create                                 #
+#  pm       24/11/10   Added new option enddef to att and dim/var definitions   #
+#  pm       01/12/10   Removed option enddef, checking in C code for mode       #
 #										#
 #===============================================================================#
 
@@ -58,7 +63,7 @@ att.copy.nc <- function(ncfile.in, variable.in, attribute, ncfile.out,
     stopifnot(is.character(attribute)    || is.numeric(attribute)   )
     stopifnot(is.character(variable.in)  || is.numeric(variable.in) )
     stopifnot(is.character(variable.out) || is.numeric(variable.out))
-
+    
     #-- Get the varids as integer if necessary, handle global attributes -------#
     varid.in     <- NULL
     varid.out    <- NULL
@@ -401,15 +406,22 @@ close.nc <- function(con, ...)
 #  create.nc()                                                                  #
 #-------------------------------------------------------------------------------#
 
-create.nc <- function(filename, clobber=TRUE)
+create.nc <- function(filename, clobber=TRUE, large=FALSE, share=FALSE,
+                      prefill=TRUE)
 {
-    #-- Overwrite existing file (y/n) ------------------------------------------#
-    cmode <- ifelse(clobber == TRUE, 0, 1)
+    #-- Convert logical values to integers -------------------------------------#
+    iclobber <- ifelse(clobber == TRUE, 1, 0)    ## Overwrite existing file (y/n)
+    ilarge   <- ifelse(large   == TRUE, 1, 0)
+    ishare   <- ifelse(share   == TRUE, 1, 0)
+    iprefill <- ifelse(prefill == TRUE, 1, 0)
 
     #-- C function call --------------------------------------------------------#
     nc <- .Call("R_nc_create",
 		as.character(filename),
-		as.integer(cmode),
+		as.integer(iclobber),
+                as.integer(ilarge),
+                as.integer(ishare),
+                as.integer(iprefill),
 		PACKAGE="RNetCDF")
 	     
     #-- Return object if no error ----------------------------------------------#
@@ -435,8 +447,8 @@ dim.def.nc <- function(ncfile, dimname, dimlength=1, unlim=FALSE)
     stopifnot(is.logical(unlim))
 
     #-- Handle UNLIMITED -------------------------------------------------------#
-    unlimflag   <- ifelse(unlim == TRUE, 1, 0)
-    ncdimlength <- ifelse(unlim == TRUE, 0, dimlength)
+    unlimflag   <- ifelse(unlim  == TRUE, 1, 0)
+    ncdimlength <- ifelse(unlim  == TRUE, 0, dimlength)
     
     #-- C function call --------------------------------------------------------#
     nc <- .Call("R_nc_def_dim",
@@ -553,19 +565,25 @@ file.inq.nc <- function(ncfile)
 #  open.nc()                                                                    #
 #-------------------------------------------------------------------------------#
 
-open.nc <- function(con, write=FALSE, ...)
+open.nc <- function(con, write=FALSE, share=FALSE, prefill=TRUE, ...)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(is.character(con))
     stopifnot(is.logical(write))
+    stopifnot(is.logical(share))
+    stopifnot(is.logical(prefill))
 
     #-- Open read only (y/n) ---------------------------------------------------#
-    omode <- ifelse(write == TRUE, 1, 0)
+    iwrite   <- ifelse(write   == TRUE, 1, 0)
+    ishare   <- ifelse(share   == TRUE, 1, 0)
+    iprefill <- ifelse(prefill == TRUE, 1, 0)
 
     #-- C function call --------------------------------------------------------#
     nc <- .Call("R_nc_open",
 		as.character(con),
-		as.integer(omode),
+		as.integer(iwrite),
+		as.integer(ishare),
+		as.integer(iprefill),
 		PACKAGE="RNetCDF")
 	     
     #-- Return object if no error ----------------------------------------------#
@@ -682,7 +700,7 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions)
     stopifnot(class(ncfile) == "NetCDF")
     stopifnot(is.character(varname))
     stopifnot(is.character(vartype))
-	
+    
     if(any(is.na(dimensions)) && length(dimensions) != 1)
         stop("NAs not allowed in dimensions unless defining a scalar variable",
 	    call.=FALSE)
@@ -1112,7 +1130,7 @@ var.rename.nc <- function(ncfile, variable, newname)
     stopifnot(class(ncfile) == "NetCDF") 
     stopifnot(is.character(variable) || is.numeric(variable))
     stopifnot(is.character(newname))
-
+    
     #-- Look if handle variable by name or ID ----------------------------------#
     varid   <- -1
     varname <- ""

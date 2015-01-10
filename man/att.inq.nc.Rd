@@ -8,7 +8,7 @@
   Inquire about a NetCDF attribute.
 }
 
-\usage{att.inq.nc(ncfile, variable, attribute)}}
+\usage{att.inq.nc(ncfile, variable, attribute)}
 
 \arguments{
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
