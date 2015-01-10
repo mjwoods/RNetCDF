@@ -1,0 +1,8 @@
+.First.lib <- function(libname, pkgname) {
+    if(@HAVE_NETCDF@ && @HAVE_UDUNITS@) {
+        library.dynam("RNetCDF", pkgname, libname)
+	utinit.nc()
+    }
+    else
+        stop("NetCDF and/or udunits are not installed", call.=FALSE)
+}
