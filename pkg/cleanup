@@ -1,5 +1,5 @@
 #!/bin/sh
 rm -rf *.cache
 rm -rf ./config.*
-rm -rf ./src/Makevars ./R/load.R
+rm -rf ./src/Makevars
 rm -rf ./src/*.so ./src/*.o

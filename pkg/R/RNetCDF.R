@@ -2,13 +2,13 @@
 #										#
 #  Name:       RNetCDF.R							#
 #										#
-#  Version:    1.1-3								#
+#  Version:    1.2-1								#
 #										#
 #  Purpose:    NetCDF interface for R.						#
 #										#
 #  Author:     Pavel Michna (michna@giub.unibe.ch)				#
 #										#
-#  Copyright:  (C) 2004-2005 Pavel Michna					#
+#  Copyright:  (C) 2004-2006 Pavel Michna					#
 #										#
 #===============================================================================#
 #										#
@@ -36,6 +36,7 @@
 #  pm       21/07/04   Changed error handling					#
 #  pm       28/07/04   Minor modifications					#
 #  pm       12/09/04   New na.mode=3 and collapse=TRUE/FALSE in var.get.nc()	#
+#  pm       24/07/06   Handling dates in string form (udunits)           	#
 #										#
 #===============================================================================#
 
@@ -1141,11 +1142,12 @@ var.rename.nc <- function(ncfile, variable, newname)
 #  utcal.nc()                                                                   #
 #-------------------------------------------------------------------------------#
 
-utcal.nc <- function(unitstring, value)
+utcal.nc <- function(unitstring, value, type="n")
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(is.character(unitstring))
     stopifnot(is.numeric(value) && !any(is.na(value)))
+    stopifnot(type == "n" || type =="s")
     
     count <- length(value)
     
@@ -1158,9 +1160,17 @@ utcal.nc <- function(unitstring, value)
 
     #-- Return object if no error ----------------------------------------------#
     if(ut$status == 0) {
-        colnames(ut$value)  <-  c("year", "month", "day", "hour", 
-	    "minute", "second")
-        return(ut$value)
+        if(type == "n") {
+	    colnames(ut$value) <- c("year", "month", "day", "hour", 
+		"minute", "second")
+            return(ut$value)
+        } else {
+	    x <- apply(ut$value, 1, function(x){paste(x[1],"-",
+	               sprintf("%02g",x[2]),"-",sprintf("%02g",x[3])," ",
+		       sprintf("%02g",x[4]),":",sprintf("%02g",x[5]),":",
+		       sprintf("%02g",x[6]),sep="")})
+	    return(x)
+	}
     } else
         stop(ut$errmsg, call.=FALSE)
 }
@@ -1189,6 +1199,19 @@ utinvcal.nc <- function(unitstring, value)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(is.character(unitstring))
+    
+    if(is.character(value)) {
+	stopifnot(any(nchar(value) == 19))
+	value <- cbind(substr(value,1,4),
+                       substr(value,6,7),
+		       substr(value,9,10),
+		       substr(value,12,13),
+		       substr(value,15,16),
+		       substr(value,18,19))
+
+	value <- matrix(as.numeric(value),ncol=6)
+    }
+
     stopifnot(is.numeric(value) && !any(is.na(value)))
 
     count <- length(value)
