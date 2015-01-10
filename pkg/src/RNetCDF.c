@@ -2,7 +2,7 @@
  *									       *
  *  Name:       RNetCDF.c						       *
  *									       *
- *  Version:    1.6.3-2							       *
+ *  Version:    1.7.1-1							       *
  *									       *
  *  Purpose:    NetCDF interface for R.					       *
  *									       *
@@ -50,6 +50,9 @@
  *  pm       04/01/11   Corrected string handling in R_nc_get_vara_text        *
  *  pm       05/01/11   Removed extra zeroing after Calloc                     *
  *  pm       26/05/14   Corrected memory leak issue (lines 1338 and 1593)      *
+ *  mw       05/09/14   Support reading and writing raw character arrays,      *
+ *                      avoid temporary arrays when reading/writing variables  *
+ *  mw       08/09/14   Handle reading and writing of zero-sized arrays        *
  *									       *
 \*=============================================================================*/
 
@@ -1173,18 +1176,25 @@ SEXP R_nc_def_var (SEXP ncid, SEXP varname, SEXP type, SEXP ndims, SEXP dimids)
 \*-----------------------------------------------------------------------------*/
 
 SEXP R_nc_get_vara_double (SEXP ncid, SEXP varid, SEXP start, 
-                           SEXP count, SEXP varsize)
+                           SEXP count, SEXP ndims)
 {
-    int    ndims, i, status;
-    double *data;
-    size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS];
+    int    i, status;
+    size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS], varsize;
     SEXP   retlist, retlistnames;
 
+    /*-- Copy dims from int to size_t, calculate total array size -------------*/
+    varsize = 1;
+    for(i=0; i<INTEGER(ndims)[0]; i++) {
+	s_start[i] = (size_t)INTEGER(start)[i];
+	s_count[i] = (size_t)INTEGER(count)[i];
+	varsize *= s_count[i];
+    }
+	
     /*-- Create output object and initialize return values --------------------*/
     PROTECT(retlist = allocVector(VECSXP, 3));
     SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
     SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, INTEGER(varsize)[0]));
+    SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, varsize));
 
     PROTECT(retlistnames = allocVector(STRSXP, 3)); 
     SET_STRING_ELT(retlistnames, 0, mkChar("status")); 
@@ -1192,62 +1202,32 @@ SEXP R_nc_get_vara_double (SEXP ncid, SEXP varid, SEXP start,
     SET_STRING_ELT(retlistnames, 2, mkChar("data")); 
     setAttrib(retlist, R_NamesSymbol, retlistnames); 
 
-    data = Calloc(INTEGER(varsize)[0], double);
-
     status = -1;
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
     SET_VECTOR_ELT (retlist, 1, mkString(""));
 
-    /*-- Get ndims for this var -----------------------------------------------*/
-    status = nc_inq_varndims(INTEGER(ncid)[0], INTEGER(varid)[0], &ndims);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	REAL(VECTOR_ELT(retlist, 0))[0] = status;
-        UNPROTECT(2);
-	Free(data);
-	return(retlist);
-    }
-
-    /*-- Copy over from int to size_t, handle scalar variables ----------------*/
-    if(ndims > 0) {
-	for(i=0; i<ndims; i++) {
-	    s_start[i] = (size_t)INTEGER(start)[i];
-	    s_count[i] = (size_t)INTEGER(count)[i];
-	}
-    }
-    else {
-        s_start[0] = 0;
-	s_count[0] = 1;
-    }
-		
     /*-- Enter data mode (if necessary) ---------------------------------------*/
     status = nc_enddef(INTEGER(ncid)[0]);
     if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
         REAL(VECTOR_ELT(retlist, 0))[0] = status;
 	UNPROTECT(2);
-	Free(data);
 	return(retlist);
     }
 
-    /*-- Get the var ----------------------------------------------------------*/
-    status = nc_get_vara_double(INTEGER(ncid)[0], INTEGER(varid)[0],
-        s_start, s_count, data);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	REAL(VECTOR_ELT(retlist, 0))[0] = status;
-        UNPROTECT(2);
-	Free(data);
-	return(retlist);
+    /*-- Read variable from file ----------------------------------------------*/
+    if (varsize > 0) {
+      /* Some netcdf versions cannot handle zero-sized arrays */
+      status = nc_get_vara_double(INTEGER(ncid)[0], INTEGER(varid)[0],
+        s_start, s_count, REAL(VECTOR_ELT(retlist, 2)));
+    } else {
+      status = NC_NOERR;
     }
    
-    /*-- Copy from C to R object ----------------------------------------------*/
-    for(i=0; i<INTEGER(varsize)[0]; i++)
-        REAL(VECTOR_ELT(retlist, 2))[i] = (double)data[i];
-
-    Free(data);
-
     /*-- Returning the list ---------------------------------------------------*/
+    if(status != NC_NOERR) {
+      SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
+    }
     REAL(VECTOR_ELT(retlist, 0))[0] = status;
     UNPROTECT(2);
     return(retlist);
@@ -1259,21 +1239,42 @@ SEXP R_nc_get_vara_double (SEXP ncid, SEXP varid, SEXP start,
 \*-----------------------------------------------------------------------------*/
 
 SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start, 
-                         SEXP count, SEXP varsize)
+                         SEXP count, SEXP ndims, SEXP rawchar)
 {
-    int    ndims, tx_len, tx_num, i, j, status;
+    int    i, j, status;
     char   *data, *tx_str;
     size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS];
+    size_t tx_len, tx_num, varsize;
     SEXP   retlist, retlistnames;
 
+    /*-- Copy dims from int to size_t, calculate number and length of strings -*/
+    for(i=0; i<INTEGER(ndims)[0]; i++) {
+	s_start[i] = (size_t)INTEGER(start)[i];
+	s_count[i] = (size_t)INTEGER(count)[i];
+    }
+
+    if(INTEGER(ndims)[0] > 0) {
+        tx_num = 1;
+	for(i=0; i<INTEGER(ndims)[0]-1; i++) {
+            tx_num *= s_count[i];
+	}
+        tx_len = s_count[INTEGER(ndims)[0]-1];
+    } else {
+        tx_num = 1;
+        tx_len = 1;
+    }
+    varsize = tx_num*tx_len;
+
     /*-- Create output object and initialize return values --------------------*/
-    tx_len = INTEGER(varsize)[1];
-    tx_num = INTEGER(varsize)[0]/tx_len;
-    
     PROTECT(retlist = allocVector(VECSXP, 3));
     SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
     SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 2, allocVector(STRSXP,  tx_num));
+
+    if (INTEGER(rawchar)[0] > 0) {
+      SET_VECTOR_ELT(retlist, 2, allocVector(RAWSXP, varsize));
+    } else {
+      SET_VECTOR_ELT(retlist, 2, allocVector(STRSXP, tx_num));
+    }
 
     PROTECT(retlistnames = allocVector(STRSXP, 3)); 
     SET_STRING_ELT(retlistnames, 0, mkChar("status")); 
@@ -1285,64 +1286,44 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
     SET_VECTOR_ELT (retlist, 1, mkString(""));
 
-    data = Calloc(INTEGER(varsize)[0], char);                 /*-- Is zeroed --*/
-
-    /*-- Get ndims for this var -----------------------------------------------*/
-    status = nc_inq_varndims(INTEGER(ncid)[0], INTEGER(varid)[0], &ndims);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	REAL(VECTOR_ELT(retlist, 0))[0] = status;
-        UNPROTECT(2);
-	Free(data);
-	return(retlist);
-    }
-
-    /*-- Copy over from int to size_t, handle scalar variables ----------------*/
-    if(ndims > 0) {
-	for(i=0; i<ndims; i++) {
-	    s_start[i] = (size_t)INTEGER(start)[i];
-	    s_count[i] = (size_t)INTEGER(count)[i];
-	}
-    }
-    else {
-        s_start[0] = 0;
-	s_count[0] = 1;
-    }
-
     /*-- Enter data mode (if necessary) ---------------------------------------*/
     status = nc_enddef(INTEGER(ncid)[0]);
     if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
         REAL(VECTOR_ELT(retlist, 0))[0] = status;
 	UNPROTECT(2);
-	Free(data);
 	return(retlist);
     }
 
-    /*-- Get the var ----------------------------------------------------------*/
-    status = nc_get_vara_text(INTEGER(ncid)[0], INTEGER(varid)[0],
+    /*-- Read variable from file ----------------------------------------------*/
+    if (INTEGER(rawchar)[0] > 0) {
+      data = (char *) RAW(VECTOR_ELT(retlist, 2));
+    } else {
+      data = (char *) R_alloc(varsize, sizeof(char));
+    }
+
+    if (varsize > 0) {
+      /* Some netcdf versions cannot handle zero-sized arrays */
+      status = nc_get_vara_text(INTEGER(ncid)[0], INTEGER(varid)[0],
         s_start, s_count, data);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
-        UNPROTECT(2);
-	Free(data);
-	return(retlist);
-    }
-   
-    /*-- Copy from C to R object ----------------------------------------------*/
-    tx_str = Calloc(tx_len+1, char);                    /*-- String handling --*/
-    for(i=0; i<tx_num; i++) {
-        for(j=0; j<tx_len; j++)
-            tx_str[j] = data[i*tx_len+j];
-	tx_str[j] = '\0';                               /*-- String handling --*/
-	SET_STRING_ELT(VECTOR_ELT(retlist, 2), i, mkChar(tx_str));
+    } else {
+      status = NC_NOERR;
     }
 
-    Free(data);
-    Free(tx_str);
+    /*-- Copy from C to R character vector (if specified) ---------------------*/
+    if (status == NC_NOERR && INTEGER(rawchar)[0] <= 0) {
+      tx_str = (char *) R_alloc(tx_len+1, sizeof(char));
+      tx_str[tx_len] = '\0'; /* Final null character is never modified */
+      for(i=0; i<tx_num; i++) {
+        strncpy(tx_str, data+i*tx_len, tx_len);
+	SET_STRING_ELT(VECTOR_ELT(retlist, 2), i, mkChar(tx_str));
+      }
+    }
 
     /*-- Returning the list ---------------------------------------------------*/
+    if (status != NC_NOERR) {
+      SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
+    }
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
     UNPROTECT(2);
     return(retlist);
@@ -1475,11 +1456,19 @@ SEXP R_nc_inq_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag)
 \*-----------------------------------------------------------------------------*/
 
 SEXP R_nc_put_vara_double (SEXP ncid, SEXP varid, SEXP start, 
-                           SEXP count, SEXP data)
+                           SEXP count, SEXP ndims, SEXP data)
 {
-    int    ndims, i, status;
-    size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS];
+    int    i, status;
+    size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS], varsize;
     SEXP   retlist, retlistnames;
+
+    /*-- Copy dims from int to size_t -----------------------------------------*/
+    varsize = 1;
+    for(i=0; i<INTEGER(ndims)[0]; i++) {
+	s_start[i] = (size_t)INTEGER(start)[i];
+	s_count[i] = (size_t)INTEGER(count)[i];
+        varsize *= s_count[i];
+    }
 
     /*-- Create output object and initialize return values --------------------*/
     PROTECT(retlist = allocVector(VECSXP, 2));
@@ -1495,27 +1484,6 @@ SEXP R_nc_put_vara_double (SEXP ncid, SEXP varid, SEXP start,
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
     SET_VECTOR_ELT (retlist, 1, mkString(""));
 
-    /*-- Get ndims for this var -----------------------------------------------*/
-    status = nc_inq_varndims(INTEGER(ncid)[0], INTEGER(varid)[0], &ndims);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-        REAL(VECTOR_ELT(retlist, 0))[0] = status;	 
-	UNPROTECT(2);
-	return(retlist);
-    }
-
-    /*-- Copy over from int to size_t, handle scalar variables ----------------*/
-    if(ndims > 0) {
-	for(i=0; i<ndims; i++) {
-	    s_start[i] = (size_t)INTEGER(start)[i];
-	    s_count[i] = (size_t)INTEGER(count)[i];
-	}
-    }
-    else {
-        s_start[0] = 0;
-	s_count[0] = 1;
-    }
-
     /*-- Enter data mode (if necessary) ---------------------------------------*/
     status = nc_enddef(INTEGER(ncid)[0]);
     if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
@@ -1526,12 +1494,18 @@ SEXP R_nc_put_vara_double (SEXP ncid, SEXP varid, SEXP start,
     }
 
     /*-- Put the var ----------------------------------------------------------*/
-    status = nc_put_vara_double(INTEGER(ncid)[0], INTEGER(varid)[0],
+    if (varsize > 0) {
+      /* Some netcdf versions cannot handle zero-sized arrays */
+      status = nc_put_vara_double(INTEGER(ncid)[0], INTEGER(varid)[0],
         s_start, s_count, REAL(data));
-    if(status != NC_NOERR)
-        SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+    } else {
+      status = NC_NOERR;
+    }
 
     /*-- Returning the list ---------------------------------------------------*/
+    if (status != NC_NOERR) {
+      SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+    }
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
     UNPROTECT(2);
     return(retlist);
@@ -1543,17 +1517,33 @@ SEXP R_nc_put_vara_double (SEXP ncid, SEXP varid, SEXP start,
 \*-----------------------------------------------------------------------------*/
 
 SEXP R_nc_put_vara_text (SEXP ncid, SEXP varid, SEXP start, 
-                         SEXP count, SEXP data, SEXP varsize)
+                         SEXP count, SEXP ndims, SEXP rawchar, SEXP data)
 {
-    int    ndims, tx_num, tx_len, i, j, status;
-    char   *ncdata, *tx_str;
+    int    i, j, status;
+    char   *ncdata;
     size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS];
+    size_t tx_len, tx_num, varsize;
     SEXP   retlist, retlistnames;
 
+    /*-- Copy dims from int to size_t, calculate number and length of strings -*/
+    for(i=0; i<INTEGER(ndims)[0]; i++) {
+	s_start[i] = (size_t)INTEGER(start)[i];
+	s_count[i] = (size_t)INTEGER(count)[i];
+    }
+
+    if (INTEGER(ndims)[0] > 0) {
+	tx_num = 1;
+	for(i=0; i<INTEGER(ndims)[0]-1; i++) {
+	    tx_num *= s_count[i];
+	}
+	tx_len = s_count[INTEGER(ndims)[0]-1];
+    } else {
+	tx_num = 1;
+	tx_len = 1;
+    }
+    varsize = tx_num*tx_len;
+
     /*-- Create output object and initialize return values --------------------*/
-    tx_len = INTEGER(varsize)[1];
-    tx_num = INTEGER(varsize)[0]/tx_len;
-    
     PROTECT(retlist = allocVector(VECSXP, 2));
     SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
     SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
@@ -1567,60 +1557,38 @@ SEXP R_nc_put_vara_text (SEXP ncid, SEXP varid, SEXP start,
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
     SET_VECTOR_ELT (retlist, 1, mkString(""));
 
-    /*-- Get ndims for this var -----------------------------------------------*/
-    status = nc_inq_varndims(INTEGER(ncid)[0], INTEGER(varid)[0], &ndims);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-        REAL(VECTOR_ELT(retlist, 0))[0] = status;	 
-	UNPROTECT(2);
-	return(retlist);
-    }
-
-    /*-- Copy over from int to size_t, handle scalar variables ----------------*/
-    if(ndims > 0) {
-	for(i=0; i<ndims; i++) {
-	    s_start[i] = (size_t)INTEGER(start)[i];
-	    s_count[i] = (size_t)INTEGER(count)[i];
-	}
-    }
-    else {
-        s_start[0] = 0;
-	s_count[0] = 1;
-    }
-
-    /*-- Copy from R to C object ----------------------------------------------*/
-    ncdata = Calloc(tx_len*tx_num, char);                     /*-- Is zeroed --*/
-    tx_str = Calloc(tx_len+1, char);                          /*-- Is zeroed --*/
-        
-    for(i=0; i<tx_num; i++) {
-        strcpy(tx_str, CHAR(STRING_ELT(data, i)));
-	for(j=0; j<tx_len; j++) {
-            ncdata[i*tx_len+j] = tx_str[j];
-	    tx_str[j] = '\0';
-	}
-    }
-
     /*-- Enter data mode (if necessary) ---------------------------------------*/
     status = nc_enddef(INTEGER(ncid)[0]);
     if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
         REAL(VECTOR_ELT(retlist, 0))[0] = status;
 	UNPROTECT(2);
-	Free(ncdata);
-	Free(tx_str);
 	return(retlist);
     }
 
-    /*-- Put the var ----------------------------------------------------------*/
-    status = nc_put_vara_text(INTEGER(ncid)[0], INTEGER(varid)[0],
-        s_start, s_count, ncdata);
-    if(status != NC_NOERR)
-        SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-
-    Free(ncdata);
-    Free(tx_str);
+    /*-- Prepare output array -------------------------------------------------*/
+    if (INTEGER(rawchar)[0] > 0) {
+      ncdata = (char *) RAW(data);
+    } else {
+      ncdata = (char *) R_alloc(varsize, sizeof(char));
+      for(i=0; i<tx_num; i++) {
+	  strncpy(ncdata+i*tx_len, CHAR(STRING_ELT(data, i)), tx_len);
+      }
+    }
+ 
+    /*-- Write variable to file -----------------------------------------------*/
+    if (varsize > 0) {
+      /* Some netcdf versions cannot handle zero-sized arrays */
+      status = nc_put_vara_text(INTEGER(ncid)[0], INTEGER(varid)[0],
+	  s_start, s_count, ncdata);
+    } else {
+      status = NC_NOERR;
+    }
 
     /*-- Returning the list ---------------------------------------------------*/
+    if(status != NC_NOERR) {
+      SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+    }
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
     UNPROTECT(2);
     return(retlist);
