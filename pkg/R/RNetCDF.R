@@ -1,0 +1,1210 @@
+#===============================================================================#
+#										#
+#  Name:       RNetCDF.R							#
+#										#
+#  Version:    1.0-3								#
+#										#
+#  Purpose:    NetCDF interface for R.						#
+#										#
+#  Author:     Pavel Michna (michna@giub.unibe.ch)				#
+#										#
+#  Copyright:  (C) 2004 Pavel Michna						#
+#										#
+#===============================================================================#
+#										#
+#  This program is free software; you can redistribute it and/or modify 	#
+#  it under the terms of the GNU General Public License as published by 	#
+#  the Free Software Foundation; either version 2 of the License, or		#
+#  (at your option) any later version.						#
+#										#
+#  This program is distributed in the hope that it will be useful,		#
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of		#
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the		#
+#  GNU General Public License for more details. 				#
+#										#
+#  You should have received a copy of the GNU General Public License		#
+#  along with this program; if not, write to the Free Software			#
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA	#
+#										#
+#===============================================================================#
+#  Implementation and Revisions 						#
+#-------------------------------------------------------------------------------#
+#  Author   Date       Description						#
+#  ------   ----       -----------						#
+#  pm       12/06/04   First implementation					#
+#  pm       09/07/04   Support scalar variables	    		                #
+#  pm       21/07/04   Changed error handling					#
+#  pm       28/07/04   Minor modifications					#
+#										#
+#===============================================================================#
+
+
+#===============================================================================#
+#  NetCDF library functions							#
+#===============================================================================#
+
+#-------------------------------------------------------------------------------#
+#  att.copy.nc()                                                                #
+#-------------------------------------------------------------------------------#
+
+att.copy.nc <- function(ncfile.in, variable.in, attribute, ncfile.out,
+                        variable.out)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile.in ) == "NetCDF")
+    stopifnot(class(ncfile.out) == "NetCDF")
+    stopifnot(is.character(attribute)    || is.numeric(attribute)   )
+    stopifnot(is.character(variable.in)  || is.numeric(variable.in) )
+    stopifnot(is.character(variable.out) || is.numeric(variable.out))
+
+    #-- Get the varids as integer if necessary, handle global attributes -------#
+    varid.in     <- NULL
+    varid.out    <- NULL
+    globflag.in  <- 0
+    globflag.out <- 0
+    
+    if(is.character(variable.in) && variable.in != "NC_GLOBAL")
+        varid.in <- try(var.inq.nc(ncfile.in, variable.in)$id)
+    else
+        varid.in <- variable.in
+
+    if(is.character(variable.in) && variable.in == "NC_GLOBAL") {
+        globflag.in <-  1
+        varid.in    <- -1
+    }
+    
+    if(is.character(variable.out) && variable.out != "NC_GLOBAL")
+        varid.out <- try(var.inq.nc(ncfile.out, variable.out)$id)
+    else
+        varid.out <- variable.out
+
+    if(is.character(variable.out) && variable.out == "NC_GLOBAL") {
+        globflag.out <-  1
+        varid.out    <- -1
+    }
+	
+    if(class(varid.in) == "try-error" || class(varid.out) == "try-error")
+        return(invisible(NULL))
+    if(is.null(varid.in) || is.null(varid.out))
+        return(invisible(NULL))
+
+    #-- Get the attribute name if necessary ------------------------------------#
+    if(is.character(attribute))
+        attname <- attribute
+    else
+        attname <- try(att.inq.nc(ncfile.in, variable.in, attribute)$name)
+    
+    if(class(attname) == "try-error" || is.null(attname))
+        return(invisible(NULL))
+    
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_copy_att",
+                as.integer(ncfile.in),
+		as.integer(varid.in),
+		as.integer(globflag.in),
+		as.character(attname),
+                as.integer(ncfile.out),
+		as.integer(varid.out),
+		as.integer(globflag.out),
+		PACKAGE="RNetCDF")
+		
+    if(nc$status != 0)
+        stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  att.delete.nc()                                                              #
+#-------------------------------------------------------------------------------#
+
+att.delete.nc <- function(ncfile, variable, attribute)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF") 
+    stopifnot(is.character(variable)  || is.numeric(variable) )
+    stopifnot(is.character(attribute) || is.numeric(attribute))
+    
+    #-- Get the varid as integer if necessary, handle global attributes --------#
+    varid     <- NULL
+    globflag  <- 0
+    
+    if(is.character(variable) && variable != "NC_GLOBAL")
+        varid <- try(var.inq.nc(ncfile, variable)$id)
+    else
+        varid <- variable
+
+    if(is.character(variable) && variable == "NC_GLOBAL") {
+        globflag <-  1
+        varid    <- -1
+    }
+
+    if(class(varid) == "try-error" || is.null(varid))
+        return(invisible(NULL))
+
+    #-- Get the attribute name if necessary ------------------------------------#
+    if(is.character(attribute))
+        attname <- attribute
+    else
+        attname <- try(att.inq.nc(ncfile.in, variable.in, attribute)$name)
+    
+    if(class(attname) == "try-error" || is.null(attname))
+        return(invisible(NULL))
+
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_delete_att",
+                as.integer(ncfile),
+		as.integer(varid),
+		as.integer(globflag),
+		as.character(attname),
+		PACKAGE="RNetCDF")
+    
+    if(nc$status != 0)
+        stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  att.get.nc()                                                                 #
+#-------------------------------------------------------------------------------#
+
+att.get.nc <- function(ncfile, variable, attribute)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF") 
+    stopifnot(is.character(variable)  || is.numeric(variable) )
+    stopifnot(is.character(attribute) || is.numeric(attribute))
+    
+    #-- Get the varid as integer if necessary, handle global attributes --------#
+    varid     <- NULL
+    globflag  <- 0
+    
+    if(is.character(variable) && variable != "NC_GLOBAL")
+        varid <- try(var.inq.nc(ncfile, variable)$id)
+    else
+        varid <- variable
+
+    if(is.character(variable) && variable == "NC_GLOBAL") {
+        globflag <-  1
+        varid    <- -1
+    }
+
+    if(class(varid) == "try-error" || is.null(varid))
+        return(invisible(NULL))
+
+    #-- Inquire the attribute to get its name and storage mode -----------------#
+    attinfo <- try(att.inq.nc(ncfile, variable, attribute))
+    if(class(attinfo) == "try-error" || is.null(attinfo))
+        return(invisible(NULL))
+
+    ifelse(is.character(attribute),
+        attname <- attribute, attname <- attinfo$name)
+    
+    ifelse(attinfo$type == "NC_CHAR", numflag <- 0, numflag <- 1);
+    
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_get_att",
+	        as.integer(ncfile),
+		as.integer(varid),
+		as.character(attname),
+		as.integer(numflag),
+		as.integer(globflag),
+		PACKAGE="RNetCDF")
+    
+    #-- Return object if no error ----------------------------------------------#
+    if(nc$status == 0) {
+        nc$status <- NULL
+	nc$errmsg <- NULL
+        return(nc$value)
+    } else
+	stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  att.inq.nc()                                                                 #
+#-------------------------------------------------------------------------------#
+
+att.inq.nc <- function(ncfile, variable, attribute)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF") 
+    stopifnot(is.character(variable)  || is.numeric(variable) )
+    stopifnot(is.character(attribute) || is.numeric(attribute))
+    
+    #-- Look if handle attribute by name or ID ---------------------------------#
+    attid   <- -1
+    attname <- ""
+    ifelse(is.character(attribute), nameflag <- 1, nameflag <- 0)
+    ifelse(is.character(attribute), attname <- attribute, attid <- attribute)
+
+    #-- Get the varid as integer if necessary, handle global attributes --------#
+    varid     <- NULL
+    globflag  <- 0
+    
+    if(is.character(variable) && variable != "NC_GLOBAL")
+        varid <- try(var.inq.nc(ncfile, variable)$id)
+    else
+        varid <- variable
+
+    if(is.character(variable) && variable == "NC_GLOBAL") {
+        globflag <-  1
+        varid    <- -1
+    }
+
+    if(class(varid) == "try-error" || is.null(varid))
+        return(invisible(NULL))
+
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_inq_att",
+        	as.integer(ncfile),
+		as.integer(varid),
+		as.character(attname),
+		as.integer(attid),
+		as.integer(nameflag),
+		as.integer(globflag),
+		PACKAGE="RNetCDF")
+
+    #-- Return object if no error ----------------------------------------------#
+    if(nc$status == 0) {
+        nc$status <- NULL
+	nc$errmsg <- NULL
+        return(nc)
+    } else
+	stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  att.put.nc()                                                                 #
+#-------------------------------------------------------------------------------#
+
+att.put.nc <- function(ncfile, variable, name, type, value)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF") 
+    stopifnot(is.character(variable) || is.numeric(variable))
+    stopifnot(is.character(name))
+    stopifnot(is.character(type))
+    stopifnot(is.character(value) || is.numeric(value))
+
+    #-- Get the varids as integer if necessary, handle global attributes -------#
+    varid     <- NULL
+    globflag  <- 0
+    
+    if(is.character(variable) && variable != "NC_GLOBAL")
+        varid <- try(var.inq.nc(ncfile, variable)$id)
+    else
+        varid <- variable
+
+    if(is.character(variable) && variable == "NC_GLOBAL") {
+        globflag <-  1
+        varid    <- -1
+    }
+
+    if(class(varid) == "try-error" || is.null(varid))
+        return(invisible(NULL))
+
+    #-- Determine if attribute is numeric or character -------------------------#
+    ifelse(is.numeric(value), numflag <- 1, numflag <- 0)
+
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_put_att",
+	        as.integer(ncfile),
+		as.integer(varid),
+		as.character(name),
+		as.character(type),
+		as.integer(length(value)),
+		as.integer(numflag),
+		as.integer(globflag),
+		value,
+		PACKAGE="RNetCDF")
+    
+    if(nc$status != 0)
+        stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  att.rename.nc()                                                              #
+#-------------------------------------------------------------------------------#
+
+att.rename.nc <- function(ncfile, variable, attribute, newname)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF") 
+    stopifnot(is.character(variable)  || is.numeric(variable) )
+    stopifnot(is.character(attribute) || is.numeric(attribute))
+    stopifnot(is.character(newname))
+
+    #-- Get the varid as integer if necessary, handle global attributes --------#
+    varid     <- NULL
+    globflag  <- 0
+    
+    if(is.character(variable) && variable != "NC_GLOBAL")
+        varid <- try(var.inq.nc(ncfile, variable)$id)
+    else
+        varid <- variable
+
+    if(is.character(variable) && variable == "NC_GLOBAL") {
+        globflag <-  1
+        varid    <- -1
+    }
+	
+    if(class(varid) == "try-error" || is.null(varid))
+        return(invisible(NULL))
+
+    #-- Get the attribute name if necessary ------------------------------------#
+    if(is.character(attribute))
+        attname <- attribute
+    else
+        attname <- try(att.inq.nc(ncfile, variable, attribute)$name)
+    
+    if(class(attname) == "try-error" || is.null(attname))
+        return(invisible(NULL))
+
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_rename_att",
+                as.integer(ncfile),
+		as.integer(varid),
+		as.integer(globflag),
+		as.character(attname),
+                as.character(newname),
+		PACKAGE="RNetCDF")
+    
+    if(nc$status != 0)
+        stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  close.nc()                                                                   #
+#-------------------------------------------------------------------------------#
+
+close.nc <- function(con, ...)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(con) == "NetCDF") 
+
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_close",
+                as.integer(con),
+		PACKAGE="RNetCDF")
+
+    if(nc$status != 0)
+        stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  create.nc()                                                                  #
+#-------------------------------------------------------------------------------#
+
+create.nc <- function(filename, clobber=TRUE)
+{
+    #-- Overwrite existing file (y/n) ------------------------------------------#
+    cmode <- ifelse(clobber == TRUE, 0, 1)
+
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_create",
+		as.character(filename),
+		as.integer(cmode),
+		PACKAGE="RNetCDF")
+	     
+    #-- Return object if no error ----------------------------------------------#
+    if(nc$status == 0) {
+        ncfile <- nc$ncid
+        attr(ncfile, "class") <- "NetCDF"
+	return(ncfile)
+    } else
+        stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  dim.def.nc()                                                                 #
+#-------------------------------------------------------------------------------#
+
+dim.def.nc <- function(ncfile, dimname, dimlength=1, unlim=FALSE)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF") 
+    stopifnot(is.character(dimname))
+    stopifnot(is.numeric(dimlength))
+    stopifnot(is.logical(unlim))
+
+    #-- Handle UNLIMITED -------------------------------------------------------#
+    unlimflag   <- ifelse(unlim == TRUE, 1, 0)
+    ncdimlength <- ifelse(unlim == TRUE, 0, dimlength)
+    
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_def_dim",
+		as.integer(ncfile),
+		as.character(dimname),
+		as.integer(ncdimlength),
+		as.integer(unlimflag),
+		PACKAGE="RNetCDF")
+
+    if(nc$status != 0)
+        stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  dim.inq.nc()                                                                 #
+#-------------------------------------------------------------------------------#
+
+dim.inq.nc <- function(ncfile, dimension)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF") 
+    stopifnot(is.character(dimension) || is.numeric(dimension))
+    
+    #-- Look if handle dimension by name or ID ---------------------------------#
+    dimid   <- -1
+    dimname <- ""
+       
+    ifelse(is.character(dimension), nameflag <- 1, nameflag <- 0)
+    ifelse(is.character(dimension), dimname <- dimension, dimid <- dimension)
+    
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_inq_dim",
+        	as.integer(ncfile),
+		as.integer(dimid),
+		as.character(dimname),
+		as.integer(nameflag),
+		PACKAGE="RNetCDF")
+    
+    #-- Return object if no error ----------------------------------------------#
+    if(nc$status == 0) {
+        nc$status <- NULL
+	nc$errmsg <- NULL
+	
+	nc$unlim <- ifelse(nc$unlim == 1, TRUE, FALSE)
+	
+        return(nc)
+    } else
+	stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  dim.rename.nc()                                                              #
+#-------------------------------------------------------------------------------#
+
+dim.rename.nc <- function(ncfile, dimension, newname)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF") 
+    stopifnot(is.character(dimension) || is.numeric(dimension))
+    stopifnot(is.character(newname))
+
+    #-- Look if handle dimension by name or ID ---------------------------------#
+    dimid   <- -1
+    dimname <- ""
+       
+    ifelse(is.character(dimension), nameflag <- 1, nameflag <- 0)
+    ifelse(is.character(dimension), dimname <- dimension, dimid <- dimension)
+    
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_rename_dim",
+        	as.integer(ncfile),
+		as.integer(dimid),
+		as.character(dimname),
+		as.integer(nameflag),
+		as.character(newname),
+		PACKAGE="RNetCDF")
+
+    if(nc$status != 0)
+        stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  file.inq.nc()                                                                #
+#-------------------------------------------------------------------------------#
+
+file.inq.nc <- function(ncfile)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF") 
+
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_inq_file",
+                as.integer(ncfile),
+		PACKAGE="RNetCDF")
+
+    #-- Return object if no error ----------------------------------------------#
+    if(nc$status == 0) {
+        nc$status <- NULL
+	nc$errmsg <- NULL
+        
+	if(nc$unlimdimid == -1)
+            nc$unlimdimid <- NA
+	
+	return(nc)
+    } else
+	stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  open.nc()                                                                    #
+#-------------------------------------------------------------------------------#
+
+open.nc <- function(con, write=FALSE, ...)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(is.character(con))
+    stopifnot(is.logical(write))
+
+    #-- Open read only (y/n) ---------------------------------------------------#
+    omode <- ifelse(write == TRUE, 1, 0)
+
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_open",
+		as.character(con),
+		as.integer(omode),
+		PACKAGE="RNetCDF")
+	     
+    #-- Return object if no error ----------------------------------------------#
+    if(nc$status == 0) {
+        ncfile <- nc$ncid
+        attr(ncfile, "class") <- "NetCDF"
+	return(ncfile)
+    } else
+       stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  print.nc()                                                                   #
+#-------------------------------------------------------------------------------#
+
+print.nc <- function(x, ...)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(x) == "NetCDF") 
+
+    #-- Inquire about the file -------------------------------------------------#
+    fileinfo <- try(file.inq.nc(x))
+    if(class(fileinfo) == "try-error" || is.null(fileinfo))
+        return(invisible(NULL))
+
+    #-- Inquire about all dimensions -------------------------------------------#
+    if(fileinfo$ndims != 0) {
+	cat("dimensions:\n")
+	for(i in 0:(fileinfo$ndims-1)) {
+            diminfo <- dim.inq.nc(x, i)
+            if(diminfo$unlim == FALSE)
+		cat("        ", diminfo$name, " = ", diminfo$length, " ;\n",
+		    sep="")
+	    else
+	        cat("        ", diminfo$name, " = UNLIMITED ; // (", 
+		    diminfo$length, " currently)\n", sep="")
+	}
+    }
+    
+    #-- Inquire about all variables --------------------------------------------#
+    if(fileinfo$nvars != 0) {
+	cat("variables:\n")
+	for(i in 0:(fileinfo$nvars-1)) {
+            varinfo <- var.inq.nc(x, i)
+	    vartype <- substring(tolower(varinfo$type), 4)
+	    cat("        ", vartype, " ", varinfo$name, sep="")
+	    if(varinfo$ndims > 0) {
+	        cat("(")
+		for(j in 1:(varinfo$ndims-1))
+	            if(j > 0 && varinfo$ndims > 1)
+			cat(dim.inq.nc(x, varinfo$dimids[j])$name, ", ", sep="")
+		cat(dim.inq.nc(x, varinfo$dimids[varinfo$ndims])$name, sep="")
+	        cat(")")
+	    }
+	    cat(" ;\n")
+	    
+	    #-- Inquire about variable attributes ------------------------------#
+	    if(varinfo$natts != 0) {
+	        for(j in 0:(varinfo$natts-1)) {
+		    attinfo <- att.inq.nc(x, i, j)
+		    cat(rep(" ", 16), varinfo$name, ":", attinfo$name, sep="")
+		    if(attinfo$type == "NC_CHAR")
+		        cat(" = \"", att.get.nc(x, i, j), "\" ;\n", sep="")
+		    else
+		        cat( " = ", att.get.nc(x, i, j), " ;\n", sep="")
+		}
+	    }
+	}
+    }
+
+    #-- Inquire about gobal attributes------------------------------------------#
+    if(fileinfo$ngatts != 0) {
+        cat("\n// global attributes:\n")
+        i <- "NC_GLOBAL"
+	for(j in 0:(fileinfo$ngatts-1)) {
+	    attinfo <- att.inq.nc(x, i, j)
+	    cat(rep(" ", 16),  ":", attinfo$name, sep="")
+	    if(attinfo$type == "NC_CHAR")
+		cat(" = \"", att.get.nc(x, i, j), "\" ;\n", sep="")
+	    else
+		cat( " = ", att.get.nc(x, i, j), " ;\n", sep="")
+	}
+    }
+}
+
+
+#-------------------------------------------------------------------------------#
+#  sync.nc()                                                                    #
+#-------------------------------------------------------------------------------#
+
+sync.nc <- function(ncfile)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF")
+
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_sync",
+                as.integer(ncfile),
+		PACKAGE="RNetCDF")
+		
+    if(nc$status != 0)
+        stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  var.def.nc()                                                                 #
+#-------------------------------------------------------------------------------#
+
+var.def.nc <- function(ncfile, varname, vartype, dimensions)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF")
+    stopifnot(is.character(varname))
+    stopifnot(is.character(vartype))
+	
+    if(any(is.na(dimensions)) && length(dimensions) != 1)
+        stop("NAs not allowed in dimensions unless defining a scalar variable",
+	    call.=FALSE)
+
+    if(!any(is.na(dimensions)))
+	stopifnot(mode(dimensions) == "character" || 
+	    mode(dimensions) == "numeric")
+    
+    #-- Determine dimids from dimname if necessary, handle scalar variables ----#
+    dimids <- vector()
+    if(any(is.na(dimensions))) {
+        dimids <- -1
+	ndims  <-  0
+    } else {	
+	if(mode(dimensions) == "numeric")
+            dimids <- dimensions
+	else
+            for(i in 1:length(dimensions))
+        	try(dimids[i] <- dim.inq.nc(ncfile, dimensions[i])$id,
+	            silent=TRUE)
+
+	if(length(dimids) != length(dimensions))
+            stop("Could not determine all dimension ids", call.=FALSE)
+	    
+	dimids <- dimids[length(dimids):1]                   ## R to C convention
+	ndims  <- length(dimids)
+    }
+    
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_def_var",
+        	as.integer(ncfile),
+		as.character(varname),
+		as.character(vartype),
+		as.integer(ndims),
+		as.integer(dimids),
+		PACKAGE="RNetCDF")
+		
+    if(nc$status != 0)
+        stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  var.get.nc()                                                                 #
+#-------------------------------------------------------------------------------#
+
+var.get.nc <- function(ncfile, variable, start=NA, count=NA, na.mode=0)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF")
+    stopifnot(is.character(variable) || is.numeric(variable))
+    stopifnot(is.numeric(start) || is.logical(start))
+    stopifnot(is.numeric(count) || is.logical(count))
+    
+    if(!any(na.mode == c(0,1,2)))
+        stop("Wrong na.mode", call.=FALSE)
+
+    #-- Inquire the variable ---------------------------------------------------#
+    varinfo <- try(var.inq.nc(ncfile, variable))
+
+    if(class(varinfo) == "try-error" || is.null(varinfo))
+        return(invisible(NULL))
+    
+    #-- Get the varid as integer if necessary ----------------------------------#
+    ifelse(is.character(variable), varid <- varinfo$id, varid <- variable)
+
+    #-- Get the variable dimensions if start and count contain NAs -------------#
+    if(varinfo$ndims > 0) {
+	r.start <- vector()
+	r.count <- vector()
+	for(i in 1:varinfo$ndims) {
+            r.start[i] <- 1
+	    r.count[i] <- dim.inq.nc(ncfile, varinfo$dimids[i])$length
+	}
+
+        if(any(is.na(start)) && length(start) == 1)
+	    start <- rep(NA, varinfo$ndims)
+        if(any(is.na(count)) && length(count) == 1)
+	    count <- rep(NA, varinfo$ndims)
+	
+	start[is.na(start)] <- r.start[is.na(start)]
+	count[is.na(count)] <- r.count[is.na(count)]
+    }
+
+    #-- Handle scalar variables ------------------------------------------------#
+    if(varinfo$ndims == 0) {
+	start[1] <- 1
+	count[1] <- 1
+    }
+
+    #-- Allocate memory for variable and get number of dimensions --------------#
+    varsize    <- vector()
+    varsize[1] <- prod(count)
+    varsize[2] <- count[1]                           ## Needed for character data
+    ndims      <- varinfo$ndims
+
+    #-- Switch from R to C convention ------------------------------------------#
+    if(varinfo$ndims > 0) {
+	c.start <- start[length(start):1] - 1
+	c.count <- count[length(count):1]    
+    } else {
+        c.start <- 0
+	c.count <- 1
+    }
+
+    #-- Check for correct number of dimensions in start and count --------------#
+    if(varinfo$ndims > 0)
+	if(length(c.start) != ndims || length(c.count) != ndims)
+            stop("Length of start/count is not ndims", call.=FALSE)
+
+    #-- C function calls -------------------------------------------------------#
+    if(varinfo$type != "NC_CHAR")
+	nc <- .Call("R_nc_get_vara_double",
+        	    as.integer(ncfile),
+		    as.integer(varid),
+		    as.integer(c.start),
+		    as.integer(c.count),
+		    as.integer(varsize),
+		    PACKAGE="RNetCDF")
+    else
+        nc <- .Call("R_nc_get_vara_text",
+        	    as.integer(ncfile),
+		    as.integer(varid),
+		    as.integer(c.start),
+		    as.integer(c.count),
+		    as.integer(varsize),
+		    PACKAGE="RNetCDF")
+
+    #-- Adjust data ------------------------------------------------------------#
+    if(nc$status == 0) {
+	
+	#-- Set dimensions, collapse degenerate dimensions ---------------------#
+	dimflag <- 0
+	if(ndims > 0) {
+	    count.dim <- vector()
+
+	    if(varinfo$type != "NC_CHAR") {
+		for(i in 1:ndims)       ## R convention because ndims has R order
+        	    if(count[i] > 1) {
+                	count.dim <- append(count.dim, count[i])
+			dimflag   <- 1
+		    }
+	    } else {
+		for(i in 2:ndims)                   ## First dim is string lenght
+        	    if(count[i] > 1) {
+                	count.dim <- append(count.dim, count[i])
+			dimflag   <- 1
+		    }
+	    }
+        }
+	        
+	#-- Convert missing value to NA if defined in NetCDF file --------------#
+	tolerance <- 1*10^-5                              ## Allow rounding error
+	na.flag   <- 0
+
+        missval.flag <- 0
+	fillval.flag <- 0
+	
+        fillval <- try(att.inq.nc(ncfile, varinfo$name, "_FillValue"   ), 
+	    silent=TRUE)
+        missval <- try(att.inq.nc(ncfile, varinfo$name, "missing_value"), 
+	    silent=TRUE)
+
+        if(!(class(fillval) == "try-error"))
+	    if(!is.null(fillval))
+	        fillval.flag <- 1
+	if(!(class(missval) == "try-error"))
+	    if(!is.null(missval))
+		missval.flag <- 1
+
+       	if(na.mode == 0 && missval.flag == 1) {
+	    na.value <- att.get.nc(ncfile, varinfo$name, "missing_value")
+	    na.flag  <- 1
+	}
+	if(na.mode == 0 && fillval.flag == 1) {
+	    na.value <- att.get.nc(ncfile, varinfo$name, "_FillValue")
+	    na.flag  <- 1
+	}
+
+       	if(na.mode == 1 && fillval.flag == 1) {
+	    na.value <- att.get.nc(ncfile, varinfo$name, "_FillValue")
+	    na.flag  <- 1
+	}
+
+	if(na.mode == 2 && missval.flag == 1) {
+	    na.value <- att.get.nc(ncfile, varinfo$name, "missing_value")
+	    na.flag  <- 1
+	}
+
+        if(na.flag == 1 && varinfo$type != "NC_CHAR")
+	    nc$data[abs(nc$data-na.value) < tolerance] <- NA  
+	
+    #-- Return object if no error ----------------------------------------------#
+	ifelse(dimflag == 0, dim(nc$data) <- (1), dim(nc$data) <- count.dim)
+	return(nc$data)
+    } else
+        stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  var.inq.nc()                                                                 #
+#-------------------------------------------------------------------------------#
+
+var.inq.nc <- function(ncfile, variable)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF")
+    stopifnot(is.character(variable) || is.numeric(variable))
+
+    #-- Look if handle variable by name or ID ----------------------------------#
+    varid   <- -1
+    varname <- ""
+
+    ifelse(is.character(variable), nameflag <- 1, nameflag <- 0)
+    ifelse(is.character(variable), varname <- variable, varid <- variable)
+
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_inq_var",
+        	as.integer(ncfile),
+		as.integer(varid),
+		as.character(varname),
+		as.integer(nameflag),
+		PACKAGE="RNetCDF")
+
+    #-- Return object if no error ----------------------------------------------#
+    if(nc$status == 0) {
+        nc$status <- NULL
+	nc$errmsg <- NULL
+        
+	if(nc$ndims > 0)
+            nc$dimids <- nc$dimids[(nc$ndims):1]             ## C to R convention
+        else
+            nc$dimids <- NA
+	    
+	return(nc)
+    } else
+        stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  var.put.nc()                                                                 #
+#-------------------------------------------------------------------------------#
+
+var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF")
+    stopifnot(is.character(variable) || is.numeric(variable))
+    stopifnot(is.numeric(data) || is.character(data) || is.logical(data))
+    stopifnot(is.numeric(start) || is.logical(start))
+    stopifnot(is.numeric(count) || is.logical(count))
+    
+    if(!any(na.mode == c(0,1,2)))
+        stop("Wrong na.mode", call.=FALSE)
+
+    #-- Inquire the variable ---------------------------------------------------#
+    varinfo <- try(var.inq.nc(ncfile, variable))
+
+    if(class(varinfo) == "try-error" || is.null(varinfo))
+        return(invisible(NULL))
+
+    ndims <- varinfo$ndims
+
+    #-- Get the varid as integer if necessary ----------------------------------#
+    ifelse(is.character(variable), varid <- varinfo$id, varid <- variable)
+
+    #-- Get correct mode (numeric/character) if data contain only NAs ----------#
+    if(is.logical(data)) {
+	if(varinfo$type == "NC_CHAR")
+	    mode(data) <- "character"
+	else
+	    mode(data) <- "numeric"
+    }
+
+    #-- Get the data dimensions if start and count contain NAs -----------------#
+    if(varinfo$ndims == 0) {
+	start[1] <- 1
+	count[1] <- 1
+    }
+    
+    if(any(is.na(start)) && length(start) > 1)
+        stop("start contains NAs and length(start) not 1", call.=FALSE)
+    if(any(is.na(count)) && length(count) > 1)
+        stop("count contains NAs and length(count) not 1", call.=FALSE)
+
+    if(any(is.na(start)) && varinfo$ndims > 0)
+        start <- rep(1, ndims)
+    if(any(is.na(count)) && varinfo$ndims > 0) {
+        if(is.null(dim(data)))
+	    count <- length(data)
+	else 
+	    count <- dim(data)
+
+        if(varinfo$type == "NC_CHAR")
+	    count <- c(max(nchar(data)), count)
+    }
+
+    #-- Switch from R to C convention ------------------------------------------#
+    if(varinfo$ndims > 0) {
+	c.start <- start[length(start):1] - 1
+	c.count <- count[length(count):1]    
+    } else {
+        c.start <- 0
+	c.count <- 1
+	
+	if(length(data) > 1)
+	    stop("Edge+start exceeds dimension bound", call.=FALSE)
+    }
+
+    #-- Check for correct number of dimensions in start and count --------------#
+    if(varinfo$ndims > 0)
+	if(length(c.start) != ndims || length(c.count) != ndims)
+            stop("Length of start/count is not ndims", call.=FALSE)
+
+    #-- Check if length of data and count match (numeric data) -----------------#
+    if(is.numeric(data) && length(data) != prod(c.count))
+        stop("Mismatch in count and length(data)", call.=FALSE)
+
+    #-- Checks and definitions for character data ------------------------------#
+    if(is.character(data) && varinfo$ndims > 0) {
+        lastdim   <- varinfo$dimids[1]                       ## R to C convention
+	maxstrlen <- dim.inq.nc(ncfile, lastdim)$length
+    
+        if(length(data) != prod(c.count[1:(ndims-1)]))    ## already C convention
+	    stop("Mismatch in count and length(data)", call.=FALSE)
+	
+	if(max(nchar(data)) > maxstrlen)
+	    stop("max(nchar(data)) exceeding variable limits", call.=FALSE)
+    }
+
+    if(is.character(data)) {
+	varsize    <- vector()
+	varsize[1] <- prod(count)
+	varsize[2] <- count[1]
+    }
+
+    #-- Convert missing value to NA if defined in NetCDF file ------------------#
+    if(is.numeric(data)) {
+        if(any(is.na(data))) {
+	    na.flag <- 0
+
+            missval.flag <- 0
+	    fillval.flag <- 0
+
+            fillval <- try(att.inq.nc(ncfile, varinfo$name, "_FillValue"   ), 
+	        silent=TRUE)
+            missval <- try(att.inq.nc(ncfile, varinfo$name, "missing_value"),
+	        silent=TRUE)
+
+            if(!(class(fillval) == "try-error"))
+		if(!is.null(fillval))
+	            fillval.flag <- 1
+	    if(!(class(missval) == "try-error"))
+		if(!is.null(missval))
+		    missval.flag <- 1
+
+       	    if(na.mode == 0 && missval.flag == 1) {
+		na.value <- att.get.nc(ncfile, varinfo$name, "missing_value")
+		na.flag  <- 1
+	    }
+	    if(na.mode == 0 && fillval.flag == 1) {
+		na.value <- att.get.nc(ncfile, varinfo$name, "_FillValue")
+		na.flag  <- 1
+	    }
+
+       	    if(na.mode == 1 && fillval.flag == 1) {
+		na.value <- att.get.nc(ncfile, varinfo$name, "_FillValue")
+		na.flag  <- 1
+	    }
+
+	    if(na.mode == 2 && missval.flag == 1) {
+		na.value <- att.get.nc(ncfile, varinfo$name, "missing_value")
+		na.flag  <- 1
+	    }
+
+            if(na.flag == 1)
+		data[is.na(data)] <- na.value
+	    else
+	        stop("Found NAs but no missing value attribute", call.=FALSE)
+        }
+    }
+
+    #-- C function calls -------------------------------------------------------#
+    if(is.numeric(data))
+	nc <- .Call("R_nc_put_vara_double",
+        	    as.integer(ncfile),
+		    as.integer(varid),
+		    as.integer(c.start),
+		    as.integer(c.count),
+		    as.double(data),
+		    PACKAGE="RNetCDF")
+    else
+        nc <- .Call("R_nc_put_vara_text",
+        	    as.integer(ncfile),
+		    as.integer(varid),
+		    as.integer(c.start),
+		    as.integer(c.count),
+		    as.character(data),
+		    as.integer(varsize),
+		    PACKAGE="RNetCDF")
+		    
+    if(nc$status != 0)
+        stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  var.rename.nc()                                                              #
+#-------------------------------------------------------------------------------#
+
+var.rename.nc <- function(ncfile, variable, newname)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(ncfile) == "NetCDF") 
+    stopifnot(is.character(variable) || is.numeric(variable))
+    stopifnot(is.character(newname))
+
+    #-- Look if handle variable by name or ID ----------------------------------#
+    varid   <- -1
+    varname <- ""
+
+    ifelse(is.character(variable), nameflag <- 1, nameflag <- 0)
+    ifelse(is.character(variable), varname <- variable, varid <- variable)
+
+    #-- C function call --------------------------------------------------------#
+    nc <- .Call("R_nc_rename_var",
+        	as.integer(ncfile),
+		as.integer(varid),
+		as.character(varname),
+		as.integer(nameflag),
+		as.character(newname),
+		PACKAGE="RNetCDF")
+
+    if(nc$status != 0)
+        stop(nc$errmsg, call.=FALSE)
+}
+
+
+#===============================================================================#
+#  Udunits library functions							#
+#===============================================================================#
+
+#-------------------------------------------------------------------------------#
+#  utcal.nc()                                                                   #
+#-------------------------------------------------------------------------------#
+
+utcal.nc <- function(unitstring, value)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(is.character(unitstring))
+    stopifnot(is.numeric(value) && !any(is.na(value)))
+    
+    count <- length(value)
+    
+    #-- C function call --------------------------------------------------------#
+    ut <- .Call("R_ut_calendar", 
+		as.character(unitstring), 
+		as.integer(count),
+		as.double(value),
+		PACKAGE="RNetCDF")
+
+    #-- Return object if no error ----------------------------------------------#
+    if(ut$status == 0) {
+        colnames(ut$value)  <-  c("year", "month", "day", "hour", 
+	    "minute", "second")
+        return(ut$value)
+    } else
+        stop(ut$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  utinit.nc()                                                                  #
+#-------------------------------------------------------------------------------#
+
+utinit.nc <- function(path="")
+{
+    ut <- .Call("R_ut_init", 
+                as.character(path),
+		PACKAGE="RNetCDF")
+		
+    if(ut$status != 0)
+        stop(ut$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  utinvcal.nc()                                                                #
+#-------------------------------------------------------------------------------#
+
+utinvcal.nc <- function(unitstring, value)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(is.character(unitstring))
+    stopifnot(is.numeric(value) && !any(is.na(value)))
+
+    count <- length(value)
+    
+    if(is.vector(value) && count %% 6  != 0)
+	stop("length(value) not divisible by 6", call.=FALSE)
+
+    if(is.matrix(value) && ncol(value) != 6) 
+        stop("ncol(value) not 6", call.=FALSE)
+    
+    #-- C function call --------------------------------------------------------#
+    ut <- .Call("R_ut_inv_calendar", 
+		as.character(unitstring), 
+		as.integer(count),
+		as.double(value),
+		PACKAGE="RNetCDF")
+
+    #-- Return object if no error ----------------------------------------------#
+    if(ut$status == 0)
+        return(ut$value)
+    else
+        stop(ut$errmsg, call.=FALSE)
+}
+
+
+#===============================================================================#
+
+#===============================================================================#
+#  SCRATCH									#
+#===============================================================================#
+
