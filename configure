@@ -1920,7 +1920,7 @@ else
   INCDIR_UDUNITS_H=FALSE
 fi
 
-    if test "${USR_UDUNITS_H}" = TRUE; then
+    if test "${INCDIR_UDUNITS_H}" = TRUE; then
         HAVE_UDUNITS_H=TRUE
     fi
 

@@ -83,7 +83,7 @@ else
     UDUNITS_LIBNAME="udunits"
     AC_CHECK_FILE(${UDUNITS_INCDIR}/udunits.h,
         [INCDIR_UDUNITS_H=TRUE], [INCDIR_UDUNITS_H=FALSE])
-    if test "${USR_UDUNITS_H}" = TRUE; then
+    if test "${INCDIR_UDUNITS_H}" = TRUE; then
         HAVE_UDUNITS_H=TRUE
     fi
     
