@@ -23,9 +23,20 @@ fi
 
 
 if test -z "${NETCDF_PATH}"; then
-    NETCDF_INCDIR="/usr/local/include"
-    NETCDF_LIBDIR="/usr/local/lib"
-    NETCDF_LIBNAME="netcdf"
+    AC_CHECK_FILE(/usr/local/include/netcdf.h,
+        [USR_LOCAL_NETCDF=TRUE], [USR_LOCAL_NETCDF=FALSE])
+        if test "${USR_LOCAL_NETCDF}" = TRUE; then
+	    NETCDF_INCDIR="/usr/local/include"
+	    NETCDF_LIBDIR="/usr/local/lib"
+	    NETCDF_LIBNAME="netcdf"
+        fi
+    AC_CHECK_FILE(/usr/include/netcdf.h,
+        [USR_NETCDF=TRUE], [USR_NETCDF=FALSE])
+        if test "${USR_NETCDF}" = TRUE; then
+	    NETCDF_INCDIR="/usr/include"
+	    NETCDF_LIBDIR="/usr/lib"
+	    NETCDF_LIBNAME="netcdf"
+        fi
 else
     NETCDF_INCDIR="${NETCDF_PATH}/include"
     NETCDF_LIBDIR="${NETCDF_PATH}/lib"
@@ -33,9 +44,20 @@ else
 fi
 
 if test -z "${UDUNITS_PATH}"; then
-    UDUNITS_INCDIR="/usr/local/include"
-    UDUNITS_LIBDIR="/usr/local/lib"
-    UDUNITS_LIBNAME="udunits"
+    AC_CHECK_FILE(/usr/local/include/udunits.h,
+        [USR_LOCAL_UDUNITS=TRUE], [USR_LOCAL_UDUNITS=FALSE])
+        if test "${USR_LOCAL_UDUNITS}" = TRUE; then
+	    UDUNITS_INCDIR="/usr/local/include"
+	    UDUNITS_LIBDIR="/usr/local/lib"
+	    UDUNITS_LIBNAME="udunits"
+        fi
+    AC_CHECK_FILE(/usr/include/udunits.h,
+        [USR_UDUNITS=TRUE], [USR_UDUNITS=FALSE])
+        if test "${USR_UDUNITS}" = TRUE; then
+	    UDUNITS_INCDIR="/usr/include"
+	    UDUNITS_LIBDIR="/usr/lib"
+	    UDUNITS_LIBNAME="udunits"
+        fi
 else
     UDUNITS_INCDIR="${UDUNITS_PATH}/include"
     UDUNITS_LIBDIR="${UDUNITS_PATH}/lib"

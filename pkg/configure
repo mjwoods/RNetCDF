@@ -1730,9 +1730,62 @@ echo "$as_me: error: udunits library not found" >&2;}
 fi
 
 if test -z "${NETCDF_PATH}"; then
-    NETCDF_INCDIR="/usr/local/include"
-    NETCDF_LIBDIR="/usr/local/lib"
-    NETCDF_LIBNAME="netcdf"
+    echo "$as_me:1733: checking for /usr/local/include/netcdf.h" >&5
+echo $ECHO_N "checking for /usr/local/include/netcdf.h... $ECHO_C" >&6
+if test "${ac_cv_file__usr_local_include_netcdf_h+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  test "$cross_compiling" = yes &&
+  { { echo "$as_me:1739: error: cannot check for file existence when cross compiling" >&5
+echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "/usr/local/include/netcdf.h"; then
+  ac_cv_file__usr_local_include_netcdf_h=yes
+else
+  ac_cv_file__usr_local_include_netcdf_h=no
+fi
+fi
+echo "$as_me:1748: result: $ac_cv_file__usr_local_include_netcdf_h" >&5
+echo "${ECHO_T}$ac_cv_file__usr_local_include_netcdf_h" >&6
+if test $ac_cv_file__usr_local_include_netcdf_h = yes; then
+  USR_LOCAL_NETCDF=TRUE
+else
+  USR_LOCAL_NETCDF=FALSE
+fi
+
+        if test "${USR_LOCAL_NETCDF}" = TRUE; then
+	    NETCDF_INCDIR="/usr/local/include"
+	    NETCDF_LIBDIR="/usr/local/lib"
+	    NETCDF_LIBNAME="netcdf"
+        fi
+    echo "$as_me:1761: checking for /usr/include/netcdf.h" >&5
+echo $ECHO_N "checking for /usr/include/netcdf.h... $ECHO_C" >&6
+if test "${ac_cv_file__usr_include_netcdf_h+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  test "$cross_compiling" = yes &&
+  { { echo "$as_me:1767: error: cannot check for file existence when cross compiling" >&5
+echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "/usr/include/netcdf.h"; then
+  ac_cv_file__usr_include_netcdf_h=yes
+else
+  ac_cv_file__usr_include_netcdf_h=no
+fi
+fi
+echo "$as_me:1776: result: $ac_cv_file__usr_include_netcdf_h" >&5
+echo "${ECHO_T}$ac_cv_file__usr_include_netcdf_h" >&6
+if test $ac_cv_file__usr_include_netcdf_h = yes; then
+  USR_NETCDF=TRUE
+else
+  USR_NETCDF=FALSE
+fi
+
+        if test "${USR_NETCDF}" = TRUE; then
+	    NETCDF_INCDIR="/usr/include"
+	    NETCDF_LIBDIR="/usr/lib"
+	    NETCDF_LIBNAME="netcdf"
+        fi
 else
     NETCDF_INCDIR="${NETCDF_PATH}/include"
     NETCDF_LIBDIR="${NETCDF_PATH}/lib"
@@ -1740,9 +1793,62 @@ else
 fi
 
 if test -z "${UDUNITS_PATH}"; then
-    UDUNITS_INCDIR="/usr/local/include"
-    UDUNITS_LIBDIR="/usr/local/lib"
-    UDUNITS_LIBNAME="udunits"
+    echo "$as_me:1796: checking for /usr/local/include/udunits.h" >&5
+echo $ECHO_N "checking for /usr/local/include/udunits.h... $ECHO_C" >&6
+if test "${ac_cv_file__usr_local_include_udunits_h+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  test "$cross_compiling" = yes &&
+  { { echo "$as_me:1802: error: cannot check for file existence when cross compiling" >&5
+echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "/usr/local/include/udunits.h"; then
+  ac_cv_file__usr_local_include_udunits_h=yes
+else
+  ac_cv_file__usr_local_include_udunits_h=no
+fi
+fi
+echo "$as_me:1811: result: $ac_cv_file__usr_local_include_udunits_h" >&5
+echo "${ECHO_T}$ac_cv_file__usr_local_include_udunits_h" >&6
+if test $ac_cv_file__usr_local_include_udunits_h = yes; then
+  USR_LOCAL_UDUNITS=TRUE
+else
+  USR_LOCAL_UDUNITS=FALSE
+fi
+
+        if test "${USR_LOCAL_UDUNITS}" = TRUE; then
+	    UDUNITS_INCDIR="/usr/local/include"
+	    UDUNITS_LIBDIR="/usr/local/lib"
+	    UDUNITS_LIBNAME="udunits"
+        fi
+    echo "$as_me:1824: checking for /usr/include/udunits.h" >&5
+echo $ECHO_N "checking for /usr/include/udunits.h... $ECHO_C" >&6
+if test "${ac_cv_file__usr_include_udunits_h+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  test "$cross_compiling" = yes &&
+  { { echo "$as_me:1830: error: cannot check for file existence when cross compiling" >&5
+echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
+   { (exit 1); exit 1; }; }
+if test -r "/usr/include/udunits.h"; then
+  ac_cv_file__usr_include_udunits_h=yes
+else
+  ac_cv_file__usr_include_udunits_h=no
+fi
+fi
+echo "$as_me:1839: result: $ac_cv_file__usr_include_udunits_h" >&5
+echo "${ECHO_T}$ac_cv_file__usr_include_udunits_h" >&6
+if test $ac_cv_file__usr_include_udunits_h = yes; then
+  USR_UDUNITS=TRUE
+else
+  USR_UDUNITS=FALSE
+fi
+
+        if test "${USR_UDUNITS}" = TRUE; then
+	    UDUNITS_INCDIR="/usr/include"
+	    UDUNITS_LIBDIR="/usr/lib"
+	    UDUNITS_LIBNAME="udunits"
+        fi
 else
     UDUNITS_INCDIR="${UDUNITS_PATH}/include"
     UDUNITS_LIBDIR="${UDUNITS_PATH}/lib"
@@ -1750,13 +1856,13 @@ else
 fi
 
 as_ac_File=`echo "ac_cv_file_${NETCDF_INCDIR}/netcdf.h" | $as_tr_sh`
-echo "$as_me:1753: checking for ${NETCDF_INCDIR}/netcdf.h" >&5
+echo "$as_me:1859: checking for ${NETCDF_INCDIR}/netcdf.h" >&5
 echo $ECHO_N "checking for ${NETCDF_INCDIR}/netcdf.h... $ECHO_C" >&6
 if eval "test \"\${$as_ac_File+set}\" = set"; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   test "$cross_compiling" = yes &&
-  { { echo "$as_me:1759: error: cannot check for file existence when cross compiling" >&5
+  { { echo "$as_me:1865: error: cannot check for file existence when cross compiling" >&5
 echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
    { (exit 1); exit 1; }; }
 if test -r "${NETCDF_INCDIR}/netcdf.h"; then
@@ -1765,7 +1871,7 @@ else
   eval "$as_ac_File=no"
 fi
 fi
-echo "$as_me:1768: result: `eval echo '${'$as_ac_File'}'`" >&5
+echo "$as_me:1874: result: `eval echo '${'$as_ac_File'}'`" >&5
 echo "${ECHO_T}`eval echo '${'$as_ac_File'}'`" >&6
 if test `eval echo '${'$as_ac_File'}'` = yes; then
   HAVE_NETCDF_H=TRUE
@@ -1774,20 +1880,20 @@ else
 fi
 
 if test "${HAVE_NETCDF_H}" = FALSE; then
-    { { echo "$as_me:1777: error: netcdf.h not found" >&5
+    { { echo "$as_me:1883: error: netcdf.h not found" >&5
 echo "$as_me: error: netcdf.h not found" >&2;}
    { (exit 1); exit 1; }; }
     exit 1
 fi
 
 as_ac_File=`echo "ac_cv_file_${UDUNITS_INCDIR}/udunits.h" | $as_tr_sh`
-echo "$as_me:1784: checking for ${UDUNITS_INCDIR}/udunits.h" >&5
+echo "$as_me:1890: checking for ${UDUNITS_INCDIR}/udunits.h" >&5
 echo $ECHO_N "checking for ${UDUNITS_INCDIR}/udunits.h... $ECHO_C" >&6
 if eval "test \"\${$as_ac_File+set}\" = set"; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   test "$cross_compiling" = yes &&
-  { { echo "$as_me:1790: error: cannot check for file existence when cross compiling" >&5
+  { { echo "$as_me:1896: error: cannot check for file existence when cross compiling" >&5
 echo "$as_me: error: cannot check for file existence when cross compiling" >&2;}
    { (exit 1); exit 1; }; }
 if test -r "${UDUNITS_INCDIR}/udunits.h"; then
@@ -1796,7 +1902,7 @@ else
   eval "$as_ac_File=no"
 fi
 fi
-echo "$as_me:1799: result: `eval echo '${'$as_ac_File'}'`" >&5
+echo "$as_me:1905: result: `eval echo '${'$as_ac_File'}'`" >&5
 echo "${ECHO_T}`eval echo '${'$as_ac_File'}'`" >&6
 if test `eval echo '${'$as_ac_File'}'` = yes; then
   HAVE_UDUNITS_H=TRUE
@@ -1805,7 +1911,7 @@ else
 fi
 
 if test "${HAVE_UDUNITS_H}" = FALSE; then
-    { { echo "$as_me:1808: error: udunits.h not found" >&5
+    { { echo "$as_me:1914: error: udunits.h not found" >&5
 echo "$as_me: error: udunits.h not found" >&2;}
    { (exit 1); exit 1; }; }
     exit 1
@@ -1921,7 +2027,7 @@ rm -f confdef2opt.sed
 : ${CONFIG_STATUS=./config.status}
 ac_clean_files_save=$ac_clean_files
 ac_clean_files="$ac_clean_files $CONFIG_STATUS"
-{ echo "$as_me:1924: creating $CONFIG_STATUS" >&5
+{ echo "$as_me:2030: creating $CONFIG_STATUS" >&5
 echo "$as_me: creating $CONFIG_STATUS" >&6;}
 cat >$CONFIG_STATUS <<_ACEOF
 #! $SHELL
@@ -2088,7 +2194,7 @@ cat >>$CONFIG_STATUS <<\EOF
     echo "$ac_cs_version"; exit 0 ;;
   --he | --h)
     # Conflict between --help and --header
-    { { echo "$as_me:2091: error: ambiguous option: $1
+    { { echo "$as_me:2197: error: ambiguous option: $1
 Try \`$0 --help' for more information." >&5
 echo "$as_me: error: ambiguous option: $1
 Try \`$0 --help' for more information." >&2;}
@@ -2107,7 +2213,7 @@ Try \`$0 --help' for more information." >&2;}
     ac_need_defaults=false;;
 
   # This is an error.
-  -*) { { echo "$as_me:2110: error: unrecognized option: $1
+  -*) { { echo "$as_me:2216: error: unrecognized option: $1
 Try \`$0 --help' for more information." >&5
 echo "$as_me: error: unrecognized option: $1
 Try \`$0 --help' for more information." >&2;}
@@ -2144,7 +2250,7 @@ do
   # Handling of arguments.
   "R/load.R" ) CONFIG_FILES="$CONFIG_FILES R/load.R" ;;
   "src/Makevars" ) CONFIG_FILES="$CONFIG_FILES src/Makevars" ;;
-  *) { { echo "$as_me:2147: error: invalid argument: $ac_config_target" >&5
+  *) { { echo "$as_me:2253: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
    { (exit 1); exit 1; }; };;
   esac
@@ -2348,7 +2454,7 @@ done; }
   esac
 
   if test x"$ac_file" != x-; then
-    { echo "$as_me:2351: creating $ac_file" >&5
+    { echo "$as_me:2457: creating $ac_file" >&5
 echo "$as_me: creating $ac_file" >&6;}
     rm -f "$ac_file"
   fi
@@ -2366,7 +2472,7 @@ echo "$as_me: creating $ac_file" >&6;}
       -) echo $tmp/stdin ;;
       [\\/$]*)
          # Absolute (can't be DOS-style, as IFS=:)
-         test -f "$f" || { { echo "$as_me:2369: error: cannot find input file: $f" >&5
+         test -f "$f" || { { echo "$as_me:2475: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          echo $f;;
@@ -2379,7 +2485,7 @@ echo "$as_me: error: cannot find input file: $f" >&2;}
            echo $srcdir/$f
          else
            # /dev/null tree
-           { { echo "$as_me:2382: error: cannot find input file: $f" >&5
+           { { echo "$as_me:2488: error: cannot find input file: $f" >&5
 echo "$as_me: error: cannot find input file: $f" >&2;}
    { (exit 1); exit 1; }; }
          fi;;
