@@ -4,9 +4,9 @@
 
 \title{Get a NetCDF Variable}
 
-\description{Get data from a NetCDF variable.}
+\description{Read the contents of a NetCDF variable.}
 
-\usage{var.get.nc(ncfile, variable, start=NA, count=NA, na.mode=0, collapse=TRUE)}
+\usage{var.get.nc(ncfile, variable, start=NA, count=NA, na.mode=0, collapse=TRUE, unpack=FALSE)}
 
 \arguments{
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
@@ -15,11 +15,14 @@
   \item{count}{A vector of integers indicating the count of values to read along each dimension. Order is leftmost varying fastest (as got from \code{\link[RNetCDF]{print.nc}}; opposite to the CDL conventions). The length of this vector must equal the number of dimensions the variable has. If not specified (\code{count=NA}), the entire variable or all values along the corresponding dimension(s) are read.}
   \item{na.mode}{Set the mode how missing values (\code{NA}) are handled: 0=accept \code{_FillValue} or \code{missing_value} attribute, 1=accept only \code{_FillValue} attribute, 2=accept only \code{missing_value} attribute, 3=no missing value conversion.}
   \item{collapse}{\code{TRUE} if degenerated dimensions (length=1) should be omitted.}
+  \item{unpack}{Packed variables are unpacked if \code{unpack=TRUE} and the attributes \code{add_offset} and \code{scale_factor} are defined. Default is \code{FALSE}.}
 }
 
 \details{This function returns the value of a variable. Returned values are always in ordinary R double precision (apart from character variables), no matter what precision they are in the on-disk dataset. 
 
 Values of \code{NA} are supported; values in the data file that match the variable's missing value attribute (as defined in \code{na.mode}) are automatically converted to \code{NA} before being returned to the user. If \code{na.mode=0} and both attributes are defined, the value of \code{_FillValue} is used.
+
+To reduce the storage space required by a NetCDF file, numeric variables are sometimes "packed" into types of lower precision. The original data can be recovered (approximately) by multiplication of the stored values by attribute \code{scale_factor} followed by addition of attribute \code{add_offset}. This unpacking operation is performed automatically for variables with attributes \code{scale_factor} and \code{add_offset} if argument \code{unpack} is set to \code{TRUE}. If \code{unpack} is \code{FALSE}, raw values are read from each variable without alteration.
 
 Data in a NetCDF file is conceived as being a multi-dimensional array. The number and length of dimensions is determined when the variable is created. The \code{start} and \code{count} indices that this routine takes indicate where the reading starts along each dimension, and the count of values along each dimension to read. 
 
@@ -27,13 +30,13 @@ The argument \code{collapse} allows to keep degenerated dimensions (if set to \c
 
 Awkwardness arises mainly from one thing: NetCDF data are written with the last dimension varying fastest, whereas R works opposite. Thus, the order of the dimensions according to the CDL conventions (e.g., time, latitude, longitude) is reversed in the R array (e.g., longitude, latitude, time).}
 
-\value{A multidimensional array of type \code{numeric} or \code{character} if the data type is \code{NC_CHAR}. No distinction is made between the different storage types of numeric objects. The dimension order according to the CDL conventions is swapped in the R array, because NetCDF data are written with the last dimension varying fastest, whereas R works opposite. Arrays of type \code{character} loose their first dimension, because strings can be indexed with one dimension in R and the first dimension (usually \code{max_string_length}) is therefore needless.}
+\value{A multidimensional array of type \code{numeric} or \code{character} if the data type is \code{NC_CHAR}. No distinction is made between the different storage types of numeric objects. The dimension order according to the CDL conventions is swapped in the R array, because NetCDF data are written with the last dimension varying fastest, whereas R works opposite. Arrays of type \code{character} lose their first dimension, because strings can be indexed with one dimension in R and the first dimension (usually \code{max_string_length}) is therefore needless.}
 
 \references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
 
 \note{\code{NC_BYTE} is always interpreted as signed.}
 
-\author{Pavel Michna}
+\author{Pavel Michna, Milton Woods}
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
