@@ -2,7 +2,7 @@
 #  Initialize                                                    		#
 #-------------------------------------------------------------------------------#
 
-AC_INIT([RNetCDF], 1.5.0-1, [michna@giub.unibe.ch])
+AC_INIT([RNetCDF], 1.5.2-2, [michna@giub.unibe.ch])
 
 
 #-------------------------------------------------------------------------------#
@@ -71,50 +71,31 @@ fi
 CC=`${R_HOME}/bin/R CMD config CC`
 CFLAGS=`${R_HOME}/bin/R CMD config CFLAGS`
 
-#-- Check for NetCDF library ---------------------------------------------------#
-AC_HAVE_LIBRARY(netcdf, [have_netcdf=TRUE], [have_netcdf=FALSE])
-if test "${have_netcdf}" = FALSE; then
-    AC_MSG_ERROR(netcdf library not found)
-    exit 1
-fi
+#-- Check for NetCDF and UDUNITS library ---------------------------------------#
+AC_CHECK_LIB(netcdf, nc_open, [],
+[
+    AC_CHECK_LIB(netcdf, nc_create, [have_netcdf_hdf5=TRUE],
+                 AC_MSG_ERROR(netcdf library not found),
+                 [-lhdf5 -lhdf5_hl -lcurl -lz])
+    if test "${have_netcdf_hdf5}" = TRUE; then
+        LIBS="${LIBS} -lnetcdf -lhdf5 -lhdf5_hl -lcurl -lz"
+    fi
+])
 
-#-- Check for UDUNITS library (including deprecated version 1) -----------------#
-AC_HAVE_LIBRARY(udunits2, [have_udunits_2=TRUE], [have_udunits_2=FALSE])
-if test "${have_udunits_2}" = FALSE; then
-    AC_HAVE_LIBRARY(udunits, [have_udunits=TRUE], [have_udunits=FALSE])
-        if test "${have_udunits}" = FALSE; then
-        AC_MSG_ERROR(udunits2 or udunits library not found)
-        exit 1
+AC_CHECK_LIB(udunits2, utInit, [], [have_udunits=FALSE])
+if test "${have_udunits}" = FALSE; then
+    AC_CHECK_LIB(udunits2, utScan, [], [have_udunits_expat=FALSE], [-lexpat])
+    if test "${have_udunits_expat}" = FALSE; then
+        AC_CHECK_LIB(udunits, main, [], AC_MSG_ERROR(udunits library not found))
+    else
+        LIBS="${LIBS} -lexpat"
     fi
 fi
 
 #-- Check for netcdf.h and udunits.h -------------------------------------------#
-AC_CHECK_HEADERS(netcdf.h)
-if test "${ac_cv_header_netcdf_h}" = no; then
-    AC_MSG_ERROR(netcdf header netcdf.h not found)
-    exit 1
-fi
+AC_CHECK_HEADERS(netcdf.h, [], AC_MSG_ERROR(netcdf header netcdf.h not found))
 
-AC_CHECK_HEADERS(udunits.h)
-if test "${ac_cv_header_udunits_h}" = no; then
-    AC_MSG_ERROR(udunits header udunits.h not found)
-    exit 1
-fi
-
-#-- Get udunits version for AC_SUBST -------------------------------------------#
-if test "${have_udunits_2}" = TRUE; then
-    AC_SUBST([LIBS],["${LIBS} -lnetcdf -ludunits2"])
-fi
-
-if test "${have_udunits}" = TRUE; then
-    AC_SUBST([LIBS],["${LIBS} -lnetcdf -ludunits"])
-fi
-
-#-- Check if HDF5 linking is needed --------------------------------------------#
-AC_HAVE_LIBRARY(hdf5, [have_hdf5=TRUE], [have_hdf5=FALSE])
-if test "${have_hdf5}" = TRUE; then
-    AC_SUBST([LIBS],["${LIBS} -lhdf5 -lhdf5_hl"])
-fi
+AC_CHECK_HEADERS(udunits.h, [], AC_MSG_ERROR(udunits header udunits.h not found))
 
 
 #-------------------------------------------------------------------------------#
