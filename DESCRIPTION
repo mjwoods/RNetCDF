@@ -1,6 +1,6 @@
 Package: RNetCDF
-Version: 1.6.1-2
-Date: 2012-07-18
+Version: 1.6.2-2
+Date: 2014-05-26
 Title: R Interface to NetCDF Datasets
 Author: Pavel Michna
 Maintainer: Pavel Michna <michna@giub.unibe.ch>
@@ -16,6 +16,7 @@ Description: This package provides an interface to Unidata's NetCDF
 License: GPL (>= 2)
 URL: http://www.unidata.ucar.edu/packages/netcdf/
         http://www.unidata.ucar.edu/packages/udunits/
-Packaged: 2012-07-19 12:28:38 UTC; michna
+Packaged: 2014-05-26 20:42:15 UTC; michna
+NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2012-07-19 14:57:26
+Date/Publication: 2014-05-26 22:58:25

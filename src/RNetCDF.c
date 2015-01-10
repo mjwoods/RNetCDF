@@ -2,14 +2,14 @@
  *									       *
  *  Name:       RNetCDF.c						       *
  *									       *
- *  Version:    1.6.1-2							       *
+ *  Version:    1.6.2-2							       *
  *									       *
  *  Purpose:    NetCDF interface for R.					       *
  *									       *
  *  Author:     Pavel Michna (michna@giub.unibe.ch)			       *
  *              Milton Woods (m.woods@bom.gov.au)                              *
  *									       *
- *  Copyright:  (C) 2004-2012 Pavel Michna                                     *
+ *  Copyright:  (C) 2004-2014 Pavel Michna                                     *
  *									       *
  *=============================================================================*
  *									       *
@@ -49,6 +49,7 @@
  *  pm       25/12/10   Added UDUNITS-2 message override handling (R_ut_init)  *
  *  pm       04/01/11   Corrected string handling in R_nc_get_vara_text        *
  *  pm       05/01/11   Removed extra zeroing after Calloc                     *
+ *  pm       26/05/14   Corrected memory leak issue (lines 1338 and 1593)      *
  *									       *
 \*=============================================================================*/
 
@@ -1334,7 +1335,7 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
     for(i=0; i<tx_num; i++) {
         for(j=0; j<tx_len; j++)
             tx_str[j] = data[i*tx_len+j];
-	tx_str[j+1] = '\0';                             /*-- String handling --*/
+	tx_str[j] = '\0';                               /*-- String handling --*/
 	SET_STRING_ELT(VECTOR_ELT(retlist, 2), i, mkChar(tx_str));
     }
 
@@ -1589,7 +1590,7 @@ SEXP R_nc_put_vara_text (SEXP ncid, SEXP varid, SEXP start,
 
     /*-- Copy from R to C object ----------------------------------------------*/
     ncdata = Calloc(tx_len*tx_num, char);                     /*-- Is zeroed --*/
-    tx_str = Calloc(tx_len, char);                            /*-- Is zeroed --*/
+    tx_str = Calloc(tx_len+1, char);                          /*-- Is zeroed --*/
         
     for(i=0; i<tx_num; i++) {
         strcpy(tx_str, CHAR(STRING_ELT(data, i)));
