@@ -2,13 +2,14 @@
  *									       *
  *  Name:       RNetCDF.c						       *
  *									       *
- *  Version:    1.2-1							       *
+ *  Version:    1.5.0-1							       *
  *									       *
  *  Purpose:    NetCDF interface for R.					       *
  *									       *
  *  Author:     Pavel Michna (michna@giub.unibe.ch)			       *
+ *              Milton Woods (milton.woods@csiro.au)                           *
  *									       *
- *  Copyright:  (C) 2004-2006 Pavel Michna                                     *
+ *  Copyright:  (C) 2004-2010 Pavel Michna                                     *
  *									       *
  *=============================================================================*
  *									       *
@@ -36,6 +37,16 @@
  *  pm       21/07/04   Changed error handling	                               *
  *  pm       03/01/05   Corrected minor bugs	                               *
  *  pm       25/07/06   Changed SET_STRING_ELT to SET_VECTOR_ELT               *
+ *  mw       14/04/08   Changed nc_redef and nc_enddef usage                   *
+ *                      to avoid unnecessary data movement within a file       *
+ *  mw       14/04/08   Added new modes (large, prefill, share) to             *
+ *                      functions nc_open and nc_create                        *
+ *  pm       24/11/10   Restored nc_redef and nc_enddef usage and added        *
+ *                      enddef option for having the same effect               *
+ *  pm       01/12/10   Removed argument SEXP enddef, checking for NC_DEFINE   *
+ *  pm       03/12/10   Minor bug corrections at possible memory leaks         *
+ *  pm       15/12/10   Minor bug corrections                                  *
+ *  pm       25/12/10   Added UDUNITS-2 message override handling (R_ut_init)  *
  *									       *
 \*=============================================================================*/
 
@@ -66,6 +77,7 @@ SEXP R_nc_copy_att (SEXP ncid_in, SEXP varid_in, SEXP globflag_in, SEXP attname,
                     SEXP ncid_out, SEXP varid_out, SEXP globflag_out)
 {
     int  ncvarid_in, ncvarid_out, status, errstatus;
+    int  enddef = 0;               /* Keep for possible future use as argument */
     char ncattname[NC_MAX_NAME];
     SEXP retlist, retlistnames;
     
@@ -99,7 +111,7 @@ SEXP R_nc_copy_att (SEXP ncid_in, SEXP varid_in, SEXP globflag_in, SEXP attname,
 
     /*-- Enter define mode ----------------------------------------------------*/
     status = nc_redef(INTEGER(ncid_out)[0]);
-    if(status != NC_NOERR) {
+    if((status != NC_NOERR) && (status != NC_EINDEFINE)) {
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
 	REAL(VECTOR_ELT(retlist, 0))[0] = status;
 	UNPROTECT(2);
@@ -115,12 +127,15 @@ SEXP R_nc_copy_att (SEXP ncid_in, SEXP varid_in, SEXP globflag_in, SEXP attname,
     }
  
     /*-- Leave define mode ----------------------------------------------------*/
-    status = nc_enddef(INTEGER(ncid_out)[0]);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-        errstatus = status;
-    }
+    if(enddef != 0) {
+        status = nc_enddef(INTEGER(ncid_out)[0]);
 
+	if(status != NC_NOERR) {
+            SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+            errstatus = status;
+	}
+    }
+    
     /*-- Returning the list ---------------------------------------------------*/
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)errstatus;	 
     UNPROTECT(2);
@@ -135,6 +150,7 @@ SEXP R_nc_copy_att (SEXP ncid_in, SEXP varid_in, SEXP globflag_in, SEXP attname,
 SEXP R_nc_delete_att (SEXP ncid, SEXP varid, SEXP globflag, SEXP attname)
 {
     int  ncvarid, status, errstatus;
+    int  enddef = 0;               /* Keep for possible future use as argument */
     char ncattname[NC_MAX_NAME];
     SEXP retlist, retlistnames;
     
@@ -163,7 +179,7 @@ SEXP R_nc_delete_att (SEXP ncid, SEXP varid, SEXP globflag, SEXP attname)
 
     /*-- Enter define mode ----------------------------------------------------*/
     status = nc_redef(INTEGER(ncid)[0]);
-    if(status != NC_NOERR) {
+    if((status != NC_NOERR) && (status != NC_EINDEFINE)) {
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
 	REAL(VECTOR_ELT(retlist, 0))[0] = status;
 	UNPROTECT(2);
@@ -178,10 +194,13 @@ SEXP R_nc_delete_att (SEXP ncid, SEXP varid, SEXP globflag, SEXP attname)
     }
  
     /*-- Leave define mode ----------------------------------------------------*/
-    status = nc_enddef(INTEGER(ncid)[0]);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-        errstatus = status;
+    if(enddef != 0) {
+        status = nc_enddef(INTEGER(ncid)[0]);
+
+	if(status != NC_NOERR) {
+            SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+            errstatus = status;
+	}
     }
 
     /*-- Returning the list ---------------------------------------------------*/
@@ -398,6 +417,7 @@ SEXP R_nc_put_att (SEXP ncid, SEXP varid, SEXP name, SEXP type, SEXP attlen,
                    SEXP numflag, SEXP globflag, SEXP value)
 {
     int     ncvarid, ncattlen, status, errstatus;
+    int     enddef = 0;            /* Keep for possible future use as argument */
     char    ncattname[NC_MAX_NAME];
     nc_type xtype;
     SEXP    retlist, retlistnames;
@@ -448,7 +468,7 @@ SEXP R_nc_put_att (SEXP ncid, SEXP varid, SEXP name, SEXP type, SEXP attlen,
 
     /*-- Enter define mode ----------------------------------------------------*/
     status = nc_redef(INTEGER(ncid)[0]);
-    if(status != NC_NOERR) {
+    if((status != NC_NOERR) && (status != NC_EINDEFINE)) {
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
 	REAL(VECTOR_ELT(retlist, 0))[0] = status;
 	UNPROTECT(2);
@@ -474,10 +494,13 @@ SEXP R_nc_put_att (SEXP ncid, SEXP varid, SEXP name, SEXP type, SEXP attlen,
     }
     
     /*-- Leave define mode ----------------------------------------------------*/
-    status = nc_enddef(INTEGER(ncid)[0]);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-        errstatus = status;
+    if(enddef != 0) {
+        status = nc_enddef(INTEGER(ncid)[0]);
+
+	if(status != NC_NOERR) {
+            SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+            errstatus = status;
+	}
     }
 
     /*-- Returning the list ---------------------------------------------------*/
@@ -495,6 +518,7 @@ SEXP R_nc_rename_att (SEXP ncid, SEXP varid, SEXP globflag, SEXP attname,
                       SEXP newname)
 {
     int  ncvarid, status, errstatus;
+    int  enddef = 0;               /* Keep for possible future use as argument */
     char ncattname[NC_MAX_NAME], ncnewname[NC_MAX_NAME];
     SEXP retlist, retlistnames;
     
@@ -524,7 +548,7 @@ SEXP R_nc_rename_att (SEXP ncid, SEXP varid, SEXP globflag, SEXP attname,
 
     /*-- Enter define mode ----------------------------------------------------*/
     status = nc_redef(INTEGER(ncid)[0]);
-    if(status != NC_NOERR) {
+    if((status != NC_NOERR) && (status != NC_EINDEFINE)) {
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
 	REAL(VECTOR_ELT(retlist, 0))[0] = status;
 	UNPROTECT(2);
@@ -539,12 +563,15 @@ SEXP R_nc_rename_att (SEXP ncid, SEXP varid, SEXP globflag, SEXP attname,
     }
 
     /*-- Leave define mode ----------------------------------------------------*/
-    status = nc_enddef(INTEGER(ncid)[0]);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-        errstatus = status;
-    }
+    if(enddef != 0) {
+        status = nc_enddef(INTEGER(ncid)[0]);
 
+	if(status != NC_NOERR) {
+            SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+            errstatus = status;
+	}
+    }
+    
     /*-- Returning the list ---------------------------------------------------*/
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)errstatus;	 
     UNPROTECT(2);
@@ -591,9 +618,10 @@ SEXP R_nc_close (SEXP ncid)
  *  R_nc_create()                                                              *
 \*-----------------------------------------------------------------------------*/
 
-SEXP R_nc_create (SEXP filename, SEXP cmode)
+SEXP R_nc_create (SEXP filename, SEXP clobber, SEXP large, SEXP share,
+                  SEXP prefill)
 {
-    int  nc_cmode, ncid, status;
+    int  cmode, fillmode, old_fillmode, ncid, status;
     SEXP retlist, retlistnames;
 
     /*-- Create output object and initialize return values --------------------*/
@@ -615,33 +643,37 @@ SEXP R_nc_create (SEXP filename, SEXP cmode)
     REAL(VECTOR_ELT(retlist, 2))[0] = (double)ncid;
 
     /*-- Determine the cmode --------------------------------------------------*/
-    if     (INTEGER(cmode)[0] == 0)
-        nc_cmode = NC_CLOBBER;
-    else if(INTEGER(cmode)[0] == 1)
-        nc_cmode = NC_NOCLOBBER;
-    else {
-       SET_VECTOR_ELT (retlist, 1, mkString("Bad NC_CMODE passed"));
-       REAL(VECTOR_ELT(retlist, 0))[0] = -1;
-       UNPROTECT(2);
-       return(retlist);
-    }
- 
+    if(INTEGER(clobber)[0] == 0)
+        cmode = NC_NOCLOBBER;
+    else
+        cmode = NC_CLOBBER;
+
+    /*-- Determine if using classic format or 64-bit offset -------------------*/
+    if(INTEGER(large)[0] != 0)
+        cmode = cmode | NC_64BIT_OFFSET;
+
+    /*-- Determine which buffer scheme shall be used --------------------------*/
+    if(INTEGER(share)[0] != 0)
+        cmode = cmode | NC_SHARE;
+
+    /*-- Determine the fillmode -----------------------------------------------*/
+    if(INTEGER(prefill)[0] == 0)
+        fillmode = NC_NOFILL;
+    else
+        fillmode = NC_FILL;
+
     /*-- Create the file ------------------------------------------------------*/
     status = nc_create(R_ExpandFileName(CHAR(STRING_ELT(filename, 0))), 
-        nc_cmode, &ncid);
-    if(status != NC_NOERR) {
-	SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
-	UNPROTECT(2);
-	return(retlist);
-    }
-    
-    /*-- Get the file out of define mode --------------------------------------*/
-    status = nc_enddef(ncid);
-    if(status != NC_NOERR)
-	SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-	
+        cmode, &ncid);
+
+    /*-- Set the fill mode ----------------------------------------------------*/
+    if(status == NC_NOERR)
+        status = nc_set_fill(ncid, fillmode, &old_fillmode);
+
     /*-- Returning the list ---------------------------------------------------*/
+    if(status != NC_NOERR)
+        SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
     REAL(VECTOR_ELT(retlist, 2))[0] = (double)ncid;
     UNPROTECT(2);
@@ -656,6 +688,7 @@ SEXP R_nc_create (SEXP filename, SEXP cmode)
 SEXP R_nc_def_dim (SEXP ncid, SEXP dimname, SEXP size, SEXP unlimp)
 {
     int  dimid, status, errstatus;
+    int  enddef = 0;               /* Keep for possible future use as argument */
     SEXP retlist, retlistnames;
 
     /*-- Create output object and initialize return values --------------------*/
@@ -679,7 +712,7 @@ SEXP R_nc_def_dim (SEXP ncid, SEXP dimname, SEXP size, SEXP unlimp)
 
     /*-- Enter define mode ----------------------------------------------------*/
     status = nc_redef(INTEGER(ncid)[0]);
-    if(status != NC_NOERR) {
+    if((status != NC_NOERR) && (status != NC_EINDEFINE)) {
 	SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
         REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
         UNPROTECT(2);
@@ -704,10 +737,13 @@ SEXP R_nc_def_dim (SEXP ncid, SEXP dimname, SEXP size, SEXP unlimp)
     }
 
     /*-- Leave define mode ----------------------------------------------------*/
-    status = nc_enddef(INTEGER(ncid)[0]);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-        errstatus = status;
+    if(enddef != 0) {
+        status = nc_enddef(INTEGER(ncid)[0]);
+    
+	if(status != NC_NOERR) {
+            SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+            errstatus = status;
+	}
     }
 
     /*-- Returning the list ---------------------------------------------------*/
@@ -817,6 +853,7 @@ SEXP R_nc_rename_dim (SEXP ncid, SEXP dimid, SEXP dimname, SEXP nameflag,
                       SEXP newname)
 {
     int  ncdimid, status, errstatus;
+    int  enddef = 0;               /* Keep for possible future use as argument */
     char ncdimname[NC_MAX_NAME], ncnewname[NC_MAX_NAME];
     SEXP retlist, retlistnames;
 
@@ -852,7 +889,7 @@ SEXP R_nc_rename_dim (SEXP ncid, SEXP dimid, SEXP dimname, SEXP nameflag,
 
     /*-- Enter define mode ----------------------------------------------------*/
     status = nc_redef(INTEGER(ncid)[0]);
-    if(status != NC_NOERR) {
+    if((status != NC_NOERR) && (status != NC_EINDEFINE)) {
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
 	REAL(VECTOR_ELT(retlist, 0))[0] = status;
 	UNPROTECT(2);
@@ -867,10 +904,13 @@ SEXP R_nc_rename_dim (SEXP ncid, SEXP dimid, SEXP dimname, SEXP nameflag,
     }
  
     /*-- Leave define mode ----------------------------------------------------*/
-    status = nc_enddef(INTEGER(ncid)[0]);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-        errstatus = status;
+    if(enddef != 0) {
+        status = nc_enddef(INTEGER(ncid)[0]);
+
+	if(status != NC_NOERR) {
+            SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+            errstatus = status;
+	}
     }
 
     /*-- Returning the list ---------------------------------------------------*/
@@ -939,9 +979,9 @@ SEXP R_nc_inq_file (SEXP ncid)
  *  R_nc_open()                                                                *
 \*-----------------------------------------------------------------------------*/
 
-SEXP R_nc_open (SEXP filename, SEXP omode)
+SEXP R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
 {
-    int  ncid, nc_omode, status;
+    int  ncid, omode, fillmode, old_fillmode, status;
     SEXP retlist, retlistnames;
 
     /*-- Create output object and initialize return values --------------------*/
@@ -963,24 +1003,32 @@ SEXP R_nc_open (SEXP filename, SEXP omode)
     REAL(VECTOR_ELT(retlist, 2))[0] = (double)ncid;
     
     /*-- Determine the omode --------------------------------------------------*/
-    if     (INTEGER(omode)[0] == 0)
-        nc_omode = NC_NOWRITE;
-    else if(INTEGER(omode)[0] == 1)
-        nc_omode = NC_WRITE;
-    else {
-        SET_VECTOR_ELT (retlist, 1, mkString("Bad NC_OMODE passed"));
-        REAL(VECTOR_ELT(retlist, 0))[0] = -1;
-        UNPROTECT(2);
-        return(retlist);
-    }
+    if(INTEGER(write)[0] == 0)
+        omode = NC_NOWRITE;
+    else
+        omode = NC_WRITE;
+
+    if(INTEGER(share)[0] != 0)
+        omode = omode | NC_SHARE;
+
+    /*-- Determine the fillmode -----------------------------------------------*/
+    if(INTEGER(prefill)[0] == 0)
+        fillmode = NC_NOFILL;
+    else
+        fillmode = NC_FILL;
 
     /*-- Open the file --------------------------------------------------------*/
     status = nc_open(R_ExpandFileName(CHAR(STRING_ELT(filename, 0))),
-        nc_omode, &ncid);
+        omode, &ncid);
+    
+    /*-- Set the fill mode ----------------------------------------------------*/
+    if((status == NC_NOERR) && (INTEGER(write)[0] != 0))
+        status = nc_set_fill(ncid, fillmode, &old_fillmode);
+
+    /*-- Returning the list ---------------------------------------------------*/
     if(status != NC_NOERR)
 	SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
 
-    /*-- Returning the list ---------------------------------------------------*/
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
     REAL(VECTOR_ELT(retlist, 2))[0] = (double)ncid;
     UNPROTECT(2);
@@ -1011,6 +1059,15 @@ SEXP R_nc_sync (SEXP ncid)
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
     SET_VECTOR_ELT (retlist, 1, mkString(""));
 
+    /*-- Enter data mode (if necessary) ---------------------------------------*/
+    status = nc_enddef(INTEGER(ncid)[0]);
+    if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
+        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
+        REAL(VECTOR_ELT(retlist, 0))[0] = status;
+	UNPROTECT(2);
+	return(retlist);
+    }
+
     /*-- Sync the file --------------------------------------------------------*/
     status = nc_sync(INTEGER(ncid)[0]);
     if(status != NC_NOERR)
@@ -1029,7 +1086,8 @@ SEXP R_nc_sync (SEXP ncid)
 
 SEXP R_nc_def_var (SEXP ncid, SEXP varname, SEXP type, SEXP ndims, SEXP dimids)
 {
-    int     varid, i, status, errstatus;
+    int     varid, status, errstatus;
+    int     enddef = 0;            /* Keep for possible future use as argument */
     nc_type xtype;
     SEXP    retlist, retlistnames;
 
@@ -1074,7 +1132,7 @@ SEXP R_nc_def_var (SEXP ncid, SEXP varname, SEXP type, SEXP ndims, SEXP dimids)
     
     /*-- Enter define mode ----------------------------------------------------*/
     status = nc_redef(INTEGER(ncid)[0]);
-    if(status != NC_NOERR) {
+    if((status != NC_NOERR) && (status != NC_EINDEFINE)) {
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
         REAL(VECTOR_ELT(retlist, 0))[0] = status;
 	UNPROTECT(2);
@@ -1090,10 +1148,13 @@ SEXP R_nc_def_var (SEXP ncid, SEXP varname, SEXP type, SEXP ndims, SEXP dimids)
     }
 
     /*-- Leave define mode ----------------------------------------------------*/
-    status = nc_enddef(INTEGER(ncid)[0]);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-        errstatus = status;
+    if(enddef != 0) {
+        status = nc_enddef(INTEGER(ncid)[0]);
+
+	if(status != NC_NOERR) {
+            SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+            errstatus = status;
+	}
     }
 
     /*-- Returning the list ---------------------------------------------------*/
@@ -1156,6 +1217,16 @@ SEXP R_nc_get_vara_double (SEXP ncid, SEXP varid, SEXP start,
 	s_count[0] = 1;
     }
 		
+    /*-- Enter data mode (if necessary) ---------------------------------------*/
+    status = nc_enddef(INTEGER(ncid)[0]);
+    if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
+        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
+        REAL(VECTOR_ELT(retlist, 0))[0] = status;
+	UNPROTECT(2);
+	Free(data);
+	return(retlist);
+    }
+
     /*-- Get the var ----------------------------------------------------------*/
     status = nc_get_vara_double(INTEGER(ncid)[0], INTEGER(varid)[0],
         s_start, s_count, data);
@@ -1222,6 +1293,7 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
 	REAL(VECTOR_ELT(retlist, 0))[0] = status;
         UNPROTECT(2);
+	Free(tx_str);
 	Free(data);
 	return(retlist);
     }
@@ -1238,6 +1310,17 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
 	s_count[0] = 1;
     }
 
+    /*-- Enter data mode (if necessary) ---------------------------------------*/
+    status = nc_enddef(INTEGER(ncid)[0]);
+    if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
+        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
+        REAL(VECTOR_ELT(retlist, 0))[0] = status;
+	UNPROTECT(2);
+	Free(tx_str);
+	Free(data);
+	return(retlist);
+    }
+
     /*-- Get the var ----------------------------------------------------------*/
     status = nc_get_vara_text(INTEGER(ncid)[0], INTEGER(varid)[0],
         s_start, s_count, data);
@@ -1245,6 +1328,7 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
 	REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
         UNPROTECT(2);
+	Free(tx_str);
 	Free(data);
 	return(retlist);
     }
@@ -1350,6 +1434,7 @@ SEXP R_nc_inq_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag)
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
 	REAL(VECTOR_ELT(retlist, 0))[0] = status;
 	UNPROTECT(2);
+	Free(dimids);
 	return(retlist);
     }
 
@@ -1432,6 +1517,15 @@ SEXP R_nc_put_vara_double (SEXP ncid, SEXP varid, SEXP start,
 	s_count[0] = 1;
     }
 
+    /*-- Enter data mode (if necessary) ---------------------------------------*/
+    status = nc_enddef(INTEGER(ncid)[0]);
+    if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
+        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
+        REAL(VECTOR_ELT(retlist, 0))[0] = status;
+	UNPROTECT(2);
+	return(retlist);
+    }
+
     /*-- Put the var ----------------------------------------------------------*/
     status = nc_put_vara_double(INTEGER(ncid)[0], INTEGER(varid)[0],
         s_start, s_count, REAL(data));
@@ -1512,6 +1606,17 @@ SEXP R_nc_put_vara_text (SEXP ncid, SEXP varid, SEXP start,
 	}
     }
 
+    /*-- Enter data mode (if necessary) ---------------------------------------*/
+    status = nc_enddef(INTEGER(ncid)[0]);
+    if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
+        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
+        REAL(VECTOR_ELT(retlist, 0))[0] = status;
+	UNPROTECT(2);
+	Free(ncdata);
+	Free(tx_str);
+	return(retlist);
+    }
+
     /*-- Put the var ----------------------------------------------------------*/
     status = nc_put_vara_text(INTEGER(ncid)[0], INTEGER(varid)[0],
         s_start, s_count, ncdata);
@@ -1536,6 +1641,7 @@ SEXP R_nc_rename_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag,
                       SEXP newname)
 {
     int  ncvarid, status, errstatus;
+    int  enddef = 0;               /* Keep for possible future use as argument */
     char ncvarname[NC_MAX_NAME], ncnewname[NC_MAX_NAME];
     SEXP retlist, retlistnames;
 
@@ -1571,7 +1677,7 @@ SEXP R_nc_rename_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag,
 
     /*-- Enter define mode ----------------------------------------------------*/
     status = nc_redef(INTEGER(ncid)[0]);
-    if(status != NC_NOERR) {
+    if((status != NC_NOERR) && (status != NC_EINDEFINE)) {
         SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
 	REAL(VECTOR_ELT(retlist, 0))[0] = status;
 	UNPROTECT(2);
@@ -1586,10 +1692,13 @@ SEXP R_nc_rename_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag,
     }
  
     /*-- Leave define mode ----------------------------------------------------*/
-    status = nc_enddef(INTEGER(ncid)[0]);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-        errstatus = status;
+    if(enddef != 0) {
+        status = nc_enddef(INTEGER(ncid)[0]);
+
+	if(status != NC_NOERR) {
+            SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+            errstatus = status;
+	}
     }
 
     /*-- Returning the list ---------------------------------------------------*/
@@ -1730,7 +1839,15 @@ SEXP R_ut_init (SEXP path)
     int   status;
     char  strerror[64];
     SEXP  retlist, retlistnames;
-    
+
+    /*-- Avoid "overriding default" messages from UDUNITS-2 (1/2) -------------*/
+    #ifdef UT_UNITS2_H_INCLUDED
+        ut_system* unitSystem;
+
+        ut_set_error_message_handler(ut_ignore);
+        unitSystem = ut_read_xml(NULL);
+    #endif
+
     /*-- Create output object and initialize return values --------------------*/
     PROTECT(retlist = allocVector(VECSXP, 2));
     SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
@@ -1751,6 +1868,11 @@ SEXP R_ut_init (SEXP path)
         R_ut_strerror(status, strerror);
         SET_VECTOR_ELT(retlist, 1, mkString(strerror));
     }
+
+    /*-- Avoid "overriding default" messages from UDUNITS-2 (2/2) -------------*/
+    #ifdef UT_UNITS2_H_INCLUDED
+        ut_set_error_message_handler(ut_write_to_stderr);
+    #endif
 
     /*-- Returning the list ---------------------------------------------------*/
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;

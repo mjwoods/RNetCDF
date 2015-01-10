@@ -31,9 +31,9 @@ Awkwardness arises mainly from one thing: NetCDF data are written with the last 
 
 \references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
 
-\note{\code{NC_BYTE} is always interpreted as signed.}
+\note{\code{NC_BYTE} is always interpreted as signed. For best performance, it is recommended that the definition of dimensions, variables and attributes is completed before variables are read or written.}
 
-\author{Pavel Michna}
+\author{Pavel Michna, Milton Woods}
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions

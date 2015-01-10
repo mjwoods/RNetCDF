@@ -1,0 +1,55 @@
+This file describes the command line arguments which can be passed during
+installation of the RNetCDF package and gives some further hints.
+
+
+Software Requirements
+=====================
+
+NetCDF library version 3.6.0 or greater (64-bit file support).
+
+UDUNITS library either version 1 or 2.1 or greater. RNetCDF uses however
+only the version 1 calendar functions.
+
+If the NetCDF library (version 4) is linked against HDF5, the HDF5 library
+must be included in the search path, optionally with the configure argument
+"--with-hdf5-lib=DIR".
+
+If using Fink on Mac OS X, be sure that the corresponding R version (either
+i386 or x86_64) is used (R32 or R64). Compiling with R64 against i386 will
+most likely lead to runtime errors.
+
+
+R CMD INSTALL Options
+=====================
+
+--with-netcdf-include=DIR    location of netcdf header files
+--with-netcdf-lib=DIR        location of netcdf libraries
+--with-udunits-include=DIR   location of udunits header files
+--with-udunits-lib=DIR       location of udunits libraries 
+--with-udunits-dat=FILE      location of udunits.dat file
+--with-hdf5-lib=DIR          location of hdf5 libraries (if installed)
+
+
+R CMD INSTALL Example
+=====================
+
+R CMD INSTALL --configure-args="--with-netcdf-include='/sw/include' \
+    --with-netcdf-lib='/sw/lib'" RNetCDF_1.5.0-1.tar.gz
+
+
+LD_LIBRARY_PATH
+===============
+
+If a runtime error happens, you might need to set or modify the environment
+variable LD_LIBRARY_PATH with the directories where the NetCDF and/or UDUNITS
+and/or HDF5 libraries are located (especially for non-standard installations):
+
+export LD_LIBRARY_PATH=/sw/lib:$LD_LIBRARY_PATH
+
+
+R CMD check Example
+===================
+
+R CMD check --install-args="--configure-args='--with-netcdf-include=/sw/include \
+--with-netcdf-lib=/sw/lib'" RNetCDF_1.5.0-1.tar.gz
+
