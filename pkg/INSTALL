@@ -36,7 +36,7 @@ R CMD INSTALL Example
 =====================
 
 R CMD INSTALL --configure-args="--with-netcdf-include='/sw/include' \
-    --with-netcdf-lib='/sw/lib'" RNetCDF_1.6.3-1.tar.gz
+    --with-netcdf-lib='/sw/lib'" RNetCDF_1.6.3-2.tar.gz
 
 
 LD_LIBRARY_PATH
@@ -53,5 +53,5 @@ R CMD check Example
 ===================
 
 R CMD check --install-args="--configure-args='--with-netcdf-include=/sw/include \
---with-netcdf-lib=/sw/lib'" RNetCDF_1.6.3-1.tar.gz
+--with-netcdf-lib=/sw/lib'" RNetCDF_1.6.3-2.tar.gz
 

@@ -2,7 +2,7 @@
 #                                                                               #
 #  Name:       RNetCDF-test.R                                                   #
 #                                                                               #
-#  Version:    1.6.3-1                                                          #
+#  Version:    1.6.3-2                                                          #
 #                                                                               #
 #  Purpose:    Test functions to the NetCDF interface for R.                    #
 #                                                                               #
@@ -34,6 +34,7 @@
 #  ------   ----       -----------                                              #
 #  pm       29/12/10   First implementation                                     #
 #  mw       18/07/12   Test packed variables                                    #
+#  mw       02/09/14   Test 1D character arrays and character scalars
 #                                                                               #
 #===============================================================================#
 
@@ -57,18 +58,19 @@ library(RNetCDF)
 cat("Starting NetCDF tests...\n")
 nccount <- 0
 
-##  Create a new NetCDF dataset and define two dimensions
+##  Create a new NetCDF dataset and define three dimensions
 nc <- create.nc("foo.nc")
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
 dim.def.nc(nc, "max_string_length", 32)
 
-##  Create three variables, one as coordinate variable
+##  Create five variables, one as coordinate variable
 var.def.nc(nc, "time", "NC_INT", "time")
 var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1))
 var.def.nc(nc, "packvar", "NC_BYTE", c("station"))
 var.def.nc(nc, "name", "NC_CHAR", c("max_string_length", "station"))
+var.def.nc(nc, "qcflag", "NC_CHAR", c("station"))
 
 ##  Put some missing_value attribute for temperature
 att.put.nc(nc, "temperature", "missing_value", "NC_DOUBLE", -99999.9)
@@ -79,25 +81,27 @@ att.put.nc(nc, "packvar", "add_offset", "NC_DOUBLE", -5)
 
 ##  Define variable values
 mytime        <- c(1:2)
-mytemperature <- c(1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, NA, NA, 9.9)
+mytemperature <- matrix(c(1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, NA, NA, 9.9),ncol=2)
 mypackvar     <- seq_len(5)*10-5
 myname        <- c("alfa", "bravo", "charlie", "delta", "echo")
+myqcflag      <- "ABCDE"
 
 ##  Put the data
 var.put.nc(nc, "time", mytime, 1, length(mytime))
 var.put.nc(nc, "temperature", mytemperature, c(1,1), c(5,2))
 var.put.nc(nc, "packvar", mypackvar, pack=TRUE)
 var.put.nc(nc, "name", myname, c(1,1), c(32,5))
+var.put.nc(nc, "qcflag", myqcflag)
 
 sync.nc(nc)
 
 #-- Test 1 (read) --------------------------------------------------------------#
 cat("Test 1 ... ")
 
-x <- c(1, 2)
+x <- mytime
 y <- var.get.nc(nc, 0)
 
-if(sum(y %in% x) == 2) {
+if(isTRUE(all.equal(x,y))) {
     cat("OK\n")
     nccount <- nccount + 1
 } else
@@ -106,10 +110,10 @@ if(sum(y %in% x) == 2) {
 #-- Test 2 (read) --------------------------------------------------------------#
 cat("Test 2 ... ")
 
-x <- matrix(data=c(1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, NA, NA, 9.9), ncol=2)
+x <- matrix(data=mytemperature, ncol=2)
 y <- var.get.nc(nc, "temperature")
 
-if(sum(y %in% x) == 10) {
+if(isTRUE(all.equal(x,y))) {
     cat("OK\n")
     nccount <- nccount + 1
 } else
@@ -118,10 +122,10 @@ if(sum(y %in% x) == 10) {
 #-- Test 3 (read) --------------------------------------------------------------#
 cat("Test 3 ... ")
 
-x <- c(6.6, 7.7, NA, NA, 9.9)
-y <- var.get.nc(nc, "temperature", c(NA,2), c(NA,1))
+x <- mytemperature[,2]
+y <- var.get.nc(nc, "temperature", c(NA,2), c(NA,1), collapse=FALSE)
 
-if(sum(y %in% x) == 5) {
+if(isTRUE(all.equal(x,y))) {
     cat("OK\n")
     nccount <- nccount + 1
 } else
@@ -130,10 +134,10 @@ if(sum(y %in% x) == 5) {
 #-- Test 4 (read) --------------------------------------------------------------#
 cat("Test 4 ... ")
 
-x <- c("alfa", "bravo", "charlie", "delta", "echo" )
+x <- myname
 y <- var.get.nc(nc, "name")
 
-if(sum(y %in% x) == 5) {
+if(isTRUE(all.equal(x,y))) {
     cat("OK\n")
     nccount <- nccount + 1
 } else
@@ -142,10 +146,10 @@ if(sum(y %in% x) == 5) {
 #-- Test 5 (read) --------------------------------------------------------------#
 cat("Test 5 ... ")
 
-x <- c("brav", "char")
+x <- substring(myname[2:3],1,4)
 y <- var.get.nc(nc, "name", c(1,2), c(4,2))
 
-if(sum(y %in% x) == 2) {
+if(isTRUE(all.equal(x,y))) {
     cat("OK\n")
     nccount <- nccount + 1
 } else
@@ -154,17 +158,29 @@ if(sum(y %in% x) == 2) {
 #-- Test 6 (read) --------------------------------------------------------------#
 cat("Test 6 ... ")
 
-x <- c("bravo", "charlie")
+x <- myname[2:3]
 y <- var.get.nc(nc, "name", c(1,2), c(NA,2))
 
-if(sum(y %in% x) == 2) {
+if(isTRUE(all.equal(x,y))) {
     cat("OK\n")
     nccount <- nccount + 1
 } else
     cat("failed\n")
 
-#-- Test 7 (read unpacked) -----------------------------------------------------#
+#-- Test 7 (read) --------------------------------------------------------------#
 cat("Test 7 ... ")
+
+x <- substring(myqcflag,2,3)
+y <- var.get.nc(nc, "qcflag", c(2), c(2))
+
+if(isTRUE(all.equal(x,y))) {
+    cat("OK\n")
+    nccount <- nccount + 1
+} else
+    cat("failed\n")
+
+#-- Test 8 (read unpacked) -----------------------------------------------------#
+cat("Test 8 ... ")
 
 y <- var.get.nc(nc, "packvar", unpack=TRUE)
 
@@ -245,9 +261,9 @@ if(round(x, 6) == round(y, 6)) {
 #-------------------------------------------------------------------------------#
 #  Overall summary                                                              #
 #-------------------------------------------------------------------------------#
-cat("Totally ", nccount+utcount, "/ 11 tests passed. ")
+cat("Totally ", nccount+utcount, "/ 12 tests passed. ")
 
-if(nccount != 7)
+if(nccount != 8)
     stop("Some NetCDF tests failed.", call.=FALSE)
 
 if(utcount != 4)
