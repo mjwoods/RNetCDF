@@ -2,14 +2,14 @@
 #										#
 #  Name:       RNetCDF.R							#
 #										#
-#  Version:    1.5.2-2								#
+#  Version:    1.5.3-1								#
 #										#
 #  Purpose:    NetCDF interface for R.						#
 #										#
 #  Author:     Pavel Michna (michna@giub.unibe.ch)				#
 #              Milton Woods (milton.woods@csiro.au)                             #
 #										#
-#  Copyright:  (C) 2004-2011 Pavel Michna					#
+#  Copyright:  (C) 2004-2012 Pavel Michna					#
 #										#
 #===============================================================================#
 #										#
@@ -42,6 +42,7 @@
 #                      to nc_open and nc_create                                 #
 #  pm       24/11/10   Added new option enddef to att and dim/var definitions   #
 #  pm       01/12/10   Removed option enddef, checking in C code for mode       #
+#  pm       14/02/12   Corrected bug in att.delete.nc                           #
 #										#
 #===============================================================================#
 
@@ -152,7 +153,7 @@ att.delete.nc <- function(ncfile, variable, attribute)
     if(is.character(attribute))
         attname <- attribute
     else
-        attname <- try(att.inq.nc(ncfile.in, variable.in, attribute)$name)
+        attname <- try(att.inq.nc(ncfile, variable, attribute)$name)
     
     if(class(attname) == "try-error" || is.null(attname))
         return(invisible(NULL))

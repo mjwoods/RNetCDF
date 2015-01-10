@@ -18,8 +18,6 @@
 
 \details{This function copies an attribute from one open NetCDF dataset to another. It can also be used to copy an attribute from one variable to another within the same NetCDF dataset.}
 
-\value{}
-
 \references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
 
 \author{Pavel Michna}

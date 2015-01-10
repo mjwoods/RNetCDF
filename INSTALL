@@ -28,13 +28,15 @@ R CMD INSTALL Options
 --with-udunits-lib=DIR       location of udunits libraries 
 --with-udunits-dat=FILE      location of udunits.dat file
 --with-hdf5-lib=DIR          location of hdf5 libraries (if installed)
+--enable-units-copy[=PATH]   place a local copy of units data file(s)
+                             in the package [no]
 
 
 R CMD INSTALL Example
 =====================
 
 R CMD INSTALL --configure-args="--with-netcdf-include='/sw/include' \
-    --with-netcdf-lib='/sw/lib'" RNetCDF_1.5.2-2.tar.gz
+    --with-netcdf-lib='/sw/lib'" RNetCDF_1.5.3-1.tar.gz
 
 
 LD_LIBRARY_PATH
@@ -51,5 +53,5 @@ R CMD check Example
 ===================
 
 R CMD check --install-args="--configure-args='--with-netcdf-include=/sw/include \
---with-netcdf-lib=/sw/lib'" RNetCDF_1.5.2-2.tar.gz
+--with-netcdf-lib=/sw/lib'" RNetCDF_1.5.3-1.tar.gz
 

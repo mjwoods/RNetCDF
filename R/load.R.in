@@ -1,6 +1,10 @@
 ".onLoad" <- function(lib, pkg) {
-    if(as.numeric(R.Version()$minor) > 2.4)
-        Sys.setenv("UDUNITS_PATH"=system.file("udunits.dat", package=pkg))
+    datfile <- system.file("udunits.dat", package=pkg)
+    if(nzchar(datfile))
+        Sys.setenv("UDUNITS_PATH"=datfile)
+    xmlfile <- system.file("udunits", "udunits2.xml", package=pkg)
+    if(nzchar(xmlfile))
+        Sys.setenv("UDUNITS2_XML_PATH"=xmlfile)
+
     utinit.nc("@udunits_dat_file@")
 }
-

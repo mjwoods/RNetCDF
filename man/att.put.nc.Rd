@@ -18,8 +18,6 @@
 
 \details{Names commencing with underscore ("\code{_}") are reserved for use by the NetCDF library. Most generic applications that process NetCDF datasets assume standard attribute conventions and it is strongly recommended that these be followed unless there are good reasons for not doing so.}
 
-\value{}
-
 \references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
 
 \note{\code{NC_BYTE} is always interpreted as signed.}

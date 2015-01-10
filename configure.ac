@@ -2,7 +2,7 @@
 #  Initialize                                                    		#
 #-------------------------------------------------------------------------------#
 
-AC_INIT([RNetCDF], 1.5.2-2, [michna@giub.unibe.ch])
+AC_INIT([RNetCDF], 1.5.3-1, [michna@giub.unibe.ch])
 
 
 #-------------------------------------------------------------------------------#
@@ -57,7 +57,13 @@ AC_ARG_WITH([hdf5-lib],
 if test [ -n "$hdf5_lib_path" ] ; then
    AC_SUBST([LIBS],["-L${hdf5_lib_path} ${LIBS}"])
 fi
-    
+
+#-- Optional local copy of units file(s) (UDUNITS 1 and 2) ---------------------#
+AC_ARG_ENABLE([units-copy],
+    AC_HELP_STRING([--enable-units-copy@<:@=PATH@:>@],
+                   [place a local copy of units data file(s) in the package @<:@no@:>@]),
+    [do_units_copy="${enableval}"], [do_units_copy=no])
+
 
 #-------------------------------------------------------------------------------#
 #  Find the compiler and compiler options to use   	                 	#
@@ -96,6 +102,34 @@ fi
 AC_CHECK_HEADERS(netcdf.h, [], AC_MSG_ERROR(netcdf header netcdf.h not found))
 
 AC_CHECK_HEADERS(udunits.h, [], AC_MSG_ERROR(udunits header udunits.h not found))
+
+#-- Make local copy of units file(s) (UDUNITS 1 and 2) if requested ------------#
+if test "${do_units_copy}" != no ; then
+    if test "${do_units_copy}" = yes ; then 
+        do_units_copy="${udunits_dat_file}"
+    fi
+     
+    if test -z "${do_units_copy}" ; then
+        for dir in /usr/share/udunits /usr/local/share/udunits \
+             /usr/etc/udunits.dat /usr/local/etc/udunits.dat ; do
+            if test -e "${dir}" ; then
+	        do_units_copy="${dir}"
+	        break
+	    fi
+        done
+        if test -z "${do_units_copy}" ; then
+	    AC_MSG_ERROR([cannot find units file(s) to copy - use --enable-units-copy=PATH])
+        fi
+    fi
+
+    if test -d "${do_units_copy}" ; then
+        mkdir -p inst/udunits 2>/dev/null
+        cp -p "${do_units_copy}"/udunits*.xml inst/udunits/
+    else
+        mkdir inst 2>/dev/null
+        cp -p "${do_units_copy}" inst/udunits.dat
+    fi
+fi
 
 
 #-------------------------------------------------------------------------------#

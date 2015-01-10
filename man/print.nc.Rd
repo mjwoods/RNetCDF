@@ -18,8 +18,6 @@
 The output of this function is almost identical with a \code{"ncdump -h"} call. Because arrays in R have their leftmost subscript varying fastest, the fastest varying dimensions are printed first.
 }
 
-\value{}
-
 \references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
 
 \author{Pavel Michna}

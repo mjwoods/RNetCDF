@@ -23,8 +23,6 @@ A NetCDF variable in an open NetCDF dataset is referred to by a small integer ca
 
 Attributes may be associated with a variable to specify such properties as units.}
 
-\value{}
-
 \references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
 
 \author{Pavel Michna}
