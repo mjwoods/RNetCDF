@@ -6,14 +6,15 @@
 
 \description{Get data from a NetCDF variable.}
 
-\usage{var.get.nc(ncfile, variable, start=NA, count=NA, na.mode=0)}
+\usage{var.get.nc(ncfile, variable, start=NA, count=NA, na.mode=0, collapse=TRUE)}
 
 \arguments{
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{variable}{ID or name of the variable.}
   \item{start}{A vector of indices indicating where to start reading the values (beginning at 1). The length of this vector must equal the number of dimensions the variable has. Order is leftmost varying fastest (as got from \code{\link[RNetCDF]{print.nc}}; opposite to the CDL conventions). If not specified (\code{start=NA}), reading starts at index 1.}
   \item{count}{A vector of integers indicating the count of values to read along each dimension. Order is leftmost varying fastest (as got from \code{\link[RNetCDF]{print.nc}}; opposite to the CDL conventions). The length of this vector must equal the number of dimensions the variable has. If not specified (\code{count=NA}), the entire variable or all values along the corresponding dimension(s) are read.}
-  \item{na.mode}{Set the mode how missing values (\code{NA}) are handled: 0=accept \code{_FillValue} or \code{missing_value} attribute, 1=accept only \code{_FillValue} attribute, 2=accept only \code{missing_value} attribute.}
+  \item{na.mode}{Set the mode how missing values (\code{NA}) are handled: 0=accept \code{_FillValue} or \code{missing_value} attribute, 1=accept only \code{_FillValue} attribute, 2=accept only \code{missing_value} attribute, 3=no missing value conversion.}
+  \item{collapse}{\code{TRUE} if degenerated dimensions (length=1) should be omitted.}
 }
 
 \details{This function returns the value of a variable. Returned values are always in ordinary R double precision (apart from character variables), no matter what precision they are in the on-disk dataset. 
@@ -21,6 +22,8 @@
 Values of \code{NA} are supported; values in the data file that match the variable's missing value attribute (as defined in \code{na.mode}) are automatically converted to \code{NA} before being returned to the user. If \code{na.mode=0} and both attributes are defined, the value of \code{_FillValue} is used.
 
 Data in a NetCDF file is conceived as being a multi-dimensional array. The number and length of dimensions is determined when the variable is created. The \code{start} and \code{count} indices that this routine takes indicate where the reading starts along each dimension, and the count of values along each dimension to read. 
+
+The argument \code{collapse} allows to keep degenerated dimensions (if set to \code{FALSE}). As default, array dimensions with length=1 are omitted (e.g., an array with dimensions [2,1,3,4] in the NetCDF dataset is returned as [2,3,4]).
 
 Awkwardness arises mainly from one thing: NetCDF data are written with the last dimension varying fastest, whereas R works opposite. Thus, the order of the dimensions according to the CDL conventions (e.g., time, latitude, longitude) is reversed in the R array (e.g., longitude, latitude, time).}
 
