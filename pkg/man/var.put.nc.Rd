@@ -27,8 +27,6 @@ Data in a NetCDF file is conceived as being a multi-dimensional array. The numbe
 
 Awkwardness arises mainly from one thing: NetCDF data are written with the last dimension varying fastest, whereas R works opposite. Thus, the order of the dimensions according to the CDL conventions (e.g., time, latitude, longitude) is reversed in the R array (e.g., longitude, latitude, time).}
 
-\value{}
-
 \references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
 
 \note{\code{NC_BYTE} is always interpreted as signed. For best performance, it is recommended that the definition of dimensions, variables and attributes is completed before variables are read or written.}

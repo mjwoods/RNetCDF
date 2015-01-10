@@ -16,8 +16,6 @@
 
 \details{This function renames an existing dimension in a NetCDF dataset open for writing. A dimension cannot be renamed to have the same name as another dimension.}
 
-\value{}
-
 \references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
 
 \author{Pavel Michna}

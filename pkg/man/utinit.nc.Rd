@@ -17,8 +17,6 @@
 If path is non-NULL and not empty, then it specifies a units file containing initializing unit definitions; otherwise, the environment variable \code{UDUNITS_PATH} is checked and, if it exists and is not empty, then it is assumed to contain the pathname of the units file; otherwise, a compile-time default pathname is used.      
 }
 
-\value{}
-
 \references{\url{http://www.unidata.ucar.edu/packages/udunits/}}
 
 \author{Pavel Michna}

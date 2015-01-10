@@ -1,1 +1,2 @@
-cp ${UDUNITS}/src/lib/udunits.dat ${R_PACKAGE_DIR}
+mkdir -p ${R_PACKAGE_DIR}/share
+cp -r ${UDUNITS2_HOME}/share/udunits ${R_PACKAGE_DIR}/share

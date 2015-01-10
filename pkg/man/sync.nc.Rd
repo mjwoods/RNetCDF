@@ -14,8 +14,6 @@
 
 \details{This function offers a way to synchronize the disk copy of a NetCDF dataset with in-memory buffers. There are two reasons one might want to synchronize after writes: To minimize data loss in case of abnormal termination, or to make data available to other processes for reading immediately after it is written.}
 
-\value{}
-
 \references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
 
 \author{Pavel Michna}

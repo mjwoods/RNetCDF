@@ -17,8 +17,6 @@
 
 \details{This function changes the name of an existing attribute in a NetCDF dataset open for writing. An attribute cannot be renamed to have the same name as another attribute of the same variable.}
 
-\value{}
-
 \references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
 
 \author{Pavel Michna}
