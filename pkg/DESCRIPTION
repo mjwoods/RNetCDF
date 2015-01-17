@@ -5,8 +5,8 @@ Title: R Interface to NetCDF Datasets
 Authors@R: c(person("Pavel","Michna",role=c("aut","cre"),
                     email="pavel.michna@giub.unibe.ch"),
              person("Milton","Woods",role=c("aut"),
-                    email="mwoods@r-forge.r-project.org"))
-Maintainer: Milton Woods <mwoods@r-forge.r-project.org>
+                    email="mwoods@users.r-forge.r-project.org"))
+Maintainer: Milton Woods <mwoods@users.r-forge.r-project.org>
 Depends: R (>= 2.4.0)
 SystemRequirements: netcdf (>= 3.6.0), udunits (>= 1.11.7) or udunits2
         (>= 2.1.22)
