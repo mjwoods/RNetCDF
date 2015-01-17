@@ -16,7 +16,7 @@ Description: This package allows reading and writing of files in the NetCDF form
   and it includes calendar conversions from the Unidata UDUNITS library.
   The current implementation supports NetCDF3 and NetCDF4-classic files.
 License: GPL (>= 2) | file LICENSE
-URL: http://foo.r-forge.r-project.org
+URL: http://rnetcdf.r-forge.r-project.org
      http://www.unidata.ucar.edu/software/netcdf/
      http://www.unidata.ucar.edu/software/udunits/
 NeedsCompilation: yes
