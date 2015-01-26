@@ -4,12 +4,12 @@
     #   udunits2 uses UDUNITS2_XML_PATH,
     #   udunits uses UDUNITS_PATH.
     # Then the library will try a default path set at compile time.
-    result <- try(udinit.nc(""), silent=TRUE)
+    result <- try(utinit.nc(""), silent=TRUE)
 
     # If library failed to initialise,
     # try to use the units database shipped with RNetCDF:
     if (inherits(result, "try-error")) {
-        datafile <- system.file("inst", "udunits", "@UDUNITS_DATABASE@", 
+        datafile <- system.file("udunits", "@UDUNITS_DATABASE@", 
            package=pkg, lib.loc=lib, mustWork=TRUE)
         utinit.nc(datafile)
     }
