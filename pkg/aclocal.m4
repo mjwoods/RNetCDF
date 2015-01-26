@@ -13,6 +13,366 @@
 
 m4_ifndef([AC_CONFIG_MACRO_DIRS], [m4_defun([_AM_CONFIG_MACRO_DIRS], [])m4_defun([AC_CONFIG_MACRO_DIRS], [_AM_CONFIG_MACRO_DIRS($@)])])
 # ===========================================================================
+#       http://www.gnu.org/software/autoconf-archive/ax_check_zlib.html
+# ===========================================================================
+#
+# SYNOPSIS
+#
+#   AX_CHECK_ZLIB([action-if-found], [action-if-not-found])
+#
+# DESCRIPTION
+#
+#   This macro searches for an installed zlib library. If nothing was
+#   specified when calling configure, it searches first in /usr/local and
+#   then in /usr, /opt/local and /sw. If the --with-zlib=DIR is specified,
+#   it will try to find it in DIR/include/zlib.h and DIR/lib/libz.a. If
+#   --without-zlib is specified, the library is not searched at all.
+#
+#   If either the header file (zlib.h) or the library (libz) is not found,
+#   shell commands 'action-if-not-found' is run. If 'action-if-not-found' is
+#   not specified, the configuration exits on error, asking for a valid zlib
+#   installation directory or --without-zlib.
+#
+#   If both header file and library are found, shell commands
+#   'action-if-found' is run. If 'action-if-found' is not specified, the
+#   default action appends '-I${ZLIB_HOME}/include' to CPFLAGS, appends
+#   '-L$ZLIB_HOME}/lib' to LDFLAGS, prepends '-lz' to LIBS, and calls
+#   AC_DEFINE(HAVE_LIBZ). You should use autoheader to include a definition
+#   for this symbol in a config.h file. Sample usage in a C/C++ source is as
+#   follows:
+#
+#     #ifdef HAVE_LIBZ
+#     #include <zlib.h>
+#     #endif /* HAVE_LIBZ */
+#
+# LICENSE
+#
+#   Copyright (c) 2008 Loic Dachary <loic@senga.org>
+#   Copyright (c) 2010 Bastien Chevreux <bach@chevreux.org>
+#
+#   This program is free software; you can redistribute it and/or modify it
+#   under the terms of the GNU General Public License as published by the
+#   Free Software Foundation; either version 2 of the License, or (at your
+#   option) any later version.
+#
+#   This program is distributed in the hope that it will be useful, but
+#   WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+#   Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License along
+#   with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+#   As a special exception, the respective Autoconf Macro's copyright owner
+#   gives unlimited permission to copy, distribute and modify the configure
+#   scripts that are the output of Autoconf when processing the Macro. You
+#   need not follow the terms of the GNU General Public License when using
+#   or distributing such scripts, even though portions of the text of the
+#   Macro appear in them. The GNU General Public License (GPL) does govern
+#   all other use of the material that constitutes the Autoconf Macro.
+#
+#   This special exception to the GPL applies to versions of the Autoconf
+#   Macro released by the Autoconf Archive. When you make and distribute a
+#   modified version of the Autoconf Macro, you may extend this special
+#   exception to the GPL to apply to your modified version as well.
+
+#serial 14
+
+AU_ALIAS([CHECK_ZLIB], [AX_CHECK_ZLIB])
+AC_DEFUN([AX_CHECK_ZLIB],
+#
+# Handle user hints
+#
+[AC_MSG_CHECKING(if zlib is wanted)
+zlib_places="/usr/local /usr /opt/local /sw"
+AC_ARG_WITH([zlib],
+[  --with-zlib=DIR         root directory path of zlib installation @<:@defaults to
+                          /usr/local or /usr if not found in /usr/local@:>@
+  --without-zlib          to disable zlib usage completely],
+[if test "$withval" != no ; then
+  AC_MSG_RESULT(yes)
+  if test -d "$withval"
+  then
+    zlib_places="$withval $zlib_places"
+  else
+    AC_MSG_WARN([Sorry, $withval does not exist, checking usual places])
+  fi
+else
+  zlib_places=
+  AC_MSG_RESULT(no)
+fi],
+[AC_MSG_RESULT(yes)])
+
+#
+# Locate zlib, if wanted
+#
+if test -n "${zlib_places}"
+then
+	# check the user supplied or any other more or less 'standard' place:
+	#   Most UNIX systems      : /usr/local and /usr
+	#   MacPorts / Fink on OSX : /opt/local respectively /sw
+	for ZLIB_HOME in ${zlib_places} ; do
+	  if test -f "${ZLIB_HOME}/include/zlib.h"; then break; fi
+	  ZLIB_HOME=""
+	done
+
+  ZLIB_OLD_LDFLAGS=$LDFLAGS
+  ZLIB_OLD_CPPFLAGS=$CPPFLAGS
+  if test -n "${ZLIB_HOME}"; then
+        LDFLAGS="$LDFLAGS -L${ZLIB_HOME}/lib"
+        CPPFLAGS="$CPPFLAGS -I${ZLIB_HOME}/include"
+  fi
+  AC_LANG_SAVE
+  AC_LANG_C
+  AC_CHECK_LIB([z], [inflateEnd], [zlib_cv_libz=yes], [zlib_cv_libz=no])
+  AC_CHECK_HEADER([zlib.h], [zlib_cv_zlib_h=yes], [zlib_cv_zlib_h=no])
+  AC_LANG_RESTORE
+  if test "$zlib_cv_libz" = "yes" && test "$zlib_cv_zlib_h" = "yes"
+  then
+    #
+    # If both library and header were found, action-if-found
+    #
+    m4_ifblank([$1],[
+                CPPFLAGS="$CPPFLAGS -I${ZLIB_HOME}/include"
+                LDFLAGS="$LDFLAGS -L${ZLIB_HOME}/lib"
+                LIBS="-lz $LIBS"
+                AC_DEFINE([HAVE_LIBZ], [1],
+                          [Define to 1 if you have `z' library (-lz)])
+               ],[
+                # Restore variables
+                LDFLAGS="$ZLIB_OLD_LDFLAGS"
+                CPPFLAGS="$ZLIB_OLD_CPPFLAGS"
+                $1
+               ])
+  else
+    #
+    # If either header or library was not found, action-if-not-found
+    #
+    m4_default([$2],[
+                AC_MSG_ERROR([either specify a valid zlib installation with --with-zlib=DIR or disable zlib usage with --without-zlib])
+                ])
+  fi
+fi
+])
+
+# ===========================================================================
+#    http://www.gnu.org/software/autoconf-archive/ax_compare_version.html
+# ===========================================================================
+#
+# SYNOPSIS
+#
+#   AX_COMPARE_VERSION(VERSION_A, OP, VERSION_B, [ACTION-IF-TRUE], [ACTION-IF-FALSE])
+#
+# DESCRIPTION
+#
+#   This macro compares two version strings. Due to the various number of
+#   minor-version numbers that can exist, and the fact that string
+#   comparisons are not compatible with numeric comparisons, this is not
+#   necessarily trivial to do in a autoconf script. This macro makes doing
+#   these comparisons easy.
+#
+#   The six basic comparisons are available, as well as checking equality
+#   limited to a certain number of minor-version levels.
+#
+#   The operator OP determines what type of comparison to do, and can be one
+#   of:
+#
+#    eq  - equal (test A == B)
+#    ne  - not equal (test A != B)
+#    le  - less than or equal (test A <= B)
+#    ge  - greater than or equal (test A >= B)
+#    lt  - less than (test A < B)
+#    gt  - greater than (test A > B)
+#
+#   Additionally, the eq and ne operator can have a number after it to limit
+#   the test to that number of minor versions.
+#
+#    eq0 - equal up to the length of the shorter version
+#    ne0 - not equal up to the length of the shorter version
+#    eqN - equal up to N sub-version levels
+#    neN - not equal up to N sub-version levels
+#
+#   When the condition is true, shell commands ACTION-IF-TRUE are run,
+#   otherwise shell commands ACTION-IF-FALSE are run. The environment
+#   variable 'ax_compare_version' is always set to either 'true' or 'false'
+#   as well.
+#
+#   Examples:
+#
+#     AX_COMPARE_VERSION([3.15.7],[lt],[3.15.8])
+#     AX_COMPARE_VERSION([3.15],[lt],[3.15.8])
+#
+#   would both be true.
+#
+#     AX_COMPARE_VERSION([3.15.7],[eq],[3.15.8])
+#     AX_COMPARE_VERSION([3.15],[gt],[3.15.8])
+#
+#   would both be false.
+#
+#     AX_COMPARE_VERSION([3.15.7],[eq2],[3.15.8])
+#
+#   would be true because it is only comparing two minor versions.
+#
+#     AX_COMPARE_VERSION([3.15.7],[eq0],[3.15])
+#
+#   would be true because it is only comparing the lesser number of minor
+#   versions of the two values.
+#
+#   Note: The characters that separate the version numbers do not matter. An
+#   empty string is the same as version 0. OP is evaluated by autoconf, not
+#   configure, so must be a string, not a variable.
+#
+#   The author would like to acknowledge Guido Draheim whose advice about
+#   the m4_case and m4_ifvaln functions make this macro only include the
+#   portions necessary to perform the specific comparison specified by the
+#   OP argument in the final configure script.
+#
+# LICENSE
+#
+#   Copyright (c) 2008 Tim Toolan <toolan@ele.uri.edu>
+#
+#   Copying and distribution of this file, with or without modification, are
+#   permitted in any medium without royalty provided the copyright notice
+#   and this notice are preserved. This file is offered as-is, without any
+#   warranty.
+
+#serial 11
+
+dnl #########################################################################
+AC_DEFUN([AX_COMPARE_VERSION], [
+  AC_REQUIRE([AC_PROG_AWK])
+
+  # Used to indicate true or false condition
+  ax_compare_version=false
+
+  # Convert the two version strings to be compared into a format that
+  # allows a simple string comparison.  The end result is that a version
+  # string of the form 1.12.5-r617 will be converted to the form
+  # 0001001200050617.  In other words, each number is zero padded to four
+  # digits, and non digits are removed.
+  AS_VAR_PUSHDEF([A],[ax_compare_version_A])
+  A=`echo "$1" | sed -e 's/\([[0-9]]*\)/Z\1Z/g' \
+                     -e 's/Z\([[0-9]]\)Z/Z0\1Z/g' \
+                     -e 's/Z\([[0-9]][[0-9]]\)Z/Z0\1Z/g' \
+                     -e 's/Z\([[0-9]][[0-9]][[0-9]]\)Z/Z0\1Z/g' \
+                     -e 's/[[^0-9]]//g'`
+
+  AS_VAR_PUSHDEF([B],[ax_compare_version_B])
+  B=`echo "$3" | sed -e 's/\([[0-9]]*\)/Z\1Z/g' \
+                     -e 's/Z\([[0-9]]\)Z/Z0\1Z/g' \
+                     -e 's/Z\([[0-9]][[0-9]]\)Z/Z0\1Z/g' \
+                     -e 's/Z\([[0-9]][[0-9]][[0-9]]\)Z/Z0\1Z/g' \
+                     -e 's/[[^0-9]]//g'`
+
+  dnl # In the case of le, ge, lt, and gt, the strings are sorted as necessary
+  dnl # then the first line is used to determine if the condition is true.
+  dnl # The sed right after the echo is to remove any indented white space.
+  m4_case(m4_tolower($2),
+  [lt],[
+    ax_compare_version=`echo "x$A
+x$B" | sed 's/^ *//' | sort -r | sed "s/x${A}/false/;s/x${B}/true/;1q"`
+  ],
+  [gt],[
+    ax_compare_version=`echo "x$A
+x$B" | sed 's/^ *//' | sort | sed "s/x${A}/false/;s/x${B}/true/;1q"`
+  ],
+  [le],[
+    ax_compare_version=`echo "x$A
+x$B" | sed 's/^ *//' | sort | sed "s/x${A}/true/;s/x${B}/false/;1q"`
+  ],
+  [ge],[
+    ax_compare_version=`echo "x$A
+x$B" | sed 's/^ *//' | sort -r | sed "s/x${A}/true/;s/x${B}/false/;1q"`
+  ],[
+    dnl Split the operator from the subversion count if present.
+    m4_bmatch(m4_substr($2,2),
+    [0],[
+      # A count of zero means use the length of the shorter version.
+      # Determine the number of characters in A and B.
+      ax_compare_version_len_A=`echo "$A" | $AWK '{print(length)}'`
+      ax_compare_version_len_B=`echo "$B" | $AWK '{print(length)}'`
+
+      # Set A to no more than B's length and B to no more than A's length.
+      A=`echo "$A" | sed "s/\(.\{$ax_compare_version_len_B\}\).*/\1/"`
+      B=`echo "$B" | sed "s/\(.\{$ax_compare_version_len_A\}\).*/\1/"`
+    ],
+    [[0-9]+],[
+      # A count greater than zero means use only that many subversions
+      A=`echo "$A" | sed "s/\(\([[0-9]]\{4\}\)\{m4_substr($2,2)\}\).*/\1/"`
+      B=`echo "$B" | sed "s/\(\([[0-9]]\{4\}\)\{m4_substr($2,2)\}\).*/\1/"`
+    ],
+    [.+],[
+      AC_WARNING(
+        [illegal OP numeric parameter: $2])
+    ],[])
+
+    # Pad zeros at end of numbers to make same length.
+    ax_compare_version_tmp_A="$A`echo $B | sed 's/./0/g'`"
+    B="$B`echo $A | sed 's/./0/g'`"
+    A="$ax_compare_version_tmp_A"
+
+    # Check for equality or inequality as necessary.
+    m4_case(m4_tolower(m4_substr($2,0,2)),
+    [eq],[
+      test "x$A" = "x$B" && ax_compare_version=true
+    ],
+    [ne],[
+      test "x$A" != "x$B" && ax_compare_version=true
+    ],[
+      AC_WARNING([illegal OP parameter: $2])
+    ])
+  ])
+
+  AS_VAR_POPDEF([A])dnl
+  AS_VAR_POPDEF([B])dnl
+
+  dnl # Execute ACTION-IF-TRUE / ACTION-IF-FALSE.
+  if test "$ax_compare_version" = "true" ; then
+    m4_ifvaln([$4],[$4],[:])dnl
+    m4_ifvaln([$5],[else $5])dnl
+  fi
+]) dnl AX_COMPARE_VERSION
+
+# ===========================================================================
+#        http://www.gnu.org/software/autoconf-archive/ax_lib_curl.html
+# ===========================================================================
+#
+# SYNOPSIS
+#
+#   AX_LIB_CURL([VERSION],[ACTION-IF-SUCCESS],[ACTION-IF-FAILURE])
+#
+# DESCRIPTION
+#
+#   Checks for minimum curl library version VERSION. If successful executes
+#   ACTION-IF-SUCCESS otherwise ACTION-IF-FAILURE.
+#
+#   Defines CURL_LIBS and CURL_CFLAGS.
+#
+#   A simple example:
+#
+#     AX_LIB_CURL([7.19.4],,[
+#       AC_MSG_ERROR([Your system lacks libcurl >= 7.19.4])
+#     ])
+#
+#   This macro is a rearranged version of AC_LIB_CURL from Akos Maroy.
+#
+# LICENSE
+#
+#   Copyright (c) 2009 Francesco Salvestrini <salvestrini@users.sourceforge.net>
+#
+#   Copying and distribution of this file, with or without modification, are
+#   permitted in any medium without royalty provided the copyright notice
+#   and this notice are preserved. This file is offered as-is, without any
+#   warranty.
+
+#serial 8
+
+AU_ALIAS([AC_CHECK_CURL], [AX_LIB_CURL])
+AC_DEFUN([AX_LIB_CURL], [
+  AX_PATH_GENERIC([curl],[$1],'s/^libcurl\ \+//',[$2],[$3])
+])
+
+# ===========================================================================
 #       http://www.gnu.org/software/autoconf-archive/ax_lib_expat.html
 # ===========================================================================
 #
@@ -604,5 +964,170 @@ HDF5 support is being disabled (equivalent to --with-hdf5=no).
 	AC_DEFINE([HAVE_HDF5], [1], [Defined if you have HDF5 support])
     fi
 fi
+])
+
+# ===========================================================================
+#      http://www.gnu.org/software/autoconf-archive/ax_path_generic.html
+# ===========================================================================
+#
+# SYNOPSIS
+#
+#   AX_PATH_GENERIC(LIBRARY,[MINIMUM-VERSION,[SED-EXPR-EXTRACTOR]],[ACTION-IF-FOUND],[ACTION-IF-NOT-FOUND],[CONFIG-SCRIPTS],[CFLAGS-ARG],[LIBS-ARG])
+#
+# DESCRIPTION
+#
+#   Runs the LIBRARY-config script and defines LIBRARY_CFLAGS and
+#   LIBRARY_LIBS unless the user had predefined them in the environment.
+#
+#   The script must support `--cflags' and `--libs' args. If MINIMUM-VERSION
+#   is specified, the script must also support the `--version' arg. If the
+#   `--with-library-[exec-]prefix' arguments to ./configure are given, it
+#   must also support `--prefix' and `--exec-prefix'. Prefereable use
+#   CONFIG-SCRIPTS as config script, CFLAGS-ARG instead of `--cflags` and
+#   LIBS-ARG instead of `--libs`, if given.
+#
+#   The SED-EXPR-EXTRACTOR parameter representes the expression used in sed
+#   to extract the version number. Use it if your 'foo-config --version'
+#   dumps something like 'Foo library v1.0.0 (alfa)' instead of '1.0.0'.
+#
+#   The macro respects LIBRARY_CONFIG, LIBRARY_CFLAGS and LIBRARY_LIBS
+#   variables. If the first one is defined, it specifies the name of the
+#   config script to use. If the latter two are defined, the script is not
+#   ran at all and their values are used instead (if only one of them is
+#   defined, the empty value of the remaining one is still used).
+#
+#   Example:
+#
+#     AX_PATH_GENERIC(Foo, 1.0.0)
+#
+#   would run `foo-config --version' and check that it is at least 1.0.0, if
+#   successful the following variables would be defined and substituted:
+#
+#     FOO_CFLAGS to `foo-config --cflags`
+#     FOO_LIBS   to `foo-config --libs`
+#
+#   Example:
+#
+#     AX_PATH_GENERIC([Bar],,,[
+#        AC_MSG_ERROR([Cannot find Bar library])
+#     ])
+#
+#   would check for bar-config program, defining and substituting the
+#   following variables:
+#
+#     BAR_CFLAGS to `bar-config --cflags`
+#     BAR_LIBS   to `bar-config --libs`
+#
+#   Example:
+#
+#     ./configure BAZ_LIBS=/usr/lib/libbaz.a
+#
+#   would link with a static version of baz library even if `baz-config
+#   --libs` returns just "-lbaz" that would normally result in using the
+#   shared library.
+#
+#   This macro is a rearranged version of AC_PATH_GENERIC from Angus Lees.
+#
+# LICENSE
+#
+#   Copyright (c) 2009 Francesco Salvestrini <salvestrini@users.sourceforge.net>
+#
+#   Copying and distribution of this file, with or without modification, are
+#   permitted in any medium without royalty provided the copyright notice
+#   and this notice are preserved. This file is offered as-is, without any
+#   warranty.
+
+#serial 11
+
+AU_ALIAS([AC_PATH_GENERIC], [AX_PATH_GENERIC])
+AC_DEFUN([AX_PATH_GENERIC],[
+  AC_REQUIRE([AC_PROG_SED])
+
+  dnl we're going to need uppercase and lowercase versions of the
+  dnl string `LIBRARY'
+  pushdef([UP],   translit([$1], [a-z], [A-Z]))dnl
+  pushdef([DOWN], translit([$1], [A-Z], [a-z]))dnl
+
+  AC_ARG_WITH(DOWN-prefix,[AS_HELP_STRING([--with-]DOWN[-prefix=PREFIX], [Prefix where $1 is installed (optional)])],
+    DOWN[]_config_prefix="$withval", DOWN[]_config_prefix="")
+  AC_ARG_WITH(DOWN-exec-prefix,[AS_HELP_STRING([--with-]DOWN[-exec-prefix=EPREFIX], [Exec prefix where $1 is installed (optional)])],
+    DOWN[]_config_exec_prefix="$withval", DOWN[]_config_exec_prefix="")
+
+  AC_ARG_VAR(UP[]_CONFIG, [config script used for $1])
+  AC_ARG_VAR(UP[]_CFLAGS, [CFLAGS used for $1])
+  AC_ARG_VAR(UP[]_LIBS,   [LIBS used for $1])
+
+  AS_IF([test x$UP[]_CFLAGS != x -o x$UP[]_LIBS != x],[
+    dnl Don't run config script at all, use user-provided values instead.
+    AC_SUBST(UP[]_CFLAGS)
+    AC_SUBST(UP[]_LIBS)
+    :
+    $4
+  ],[
+    AS_IF([test x$DOWN[]_config_exec_prefix != x],[
+      DOWN[]_config_args="$DOWN[]_config_args --exec-prefix=$DOWN[]_config_exec_prefix"
+      AS_IF([test x${UP[]_CONFIG+set} != xset],[
+	UP[]_CONFIG=$DOWN[]_config_exec_prefix/bin/DOWN-config
+      ])
+    ])
+    AS_IF([test x$DOWN[]_config_prefix != x],[
+      DOWN[]_config_args="$DOWN[]_config_args --prefix=$DOWN[]_config_prefix"
+      AS_IF([test x${UP[]_CONFIG+set} != xset],[
+	UP[]_CONFIG=$DOWN[]_config_prefix/bin/DOWN-config
+      ])
+    ])
+
+    AC_PATH_PROGS(UP[]_CONFIG,[$6 DOWN-config],[no])
+    AS_IF([test "$UP[]_CONFIG" == "no"],[
+      :
+      $5
+    ],[
+      dnl Get the CFLAGS from LIBRARY-config script
+      AS_IF([test x"$7" == x],[
+	UP[]_CFLAGS="`$UP[]_CONFIG $DOWN[]_config_args --cflags`"
+      ],[
+	UP[]_CFLAGS="`$UP[]_CONFIG $DOWN[]_config_args $7`"
+      ])
+
+      dnl Get the LIBS from LIBRARY-config script
+      AS_IF([test x"$8" == x],[
+	UP[]_LIBS="`$UP[]_CONFIG $DOWN[]_config_args --libs`"
+      ],[
+	UP[]_LIBS="`$UP[]_CONFIG $DOWN[]_config_args $8`"
+      ])
+
+      AS_IF([test x"$2" != x],[
+	dnl Check for provided library version
+	AS_IF([test x"$3" != x],[
+	  dnl Use provided sed expression
+	  DOWN[]_version="`$UP[]_CONFIG $DOWN[]_config_args --version | $SED -e $3`"
+	],[
+	  DOWN[]_version="`$UP[]_CONFIG $DOWN[]_config_args --version | $SED -e 's/^\ *\(.*\)\ *$/\1/'`"
+	])
+
+	AC_MSG_CHECKING([for $1 ($DOWN[]_version) >= $2])
+	AX_COMPARE_VERSION($DOWN[]_version,[ge],[$2],[
+	  AC_MSG_RESULT([yes])
+
+	  AC_SUBST(UP[]_CFLAGS)
+	  AC_SUBST(UP[]_LIBS)
+	  :
+	  $4
+	],[
+	  AC_MSG_RESULT([no])
+	  :
+	  $5
+	])
+      ],[
+	AC_SUBST(UP[]_CFLAGS)
+	AC_SUBST(UP[]_LIBS)
+	:
+	$4
+      ])
+    ])
+  ])
+
+  popdef([UP])
+  popdef([DOWN])
 ])
 
