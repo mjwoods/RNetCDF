@@ -1,2 +1,0 @@
-PKG_CPPFLAGS=-I$(NETCDF)/libsrc -I$(UDUNITS2_HOME)/include
-PKG_LIBS=-L$(NETCDF)/libsrc -lnetcdf -L$(UDUNITS2_HOME)$(R_ARCH) -ludunits2 -lexpat
