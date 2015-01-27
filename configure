@@ -4725,12 +4725,14 @@ fi
 LIBS="$HDF5_LIBS $CURL_LIBS $EXPAT_LIBS $LIBS"
 
 # Test udunits2 then udunits library:
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing utScan" >&5
-$as_echo_n "checking for library containing utScan... " >&6; }
-if ${ac_cv_search_utScan+:} false; then :
+have_udunits2="yes"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for utScan in -ludunits2" >&5
+$as_echo_n "checking for utScan in -ludunits2... " >&6; }
+if ${ac_cv_lib_udunits2_utScan+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  ac_func_search_save_LIBS=$LIBS
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ludunits2  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -4749,36 +4751,24 @@ return utScan ();
   return 0;
 }
 _ACEOF
-for ac_lib in '' udunits2; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_utScan=$ac_res
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_udunits2_utScan=yes
+else
+  ac_cv_lib_udunits2_utScan=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_utScan+:} false; then :
-  break
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
 fi
-done
-if ${ac_cv_search_utScan+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_udunits2_utScan" >&5
+$as_echo "$ac_cv_lib_udunits2_utScan" >&6; }
+if test "x$ac_cv_lib_udunits2_utScan" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBUDUNITS2 1
+_ACEOF
 
-else
-  ac_cv_search_utScan=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_utScan" >&5
-$as_echo "$ac_cv_search_utScan" >&6; }
-ac_res=$ac_cv_search_utScan
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  have_udunits2=yes
+  LIBS="-ludunits2 $LIBS"
+
 else
   have_udunits2=no
 fi
@@ -4786,12 +4776,14 @@ fi
 if test "$have_udunits2" == yes; then
     UDUNITS_DATABASE=udunits2.xml
 else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing utScan" >&5
-$as_echo_n "checking for library containing utScan... " >&6; }
-if ${ac_cv_search_utScan+:} false; then :
+    have_udunits1="yes"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for utScan in -ludunits" >&5
+$as_echo_n "checking for utScan in -ludunits... " >&6; }
+if ${ac_cv_lib_udunits_utScan+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  ac_func_search_save_LIBS=$LIBS
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ludunits  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -4810,36 +4802,24 @@ return utScan ();
   return 0;
 }
 _ACEOF
-for ac_lib in '' udunits; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_utScan=$ac_res
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_udunits_utScan=yes
+else
+  ac_cv_lib_udunits_utScan=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_utScan+:} false; then :
-  break
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
 fi
-done
-if ${ac_cv_search_utScan+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_udunits_utScan" >&5
+$as_echo "$ac_cv_lib_udunits_utScan" >&6; }
+if test "x$ac_cv_lib_udunits_utScan" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBUDUNITS 1
+_ACEOF
 
-else
-  ac_cv_search_utScan=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_utScan" >&5
-$as_echo "$ac_cv_search_utScan" >&6; }
-ac_res=$ac_cv_search_utScan
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  have_udunits1=yes
+  LIBS="-ludunits $LIBS"
+
 else
   have_udunits1=no
 fi
@@ -4852,12 +4832,13 @@ fi
 fi
 
 # Test netcdf library:
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing nc_open" >&5
-$as_echo_n "checking for library containing nc_open... " >&6; }
-if ${ac_cv_search_nc_open+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for nc_open in -lnetcdf" >&5
+$as_echo_n "checking for nc_open in -lnetcdf... " >&6; }
+if ${ac_cv_lib_netcdf_nc_open+:} false; then :
   $as_echo_n "(cached) " >&6
 else
-  ac_func_search_save_LIBS=$LIBS
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lnetcdf  $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -4876,35 +4857,23 @@ return nc_open ();
   return 0;
 }
 _ACEOF
-for ac_lib in '' netcdf; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_nc_open=$ac_res
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_netcdf_nc_open=yes
+else
+  ac_cv_lib_netcdf_nc_open=no
 fi
 rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_nc_open+:} false; then :
-  break
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
 fi
-done
-if ${ac_cv_search_nc_open+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_netcdf_nc_open" >&5
+$as_echo "$ac_cv_lib_netcdf_nc_open" >&6; }
+if test "x$ac_cv_lib_netcdf_nc_open" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBNETCDF 1
+_ACEOF
 
-else
-  ac_cv_search_nc_open=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_nc_open" >&5
-$as_echo "$ac_cv_search_nc_open" >&6; }
-ac_res=$ac_cv_search_nc_open
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  LIBS="-lnetcdf $LIBS"
 
 else
   as_fn_error $? "\"netcdf library not found\"" "$LINENO" 5
