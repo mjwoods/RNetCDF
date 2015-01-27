@@ -52,15 +52,13 @@ CFLAGS=`${R_HOME}/bin/R CMD config CFLAGS`
 #-- Check for NetCDF and UDUNITS library ---------------------------------------#
 
 # Test for libraries that may be needed for linking.
-# If aclocal.m4 does not exist or requires updating,
-# install the autoconf-archive (possibly via your system package manager),
-# then run the aclocal command to scan configure.ac for macro references.
-# After that, the autoconf command can create the configure script.
-AX_CHECK_ZLIB()
-AX_LIB_EXPAT()
-AX_LIB_CURL()
-AX_LIB_HDF5()
-LIBS="$HDF5_LIBS $CURL_LIBS $EXPAT_LIBS $LIBS"
+AC_CHECK_LIB(m,cos)
+AC_CHECK_LIB(dl,dlopen)
+AC_CHECK_LIB(z,deflate)
+AC_CHECK_LIB(curl,curl_easy_init)
+AC_CHECK_LIB(expat,XML_Parse)
+AC_CHECK_LIB(hdf5,H5open)
+AC_CHECK_LIB(hdf5_hl,H5DSset_scale)
 
 # Test udunits2 then udunits library:
 have_udunits2="yes"
