@@ -63,11 +63,13 @@ AX_LIB_HDF5()
 LIBS="$HDF5_LIBS $CURL_LIBS $EXPAT_LIBS $LIBS"
 
 # Test udunits2 then udunits library:
-AC_SEARCH_LIBS(utScan, udunits2, [have_udunits2=yes], [have_udunits2=no])
+have_udunits2="yes"
+AC_CHECK_LIB(udunits2, utScan, [], [have_udunits2=no])
 if test "$have_udunits2" == yes; then
     UDUNITS_DATABASE=udunits2.xml
 else
-    AC_SEARCH_LIBS(utScan, udunits, [have_udunits1=yes], [have_udunits1=no])
+    have_udunits1="yes"
+    AC_CHECK_LIB(udunits, utScan, [], [have_udunits1=no])
     if test "$have_udunits1" == yes ; then
         UDUNITS_DATABASE=udunits.dat
     else
@@ -76,7 +78,7 @@ else
 fi
 
 # Test netcdf library:
-AC_SEARCH_LIBS(nc_open, netcdf, [],
+AC_CHECK_LIB(netcdf, nc_open, [],
     AC_MSG_ERROR("netcdf library not found"))
 
 #-- Check for netcdf.h and udunits.h -------------------------------------------#
