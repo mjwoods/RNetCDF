@@ -1241,7 +1241,7 @@ SEXP R_nc_get_vara_double (SEXP ncid, SEXP varid, SEXP start,
 SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start, 
                          SEXP count, SEXP ndims, SEXP rawchar)
 {
-    int    i, j, status;
+    int    i, status;
     char   *data, *tx_str;
     size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS];
     size_t tx_len, tx_num, varsize;
@@ -1519,7 +1519,7 @@ SEXP R_nc_put_vara_double (SEXP ncid, SEXP varid, SEXP start,
 SEXP R_nc_put_vara_text (SEXP ncid, SEXP varid, SEXP start, 
                          SEXP count, SEXP ndims, SEXP rawchar, SEXP data)
 {
-    int    i, j, status;
+    int    i, status;
     char   *ncdata;
     size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS];
     size_t tx_len, tx_num, varsize;
