@@ -1,0 +1,5 @@
+# Available environment variables are specified at
+# http://cran.r-project.org/bin/windows/contrib/ThirdPartySoftware.html
+
+PKG_CPPFLAGS=-I$(NETCDF)/libsrc -I$(UDUNITS2_HOME)/include
+PKG_LIBS=-L$(NETCDF)/libsrc -lnetcdf -L$(UDUNITS2_HOME)$(R_ARCH) -ludunits2 -lexpat
