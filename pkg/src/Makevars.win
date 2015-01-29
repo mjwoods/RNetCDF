@@ -1,5 +1,10 @@
-# Available environment variables are specified at
-# http://cran.r-project.org/bin/windows/contrib/ThirdPartySoftware.html
+# Assume Rtools is installed from
+#   http://cran.r-project.org/bin/windows/Rtools/
+# and external software is installed from
+#   http://www.stats.ox.ac.uk/pub/Rtools/libs.html
+# Note that the installation location of the external software
+# is set in macros LOCAL_SOFT, LOCAL_CPPFLAGS and LOCAL_LIBS
+# of file $R_HOME/etc/{i386,x64}/Makeconf.
 
-PKG_CPPFLAGS=-I$(NETCDF)/libsrc -I$(UDUNITS2_HOME)/include
-PKG_LIBS=-L$(NETCDF)/libsrc -lnetcdf -L$(UDUNITS2_HOME)$(R_ARCH) -ludunits2 -lexpat
+PKG_LIBS=-lnetcdf -ludunits2 -lexpat
+
