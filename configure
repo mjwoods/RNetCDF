@@ -620,7 +620,9 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-UDUNITS_DATABASE
+UDUNITS_DBVAR
+UDUNITS_DBFILE
+UDUNITS_LIB
 EGREP
 GREP
 CPP
@@ -3240,7 +3242,9 @@ else
 fi
 
 if test "$have_udunits2" == yes; then
-    UDUNITS_DATABASE=udunits2.xml
+    UDUNITS_LIB=udunits2
+    UDUNITS_DBFILE=udunits2.xml
+    UDUNITS_DBVAR="UDUNITS2_XML_PATH"
 else
     have_udunits1="yes"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for utScan in -ludunits" >&5
@@ -3291,7 +3295,9 @@ else
 fi
 
     if test "$have_udunits1" == yes ; then
-        UDUNITS_DATABASE=udunits.dat
+        UDUNITS_LIB=udunits
+        UDUNITS_DBFILE=udunits.dat
+        UDUNITS_DBVAR="UDUNITS_PATH"
     else
         as_fn_error $? "\"neither udunits2 nor udunits library was found\"" "$LINENO" 5
     fi
@@ -3778,6 +3784,8 @@ done
 #-------------------------------------------------------------------------------#
 #  Do substitution                               	                 	#
 #-------------------------------------------------------------------------------#
+
+
 
 
 ac_config_files="$ac_config_files R/load.R src/Makevars"

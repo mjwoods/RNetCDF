@@ -64,12 +64,16 @@ AC_CHECK_LIB(hdf5_hl,H5DSset_scale)
 have_udunits2="yes"
 AC_CHECK_LIB(udunits2, utScan, [], [have_udunits2=no])
 if test "$have_udunits2" == yes; then
-    UDUNITS_DATABASE=udunits2.xml
+    UDUNITS_LIB=udunits2
+    UDUNITS_DBFILE=udunits2.xml
+    UDUNITS_DBVAR="UDUNITS2_XML_PATH"
 else
     have_udunits1="yes"
     AC_CHECK_LIB(udunits, utScan, [], [have_udunits1=no])
     if test "$have_udunits1" == yes ; then
-        UDUNITS_DATABASE=udunits.dat
+        UDUNITS_LIB=udunits
+        UDUNITS_DBFILE=udunits.dat
+        UDUNITS_DBVAR="UDUNITS_PATH"
     else
         AC_MSG_ERROR("neither udunits2 nor udunits library was found")
     fi
@@ -89,7 +93,9 @@ AC_CHECK_HEADERS(udunits.h, [], AC_MSG_ERROR("udunits header udunits.h not found
 #  Do substitution                               	                 	#
 #-------------------------------------------------------------------------------#
 
-AC_SUBST(UDUNITS_DATABASE)
+AC_SUBST(UDUNITS_LIB)
+AC_SUBST(UDUNITS_DBFILE)
+AC_SUBST(UDUNITS_DBVAR)
 AC_OUTPUT(R/load.R
           src/Makevars)
 
