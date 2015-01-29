@@ -1,17 +1,26 @@
 ".onLoad" <- function(lib, pkg) {
-    # Initialise udunits library and allow it to find a units database.
-    # First, environment variables are checked:
-    #   udunits2 uses UDUNITS2_XML_PATH,
-    #   udunits uses UDUNITS_PATH.
-    # Then the library will try a default path set at compile time.
+
+    # Initialise udunits library and allow it to find a units database
+    # in environment variable UDUNITS2_XML_PATH or UDUNITS_PATH
+    # before falling back to a built-in default path:
     result <- try(utinit.nc(""), silent=TRUE)
 
     # If library failed to initialise,
-    # try to use the units database shipped with RNetCDF:
+    # try to use the units database shipped with RNetCDF.
     if (inherits(result, "try-error")) {
-        datafile <- system.file("udunits", "@UDUNITS_DATABASE@", 
+        datafile <- system.file("udunits", "@UDUNITS_DBFILE@", 
            package=pkg, lib.loc=lib, mustWork=TRUE)
-        utinit.nc(datafile)
+
+        # Set the environment so that nested database files can be found:
+	Sys.setenv(@UDUNITS_DBVAR@=datafile)
+
+        result <- try(utinit.nc(""), silent=TRUE)
+
+        if (inherits(result, "try-error")) {
+	    packageStartupMessage("RNetCDF: @UDUNITS_LIB@ library failed to initialise")
+        } else {
+	    packageStartupMessage("RNetCDF: @UDUNITS_DBFILE@ loaded from RNetCDF package")
+        }
     }
 }
 
