@@ -1,25 +1,35 @@
 ".onLoad" <- function(lib, pkg) {
 
-    # Initialise udunits library and allow it to find a units database
-    # in environment variable UDUNITS2_XML_PATH or UDUNITS_PATH
-    # before falling back to a built-in default path:
+    # Initialise @UDUNITS_LIB@ library and allow it to find a units database in
+    # environment variable @UDUNITS_DBVAR@ or a built-in default path:
     result <- try(utinit.nc(""), silent=TRUE)
 
-    # If library failed to initialise,
-    # try to use the units database shipped with RNetCDF.
+    # If library failed to initialise:
     if (inherits(result, "try-error")) {
-        datafile <- system.file("udunits", "@UDUNITS_DBFILE@", 
-           package=pkg, lib.loc=lib, mustWork=TRUE)
 
-        # Set the environment so that nested database files can be found:
-	Sys.setenv(@UDUNITS_DBVAR@=datafile)
+        # Stop if environment variable @UDUNITS_DBVAR@ was set:
+        if (nchar(Sys.getenv("@UDUNITS_DBVAR@")) > 0) {
+	    packageStartupMessage(
+"RNetCDF: @UDUNITS_LIB@ failed to initialise with units database
+           in file specified by environment variable @UDUNITS_DBVAR@")
+            return()
+        }
 
-        result <- try(utinit.nc(""), silent=TRUE)
+        # Try the units database that ships with RNetCDF.
+        # Set @UDUNITS_DBVAR@ so that nested database files can be found.
+	result <- try({
+            datafile <- system.file("udunits", "@UDUNITS_DBFILE@", package=pkg, lib.loc=lib)
+            Sys.setenv(@UDUNITS_DBVAR@=datafile)
+            utinit.nc("")
+            }, silent=TRUE)
 
         if (inherits(result, "try-error")) {
-	    packageStartupMessage("RNetCDF: @UDUNITS_LIB@ library failed to initialise")
+	    packageStartupMessage(
+"RNetCDF: @UDUNITS_LIB@ failed to initialise with in-built units database.
+           Please specify a file in environment variable @UDUNITS_DBVAR@.")
         } else {
-	    packageStartupMessage("RNetCDF: @UDUNITS_DBFILE@ loaded from RNetCDF package")
+            # Return silently on success, because user probably doesn't care that
+            # the internal database was used unless they set @UDUNITS_DBVAR@.
         }
     }
 }
