@@ -1,36 +1,20 @@
 ".onLoad" <- function(lib, pkg) {
 
-    # Initialise @UDUNITS_LIB@ library and allow it to find a units database in
-    # environment variable @UDUNITS_DBVAR@ or a built-in default path:
-    result <- try(utinit.nc(""), silent=TRUE)
+    # Check environment for name of @UDUNITS_LIB@ database requested by user:
+    envdb <- Sys.getenv("@UDUNITS_DBVAR@", unset=NA)
 
-    # If library failed to initialise:
-    if (inherits(result, "try-error")) {
-
-        # Stop if environment variable @UDUNITS_DBVAR@ was set:
-        if (nchar(Sys.getenv("@UDUNITS_DBVAR@")) > 0) {
-	    packageStartupMessage(
-"RNetCDF: @UDUNITS_LIB@ failed to initialise with units database
-           in file specified by environment variable @UDUNITS_DBVAR@")
-            return()
-        }
-
-        # Try the units database that ships with RNetCDF.
-        # Set @UDUNITS_DBVAR@ so that nested database files can be found.
-	result <- try({
-            datafile <- system.file("udunits", "@UDUNITS_DBFILE@", package=pkg, lib.loc=lib)
+    if (is.na(envdb)) {
+        # Initialise @UDUNITS_LIB@ library with database packaged in RNetCDF:
+        datafile <- system.file("udunits", "@UDUNITS_DBFILE@", package=pkg, lib.loc=lib)
+        if ("@UDUNITS_LIB@" == "udunits2") {
+            # udunits2 ignores argument passed to utInit C function
             Sys.setenv(@UDUNITS_DBVAR@=datafile)
-            utinit.nc("")
-            }, silent=TRUE)
-
-        if (inherits(result, "try-error")) {
-	    packageStartupMessage(
-"RNetCDF: @UDUNITS_LIB@ failed to initialise with in-built units database.
-           Please specify a file in environment variable @UDUNITS_DBVAR@.")
-        } else {
-            # Return silently on success, because user probably doesn't care that
-            # the internal database was used unless they set @UDUNITS_DBVAR@.
         }
+        utinit.nc(datafile)
+    } else {
+        # Initialise @UDUNITS_LIB@ library with user-specified database:
+        utinit.nc("")
     }
+
 }
 
