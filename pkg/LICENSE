@@ -1,55 +1,12 @@
-This file is intended to clarify ownership, copyright and license.
+This file is intended to clarify ownership, copyrights and licenses.
 Where possible individual files also carry brief copyright notices. 
 
 
-Copyrights
-==========
-
-All files of this package were created by Pavel Michna and are licensed under
-the terms of the GNU General Public License (see below).
-
-Because large parts of the documentation are taken from the "NetCDF User's Guide
-for C" and from the udunits(3) manpage, it is appropriate to cite Ucar's 
-copyright notice for the NetCDF library:
-
-    Copyright 1993-1999 University Corporation for Atmospheric Research/Unidata
-
-    Portions of this software were developed by the Unidata Program at the
-    University Corporation for Atmospheric Research.
-
-    Access and use of this software shall impose the following obligations
-    and understandings on the user. The user is granted the right, without
-    any fee or cost, to use, copy, modify, alter, enhance and distribute
-    this software, and any derivative works thereof, and its supporting
-    documentation for any purpose whatsoever, provided that this entire
-    notice appears in all copies of the software, derivative works and
-    supporting documentation.  Further, UCAR requests that the user credit
-    UCAR/Unidata in any publications that result from the use of this
-    software or in any product that includes this software. The names UCAR
-    and/or Unidata, however, may not be used in any advertising or publicity
-    to endorse or promote any products or commercial entity unless specific
-    written permission is obtained from UCAR/Unidata. The user also
-    understands that UCAR/Unidata is not obligated to provide the user with
-    any support, consulting, training or assistance of any kind with regard
-    to the use, operation and performance of this software nor to provide
-    the user with any updates, revisions, new versions or "bug fixes."
-
-    THIS SOFTWARE IS PROVIDED BY UCAR/UNIDATA "AS IS" AND ANY EXPRESS OR
-    IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-    DISCLAIMED. IN NO EVENT SHALL UCAR/UNIDATA BE LIABLE FOR ANY SPECIAL,
-    INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING
-    FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
-    NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
-    WITH THE ACCESS, USE OR PERFORMANCE OF THIS SOFTWARE.
-
-
-All other files not falling under Ucar's copyright (these are especially the
-R and C code files provided here) are copyright (C) 2004-2014 Pavel Michna.
-
-
-License
+RNetCDF
 =======
+
+All files except those indicated later are Copyright (C) 2004-2015 Pavel Michna.
+They are licensed under the terms of the GNU General Public License (GPL-2):
 
     This is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -65,9 +22,114 @@ License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 
+See file COPYING for details of the GPL-2 license.
 
-The file COPYING in the top-level directory is a copy of the 'GNU
-General Public License'.
+
+Unidata NetCDF
+==============
+
+The documentation of RNetCDF is based on the "NetCDF User's Guide for C",
+and installation of RNetCDF requires linking with the Unidata NetCDF library,
+so it is appropriate to cite the NetCDF Copyright:
+
+    Copyright 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002,
+    2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,
+    University Corporation for Atmospheric Research/Unidata.
+
+    Portions of this software were developed by the Unidata Program at the 
+    University Corporation for Atmospheric Research.
+
+    Access and use of this software shall impose the following obligations
+    and understandings on the user. The user is granted the right, without
+    any fee or cost, to use, copy, modify, alter, enhance and distribute
+    this software, and any derivative works thereof, and its supporting
+    documentation for any purpose whatsoever, provided that this entire
+    notice appears in all copies of the software, derivative works and
+    supporting documentation.  Further, UCAR requests that the user credit
+    UCAR/Unidata in any publications that result from the use of this
+    software or in any product that includes this software, although this
+    is not an obligation. The names UCAR and/or Unidata, however, may not
+    be used in any advertising or publicity to endorse or promote any
+    products or commercial entity unless specific written permission is
+    obtained from UCAR/Unidata. The user also understands that
+    UCAR/Unidata is not obligated to provide the user with any support,
+    consulting, training or assistance of any kind with regard to the use,
+    operation and performance of this software nor to provide the user
+    with any updates, revisions, new versions or "bug fixes."
+
+    THIS SOFTWARE IS PROVIDED BY UCAR/UNIDATA "AS IS" AND ANY EXPRESS OR
+    IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL UCAR/UNIDATA BE LIABLE FOR ANY SPECIAL,
+    INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING
+    FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+    NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
+    WITH THE ACCESS, USE OR PERFORMANCE OF THIS SOFTWARE.
+
+
+UCAR UDUNITS
+============
+
+RNetCDF may be linked with the UDUNITS (version 1.x) library.
+To simplify distribution of RNetCDF in binary form,
+data files required by the UDUNITS library are included with RNetCDF.
+All components of UDUNITS are subject to the following copyright:
+
+    (C) Copyright 1992,1995 UCAR/Unidata
+
+    Permission to use, copy, modify, and distribute this software and its
+    documentation for any purpose without fee is hereby granted, provided that
+    the above copyright notice appears in all copies, that both that copyright
+    notice and this permission notice appear in supporting documentation, and
+    that the name of UCAR/Unidata not be used in advertising or publicity
+    pertaining to distribution of the software without specific, written prior
+    permission.  UCAR makes no representations about the suitability of this
+    software for any purpose.  It is provided "as is" without express or
+    implied warranty.  It is provided with no support and without obligation on
+    the part of UCAR or Unidata, to assist in its use, correction,
+    modification, or enhancement.
+
+
+UCAR UDUNITS2
+=============
+
+RNetCDF may be linked with the UDUNITS2 library.
+To simplify deployment of RNetCDF in binary form,
+data files required by the UDUNITS2 library are included with RNetCDF.
+All components of UDUNITS2 are subject to the following copyright:
+
+    Copyright 2014 University Corporation for Atmospheric Research and contributors.
+    All rights reserved.
+
+    This software was developed by the Unidata Program Center of the
+    University Corporation for Atmospheric Research (UCAR)
+    <http://www.unidata.ucar.edu>.
+
+    Redistribution and use in source and binary forms, with or without modification,
+    are permitted provided that the following conditions are met:
+
+       1) Redistributions of source code must retain the above copyright notice,
+	  this list of conditions and the following disclaimer.
+       2) Redistributions in binary form must reproduce the above copyright notice,
+	  this list of conditions and the following disclaimer in the documentation
+	  and/or other materials provided with the distribution.
+       3) Neither the names of the development group, the copyright holders, nor the
+	  names of contributors may be used to endorse or promote products derived
+	  from this software without specific prior written permission.
+       4) This license shall terminate automatically and you may no longer exercise
+	  any of the rights granted to you by this license as of the date you
+	  commence an action, including a cross-claim or counterclaim, against
+	  the copyright holders or any contributor alleging that this software
+	  infringes a patent. This termination provision shall not apply for an
+	  action alleging patent infringement by combinations of this software with
+	  other software or hardware.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+    FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE CONTRIBUTORS
+    OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+    CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE SOFTWARE.
 
 
 Pavel Michna
