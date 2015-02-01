@@ -26,10 +26,7 @@ R CMD INSTALL Options
 --with-netcdf-lib=DIR        location of netcdf libraries
 --with-udunits-include=DIR   location of udunits header files
 --with-udunits-lib=DIR       location of udunits libraries 
---with-udunits-dat=FILE      location of udunits.dat file
 --with-hdf5-lib=DIR          location of hdf5 libraries (if installed)
---enable-units-copy[=PATH]   place a local copy of units data file(s)
-                             in the package [no]
 
 
 R CMD INSTALL Example
@@ -54,4 +51,13 @@ R CMD check Example
 
 R CMD check --install-args="--configure-args='--with-netcdf-include=/sw/include \
 --with-netcdf-lib=/sw/lib'" RNetCDF_1.7.1-1.tar.gz
+
+
+Time units
+==========
+
+Common udunits databases are distributed with RNetCDF, and these are used
+by default when RNetCDF is loaded by R. However, a different units database
+may be used by specifying the appropriate file in environment variables
+UDUNITS2_XML_PATH (udunits2) or UDUNITS_PATH (udunits1).
 
