@@ -53,6 +53,7 @@
  *  mw       05/09/14   Support reading and writing raw character arrays,      *
  *                      avoid temporary arrays when reading/writing variables  *
  *  mw       08/09/14   Handle reading and writing of zero-sized arrays        *
+ *  mw       01/02/15   Remove redundant ut_read_xml from R_ut_init            *
  *									       *
 \*=============================================================================*/
 
@@ -1804,10 +1805,7 @@ SEXP R_ut_init (SEXP path)
 
     /*-- Avoid "overriding default" messages from UDUNITS-2 (1/2) -------------*/
     #ifdef UT_UNITS2_H_INCLUDED
-        ut_system* unitSystem;
-
         ut_set_error_message_handler(ut_ignore);
-        unitSystem = ut_read_xml(NULL);
     #endif
 
     /*-- Create output object and initialize return values --------------------*/
