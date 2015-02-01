@@ -882,7 +882,7 @@ var.get.nc <- function(ncfile, variable, start=NA, count=NA, na.mode=0,
         }
 
 	#-- Set dimensions, collapse degenerate dimensions ---------------------#
-        if (is.character(nc$data)) {
+        if (is.character(nc$data) && ndims > 0) {
           # Drop string length dimension
           datadim <- count[-1]
         } else {
@@ -987,7 +987,7 @@ var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0,
 	    mode(data) <- "numeric"
     }
 
-    #-- Check length of character data -----------------------------------------#
+    #-- Check length of character strings --------------------------------------#
     if (is.character(data)) {
       if (ndims > 0) {
         strlen <- dim.inq.nc(ncfile, varinfo$dimids[1])$length
@@ -1022,7 +1022,7 @@ var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0,
     }
 
     #-- Check that length of data and count match ------------------------------#
-    if (is.character(data)) {
+    if (is.character(data) && ndims > 0) {
       numelem <- prod(count[-1])
     } else {
       numelem <- prod(count)
