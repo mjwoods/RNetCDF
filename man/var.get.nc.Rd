@@ -6,7 +6,8 @@
 
 \description{Read the contents of a NetCDF variable.}
 
-\usage{var.get.nc(ncfile, variable, start=NA, count=NA, na.mode=0, collapse=TRUE, unpack=FALSE, rawchar=FALSE)}
+\usage{var.get.nc(ncfile, variable, start=NA, count=NA,
+        na.mode=0, collapse=TRUE, unpack=FALSE, rawchar=FALSE)}
 
 \arguments{
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
