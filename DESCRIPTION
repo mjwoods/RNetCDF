@@ -6,11 +6,13 @@ Author: Pavel Michna, with contributions from Milton Woods
 Maintainer: Milton Woods <mwoods@users.r-forge.r-project.org>
 Depends: R (>= 2.5.0)
 SystemRequirements: netcdf (>= 3.6.0), udunits (>= 1.11.7) or udunits2 (>= 2.1.22)
-Description: This package allows reading and writing of files in the NetCDF format,
-  which was designed by Unidata for array-oriented scientific data and descriptions.
+Description: RNetCDF allows reading and writing of files in the NetCDF format
+  designed by Unidata for array-oriented scientific data and descriptions.
   The R interface is closely based on the C API of the NetCDF library,
   and it includes calendar conversions from the Unidata UDUNITS library.
-  The current implementation supports NetCDF3 and NetCDF4-classic files.
+  The current implementation supports all operations on NetCDF datasets
+  in classic and 64-bit offset file formats, and NetCDF4-classic format
+  is supported for reading and modification of existing files.
 License: GPL (>= 2) | file LICENSE
 URL: http://rnetcdf.r-forge.r-project.org
      http://www.unidata.ucar.edu/software/netcdf/
