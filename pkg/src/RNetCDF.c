@@ -1738,6 +1738,7 @@ SEXP R_ut_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
     SET_VECTOR_ELT (retlist, 1, mkString(""));
     
     /*-- Scan unitstring ------------------------------------------------------*/
+    utIni(&utunit);
     status = utScan(CHAR(STRING_ELT(unitstring, 0)), &utunit);
     if(status != 0) {
         R_ut_strerror(status, strerror);
@@ -1874,6 +1875,7 @@ SEXP R_ut_inv_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
     SET_VECTOR_ELT (retlist, 1, mkString(""));
     
     /*-- Scan unitstring ------------------------------------------------------*/
+    utIni(&utunit);
     status = utScan(CHAR(STRING_ELT(unitstring, 0)), &utunit);
     if(status != 0) {
         R_ut_strerror(status, strerror);
