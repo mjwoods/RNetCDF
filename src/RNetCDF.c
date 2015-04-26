@@ -2,7 +2,7 @@
  *									       *
  *  Name:       RNetCDF.c						       *
  *									       *
- *  Version:    1.7-2							       *
+ *  Version:    1.7-3							       *
  *									       *
  *  Purpose:    NetCDF interface for R.					       *
  *									       *
@@ -54,6 +54,9 @@
  *                      avoid temporary arrays when reading/writing variables  *
  *  mw       08/09/14   Handle reading and writing of zero-sized arrays        *
  *  mw       01/02/15   Remove redundant ut_read_xml from R_ut_init            *
+ *  mw       24/04/15   Initialise and free utunit when using udunits2,        *
+ *                      to fix memory errors reported by valgrind.             *
+ *                      Allow udunits2 headers to be in udunits2 directory.    *
  *									       *
 \*=============================================================================*/
 
@@ -66,7 +69,12 @@
 #include <string.h>
 
 #include <netcdf.h>
-#include <udunits.h>
+
+#ifdef HAVE_UDUNITS2_UDUNITS_H
+  #include <udunits2/udunits.h>
+#else
+  #include <udunits.h>
+#endif
 
 #include <R.h>
 #include <Rinternals.h>
@@ -1738,7 +1746,10 @@ SEXP R_ut_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
     SET_VECTOR_ELT (retlist, 1, mkString(""));
     
     /*-- Scan unitstring ------------------------------------------------------*/
+#ifdef HAVE_LIBUDUNITS2
     utIni(&utunit);
+#endif
+
     status = utScan(CHAR(STRING_ELT(unitstring, 0)), &utunit);
     if(status != 0) {
         R_ut_strerror(status, strerror);
@@ -1782,6 +1793,10 @@ SEXP R_ut_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
 	REAL(VECTOR_ELT(retlist, 2))[i+5*count] = (double)second;
     }
 
+#ifdef HAVE_LIBUDUNITS2
+    utFree(&utunit);
+#endif
+
     /*-- Returning the list ---------------------------------------------------*/
     if(status != 0) {
         R_ut_strerror(status, strerror);
@@ -1805,9 +1820,9 @@ SEXP R_ut_init (SEXP path)
     SEXP  retlist, retlistnames;
 
     /*-- Avoid "overriding default" messages from UDUNITS-2 (1/2) -------------*/
-    #ifdef UT_UNITS2_H_INCLUDED
-        ut_set_error_message_handler(ut_ignore);
-    #endif
+#ifdef HAVE_LIBUDUNITS2
+    ut_set_error_message_handler(ut_ignore);
+#endif
 
     /*-- Create output object and initialize return values --------------------*/
     PROTECT(retlist = allocVector(VECSXP, 2));
@@ -1831,9 +1846,9 @@ SEXP R_ut_init (SEXP path)
     }
 
     /*-- Avoid "overriding default" messages from UDUNITS-2 (2/2) -------------*/
-    #ifdef UT_UNITS2_H_INCLUDED
-        ut_set_error_message_handler(ut_write_to_stderr);
-    #endif
+#ifdef HAVE_LIBUDUNITS2
+    ut_set_error_message_handler(ut_write_to_stderr);
+#endif
 
     /*-- Returning the list ---------------------------------------------------*/
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
@@ -1875,7 +1890,10 @@ SEXP R_ut_inv_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
     SET_VECTOR_ELT (retlist, 1, mkString(""));
     
     /*-- Scan unitstring ------------------------------------------------------*/
+#ifdef HAVE_LIBUDUNITS2
     utIni(&utunit);
+#endif
+
     status = utScan(CHAR(STRING_ELT(unitstring, 0)), &utunit);
     if(status != 0) {
         R_ut_strerror(status, strerror);
@@ -1918,6 +1936,10 @@ SEXP R_ut_inv_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
 
         REAL(VECTOR_ELT(retlist, 2))[i] = (double)utvalue;
     }
+
+#ifdef HAVE_LIBUDUNITS2
+    utFree(&utunit);
+#endif
 
     /*-- Returning the list ---------------------------------------------------*/
     if(status != 0) {

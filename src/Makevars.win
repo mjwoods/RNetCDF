@@ -9,5 +9,6 @@
 # where the relevant variables are LOCAL_SOFT, LOCAL_CPPFLAGS and LOCAL_LIBS.
 # Please consult the R Installation and Administration manual of your R version.
 
+PKG_CPPFLAGS = -DHAVE_LIBUDUNITS2
 PKG_LIBS=-lnetcdf -ludunits2 -lexpat
 
