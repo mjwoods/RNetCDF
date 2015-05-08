@@ -88,8 +88,9 @@ AC_CHECK_LIB(netcdf, nc_open, [],
 AC_CHECK_HEADERS(netcdf.h, [], AC_MSG_ERROR("netcdf header netcdf.h not found"))
 
 if test "$have_udunits2" == yes; then
-  AC_CHECK_HEADERS(udunits2/udunits.h udunits.h, [break],
-    AC_MSG_ERROR("udunits2 headers not found"))
+  AC_CHECK_HEADERS(udunits2/udunits.h, [],
+    AC_CHECK_HEADERS(udunits.h, [],
+      AC_MSG_ERROR("udunits2 headers not found")))
 else
   AC_CHECK_HEADERS(udunits.h, [], AC_MSG_ERROR("udunits headers not found"))
 fi
