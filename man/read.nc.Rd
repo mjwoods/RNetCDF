@@ -22,7 +22,7 @@ Packed variables can optionally be returned in an unpacked state (see \code{\lin
 
 \value{A list with the list elements containing the variable data of the NetCDF dataset.}
 
-\references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
+\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna, Milton Woods}
 

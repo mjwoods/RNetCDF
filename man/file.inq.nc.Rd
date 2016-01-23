@@ -22,7 +22,7 @@
   \item{unlimdimid}{ID of the unlimited dimension, if there is one for this NetCDF dataset. Otherwise \code{NA} will be returned.} 
 }
 
-\references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
+\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna}
 

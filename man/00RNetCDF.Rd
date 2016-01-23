@@ -28,9 +28,9 @@ A high-level interface based on this library is the \code{ncvar} package by Juer
 }
 
 \references{
-  \url{http://www.unidata.ucar.edu/packages/netcdf/}
+  \url{http://www.unidata.ucar.edu/software/netcdf/}
   
-  \url{http://www.unidata.ucar.edu/packages/udunits/}
+  \url{http://www.unidata.ucar.edu/software/udunits/}
 }
 
 \note{The NetCDF and the UDUNITS library must be already installed on the system.}

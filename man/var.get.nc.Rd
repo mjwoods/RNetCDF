@@ -38,7 +38,7 @@ The dimension order in the R array is reversed relative to the order reported by
 
 Arrays of type \code{character} drop the fastest-varying dimension of the corresponding \code{NC_CHAR} array, because this dimension corresponds to the length of the individual \code{character} elements. For example, an \code{NC_CHAR} array with dimensions (5,10) would be returned as a \code{character} vector containing 5 elements, each with a maximum length of 10 characters.}
 
-\references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
+\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 
 \note{\code{NC_BYTE} is always interpreted as signed.}
 
