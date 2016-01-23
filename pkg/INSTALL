@@ -7,12 +7,10 @@ Software Requirements
 
 NetCDF library version 3.6.0 or greater (64-bit file support).
 
-UDUNITS library either version 1 or 2.1 or greater. RNetCDF uses however
-only the version 1 calendar functions.
+UDUNITS library either version 1 or 2.1 or greater.
 
 If the NetCDF library (version 4) is linked against HDF5, the HDF5 library
-must be included in the search path, optionally with the configure argument
-"--with-hdf5-lib=DIR".
+must be located in the library search path.
 
 If using Fink on Mac OS X, be sure that the corresponding R version (either
 i386 or x86_64) is used (R32 or R64). Compiling with R64 against i386 will
@@ -22,35 +20,60 @@ most likely lead to runtime errors.
 R CMD INSTALL Options
 =====================
 
---with-netcdf-include=DIR    location of netcdf header files
---with-netcdf-lib=DIR        location of netcdf libraries
---with-udunits-include=DIR   location of udunits header files
---with-udunits-lib=DIR       location of udunits libraries 
---with-hdf5-lib=DIR          location of hdf5 libraries (if installed)
+Libraries and include files are usually detected automatically by nc-config,
+which is part of most netcdf4 installations. If this causes problems,
+you can disable nc-config using --without-nc-config.
+
+The configure script can accept variables to define extra paths or libraries:
+
+CPPFLAGS='-I<incdir> [-I<incdir> ...]'  extra directories of header files
+LDFLAGS='-L<libdir> [-L<libdir> ...]'   extra directories for libraries
+LIBS='-l<libname> [-l<libname> ...]'    libraries to link
+
+Definitions for the above variables may be appended to the configure command line.
+
+Note that libraries may be specified in LIBS in a few different ways.
+The most common way is '-l<libname>' as shown above, and the compiler will
+typically search for a library called lib<libname>.so and then lib<libname>.a.
+But you can also specify the full pathname of a library if necessary,
+perhaps to force the use of a particular netcdf or udunits library
+on systems with multiple versions available.
 
 
 R CMD INSTALL Example
 =====================
 
-R CMD INSTALL --configure-args="--with-netcdf-include='/sw/include' \
-    --with-netcdf-lib='/sw/lib'" RNetCDF_1.7-4.tar.gz
+R CMD INSTALL --configure-args="CPPFLAGS=-I/sw/include \
+    LDFLAGS=-L/sw/lib LIBS=-lhdf5" RNetCDF_1.8-1.tar.gz
 
 
 LD_LIBRARY_PATH
 ===============
 
-If a runtime error happens, you might need to set or modify the environment
-variable LD_LIBRARY_PATH with the directories where the NetCDF and/or UDUNITS
-and/or HDF5 libraries are located (especially for non-standard installations):
+If a runtime error occurs indicating that shared libraries cannot be found,
+you may need to set or modify the library search path to include directories
+where NetCDF, HDF5 and/or UDUNITS libraries are stored.
+This is sometimes necessary for custom installations of the libraries.
+
+The library search path is typically influenced by the environment variable
+LD_LIBRARY_PATH (or DYLD_LIBRARY_PATH for Mac OSX). For example:
 
 export LD_LIBRARY_PATH=/sw/lib:$LD_LIBRARY_PATH
+
+On some systems, it is possible to build R packages so that dependencies
+are found automatically at runtime. For example, some linkers provide an
+option such as '-rpath', which embeds the library search path when creating
+an executable or shared library. It may also be possible to avoid runtime
+dependencies by building your R package against static libraries (*.a),
+but this will only work if the functions in the libraries were compiled as
+position independent code (e.g. using the -fPIC option of gcc).
 
 
 R CMD check Example
 ===================
 
-R CMD check --install-args="--configure-args='--with-netcdf-include=/sw/include \
---with-netcdf-lib=/sw/lib'" RNetCDF_1.7-4.tar.gz
+R CMD check --install-args="--configure-args='CPPFLAGS=-I/sw/include \
+    LDFLAGS=-L/sw/lib'" RNetCDF_1.8-1.tar.gz
 
 
 Time units

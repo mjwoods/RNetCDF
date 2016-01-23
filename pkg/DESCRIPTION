@@ -1,6 +1,6 @@
 Package: RNetCDF
-Version: 1.7-4
-Date: 2015-05-09
+Version: 1.8-1
+Date: 2015-12-19
 Title: Interface to NetCDF Datasets
 Author: Pavel Michna, with contributions from Milton Woods
 Maintainer: Milton Woods <mwoods@users.r-forge.r-project.org>
