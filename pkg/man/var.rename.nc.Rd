@@ -16,7 +16,7 @@
 
 \details{This function renames an existing variable in a NetCDF dataset open for writing. A variable cannot be renamed to have the same name as another variable.}
 
-\references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
+\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna}
 

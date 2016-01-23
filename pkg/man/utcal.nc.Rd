@@ -20,7 +20,7 @@ The UDUNITS package uses a mixed Gregorian/Julian calendar system. Dates prior t
 
 \value{If the output type is set to numeric, a matrix containing the corresponding date(s) and time(s), with the following columns: year, month, day, hour, minute, second. Otherwise a vector of strings in the form \code{"YYYY-MM-DD hh:mm:ss"}.}
 
-\references{\url{http://www.unidata.ucar.edu/packages/udunits/}}
+\references{\url{http://www.unidata.ucar.edu/software/udunits/}}
 
 \author{Pavel Michna}
 

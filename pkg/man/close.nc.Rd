@@ -15,7 +15,7 @@
 
 \details{This function closes an open NetCDF dataset. After an open NetCDF dataset is closed, its NetCDF ID may be reassigned to the next NetCDF dataset that is opened or created. Therefore, the passed object (\code{ncfile}) should be deleted by the user after calling this function.}
 
-\references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
+\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna}
 

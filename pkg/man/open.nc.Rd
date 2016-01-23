@@ -22,7 +22,7 @@
 
 \value{Object of class "\code{NetCDF}" which points to the NetCDF dataset.}
 
-\references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
+\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna, Milton Woods}
 

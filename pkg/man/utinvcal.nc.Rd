@@ -21,7 +21,7 @@ The UDUNITS package uses a mixed Gregorian/Julian calendar system. Dates prior t
 
 If the dates are given in string form, the structure must be exactly \code{"YYYY-MM-DD hh:mm:ss"}.}
 
-\references{\url{http://www.unidata.ucar.edu/packages/udunits/}}
+\references{\url{http://www.unidata.ucar.edu/software/udunits/}}
 
 \author{Pavel Michna}
 

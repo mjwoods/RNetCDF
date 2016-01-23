@@ -16,7 +16,7 @@
 
 \details{This function deletes a NetCDF attribute from a NetCDF dataset open for writing.}
 
-\references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
+\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna}
 

@@ -25,7 +25,7 @@
   \item{natts}{Number of variable attributes assigned to this variable.}
 }
 
-\references{\url{http://www.unidata.ucar.edu/packages/netcdf/}}
+\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna}
 
