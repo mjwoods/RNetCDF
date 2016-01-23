@@ -2,40 +2,7 @@
 #  Initialize                                                    		#
 #-------------------------------------------------------------------------------#
 
-AC_INIT([RNetCDF], 1.7-4)
-
-
-#-------------------------------------------------------------------------------#
-#  Optional include paths for NetCDF and/or UDUNITS libraries    		#
-#-------------------------------------------------------------------------------#
-
-#-- NetCDF include and library path --------------------------------------------#
-AC_ARG_WITH([netcdf-include],
-    AC_HELP_STRING([--with-netcdf-include=DIR],
-                   [directory with netcdf header files]),
-    [CPPFLAGS="-I${withval} ${CPPFLAGS}"])
-
-AC_ARG_WITH([netcdf-lib],
-    AC_HELP_STRING([--with-netcdf-lib=DIR],
-                   [directory with netcdf libraries]),
-    [LDFLAGS="-L${withval} ${LDFLAGS}"])
-
-#-- Optional include path for HDF5 ---------------------------------------------#
-AC_ARG_WITH([hdf5-lib],
-    AC_HELP_STRING([--with-hdf5-lib=DIR],
-                   [directory with hdf5 libraries]),
-    [LDFLAGS="-L${withval} ${LDFLAGS}"])
-
-#-- UDUNITS include and library path -------------------------------------------#
-AC_ARG_WITH([udunits-include],
-    AC_HELP_STRING([--with-udunits-include=DIR],
-                   [directory with udunits header files]),
-    [CPPFLAGS="-I${withval} ${CPPFLAGS}"])
-
-AC_ARG_WITH([udunits-lib],
-    AC_HELP_STRING([--with-udunits-lib=DIR],
-                   [directory with udunits libraries]),
-    [LDFLAGS="-L${withval} ${LDFLAGS}"])
+AC_INIT([RNetCDF], [1.8-1])
 
 #-------------------------------------------------------------------------------#
 #  Find the compiler and compiler options to use   	                 	#
@@ -43,57 +10,83 @@ AC_ARG_WITH([udunits-lib],
 
 : ${R_HOME=`R RHOME`}
 if test -z "${R_HOME}"; then
-    echo "Could not determine R_HOME"
-    exit 1
+  echo "could not determine R_HOME"
+  exit 1
 fi
-CC=`${R_HOME}/bin/R CMD config CC`
-CFLAGS=`${R_HOME}/bin/R CMD config CFLAGS`
+CC=`"${R_HOME}/bin/R" CMD config CC`
+CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
+R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
+CPPFLAGS="$CPPFLAGS $R_CPPFLAGS"
 
-#-- Check for NetCDF and UDUNITS library ---------------------------------------#
+#-------------------------------------------------------------------------------#
+#  Find NetCDF library and header files                                         #
+#-------------------------------------------------------------------------------#
 
-# Test for libraries that may be needed for linking.
-AC_CHECK_LIB(m,cos)
-AC_CHECK_LIB(dl,dlopen)
-AC_CHECK_LIB(z,deflate)
-AC_CHECK_LIB(curl,curl_easy_init)
-AC_CHECK_LIB(expat,XML_Parse)
-AC_CHECK_LIB(hdf5,H5open)
-AC_CHECK_LIB(hdf5_hl,H5DSset_scale)
+AC_ARG_WITH([nc-config],
+    AS_HELP_STRING([--without-nc-config],
+        [do not use nc-config to get netcdf configuration]),
+    [],
+    [with_nc_config=yes])
 
-# Test udunits2 then udunits library:
+AS_IF([test "x$with_nc_config" != xno],
+      [AC_CHECK_PROG(have_nc_config, nc-config, yes, no, [], [])]
+)
+
+AS_IF([test "x$have_nc_config" == xyes],
+  [
+    # Find libraries and cflags used to build netcdf:
+    AC_MSG_CHECKING(netcdf linker flags)
+    NETCDF_LIBS=`nc-config --libs`
+    AC_MSG_RESULT($NETCDF_LIBS)
+    LDFLAGS="$NETCDF_LIBS $LDFLAGS"
+    AC_MSG_CHECKING(netcdf compiler flags)
+    NETCDF_CFLAGS=`nc-config --cflags`
+    AC_MSG_RESULT($NETCDF_CFLAGS)
+    CFLAGS="$NETCDF_CFLAGS $CFLAGS"
+  ], [
+    # Check that netcdf header files can be compiled:
+    AC_CHECK_HEADERS(netcdf.h, [],
+       AC_MSG_ERROR("netcdf.h was not compiled - defining CPPFLAGS may help"))
+    # Add netcdf library to LIBS if it can be linked (and is not already being linked):
+    AC_SEARCH_LIBS(nc_open, netcdf, [],
+        AC_MSG_ERROR("netcdf library was not linked - defining LDFLAGS may help"))
+  ]
+)
+
+#-------------------------------------------------------------------------------#
+#  Find UDUNITS library and header files                                        #
+#-------------------------------------------------------------------------------#
+
+# Test udunits2 then udunits library,
+# setting LIBS and other variables for whichever library is found:
 have_udunits2="yes"
-AC_CHECK_LIB(udunits2, utScan, [], [have_udunits2=no])
-if test "$have_udunits2" == yes; then
+AC_SEARCH_LIBS(utScan, udunits2, [], [have_udunits2=no])
+AS_IF([test "x$have_udunits2" == xyes],
+      [AC_CHECK_HEADERS(udunits2/udunits.h udunits.h, [break], [have_udunits2=no])]
+)
+
+AS_IF([test "x$have_udunits2" == xyes],
+  [
     UDUNITS_LIB=udunits2
     UDUNITS_DBFILE=udunits2.xml
     UDUNITS_DBVAR="UDUNITS2_XML_PATH"
-else
+  ], [
     have_udunits1="yes"
-    AC_CHECK_LIB(udunits, utScan, [], [have_udunits1=no])
-    if test "$have_udunits1" == yes ; then
+    AC_SEARCH_LIBS(utScan, udunits, [], [have_udunits1=no])
+    AS_IF([test "x$have_udunits1" == xyes],
+          [AC_CHECK_HEADERS(udunits.h, [], [have_udunits1=no])]
+    )
+    AS_IF([test "x$have_udunits1" == xyes],
+      [
         UDUNITS_LIB=udunits
         UDUNITS_DBFILE=udunits.dat
         UDUNITS_DBVAR="UDUNITS_PATH"
-    else
+      ], [
         AC_MSG_ERROR("neither udunits2 nor udunits library was found")
-    fi
-fi
-
-# Test netcdf library:
-AC_CHECK_LIB(netcdf, nc_open, [],
-    AC_MSG_ERROR("netcdf library not found"))
-
-#-- Check for netcdf.h and udunits.h -------------------------------------------#
-
-AC_CHECK_HEADERS(netcdf.h, [], AC_MSG_ERROR("netcdf header netcdf.h not found"))
-
-if test "$have_udunits2" == yes; then
-  AC_CHECK_HEADERS(udunits2/udunits.h, [],
-    AC_CHECK_HEADERS(udunits.h, [],
-      AC_MSG_ERROR("udunits2 headers not found")))
-else
-  AC_CHECK_HEADERS(udunits.h, [], AC_MSG_ERROR("udunits headers not found"))
-fi
+      ]
+    )
+  ]
+)
 
 #-------------------------------------------------------------------------------#
 #  Do substitution                               	                 	#
@@ -105,5 +98,7 @@ AC_SUBST(UDUNITS_DBVAR)
 AC_OUTPUT(R/load.R
           src/Makevars)
 
+#-------------------------------------------------------------------------------#
+#  Done                                                                         #
 #-------------------------------------------------------------------------------#
 
