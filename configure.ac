@@ -57,35 +57,41 @@ AS_IF([test "x$have_nc_config" == xyes],
 #  Find UDUNITS library and header files                                        #
 #-------------------------------------------------------------------------------#
 
-# Test udunits2 then udunits library,
-# setting LIBS and other variables for whichever library is found:
-have_udunits2="yes"
-AC_SEARCH_LIBS(utScan, udunits2, [], [have_udunits2=no])
-AS_IF([test "x$have_udunits2" == xyes],
-      [AC_CHECK_HEADERS(udunits2/udunits.h udunits.h, [break], [have_udunits2=no])]
+# Identify available version of udunits library (1 or 2),
+# prepend the library to LIBS if it is not already being linked,
+# and define preprocessor macro HAVE_LIBUDUNITS or HAVE_LIBUDUNITS2.
+# Also check for udunits.h in places that depend on the udunits version,
+# and define macro HAVE_UDUNITS_H or HAVE_UDUNITS2_UDUNITS_H accordingly.
+udunits=0
+AC_SEARCH_LIBS(utFree, udunits2,
+  [
+    AC_CHECK_HEADERS(udunits2/udunits.h udunits.h, [udunits=2; break])
+    AC_DEFINE(HAVE_LIBUDUNITS2)
+  ], [
+    AC_SEARCH_LIBS(utScan, udunits,
+      [
+        AC_CHECK_HEADERS(udunits.h, [udunits=1; break])
+        AC_DEFINE(HAVE_LIBUDUNITS)
+      ]
+    )
+  ]
 )
 
-AS_IF([test "x$have_udunits2" == xyes],
+# Define variables UDUNITS_LIB, UDUNITS_DBFILE and UDUNITS_DBVAR,
+# based on the version of udunits detected above:
+AS_IF([test $udunits == 2],
   [
     UDUNITS_LIB=udunits2
     UDUNITS_DBFILE=udunits2.xml
     UDUNITS_DBVAR="UDUNITS2_XML_PATH"
-  ], [
-    have_udunits1="yes"
-    AC_SEARCH_LIBS(utScan, udunits, [], [have_udunits1=no])
-    AS_IF([test "x$have_udunits1" == xyes],
-          [AC_CHECK_HEADERS(udunits.h, [], [have_udunits1=no])]
-    )
-    AS_IF([test "x$have_udunits1" == xyes],
-      [
-        UDUNITS_LIB=udunits
-        UDUNITS_DBFILE=udunits.dat
-        UDUNITS_DBVAR="UDUNITS_PATH"
-      ], [
-        AC_MSG_ERROR("neither udunits2 nor udunits library was found")
-      ]
-    )
-  ]
+  ],
+  [test $udunits == 1],
+  [
+    UDUNITS_LIB=udunits
+    UDUNITS_DBFILE=udunits.dat
+    UDUNITS_DBVAR="UDUNITS_PATH"
+  ],
+  [AC_MSG_ERROR("unable to use udunits2 or udunits")]
 )
 
 #-------------------------------------------------------------------------------#
