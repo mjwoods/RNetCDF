@@ -3375,12 +3375,15 @@ fi
 #  Find UDUNITS library and header files                                        #
 #-------------------------------------------------------------------------------#
 
-# Test udunits2 then udunits library,
-# setting LIBS and other variables for whichever library is found:
-have_udunits2="yes"
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing utScan" >&5
-$as_echo_n "checking for library containing utScan... " >&6; }
-if ${ac_cv_search_utScan+:} false; then :
+# Identify available version of udunits library (1 or 2),
+# prepend the library to LIBS if it is not already being linked,
+# and define preprocessor macro HAVE_LIBUDUNITS or HAVE_LIBUDUNITS2.
+# Also check for udunits.h in places that depend on the udunits version,
+# and define macro HAVE_UDUNITS_H or HAVE_UDUNITS2_UDUNITS_H accordingly.
+udunits=0
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing utFree" >&5
+$as_echo_n "checking for library containing utFree... " >&6; }
+if ${ac_cv_search_utFree+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_func_search_save_LIBS=$LIBS
@@ -3393,11 +3396,11 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char utScan ();
+char utFree ();
 int
 main ()
 {
-return utScan ();
+return utFree ();
   ;
   return 0;
 }
@@ -3410,34 +3413,29 @@ for ac_lib in '' udunits2; do
     LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
   fi
   if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_utScan=$ac_res
+  ac_cv_search_utFree=$ac_res
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext
-  if ${ac_cv_search_utScan+:} false; then :
+  if ${ac_cv_search_utFree+:} false; then :
   break
 fi
 done
-if ${ac_cv_search_utScan+:} false; then :
+if ${ac_cv_search_utFree+:} false; then :
 
 else
-  ac_cv_search_utScan=no
+  ac_cv_search_utFree=no
 fi
 rm conftest.$ac_ext
 LIBS=$ac_func_search_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_utScan" >&5
-$as_echo "$ac_cv_search_utScan" >&6; }
-ac_res=$ac_cv_search_utScan
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_utFree" >&5
+$as_echo "$ac_cv_search_utFree" >&6; }
+ac_res=$ac_cv_search_utFree
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
-else
-  have_udunits2=no
-fi
-
-if test "x$have_udunits2" == xyes; then :
-  for ac_header in udunits2/udunits.h udunits.h
+    for ac_header in udunits2/udunits.h udunits.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -3445,25 +3443,16 @@ if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
   cat >>confdefs.h <<_ACEOF
 #define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
 _ACEOF
- break
-else
-  have_udunits2=no
+ udunits=2; break
 fi
 
 done
 
+    $as_echo "#define HAVE_LIBUDUNITS2 1" >>confdefs.h
 
-fi
-
-if test "x$have_udunits2" == xyes; then :
-
-    UDUNITS_LIB=udunits2
-    UDUNITS_DBFILE=udunits2.xml
-    UDUNITS_DBVAR="UDUNITS2_XML_PATH"
 
 else
 
-    have_udunits1="yes"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing utScan" >&5
 $as_echo_n "checking for library containing utScan... " >&6; }
 if ${ac_cv_search_utScan+:} false; then :
@@ -3518,40 +3507,45 @@ ac_res=$ac_cv_search_utScan
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
-else
-  have_udunits1=no
-fi
-
-    if test "x$have_udunits1" == xyes; then :
-  for ac_header in udunits.h
+        for ac_header in udunits.h
 do :
   ac_fn_c_check_header_mongrel "$LINENO" "udunits.h" "ac_cv_header_udunits_h" "$ac_includes_default"
 if test "x$ac_cv_header_udunits_h" = xyes; then :
   cat >>confdefs.h <<_ACEOF
 #define HAVE_UDUNITS_H 1
 _ACEOF
-
-else
-  have_udunits1=no
+ udunits=1; break
 fi
 
 done
 
+        $as_echo "#define HAVE_LIBUDUNITS 1" >>confdefs.h
+
+
 
 fi
-    if test "x$have_udunits1" == xyes; then :
 
-        UDUNITS_LIB=udunits
-        UDUNITS_DBFILE=udunits.dat
-        UDUNITS_DBVAR="UDUNITS_PATH"
+
+
+fi
+
+
+# Define variables UDUNITS_LIB, UDUNITS_DBFILE and UDUNITS_DBVAR,
+# based on the version of udunits detected above:
+if test $udunits == 2; then :
+
+    UDUNITS_LIB=udunits2
+    UDUNITS_DBFILE=udunits2.xml
+    UDUNITS_DBVAR="UDUNITS2_XML_PATH"
+
+elif test $udunits == 1; then :
+
+    UDUNITS_LIB=udunits
+    UDUNITS_DBFILE=udunits.dat
+    UDUNITS_DBVAR="UDUNITS_PATH"
 
 else
-
-        as_fn_error $? "\"neither udunits2 nor udunits library was found\"" "$LINENO" 5
-
-
-fi
-
+  as_fn_error $? "\"unable to use udunits2 or udunits\"" "$LINENO" 5
 
 fi
 
