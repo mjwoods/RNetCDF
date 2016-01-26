@@ -57,6 +57,7 @@
  *  mw       24/04/15   Initialise and free utunit when using udunits2,        *
  *                      to fix memory errors reported by valgrind.             *
  *                      Allow udunits2 headers to be in udunits2 directory.    *
+ *  mw       26/01/16   Fix memory leak from abnormal exit of calendar funcs.  *
  *									       *
 \*=============================================================================*/
 
