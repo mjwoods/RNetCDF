@@ -48,6 +48,7 @@
 #  mw       21/08/14   Allow reading of character vector or scalar              #
 #  mw       05/09/14   Support reading and writing raw character arrays         #
 #  mw       08/09/14   Handle reading and writing of zero-sized arrays          #
+#  mw       24/01/16   Support conversion of timestamps to/from POSIXct         #
 #										#
 #===============================================================================#
 
@@ -1197,32 +1198,38 @@ utcal.nc <- function(unitstring, value, type="n")
     #-- Check args -------------------------------------------------------------#
     stopifnot(is.character(unitstring))
     stopifnot(is.numeric(value) && !any(is.na(value)))
-    stopifnot(type == "n" || type =="s")
+    stopifnot(type == "n" || type =="s" || type == "c" )
     
     count <- length(value)
-    
-    #-- C function call --------------------------------------------------------#
+   
+    #-- C function call to udunits calendar function -----------------------#
     ut <- .Call("R_ut_calendar", 
-		as.character(unitstring), 
+	        as.character(unitstring), 
 		as.integer(count),
 		as.double(value),
 		PACKAGE="RNetCDF")
 
-    #-- Return object if no error ----------------------------------------------#
+    #-- Return object if no error ------------------------------------------#
     if(ut$status == 0) {
-        if(type == "n") {
+	if(type == "n") {
 	    colnames(ut$value) <- c("year", "month", "day", "hour", 
 		"minute", "second")
-            return(ut$value)
-        } else {
+	    return(ut$value)
+	} else if (type == "s") {
 	    x <- apply(ut$value, 1, function(x){paste(x[1],"-",
-	               sprintf("%02g",x[2]),"-",sprintf("%02g",x[3])," ",
+		       sprintf("%02g",x[2]),"-",sprintf("%02g",x[3])," ",
 		       sprintf("%02g",x[4]),":",sprintf("%02g",x[5]),":",
 		       sprintf("%02g",x[6]),sep="")})
 	    return(x)
-	}
-    } else
-        stop(ut$errmsg, call.=FALSE)
+        } else if (type == "c") {
+            ct <- as.POSIXct(
+                        utinvcal.nc("seconds since 1970-01-01 UTC",ut$value),
+                        tz="UTC", origin=ISOdatetime(1970,1,1,0,0,0,tz="UTC"))
+            return(ct)
+        }
+    } else {
+	stop(ut$errmsg, call.=FALSE)
+    }
 }
 
 
@@ -1249,17 +1256,20 @@ utinvcal.nc <- function(unitstring, value)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(is.character(unitstring))
-    
-    if(is.character(value)) {
-	stopifnot(any(nchar(value) == 19))
+
+    if (is.character(value)) {
+	stopifnot(all(nchar(value) == 19))
 	value <- cbind(substr(value,1,4),
-                       substr(value,6,7),
+		       substr(value,6,7),
 		       substr(value,9,10),
 		       substr(value,12,13),
 		       substr(value,15,16),
 		       substr(value,18,19))
 
 	value <- matrix(as.numeric(value),ncol=6)
+    } else if (inherits(value,"POSIXct")) {
+        value <- utcal.nc("seconds since 1970-01-01 UTC",
+                     as.numeric(value), 'n')
     }
 
     stopifnot(is.numeric(value) && !any(is.na(value)))
@@ -1270,7 +1280,7 @@ utinvcal.nc <- function(unitstring, value)
 	stop("length(value) not divisible by 6", call.=FALSE)
 
     if(is.matrix(value) && ncol(value) != 6) 
-        stop("ncol(value) not 6", call.=FALSE)
+	stop("ncol(value) not 6", call.=FALSE)
     
     #-- C function call --------------------------------------------------------#
     ut <- .Call("R_ut_inv_calendar", 
@@ -1280,10 +1290,11 @@ utinvcal.nc <- function(unitstring, value)
 		PACKAGE="RNetCDF")
 
     #-- Return object if no error ----------------------------------------------#
-    if(ut$status == 0)
-        return(ut$value)
-    else
-        stop(ut$errmsg, call.=FALSE)
+    if(ut$status == 0) {
+	return(ut$value)
+    } else {
+	stop(ut$errmsg, call.=FALSE)
+    }
 }
 
 

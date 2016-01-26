@@ -36,6 +36,7 @@
 #  mw       18/07/12   Test packed variables                                    #
 #  mw       02/09/14   Test 1D character arrays and character scalars           #
 #  mw       05/09/14   Test reading/writing NC_CHAR as raw bytes                #
+#  mw       26/01/16   Test utcal.nc and utinvcal.nc with POSIXct type          #
 #                                                                               #
 #===============================================================================#
 
@@ -233,6 +234,16 @@ x <- c("1899-12-31 23:00:00", "1900-01-01 00:00:00", "1900-01-01 01:00:00",
 y <- utcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(0:5), type="s")
 tally <- testfun(x,y,tally)
 
+cat("utcal.nc - POSIXct values ...")
+x <- ISOdatetime(c(1899,1900,1900,1900,1900,1900),
+                 c(  12,   1,   1,   1,   1,   1),
+                 c(  31,   1,   1,   1,   1,   1),
+                 c(  23,   0,   1,   2,   3,   4),
+                 c(   0,   0,   0,   0,   0,   0),
+                 c(   0,   0,   0,   0,   0,   0), tz="UTC")
+y <- utcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(0:5), type="c")
+tally <- testfun(x,y,tally)
+
 cat("utinvcal.nc - numeric values ...")
 x <- 6.416667
 y <- utinvcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(1900,1,1,5,25,0))
@@ -241,6 +252,12 @@ tally <- testfun(x,y,tally)
 cat("utinvcal.nc - string values ...")
 x <- 6.416667
 y <- utinvcal.nc("hours since 1900-01-01 00:00:00 +01:00", "1900-01-01 05:25:00")
+tally <- testfun(x,y,tally)
+
+cat("utinvcal.nc - POSIXct values ...")
+x <- 6.416667
+y <- utinvcal.nc("hours since 1900-01-01 00:00:00 +01:00",
+         ISOdatetime(1900,1,1,5,25,0,tz="UTC"))
 tally <- testfun(x,y,tally)
 
 #-------------------------------------------------------------------------------#
