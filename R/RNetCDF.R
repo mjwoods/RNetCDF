@@ -1223,7 +1223,7 @@ utcal.nc <- function(unitstring, value, type="n")
 	    return(x)
         } else if (type == "c") {
             ct <- as.POSIXct(
-                        utinvcal.nc("seconds since 1970-01-01 UTC",ut$value),
+                        utinvcal.nc("seconds since 1970-01-01 00:00:00 +00:00",ut$value),
                         tz="UTC", origin=ISOdatetime(1970,1,1,0,0,0,tz="UTC"))
             return(ct)
         }
@@ -1268,7 +1268,7 @@ utinvcal.nc <- function(unitstring, value)
 
 	value <- matrix(as.numeric(value),ncol=6)
     } else if (inherits(value,"POSIXct")) {
-        value <- utcal.nc("seconds since 1970-01-01 UTC",
+        value <- utcal.nc("seconds since 1970-01-01 00:00:00 +00:00",
                      as.numeric(value), 'n')
     }
 
