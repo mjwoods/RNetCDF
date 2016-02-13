@@ -1,0 +1,14 @@
+# Assume Rtools is installed from
+#   http://cran.r-project.org/bin/windows/Rtools/
+# and external software is installed from
+#   http://www.stats.ox.ac.uk/pub/Rtools/libs.html
+#
+# Note that the installation location of the external software 
+# should ideally be set in makefiles used by R when building packages.
+# For example, R/3.1 contains a file $R_HOME/etc/{i386,x64}/Makeconf
+# where the relevant variables are LOCAL_SOFT, LOCAL_CPPFLAGS and LOCAL_LIBS.
+# Please consult the R Installation and Administration manual of your R version.
+
+PKG_CPPFLAGS = -DHAVE_LIBUDUNITS2
+PKG_LIBS=-lnetcdf -ludunits2 -lexpat
+
