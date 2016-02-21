@@ -39,10 +39,10 @@ AS_IF([test "x$have_nc_config" == xyes],
     NETCDF_LIBS=`nc-config --libs`
     AC_MSG_RESULT($NETCDF_LIBS)
     LDFLAGS="$NETCDF_LIBS $LDFLAGS"
-    AC_MSG_CHECKING(netcdf compiler flags)
+    AC_MSG_CHECKING(netcdf pre-processor and compiler flags)
     NETCDF_CFLAGS=`nc-config --cflags`
     AC_MSG_RESULT($NETCDF_CFLAGS)
-    CFLAGS="$NETCDF_CFLAGS $CFLAGS"
+    CPPFLAGS="$NETCDF_CFLAGS $CPPFLAGS"
   ], [
     # Check that netcdf header files can be compiled:
     AC_CHECK_HEADERS(netcdf.h, [],
