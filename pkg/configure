@@ -3284,12 +3284,12 @@ $as_echo_n "checking netcdf linker flags... " >&6; }
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $NETCDF_LIBS" >&5
 $as_echo "$NETCDF_LIBS" >&6; }
     LDFLAGS="$NETCDF_LIBS $LDFLAGS"
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking netcdf compiler flags" >&5
-$as_echo_n "checking netcdf compiler flags... " >&6; }
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking netcdf pre-processor and compiler flags" >&5
+$as_echo_n "checking netcdf pre-processor and compiler flags... " >&6; }
     NETCDF_CFLAGS=`nc-config --cflags`
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $NETCDF_CFLAGS" >&5
 $as_echo "$NETCDF_CFLAGS" >&6; }
-    CFLAGS="$NETCDF_CFLAGS $CFLAGS"
+    CPPFLAGS="$NETCDF_CFLAGS $CPPFLAGS"
 
 else
 
