@@ -86,7 +86,8 @@
  *  Macros to initialise and return R data structures                          *
 \*=============================================================================*/
 
-#define NOSXP -1
+#define NOSXP -11111
+#define E_UNSUPPORTED -22222
 
 #define RDATADEF(RTYPE,RLEN) \
   if (RTYPE != NOSXP) { \
@@ -103,7 +104,10 @@
 #define RDATASET VECTOR_ELT(retlist,2)
 
 #define RRETURN(STATUS) \
-  if (STATUS != NC_NOERR) { \
+  if (STATUS == E_UNSUPPORTED) { \
+    SET_VECTOR_ELT(retlist, 1, \
+      mkString("Operation requires RNetCDF built with newer netcdf library")); \
+  } else if (STATUS != NC_NOERR) { \
     SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(STATUS))); \
   } \
   INTEGER(VECTOR_ELT(retlist, 0))[0] = status; \
@@ -1880,6 +1884,7 @@ SEXP R_nc_rename_grp (SEXP ncid, SEXP grpname)
   int     status;
   ROBJDEF(NOSXP,0);
 
+#if defined HAVE_DECL_NC_RENAME_GRP && HAVE_DECL_NC_RENAME_GRP
   /* Enter define mode */
   status = nc_redef(INTEGER(ncid)[0]);
   if((status != NC_NOERR) && (status != NC_EINDEFINE)) {
@@ -1888,6 +1893,11 @@ SEXP R_nc_rename_grp (SEXP ncid, SEXP grpname)
 
   /* Rename the group */
   status = nc_rename_grp(INTEGER(ncid)[0], CHAR(STRING_ELT(grpname, 0)));
+
+#else
+  status = E_UNSUPPORTED;
+#endif
+
   RRETURN(status);
 }
 

@@ -53,6 +53,11 @@ AS_IF([test "x$have_nc_config" == xyes],
   ]
 )
 
+# Check for the existence of optional netcdf routines.
+# Afterwards, C preprocessor macros HAVE_DECL_symbols are defined,
+# with value 1 if routine is declared or 0 if not.
+AC_CHECK_DECLS([nc_rename_grp], [], [], [[#include <netcdf.h>]])
+
 #-------------------------------------------------------------------------------#
 #  Find UDUNITS library and header files                                        #
 #-------------------------------------------------------------------------------#

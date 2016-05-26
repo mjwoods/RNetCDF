@@ -26,8 +26,8 @@ nc <- create.nc("foo.nc", format="netcdf4")
 
 grp <- grp.def.nc(nc, "oldgroup")
 
-##  Rename the group
-grp.rename.nc(grp, "newgroup")
+##  Rename the group (operation not support by early versions of the netcdf4 library)
+try(grp.rename.nc(grp, "newgroup"))
 
 close.nc(nc)
 }
