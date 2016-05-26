@@ -2,14 +2,14 @@
 #										#
 #  Name:       RNetCDF.R							#
 #										#
-#  Version:    2.0-1								#
+#  Version:    1.8-2								#
 #										#
 #  Purpose:    NetCDF interface for R.						#
 #										#
 #  Author:     Pavel Michna (michna@giub.unibe.ch)				#
 #              Milton Woods (m.woods@bom.gov.au)                                #
 #										#
-#  Copyright:  (C) 2004-2016 Pavel Michna					#
+#  Copyright:  (C) 2004-2014 Pavel Michna					#
 #										#
 #===============================================================================#
 #										#
@@ -49,7 +49,6 @@
 #  mw       05/09/14   Support reading and writing raw character arrays         #
 #  mw       08/09/14   Handle reading and writing of zero-sized arrays          #
 #  mw       24/01/16   Support conversion of timestamps to/from POSIXct         #
-#  mw       24/02/16   Support creation of files in netcdf4 (hdf5) format       #
 #										#
 #===============================================================================#
 
@@ -414,29 +413,24 @@ close.nc <- function(con, ...)
 #  create.nc()                                                                  #
 #-------------------------------------------------------------------------------#
 
-create.nc <- function(filename, clobber=TRUE, share=FALSE, prefill=TRUE,
-                      format="classic", large=FALSE)
+create.nc <- function(filename, clobber=TRUE, large=FALSE, share=FALSE,
+                      prefill=TRUE)
 {
     #-- Convert logical values to integers -------------------------------------#
     iclobber <- ifelse(clobber == TRUE, 1, 0)    ## Overwrite existing file (y/n)
+    ilarge   <- ifelse(large   == TRUE, 1, 0)
     ishare   <- ifelse(share   == TRUE, 1, 0)
     iprefill <- ifelse(prefill == TRUE, 1, 0)
-    if (isTRUE(large)) {
-      iformat <- 2
-    } else {
-      iformat <- switch(format,classic=1,offset64=2,classic4=3,netcdf4=4)
-      stopifnot(!is.null(iformat))
-    }
 
     #-- C function call --------------------------------------------------------#
     nc <- .Call("R_nc_create",
 		as.character(filename),
 		as.integer(iclobber),
+                as.integer(ilarge),
                 as.integer(ishare),
                 as.integer(iprefill),
-                as.integer(iformat),
 		PACKAGE="RNetCDF")
-
+	     
     #-- Return object if no error ----------------------------------------------#
     if(nc$status == 0) {
         ncfile <- nc$ncid

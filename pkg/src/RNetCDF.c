@@ -2,14 +2,14 @@
  *									       *
  *  Name:       RNetCDF.c						       *
  *									       *
- *  Version:    1.8-2							       *
+ *  Version:    2.0-1							       *
  *									       *
  *  Purpose:    NetCDF interface for R.					       *
  *									       *
  *  Author:     Pavel Michna (michna@giub.unibe.ch)			       *
  *              Milton Woods (m.woods@bom.gov.au)                              *
  *									       *
- *  Copyright:  (C) 2004-2014 Pavel Michna                                     *
+ *  Copyright:  (C) 2004-2016 Pavel Michna                                     *
  *									       *
  *=============================================================================*
  *									       *
@@ -58,6 +58,8 @@
  *                      to fix memory errors reported by valgrind.             *
  *                      Allow udunits2 headers to be in udunits2 directory.    *
  *  mw       26/01/16   Fix memory leak from abnormal exit of calendar funcs.  *
+ *  mw       24/02/16   Support creation of files in netcdf4 (hdf5) format.    *
+ *  mw       21/05/16   Add functions for netcdf4 groups.                      *
  *									       *
 \*=============================================================================*/
 
@@ -79,6 +81,34 @@
 
 #include <R.h>
 #include <Rinternals.h>
+
+/*=============================================================================*\
+ *  Macros to initialise and return R data structures                          *
+\*=============================================================================*/
+
+#define NOSXP -1
+
+#define RDATADEF(RTYPE,RLEN) \
+  if (RTYPE != NOSXP) { \
+    SET_VECTOR_ELT(retlist, 2, allocVector(RTYPE, RLEN)); \
+  }
+
+#define ROBJDEF(RTYPE,RLEN) \
+  SEXP retlist, retlistnames; \
+  PROTECT(retlist = allocVector(VECSXP, 3)); \
+  SET_VECTOR_ELT(retlist, 0, allocVector(INTSXP, 1)); \
+  SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP, 1)); \
+  RDATADEF(RTYPE,RLEN);
+
+#define RDATASET VECTOR_ELT(retlist,2)
+
+#define RRETURN(STATUS) \
+  if (STATUS != NC_NOERR) { \
+    SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(STATUS))); \
+  } \
+  INTEGER(VECTOR_ELT(retlist, 0))[0] = status; \
+  UNPROTECT(1); \
+  return(retlist);
 
 
 /*=============================================================================*\
@@ -634,8 +664,8 @@ SEXP R_nc_close (SEXP ncid)
  *  R_nc_create()                                                              *
 \*-----------------------------------------------------------------------------*/
 
-SEXP R_nc_create (SEXP filename, SEXP clobber, SEXP large, SEXP share,
-                  SEXP prefill)
+SEXP R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
+                  SEXP format)
 {
     int  cmode, fillmode, old_fillmode, ncid, status;
     SEXP retlist, retlistnames;
@@ -664,10 +694,6 @@ SEXP R_nc_create (SEXP filename, SEXP clobber, SEXP large, SEXP share,
     else
         cmode = NC_CLOBBER;
 
-    /*-- Determine if using classic format or 64-bit offset -------------------*/
-    if(INTEGER(large)[0] != 0)
-        cmode = cmode | NC_64BIT_OFFSET;
-
     /*-- Determine which buffer scheme shall be used --------------------------*/
     if(INTEGER(share)[0] != 0)
         cmode = cmode | NC_SHARE;
@@ -677,6 +703,23 @@ SEXP R_nc_create (SEXP filename, SEXP clobber, SEXP large, SEXP share,
         fillmode = NC_NOFILL;
     else
         fillmode = NC_FILL;
+
+    /*-- Set file format ------------------------------------------------------*/
+    switch (INTEGER(format)[0])
+       {
+         case 2:
+           cmode = cmode | NC_64BIT_OFFSET;
+           break;
+         case 3:
+           cmode = cmode | NC_NETCDF4 | NC_CLASSIC_MODEL;
+           break;
+         case 4:
+           cmode = cmode | NC_NETCDF4;
+           break;
+         default:
+           /* Use default, which is netcdf classic */
+           break;
+       }
 
     /*-- Create the file ------------------------------------------------------*/
     status = nc_create(R_ExpandFileName(CHAR(STRING_ELT(filename, 0))), 
@@ -1677,6 +1720,175 @@ SEXP R_nc_rename_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag,
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)errstatus;	 
     UNPROTECT(2);
     return(retlist);
+}
+
+
+/*-----------------------------------------------------------------------------*\
+ *  R_nc_def_grp()                                                             *
+\*-----------------------------------------------------------------------------*/
+
+SEXP R_nc_def_grp (SEXP ncid, SEXP grpname)
+{
+  int     status;
+  ROBJDEF(INTSXP,1);
+
+  /* Enter define mode */
+  status = nc_redef(INTEGER(ncid)[0]);
+  if((status != NC_NOERR) && (status != NC_EINDEFINE)) {
+    RRETURN(status);
+  }
+
+  /* Define the group */
+  status = nc_def_grp(INTEGER(ncid)[0], CHAR(STRING_ELT(grpname, 0)),
+	     INTEGER(RDATASET));
+  RRETURN(status);
+}
+
+
+/*-----------------------------------------------------------------------------*\
+ *  R_nc_inq_grp_parent()                                                      *
+\*-----------------------------------------------------------------------------*/
+SEXP R_nc_inq_grp_parent (SEXP ncid)
+{
+  int     status;
+  ROBJDEF(INTSXP,1);
+
+  /* Get parent group */
+  status = nc_inq_grp_parent (INTEGER(ncid)[0], 
+	     INTEGER(RDATASET));
+  RRETURN(status);
+}
+
+
+/*-----------------------------------------------------------------------------*\
+ *  R_nc_inq_grpname()                                                         *
+\*-----------------------------------------------------------------------------*/
+SEXP R_nc_inq_grpname (SEXP ncid, SEXP full)
+{
+  int     status;
+  size_t  namelen;
+  char    *name;
+  ROBJDEF(STRSXP,1);
+
+  if (INTEGER(full)[0]) {
+    status = nc_inq_grpname_full(INTEGER(ncid)[0],  &namelen, NULL);
+    if (status != NC_NOERR) {
+      RRETURN(status);
+    }
+
+    name = (char *) R_alloc(namelen+1, sizeof(char));
+    status = nc_inq_grpname_full(INTEGER(ncid)[0], NULL, name);
+
+  } else {
+    status = nc_inq_grpname_len(INTEGER(ncid)[0],  &namelen);
+    if (status != NC_NOERR) {
+      RRETURN(status);
+    }
+
+    name = (char *) R_alloc(namelen+1, sizeof(char));
+    status = nc_inq_grpname(INTEGER(ncid)[0], name);
+  }
+
+  if (status != NC_NOERR) {
+    SET_STRING_ELT(RDATASET, 0, mkChar(name));
+  }
+  RRETURN(status);
+}
+
+
+/*-----------------------------------------------------------------------------*\
+ *  R_nc_inq_grp_ncid()                                                        *
+\*-----------------------------------------------------------------------------*/
+SEXP R_nc_inq_grp_ncid (SEXP ncid, SEXP grpname, SEXP full)
+{
+  int     status;
+  ROBJDEF(INTSXP,1);
+
+  if (INTEGER(full)[0]) {
+    status = nc_inq_grp_full_ncid(INTEGER(ncid)[0],
+	       CHAR(STRING_ELT(grpname, 0)), INTEGER(RDATASET));
+  } else {
+    status = nc_inq_grp_ncid(INTEGER(ncid)[0],
+	       CHAR(STRING_ELT(grpname, 0)), INTEGER(RDATASET));
+  }
+  RRETURN(status);
+}
+
+
+/*-----------------------------------------------------------------------------*\
+ *  Get lists of ncids for components of a group                               *
+\*-----------------------------------------------------------------------------*/
+
+/* Template function returning a list of ncids for a group */
+#define INQGRPIDS(RFUN, NCFUN) \
+SEXP RFUN (SEXP ncid) \
+{ \
+  int    status, count; \
+  ROBJDEF(NOSXP,0); \
+  status = NCFUN(INTEGER(ncid)[0], &count, NULL); \
+  if(status != NC_NOERR) { \
+    RRETURN(status); \
+  } \
+  RDATADEF(INTSXP,count); \
+  status = NCFUN(INTEGER(ncid)[0], NULL, INTEGER(RDATASET)); \
+  RRETURN(status); \
+}
+
+INQGRPIDS(R_nc_inq_grps, nc_inq_grps);
+INQGRPIDS(R_nc_inq_typeids, nc_inq_typeids);
+INQGRPIDS(R_nc_inq_varids, nc_inq_varids);
+INQGRPIDS(R_nc_inq_unlimdims, nc_inq_unlimdims);
+
+
+/*-----------------------------------------------------------------------------*\
+ *  R_nc_inq_unlimdim()                                                        *
+\*-----------------------------------------------------------------------------*/
+
+SEXP R_nc_inq_unlimdim(SEXP ncid)
+{
+  int    status;
+  ROBJDEF(INTSXP,1);
+  status = nc_inq_unlimdim(INTEGER(ncid)[0], INTEGER(RDATASET));
+  RRETURN(status);
+}
+
+
+/*-----------------------------------------------------------------------------*\
+ *  R_nc_inq_dimids()                                                        *
+\*-----------------------------------------------------------------------------*/
+
+SEXP R_nc_inq_dimids(SEXP ncid, SEXP parents)
+{
+  int    status, count;
+  ROBJDEF(NOSXP,0);
+
+  status = nc_inq_dimids(INTEGER(ncid)[0], &count, NULL, INTEGER(parents)[0]);
+  if(status != NC_NOERR) {
+    RRETURN(status);
+  }
+  RDATADEF(INTSXP,count);
+  status = nc_inq_dimids(INTEGER(ncid)[0], NULL, INTEGER(RDATASET), INTEGER(parents)[0]);
+  RRETURN(status);
+}
+
+
+/*-----------------------------------------------------------------------------*\
+ *  R_nc_rename_grp()                                                          *
+\*-----------------------------------------------------------------------------*/
+SEXP R_nc_rename_grp (SEXP ncid, SEXP grpname)
+{
+  int     status;
+  ROBJDEF(NOSXP,0);
+
+  /* Enter define mode */
+  status = nc_redef(INTEGER(ncid)[0]);
+  if((status != NC_NOERR) && (status != NC_EINDEFINE)) {
+    RRETURN(status);
+  }
+
+  /* Rename the group */
+  status = nc_rename_grp(INTEGER(ncid)[0], CHAR(STRING_ELT(grpname, 0)));
+  RRETURN(status);
 }
 
 

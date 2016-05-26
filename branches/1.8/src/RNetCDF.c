@@ -2,14 +2,14 @@
  *									       *
  *  Name:       RNetCDF.c						       *
  *									       *
- *  Version:    2.0-1							       *
+ *  Version:    1.8-2							       *
  *									       *
  *  Purpose:    NetCDF interface for R.					       *
  *									       *
  *  Author:     Pavel Michna (michna@giub.unibe.ch)			       *
  *              Milton Woods (m.woods@bom.gov.au)                              *
  *									       *
- *  Copyright:  (C) 2004-2016 Pavel Michna                                     *
+ *  Copyright:  (C) 2004-2014 Pavel Michna                                     *
  *									       *
  *=============================================================================*
  *									       *
@@ -58,7 +58,6 @@
  *                      to fix memory errors reported by valgrind.             *
  *                      Allow udunits2 headers to be in udunits2 directory.    *
  *  mw       26/01/16   Fix memory leak from abnormal exit of calendar funcs.  *
- *  mw       24/02/16   Support creation of files in netcdf4 (hdf5) format.    *
  *									       *
 \*=============================================================================*/
 
@@ -635,8 +634,8 @@ SEXP R_nc_close (SEXP ncid)
  *  R_nc_create()                                                              *
 \*-----------------------------------------------------------------------------*/
 
-SEXP R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
-                  SEXP format)
+SEXP R_nc_create (SEXP filename, SEXP clobber, SEXP large, SEXP share,
+                  SEXP prefill)
 {
     int  cmode, fillmode, old_fillmode, ncid, status;
     SEXP retlist, retlistnames;
@@ -665,6 +664,10 @@ SEXP R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
     else
         cmode = NC_CLOBBER;
 
+    /*-- Determine if using classic format or 64-bit offset -------------------*/
+    if(INTEGER(large)[0] != 0)
+        cmode = cmode | NC_64BIT_OFFSET;
+
     /*-- Determine which buffer scheme shall be used --------------------------*/
     if(INTEGER(share)[0] != 0)
         cmode = cmode | NC_SHARE;
@@ -674,23 +677,6 @@ SEXP R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
         fillmode = NC_NOFILL;
     else
         fillmode = NC_FILL;
-
-    /*-- Set file format ------------------------------------------------------*/
-    switch (INTEGER(format)[0])
-       {
-         case 2:
-           cmode = cmode | NC_64BIT_OFFSET;
-           break;
-         case 3:
-           cmode = cmode | NC_NETCDF4 | NC_CLASSIC_MODEL;
-           break;
-         case 4:
-           cmode = cmode | NC_NETCDF4;
-           break;
-         default:
-           /* Use default, which is netcdf classic */
-           break;
-       }
 
     /*-- Create the file ------------------------------------------------------*/
     status = nc_create(R_ExpandFileName(CHAR(STRING_ELT(filename, 0))), 

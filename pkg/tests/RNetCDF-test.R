@@ -2,14 +2,14 @@
 #                                                                               #
 #  Name:       RNetCDF-test.R                                                   #
 #                                                                               #
-#  Version:    1.8-2                                                          #
+#  Version:    2.0-1                                                            #
 #                                                                               #
 #  Purpose:    Test functions to the NetCDF interface for R.                    #
 #                                                                               #
 #  Author:     Pavel Michna (michna@giub.unibe.ch)                              #
 #              Milton Woods (m.woods@bom.gov.au)                                #
 #                                                                               #
-#  Copyright:  (C) 2010-2014 Pavel Michna                                       #
+#  Copyright:  (C) 2010-2016 Pavel Michna                                       #
 #                                                                               #
 #===============================================================================#
 #                                                                               #
@@ -37,6 +37,7 @@
 #  mw       02/09/14   Test 1D character arrays and character scalars           #
 #  mw       05/09/14   Test reading/writing NC_CHAR as raw bytes                #
 #  mw       26/01/16   Test utcal.nc and utinvcal.nc with POSIXct type          #
+#  mw       13/02/16   Test file operations in all supported on-disk formats    #
 #                                                                               #
 #===============================================================================#
 
@@ -73,144 +74,150 @@ testfun <- function(x,y,tally=NULL) {
   }
 }
 
+tally <- NULL
+
 ##  Create a new NetCDF dataset and define dimensions
-nc <- create.nc("foo.nc")
+for (format in c("classic","offset64","classic4","netcdf4")) {
+  cat("Test",format,"file format ...\n")
 
-nstation <- 5
-ntime <- 2
-nstring <- 32
-nempty <- 0
+  nc <- create.nc("foo.nc",format=format)
 
-dim.def.nc(nc, "station", nstation)
-dim.def.nc(nc, "time", ntime)
-dim.def.nc(nc, "max_string_length", nstring)
-dim.def.nc(nc, "empty", unlim=TRUE)
+  nstation <- 5
+  ntime <- 2
+  nstring <- 32
+  nempty <- 0
 
-##  Define variables
-var.def.nc(nc, "time", "NC_INT", "time")
-var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1))
-var.def.nc(nc, "packvar", "NC_BYTE", c("station"))
-var.def.nc(nc, "name", "NC_CHAR", c("max_string_length", "station"))
-var.def.nc(nc, "qcflag", "NC_CHAR", c("station"))
-var.def.nc(nc, "int0", "NC_INT", NA)
-var.def.nc(nc, "char0", "NC_CHAR", NA)
-var.def.nc(nc, "numempty", "NC_FLOAT", c("station","empty"))
+  dim.def.nc(nc, "station", nstation)
+  dim.def.nc(nc, "time", ntime)
+  dim.def.nc(nc, "max_string_length", nstring)
+  dim.def.nc(nc, "empty", unlim=TRUE)
 
-##  Put some missing_value attribute for temperature
-att.put.nc(nc, "temperature", "missing_value", "NC_DOUBLE", -99999.9)
+  ##  Define variables
+  var.def.nc(nc, "time", "NC_INT", "time")
+  var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1))
+  var.def.nc(nc, "packvar", "NC_BYTE", c("station"))
+  var.def.nc(nc, "name", "NC_CHAR", c("max_string_length", "station"))
+  var.def.nc(nc, "qcflag", "NC_CHAR", c("station"))
+  var.def.nc(nc, "int0", "NC_INT", NA)
+  var.def.nc(nc, "char0", "NC_CHAR", NA)
+  var.def.nc(nc, "numempty", "NC_FLOAT", c("station","empty"))
 
-## Define the packing used by packvar
-att.put.nc(nc, "packvar", "scale_factor", "NC_DOUBLE", 10)
-att.put.nc(nc, "packvar", "add_offset", "NC_DOUBLE", -5)
+  ##  Put some missing_value attribute for temperature
+  att.put.nc(nc, "temperature", "missing_value", "NC_DOUBLE", -99999.9)
 
-##  Define variable values
-mytime        <- c(1:2)
-mytemperature <- matrix(c(1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, NA, NA, 9.9),ncol=ntime)
-mypackvar     <- seq_len(5)*10-5
-myname        <- c("alfa", "bravo", "charlie", "delta", "echo")
-myqcflag      <- "ABCDE"
-myint0        <- 12345
-mychar0       <- "?"
+  ## Define the packing used by packvar
+  att.put.nc(nc, "packvar", "scale_factor", "NC_DOUBLE", 10)
+  att.put.nc(nc, "packvar", "add_offset", "NC_DOUBLE", -5)
 
-##  Put the data
-var.put.nc(nc, "time", mytime, 1, length(mytime))
-var.put.nc(nc, "temperature", mytemperature, c(1,1), c(nstation,ntime))
-var.put.nc(nc, "packvar", mypackvar, pack=TRUE)
-var.put.nc(nc, "name", myname, c(1,1), c(nstring,nstation))
-var.put.nc(nc, "qcflag", charToRaw(myqcflag))
-var.put.nc(nc, "int0", myint0)
-var.put.nc(nc, "char0", mychar0)
+  ##  Define variable values
+  mytime        <- c(1:2)
+  mytemperature <- matrix(c(1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, NA, NA, 9.9),ncol=ntime)
+  mypackvar     <- seq_len(5)*10-5
+  myname        <- c("alfa", "bravo", "charlie", "delta", "echo")
+  myqcflag      <- "ABCDE"
+  myint0        <- 12345
+  mychar0       <- "?"
 
-sync.nc(nc)
+  ##  Put the data
+  var.put.nc(nc, "time", mytime, 1, length(mytime))
+  var.put.nc(nc, "temperature", mytemperature, c(1,1), c(nstation,ntime))
+  var.put.nc(nc, "packvar", mypackvar, pack=TRUE)
+  var.put.nc(nc, "name", myname, c(1,1), c(nstring,nstation))
+  var.put.nc(nc, "qcflag", charToRaw(myqcflag))
+  var.put.nc(nc, "int0", myint0)
+  var.put.nc(nc, "char0", mychar0)
 
-## Read tests
-cat("Read numeric vector ... ")
-x <- mytime
-dim(x) <- length(x)
-y <- var.get.nc(nc, 0)
-tally <- testfun(x,y)
+  sync.nc(nc)
 
-cat("Read numeric matrix ... ")
-x <- mytemperature
-y <- var.get.nc(nc, "temperature")
-tally <- testfun(x,y,tally)
+  ## Read tests
+  cat("Read numeric vector ... ")
+  x <- mytime
+  dim(x) <- length(x)
+  y <- var.get.nc(nc, 0)
+  tally <- testfun(x,y,tally)
 
-cat("Read numeric matrix slice ... ")
-x <- mytemperature[,2]
-dim(x) <- length(x)
-y <- var.get.nc(nc, "temperature", c(NA,2), c(NA,1))
-tally <- testfun(x,y,tally)
+  cat("Read numeric matrix ... ")
+  x <- mytemperature
+  y <- var.get.nc(nc, "temperature")
+  tally <- testfun(x,y,tally)
 
-cat("Read numeric matrix empty slice ... ")
-x <- numeric(0)
-dim(x) <- c(0,1)
-y <- var.get.nc(nc, "temperature", c(NA,2), c(0,1),collapse=FALSE)
-tally <- testfun(x,y,tally)
+  cat("Read numeric matrix slice ... ")
+  x <- mytemperature[,2]
+  dim(x) <- length(x)
+  y <- var.get.nc(nc, "temperature", c(NA,2), c(NA,1))
+  tally <- testfun(x,y,tally)
 
-cat("Read numeric scalar ... ")
-x <- myint0
-dim(x) <- 1
-y <- var.get.nc(nc, "int0")
-tally <- testfun(x,y,tally)
+  cat("Read numeric matrix empty slice ... ")
+  x <- numeric(0)
+  dim(x) <- c(0,1)
+  y <- var.get.nc(nc, "temperature", c(NA,2), c(0,1),collapse=FALSE)
+  tally <- testfun(x,y,tally)
 
-cat("Read numeric empty array ... ")
-x <- numeric(0)
-dim(x) <- c(nstation,nempty)
-y <- var.get.nc(nc, "numempty")
-tally <- testfun(x,y,tally)
+  cat("Read numeric scalar ... ")
+  x <- myint0
+  dim(x) <- 1
+  y <- var.get.nc(nc, "int0")
+  tally <- testfun(x,y,tally)
 
-cat("Read 2D char array ... ")
-x <- myname
-dim(x) <- length(x)
-y <- var.get.nc(nc, "name")
-tally <- testfun(x,y,tally)
+  cat("Read numeric empty array ... ")
+  x <- numeric(0)
+  dim(x) <- c(nstation,nempty)
+  y <- var.get.nc(nc, "numempty")
+  tally <- testfun(x,y,tally)
 
-cat("Read 2D char slice ... ")
-x <- substring(myname[2:3],1,4)
-dim(x) <- length(x)
-y <- var.get.nc(nc, "name", c(1,2), c(4,2))
-tally <- testfun(x,y,tally)
+  cat("Read 2D char array ... ")
+  x <- myname
+  dim(x) <- length(x)
+  y <- var.get.nc(nc, "name")
+  tally <- testfun(x,y,tally)
 
-cat("Read 2D char slice as raw bytes ... ")
-x <- substring(myname[2:3],1,4)
-dim(x) <- length(x)
-x <- apply(x,MARGIN=1,FUN=charToRaw)
-y <- var.get.nc(nc, "name", c(1,2), c(4,2), rawchar=TRUE)
-tally <- testfun(x,y,tally)
+  cat("Read 2D char slice ... ")
+  x <- substring(myname[2:3],1,4)
+  dim(x) <- length(x)
+  y <- var.get.nc(nc, "name", c(1,2), c(4,2))
+  tally <- testfun(x,y,tally)
 
-cat("Read 2D char slice as characters ... ")
-x <- myname[2:3]
-dim(x) <- length(x)
-y <- var.get.nc(nc, "name", c(1,2), c(NA,2))
-tally <- testfun(x,y,tally)
+  cat("Read 2D char slice as raw bytes ... ")
+  x <- substring(myname[2:3],1,4)
+  dim(x) <- length(x)
+  x <- apply(x,MARGIN=1,FUN=charToRaw)
+  y <- var.get.nc(nc, "name", c(1,2), c(4,2), rawchar=TRUE)
+  tally <- testfun(x,y,tally)
 
-cat("Read empty 2D char array ... ")
-x <- character(0)
-dim(x) <- 0
-y <- var.get.nc(nc, "name", NA, c(0,0),collapse=FALSE)
-tally <- testfun(x,y,tally)
+  cat("Read 2D char slice as characters ... ")
+  x <- myname[2:3]
+  dim(x) <- length(x)
+  y <- var.get.nc(nc, "name", c(1,2), c(NA,2))
+  tally <- testfun(x,y,tally)
 
-cat("Read 1D char slice ... ")
-x <- substring(myqcflag,2,3)
-dim(x) <- 1
-y <- var.get.nc(nc, "qcflag", c(2), c(2))
-tally <- testfun(x,y,tally)
+  cat("Read empty 2D char array ... ")
+  x <- character(0)
+  dim(x) <- 0
+  y <- var.get.nc(nc, "name", NA, c(0,0),collapse=FALSE)
+  tally <- testfun(x,y,tally)
 
-cat("Read scalar char ... ")
-x <- mychar0
-dim(x) <- 1
-y <- var.get.nc(nc, "char0")
-tally <- testfun(x,y,tally)
+  cat("Read 1D char slice ... ")
+  x <- substring(myqcflag,2,3)
+  dim(x) <- 1
+  y <- var.get.nc(nc, "qcflag", c(2), c(2))
+  tally <- testfun(x,y,tally)
 
-cat("Read and unpack numeric array ... ")
-x <- mypackvar
-dim(x) <- length(x)
-y <- var.get.nc(nc, "packvar", unpack=TRUE)
-tally <- testfun(x,y,tally)
+  cat("Read scalar char ... ")
+  x <- mychar0
+  dim(x) <- 1
+  y <- var.get.nc(nc, "char0")
+  tally <- testfun(x,y,tally)
 
-#-- Close file -----------------------------------------------------------------#
-close.nc(nc)
+  cat("Read and unpack numeric array ... ")
+  x <- mypackvar
+  dim(x) <- length(x)
+  y <- var.get.nc(nc, "packvar", unpack=TRUE)
+  tally <- testfun(x,y,tally)
 
+  #-- Close file -----------------------------------------------------------------#
+  close.nc(nc)
+
+}
 
 #-------------------------------------------------------------------------------#
 #  UDUNITS calendar functions                                                   #

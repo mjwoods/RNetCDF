@@ -2,14 +2,14 @@
 #										#
 #  Name:       RNetCDF.R							#
 #										#
-#  Version:    1.8-2								#
+#  Version:    2.0-1								#
 #										#
 #  Purpose:    NetCDF interface for R.						#
 #										#
 #  Author:     Pavel Michna (michna@giub.unibe.ch)				#
 #              Milton Woods (m.woods@bom.gov.au)                                #
 #										#
-#  Copyright:  (C) 2004-2014 Pavel Michna					#
+#  Copyright:  (C) 2004-2016 Pavel Michna					#
 #										#
 #===============================================================================#
 #										#
@@ -49,8 +49,29 @@
 #  mw       05/09/14   Support reading and writing raw character arrays         #
 #  mw       08/09/14   Handle reading and writing of zero-sized arrays          #
 #  mw       24/01/16   Support conversion of timestamps to/from POSIXct         #
+#  mw       24/02/16   Support creation of files in netcdf4 (hdf5) format       #
+#  mw       21/05/16   Add functions for netcdf4 groups                         #
 #										#
 #===============================================================================#
+
+#===============================================================================#
+#  Private utility functions                                                    #
+#===============================================================================#
+
+Cwrap <- function(..., PACKAGE="RNetCDF", ERRNULL=FALSE) {
+# Invoke C routine and check result for errors.
+# On success, return object created by C routine,
+# otherwise raise an exception (default) or return NULL if ERRNULL is TRUE.
+  nc <- .Call(..., PACKAGE=PACKAGE)
+  if (nc[[1]] != 0) {
+    if (ERRNULL) {
+      return(NULL)
+    } else { 
+      stop(nc[[2]], call.=FALSE)
+    }
+  }
+  return(nc[[3]])
+}
 
 
 #===============================================================================#
@@ -407,30 +428,35 @@ close.nc <- function(con, ...)
     if(nc$status != 0)
         stop(nc$errmsg, call.=FALSE)
 }
-
+# - How to close a file if object is garbage collected?
 
 #-------------------------------------------------------------------------------#
 #  create.nc()                                                                  #
 #-------------------------------------------------------------------------------#
 
-create.nc <- function(filename, clobber=TRUE, large=FALSE, share=FALSE,
-                      prefill=TRUE)
+create.nc <- function(filename, clobber=TRUE, share=FALSE, prefill=TRUE,
+                      format="classic", large=FALSE)
 {
     #-- Convert logical values to integers -------------------------------------#
     iclobber <- ifelse(clobber == TRUE, 1, 0)    ## Overwrite existing file (y/n)
-    ilarge   <- ifelse(large   == TRUE, 1, 0)
     ishare   <- ifelse(share   == TRUE, 1, 0)
     iprefill <- ifelse(prefill == TRUE, 1, 0)
+    if (isTRUE(large)) {
+      iformat <- 2
+    } else {
+      iformat <- switch(format,classic=1,offset64=2,classic4=3,netcdf4=4)
+      stopifnot(!is.null(iformat))
+    }
 
     #-- C function call --------------------------------------------------------#
     nc <- .Call("R_nc_create",
 		as.character(filename),
 		as.integer(iclobber),
-                as.integer(ilarge),
                 as.integer(ishare),
                 as.integer(iprefill),
+                as.integer(iformat),
 		PACKAGE="RNetCDF")
-	     
+
     #-- Return object if no error ----------------------------------------------#
     if(nc$status == 0) {
         ncfile <- nc$ncid
@@ -748,7 +774,6 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions)
     if(nc$status != 0)
         stop(nc$errmsg, call.=FALSE)
 }
-
 
 #-------------------------------------------------------------------------------#
 #  var.get.nc()                                                                 #
@@ -1154,6 +1179,147 @@ var.rename.nc <- function(ncfile, variable, newname)
 
     if(nc$status != 0)
         stop(nc$errmsg, call.=FALSE)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  grp.def.nc()                                                                 #
+#-------------------------------------------------------------------------------#
+
+grp.def.nc <- function(ncid, grpname)
+{
+  # Check arguments:
+  stopifnot(class(ncid) == "NetCDF")
+  stopifnot(is.character(grpname))
+
+  # C function call:
+  nc <- Cwrap("R_nc_def_grp",
+	      as.integer(ncid),
+	      grpname,
+	      PACKAGE="RNetCDF")
+
+  # Return object:
+  attr(nc, "class") <- "NetCDF"
+  return(nc)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  grp.find() (internal only)                                                   #
+#-------------------------------------------------------------------------------#
+
+grp.find <- function(ncid, grpname, full=isTRUE(grepl("/",grpname)))
+{
+  # Check arguments:
+  stopifnot(class(ncid) == "NetCDF")
+  stopifnot(is.character(grpname))
+  stopifnot(is.logical(full))
+
+  # C function call:
+  nc <- Cwrap("R_nc_inq_grp_ncid",
+              as.integer(ncid),
+	      grpname,
+              as.integer(full))
+
+  # Return object:
+  attr(nc, "class") <- "NetCDF"
+  return(nc)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  grp.inq.nc()                                                                 #
+#-------------------------------------------------------------------------------#
+
+grp.inq.nc <- function(ncid, grpname=NULL)
+{
+  # Check arguments:
+  stopifnot(class(ncid) == "NetCDF")
+
+  # If optional argument is specified, find a group by name:
+  if (is.character(grpname)) {
+    ncid <- grp.find(ncid, grpname)
+  }
+
+  # Initialise output list:
+  out <- list()
+  out$ncid <- ncid
+
+  # Get parent of group (NULL if none):
+  out$parent <- Cwrap("R_nc_inq_grp_parent",
+	              as.integer(ncid), ERRNULL=TRUE)
+  if (!is.null(out$parent)) {
+    attr(out$parent,"class") <- "NetCDF"
+  }
+
+  # Get sub-groups of group (empty list if none):
+  grpids <- Cwrap("R_nc_inq_grps",
+	          as.integer(ncid), ERRNULL=TRUE)
+  if (is.null(grpids)) {
+    out$grps <- list()
+  } else {
+    out$grps <- lapply(as.list(grpids),
+                  function(x) {attr(x, "class") <- "NetCDF"; return(x)})
+  }
+
+  # Names of group:
+  out$name <- Cwrap("R_nc_inq_grpname",
+		    as.integer(ncid),
+                    as.integer(FALSE))
+  out$fullname <- Cwrap("R_nc_inq_grpname",
+		        as.integer(ncid),
+                        as.integer(TRUE))
+
+  # Dimensions in group (empty vector if none):
+  out$dimids <- Cwrap("R_nc_inq_dimids",
+	              as.integer(ncid),
+	              as.integer(TRUE))
+
+  # Unlimited dimensions in group (empty vector if none):
+  out$unlimids <- Cwrap("R_nc_inq_unlimdims",
+                        as.integer(ncid), ERRNULL=TRUE)
+  if (is.null(out$unlimids)) {
+    # A different function is needed if file is not netcdf4 format:
+    out$unlimids <- Cwrap("R_nc_inq_unlimdim",
+                          as.integer(ncid))
+    if (out$unlimids == -1) {
+      out$unlimids <- integer(0)
+    }
+  }
+
+  # Variables in group (empty vector if none):
+  out$varids <- Cwrap("R_nc_inq_varids",
+	              as.integer(ncid))
+
+  # Types in group (empty vector if none):
+  out$typeids <- Cwrap("R_nc_inq_typeids",
+	               as.integer(ncid))
+
+  return(out)
+}
+
+
+#-------------------------------------------------------------------------------#
+#  grp.rename.nc()                                                                 #
+#-------------------------------------------------------------------------------#
+
+grp.rename.nc <- function(ncid, newname, oldname=NULL)
+{
+  # Check arguments:
+  stopifnot(class(ncid) == "NetCDF")
+  stopifnot(is.character(newname))
+
+  # If optional argument is specified, find a group by name:
+  if (is.character(oldname)) {
+    ncid <- grp.find(ncid, oldname)
+  }
+
+  # C function call:
+  nc <- Cwrap("R_nc_rename_grp",
+	      as.integer(ncid),
+              newname)
+
+  return(invisible(NULL))
 }
 
 
