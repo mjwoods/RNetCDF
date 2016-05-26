@@ -10,5 +10,4 @@
 # Please consult the R Installation and Administration manual of your R version.
 
 PKG_CPPFLAGS = -DHAVE_LIBUDUNITS2
-PKG_LIBS=-lnetcdf -ludunits2 -lexpat
-
+PKG_LIBS = -lnetcdf4 -ludunits2 -lexpat -L$(LIB_HDF5)/lib${R_ARCH} -lhdf5_hl -lhdf5 -lz 
