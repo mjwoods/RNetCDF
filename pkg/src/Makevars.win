@@ -9,5 +9,9 @@
 # where the relevant variables are LOCAL_SOFT, LOCAL_CPPFLAGS and LOCAL_LIBS.
 # Please consult the R Installation and Administration manual of your R version.
 
-PKG_CPPFLAGS = -DHAVE_LIBUDUNITS2
-PKG_LIBS = -lnetcdf4 -ludunits2 -lexpat -L$(LIB_HDF5)/lib${R_ARCH} -lhdf5_hl -lhdf5 -lz 
+PKG_CPPFLAGS = -I${NETCDF}/include -I{UDUNITS2_HOME}/include
+#PKG_CPPFLAGS = -DHAVE_LIBUDUNITS2
+PKG_LIBS = -L${NETCDF}/lib${R_ARCH} -lnetcdf \
+  -L{UDUNITS2_HOME}/lib${R_ARCH} -ludunits2 -lexpat \
+  -L$(LIB_HDF5)/lib${R_ARCH} -lhdf5_hl -lhdf5 -lz 
+#PKG_LIBS = -lnetcdf -ludunits2 -lexpat

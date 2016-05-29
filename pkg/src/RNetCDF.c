@@ -95,7 +95,7 @@
   }
 
 #define ROBJDEF(RTYPE,RLEN) \
-  SEXP retlist, retlistnames; \
+  SEXP retlist; \
   PROTECT(retlist = allocVector(VECSXP, 3)); \
   SET_VECTOR_ELT(retlist, 0, allocVector(INTSXP, 1)); \
   SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP, 1)); \
