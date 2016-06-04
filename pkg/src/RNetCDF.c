@@ -71,12 +71,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <netcdf.h>
+#include "netcdf.h"
 
 #ifdef HAVE_UDUNITS2_UDUNITS_H
-  #include <udunits2/udunits.h>
+  #include "udunits2/udunits.h"
 #else
-  #include <udunits.h>
+  #include "udunits.h"
 #endif
 
 #include <R.h>

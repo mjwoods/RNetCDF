@@ -1,0 +1,11 @@
+# Diagnostic commands to explore directory structure on r-forge
+
+echo "START configure.win"
+echo
+
+echo "Shell variables":
+set
+
+echo "END configure.win"
+echo
+
