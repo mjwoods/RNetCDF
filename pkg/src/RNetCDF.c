@@ -70,6 +70,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "netcdf.h"
 
@@ -110,7 +111,7 @@
   } else if (STATUS != NC_NOERR) { \
     SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(STATUS))); \
   } \
-  INTEGER(VECTOR_ELT(retlist, 0))[0] = status; \
+  INTEGER(VECTOR_ELT(retlist, 0))[0] = STATUS; \
   UNPROTECT(1); \
   return(retlist);
 
@@ -817,94 +818,110 @@ SEXP R_nc_def_dim (SEXP ncid, SEXP dimname, SEXP size, SEXP unlimp)
 }
 
 
+/* Private function to find all unlimited dimensions visible in a file or group.
+   The netcdf4 function nc_inq_unlimdims does not check parents of a group.
+   Returns netcdf status. If no error occurs, nunlim and unlimids are set.
+ */
+int unlimdims (int ncid, int *nunlim, int **unlimids, int parents) {
+  int status, format, ndims, ntmp, *tmpdims, parent;
+
+  *nunlim = 0;
+
+  status = nc_inq_format(ncid, &format);
+  if (status != NC_NOERR) {
+    return status;
+  }
+
+  if (format == NC_FORMAT_NETCDF4) {
+    status = nc_inq_dimids(ncid, &ndims, NULL, 1);
+    if(status != NC_NOERR) {
+      return(status);
+    }
+
+    /* At most, all visible dimensions could be unlimited */
+    *unlimids = (int *) R_alloc(ndims, sizeof(int));
+    tmpdims = (int *) R_alloc(ndims, sizeof(int));
+
+    /* Get unlimited dimensions in this group and (optionally) its ancestors */
+    do {
+      status = nc_inq_unlimdims(ncid, &ntmp, tmpdims);
+      if (status != NC_NOERR) {
+	return status;
+      }
+      if ((ntmp + *nunlim) < ndims) {
+        memcpy(*unlimids + *nunlim*sizeof(int), tmpdims, ntmp*sizeof(int));
+        *nunlim += ntmp;
+      } else {
+        /* Avoid a segfault in case nc_inq_unlimdims starts checking parents */
+        return NC_ENOMEM;
+      }
+    } while (parents && nc_inq_grp_parent(ncid, &ncid) == NC_NOERR);
+
+  } else {
+    *unlimids = (int *) R_alloc(1, sizeof(int));
+    status = nc_inq_unlimdim(ncid, *unlimids);
+    if (status == NC_NOERR && **unlimids != -1) {
+      *nunlim = 1;
+    }
+  }
+
+  return status;
+}
+
+
 /*-----------------------------------------------------------------------------*\
  *  R_nc_inq_dim()                                                             *
 \*-----------------------------------------------------------------------------*/
 
 SEXP R_nc_inq_dim (SEXP ncid, SEXP dimid, SEXP dimname, SEXP nameflag)
 {
-    int    unlimdimid, unlimp, ncdimid, dimlen, status;
+    int    nunlim, *unlimids, isunlim, ncdimid, format, status, ii;
     size_t ncdimlen;
-    char   ncdimname[NC_MAX_NAME];
-    SEXP   retlist, retlistnames;
-
-    /*-- Create output object and initialize return values --------------------*/
-    PROTECT(retlist = allocVector(VECSXP, 6));
-    SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 3, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 4, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 5, allocVector(REALSXP, 1));
-
-    PROTECT(retlistnames = allocVector(STRSXP, 6)); 
-    SET_STRING_ELT(retlistnames, 0, mkChar("status")); 
-    SET_STRING_ELT(retlistnames, 1, mkChar("errmsg")); 
-    SET_STRING_ELT(retlistnames, 2, mkChar("id")); 
-    SET_STRING_ELT(retlistnames, 3, mkChar("name")); 
-    SET_STRING_ELT(retlistnames, 4, mkChar("length")); 
-    SET_STRING_ELT(retlistnames, 5, mkChar("unlim")); 
-    setAttrib(retlist, R_NamesSymbol, retlistnames); 
-
-    strcpy(ncdimname, CHAR(STRING_ELT(dimname, 0)));
-
-    ncdimid  = INTEGER(dimid)[0];
-    dimlen   = -1;
-    ncdimlen = (size_t)dimlen;
-    unlimp   = -1;
-    status   = -1;
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
-    SET_VECTOR_ELT (retlist, 1, mkString(""));
-    REAL(VECTOR_ELT(retlist, 2))[0] = (double)ncdimid;
-    SET_VECTOR_ELT (retlist, 3, mkString(ncdimname));
-    REAL(VECTOR_ELT(retlist, 4))[0] = (double)dimlen;
-    REAL(VECTOR_ELT(retlist, 5))[0] = (double)unlimp;
+    char   ncdimname[NC_MAX_NAME+1];
+    ROBJDEF(VECSXP, 4);
 
     /*-- Get the dimension ID if necessary ------------------------------------*/
-    if(INTEGER(nameflag)[0] == 1) {
- 	status = nc_inq_dimid(INTEGER(ncid)[0], ncdimname, &ncdimid);
-        if(status != NC_NOERR) {
-            SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	    REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	    UNPROTECT(2);
-	    return(retlist);
-	}
+    if(INTEGER(nameflag)[0] != 0) {
+      status = nc_inq_dimid(INTEGER(ncid)[0], CHAR(STRING_ELT(dimname, 0)), &ncdimid);
+      if(status != NC_NOERR) {
+	RRETURN(status);
+      }
+    } else {
+      ncdimid = INTEGER(dimid)[0];
     }
 
     /*-- Inquire the dimension ------------------------------------------------*/
     status = nc_inq_dim(INTEGER(ncid)[0], ncdimid, ncdimname, &ncdimlen);
     if(status != NC_NOERR) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	return(retlist);
+      RRETURN(status);
     }
 
-    /*-- Check if it is the unlimited dimension -------------------------------*/
-    status = nc_inq_unlimdim(INTEGER(ncid)[0], &unlimdimid);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	return(retlist);
+    /*-- Check if it is an unlimited dimension -------------------------------*/
+    status = unlimdims (INTEGER(ncid)[0], &nunlim, &unlimids, 1);
+    if (status != NC_NOERR) {
+      RRETURN(status);
     }
 
-    /*-- Converting from size_t to int and setting unlimdim-flag --------------*/
-    dimlen = (int)ncdimlen;
-    
-    if(unlimdimid == ncdimid)
-        unlimp = 1;
-    else
-        unlimp = 0;
+    isunlim = 0;
+    for ( ii=0; ii<nunlim; ii++ ) {
+      if (unlimids[ii] == ncdimid) {
+        isunlim = 1;
+        break;
+      }
+    }
 
     /*-- Returning the list ---------------------------------------------------*/
-    REAL(VECTOR_ELT(retlist, 0))[0] = status;
-    REAL(VECTOR_ELT(retlist, 2))[0] = ncdimid;
-    SET_VECTOR_ELT (retlist, 3, mkString(ncdimname));
-    REAL(VECTOR_ELT(retlist, 4))[0] = dimlen;
-    REAL(VECTOR_ELT(retlist, 5))[0] = unlimp;
-    UNPROTECT(2);
-    return(retlist);
+    SET_VECTOR_ELT(RDATASET, 0, allocVector(INTSXP, 1));
+    SET_VECTOR_ELT(RDATASET, 1, allocVector(STRSXP,  1));
+    SET_VECTOR_ELT(RDATASET, 2, allocVector(REALSXP, 1));
+    SET_VECTOR_ELT(RDATASET, 3, allocVector(INTSXP, 1));
+
+    INTEGER(VECTOR_ELT(RDATASET, 0))[0] = ncdimid;
+    SET_VECTOR_ELT (RDATASET, 1, mkString(ncdimname));
+    REAL(VECTOR_ELT(RDATASET, 2))[0] = (double)ncdimlen;
+    INTEGER(VECTOR_ELT(RDATASET, 3))[0] = isunlim;
+
+    RRETURN(status);
 }
 
 
@@ -1771,7 +1788,7 @@ SEXP R_nc_inq_grpname (SEXP ncid, SEXP full)
 {
   int     status;
   size_t  namelen;
-  char    *name;
+  char    *name; 
   ROBJDEF(STRSXP,1);
 
   if (INTEGER(full)[0]) {
@@ -1784,16 +1801,12 @@ SEXP R_nc_inq_grpname (SEXP ncid, SEXP full)
     status = nc_inq_grpname_full(INTEGER(ncid)[0], NULL, name);
 
   } else {
-    status = nc_inq_grpname_len(INTEGER(ncid)[0],  &namelen);
-    if (status != NC_NOERR) {
-      RRETURN(status);
-    }
-
-    name = (char *) R_alloc(namelen+1, sizeof(char));
+    name = (char *) R_alloc(NC_MAX_NAME+1, sizeof(char));
     status = nc_inq_grpname(INTEGER(ncid)[0], name);
+
   }
 
-  if (status != NC_NOERR) {
+  if (status == NC_NOERR) {
     SET_STRING_ELT(RDATASET, 0, mkChar(name));
   }
   RRETURN(status);
@@ -1841,20 +1854,6 @@ SEXP RFUN (SEXP ncid) \
 INQGRPIDS(R_nc_inq_grps, nc_inq_grps);
 INQGRPIDS(R_nc_inq_typeids, nc_inq_typeids);
 INQGRPIDS(R_nc_inq_varids, nc_inq_varids);
-INQGRPIDS(R_nc_inq_unlimdims, nc_inq_unlimdims);
-
-
-/*-----------------------------------------------------------------------------*\
- *  R_nc_inq_unlimdim()                                                        *
-\*-----------------------------------------------------------------------------*/
-
-SEXP R_nc_inq_unlimdim(SEXP ncid)
-{
-  int    status;
-  ROBJDEF(INTSXP,1);
-  status = nc_inq_unlimdim(INTEGER(ncid)[0], INTEGER(RDATASET));
-  RRETURN(status);
-}
 
 
 /*-----------------------------------------------------------------------------*\
@@ -1872,6 +1871,45 @@ SEXP R_nc_inq_dimids(SEXP ncid, SEXP parents)
   }
   RDATADEF(INTSXP,count);
   status = nc_inq_dimids(INTEGER(ncid)[0], NULL, INTEGER(RDATASET), INTEGER(parents)[0]);
+  RRETURN(status);
+}
+
+
+/* Private function called by qsort to compare integers */
+int int_cmp(const void *a, const void *b)
+{
+   const int *ia = (const int *)a; 
+   const int *ib = (const int *)b;
+   return *ia  - *ib; 
+}
+
+
+/*-----------------------------------------------------------------------------*\
+ *  R_nc_inq_unlimids()                                                       *
+\*-----------------------------------------------------------------------------*/
+
+SEXP R_nc_inq_unlimids(SEXP ncid, SEXP parents)
+{
+  int    status, nunlim, *unlimids;
+  ROBJDEF(NOSXP,0);
+
+  status = unlimdims (INTEGER(ncid)[0], &nunlim, &unlimids, INTEGER(parents)[0]);
+  if (status != NC_NOERR) {
+    RRETURN(status);
+  }
+
+  RDATADEF(INTSXP, nunlim);
+
+  /* Sort the results for ease of presentation and searching */
+  if (nunlim > 1) {
+    qsort(unlimids, nunlim, sizeof(int), int_cmp);
+  }
+
+  /* Copy temporary results to output structure */
+  if (nunlim > 0) {
+    memcpy(INTEGER(RDATASET), unlimids, nunlim*sizeof(int));
+  }
+
   RRETURN(status);
 }
 

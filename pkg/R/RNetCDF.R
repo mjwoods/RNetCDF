@@ -514,23 +514,16 @@ dim.inq.nc <- function(ncfile, dimension)
     ifelse(is.character(dimension), dimname <- dimension, dimid <- dimension)
     
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_inq_dim",
+    nc <- Cwrap("R_nc_inq_dim",
         	as.integer(ncfile),
 		as.integer(dimid),
 		as.character(dimname),
-		as.integer(nameflag),
-		PACKAGE="RNetCDF")
-    
-    #-- Return object if no error ----------------------------------------------#
-    if(nc$status == 0) {
-        nc$status <- NULL
-	nc$errmsg <- NULL
-	
-	nc$unlim <- ifelse(nc$unlim == 1, TRUE, FALSE)
-	
-        return(nc)
-    } else
-	stop(nc$errmsg, call.=FALSE)
+		as.integer(nameflag))
+
+    #-- Return object ----------------------------------------------------------#
+    names(nc) <- c("id","name","length","unlim")
+    nc$unlim <- ifelse(nc$unlim == 1, TRUE, FALSE)
+    return(nc)
 }
 
 
@@ -1270,22 +1263,15 @@ grp.inq.nc <- function(ncid, grpname=NULL)
 		        as.integer(ncid),
                         as.integer(TRUE))
 
-  # Dimensions in group (empty vector if none):
+  # Dimensions visible in group (empty vector if none):
   out$dimids <- Cwrap("R_nc_inq_dimids",
 	              as.integer(ncid),
 	              as.integer(TRUE))
 
-  # Unlimited dimensions in group (empty vector if none):
-  out$unlimids <- Cwrap("R_nc_inq_unlimdims",
-                        as.integer(ncid), ERRNULL=TRUE)
-  if (is.null(out$unlimids)) {
-    # A different function is needed if file is not netcdf4 format:
-    out$unlimids <- Cwrap("R_nc_inq_unlimdim",
-                          as.integer(ncid))
-    if (out$unlimids == -1) {
-      out$unlimids <- integer(0)
-    }
-  }
+  # Unlimited dimensions visible in group (empty vector if none):
+  out$unlimids <- Cwrap("R_nc_inq_unlimids",
+	                as.integer(ncid),
+	                as.integer(TRUE))
 
   # Variables in group (empty vector if none):
   out$varids <- Cwrap("R_nc_inq_varids",
@@ -1334,22 +1320,31 @@ read.nc <- function(ncfile, unpack=TRUE)
     stopifnot(is.logical(unpack))
 
     #-- Initialise storage -----------------------------------------------------#
-    nvars    <- file.inq.nc(ncfile)$nvars
-    varnames <- character(nvars)
-    retlist  <- vector("list", nvars)
+    inq <- grp.inq.nc(ncfile)
+    nvars <- length(inq$varids)
+    ngrps <- length(inq$grps)
+    nelem <- nvars + ngrps
+
+    elemnames <- character(nelem)
+    retlist  <- vector("list", nelem)
 
     #-- Read data from each variable -------------------------------------------#
-    for(i in seq_len(nvars)) {
-        retlist[[i]] <- var.get.nc(ncfile, i-1, unpack=unpack)
-        varnames[i]  <- var.inq.nc(ncfile, i-1)$name
+    for (ii in seq_len(nvars)) {
+      retlist[[ii]] <- var.get.nc(ncfile, inq$varids[ii], unpack=unpack)
+      elemnames[ii]  <- var.inq.nc(ncfile, inq$varids[ii])$name
+    }
+
+    #-- Recursively read each group --------------------------------------------#
+    for (ii in seq_len(ngrps)) {
+      retlist[[nvars+ii]] <- read.nc(inq$grps[[ii]], unpack=unpack)
+      elemnames[nvars+ii] <- grp.inq.nc(inq$grps[[ii]])$name
     }
 
     #-- Set names of list elements ---------------------------------------------#
-    names(retlist) <- varnames
+    names(retlist) <- elemnames
 
     return(retlist)
 }
-
 
 #===============================================================================#
 #  Udunits library functions							#

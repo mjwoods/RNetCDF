@@ -92,6 +92,12 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   dim.def.nc(nc, "max_string_length", nstring)
   dim.def.nc(nc, "empty", unlim=TRUE)
 
+  ## Define a group
+  if (format == "netcdf4") {
+    ncroot <- nc
+    nc <- grp.def.nc(nc, "testgrp")
+  }
+
   ##  Define variables
   var.def.nc(nc, "time", "NC_INT", "time")
   var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1))
@@ -130,6 +136,18 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   sync.nc(nc)
 
   ## Read tests
+  cat("Inquire about file or group ...")
+  grpinfo <- grp.inq.nc(nc)
+  tally <- testfun(length(grpinfo$grps),0,tally)
+  tally <- testfun(length(grpinfo$dimids),4,tally)
+  tally <- testfun(length(grpinfo$unlimids),1,tally)
+  tally <- testfun(length(grpinfo$varids),8,tally)
+  if (format == "netcdf4") {
+    tally <- testfun(grpinfo$fullname,"/testgrp",tally)
+  } else {
+    tally <- testfun(grpinfo$fullname,"/",tally)
+  }
+
   cat("Read numeric vector ... ")
   x <- mytime
   dim(x) <- length(x)
@@ -215,7 +233,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   tally <- testfun(x,y,tally)
 
   #-- Close file -----------------------------------------------------------------#
-  close.nc(nc)
+  if (format == "netcdf4") {
+    close.nc(ncroot)
+  } else {
+    close.nc(nc)
+  }
 
 }
 
@@ -275,7 +297,7 @@ cat("Summary:", tally["pass"], "pass /", tally["fail"], "fail. ")
 if (tally["fail"]==0) {
   cat("Package seems to work properly.\n")
 } else {
-  cat("Some problems were detected.\n")
+  stop(tally["fail"]," of ",sum(tally)," test cases failed.")
 }
 
 #===============================================================================#
