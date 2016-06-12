@@ -1782,6 +1782,21 @@ SEXP R_nc_inq_grp_parent (SEXP ncid)
 
 
 /*-----------------------------------------------------------------------------*\
+ *  R_nc_inq_natts()                                                      *
+\*-----------------------------------------------------------------------------*/
+SEXP R_nc_inq_natts (SEXP ncid)
+{
+  int     status;
+  ROBJDEF(INTSXP,1);
+
+  /* Get number of attributes in group */
+  status = nc_inq_natts(INTEGER(ncid)[0], INTEGER(RDATASET));
+
+  RRETURN(status);
+}
+
+
+/*-----------------------------------------------------------------------------*\
  *  R_nc_inq_grpname()                                                         *
 \*-----------------------------------------------------------------------------*/
 SEXP R_nc_inq_grpname (SEXP ncid, SEXP full)

@@ -26,6 +26,7 @@
   \item{unlimids}{Vector of identifiers for unlimited dimensions in the group and its ancestors.}
   \item{varids}{Vector of identifiers for variables in the group.}
   \item{typeids}{Vector of identifiers for types in the group.}
+  \item{ngatts}{Number of group attributes.}
 }
 
 \references{\url{http://www.unidata.ucar.edu/software/netcdf/}}

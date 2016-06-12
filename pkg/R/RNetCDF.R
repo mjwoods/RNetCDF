@@ -1281,6 +1281,9 @@ grp.inq.nc <- function(ncid, grpname=NULL)
   out$typeids <- Cwrap("R_nc_inq_typeids",
 	               as.integer(ncid))
 
+  # Number of group attributes:
+  out$natts <- Cwrap("R_nc_inq_natts", as.integer(ncid))
+
   return(out)
 }
 
