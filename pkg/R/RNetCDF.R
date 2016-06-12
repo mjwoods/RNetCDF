@@ -1313,30 +1313,35 @@ grp.rename.nc <- function(ncid, newname, oldname=NULL)
 #  read.nc()                                                                    #
 #-------------------------------------------------------------------------------#
 
-read.nc <- function(ncfile, unpack=TRUE)
+read.nc <- function(ncfile, recursive=FALSE, ...)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(class(ncfile) == "NetCDF")
-    stopifnot(is.logical(unpack))
+    stopifnot(is.logical(recursive))
 
     #-- Initialise storage -----------------------------------------------------#
     inq <- grp.inq.nc(ncfile)
     nvars <- length(inq$varids)
-    ngrps <- length(inq$grps)
-    nelem <- nvars + ngrps
+    if (recursive) {
+      ngrps <- length(inq$grps)
+      nelem <- nvars + ngrps
+    } else {
+      ngrps <- 0
+      nelem <- nvars
+    }
 
     elemnames <- character(nelem)
     retlist  <- vector("list", nelem)
 
     #-- Read data from each variable -------------------------------------------#
     for (ii in seq_len(nvars)) {
-      retlist[[ii]] <- var.get.nc(ncfile, inq$varids[ii], unpack=unpack)
+      retlist[[ii]] <- var.get.nc(ncfile, inq$varids[ii], ...)
       elemnames[ii]  <- var.inq.nc(ncfile, inq$varids[ii])$name
     }
 
     #-- Recursively read each group --------------------------------------------#
     for (ii in seq_len(ngrps)) {
-      retlist[[nvars+ii]] <- read.nc(inq$grps[[ii]], unpack=unpack)
+      retlist[[nvars+ii]] <- read.nc(inq$grps[[ii]], recursive=TRUE, ...)
       elemnames[nvars+ii] <- grp.inq.nc(inq$grps[[ii]])$name
     }
 
