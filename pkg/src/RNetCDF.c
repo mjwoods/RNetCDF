@@ -819,10 +819,10 @@ SEXP R_nc_def_dim (SEXP ncid, SEXP dimname, SEXP size, SEXP unlimp)
 
 
 /* Private function to find all unlimited dimensions visible in a file or group.
-   The netcdf4 function nc_inq_unlimdims does not check parents of a group.
+   The netcdf4 function nc_inq_unlimdims does not check ancestors of a group.
    Returns netcdf status. If no error occurs, nunlim and unlimids are set.
  */
-int unlimdims (int ncid, int *nunlim, int **unlimids, int parents) {
+int unlimdims (int ncid, int *nunlim, int **unlimids, int ancestors) {
   int status, format, ndims, ntmp, *tmpdims, parent;
 
   *nunlim = 0;
@@ -852,10 +852,10 @@ int unlimdims (int ncid, int *nunlim, int **unlimids, int parents) {
         memcpy(*unlimids + *nunlim*sizeof(int), tmpdims, ntmp*sizeof(int));
         *nunlim += ntmp;
       } else {
-        /* Avoid a segfault in case nc_inq_unlimdims starts checking parents */
+        /* Avoid a segfault in case nc_inq_unlimdims starts checking ancestors */
         return NC_ENOMEM;
       }
-    } while (parents && nc_inq_grp_parent(ncid, &ncid) == NC_NOERR);
+    } while (ancestors && nc_inq_grp_parent(ncid, &ncid) == NC_NOERR);
 
   } else {
     *unlimids = (int *) R_alloc(1, sizeof(int));
@@ -1875,17 +1875,17 @@ INQGRPIDS(R_nc_inq_varids, nc_inq_varids);
  *  R_nc_inq_dimids()                                                        *
 \*-----------------------------------------------------------------------------*/
 
-SEXP R_nc_inq_dimids(SEXP ncid, SEXP parents)
+SEXP R_nc_inq_dimids(SEXP ncid, SEXP ancestors)
 {
   int    status, count;
   ROBJDEF(NOSXP,0);
 
-  status = nc_inq_dimids(INTEGER(ncid)[0], &count, NULL, INTEGER(parents)[0]);
+  status = nc_inq_dimids(INTEGER(ncid)[0], &count, NULL, INTEGER(ancestors)[0]);
   if(status != NC_NOERR) {
     RRETURN(status);
   }
   RDATADEF(INTSXP,count);
-  status = nc_inq_dimids(INTEGER(ncid)[0], NULL, INTEGER(RDATASET), INTEGER(parents)[0]);
+  status = nc_inq_dimids(INTEGER(ncid)[0], NULL, INTEGER(RDATASET), INTEGER(ancestors)[0]);
   RRETURN(status);
 }
 
@@ -1903,12 +1903,12 @@ int int_cmp(const void *a, const void *b)
  *  R_nc_inq_unlimids()                                                       *
 \*-----------------------------------------------------------------------------*/
 
-SEXP R_nc_inq_unlimids(SEXP ncid, SEXP parents)
+SEXP R_nc_inq_unlimids(SEXP ncid, SEXP ancestors)
 {
   int    status, nunlim, *unlimids;
   ROBJDEF(NOSXP,0);
 
-  status = unlimdims (INTEGER(ncid)[0], &nunlim, &unlimids, INTEGER(parents)[0]);
+  status = unlimdims (INTEGER(ncid)[0], &nunlim, &unlimids, INTEGER(ancestors)[0]);
   if (status != NC_NOERR) {
     RRETURN(status);
   }

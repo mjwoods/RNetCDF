@@ -632,7 +632,7 @@ print_grp <- function(x, level=0) {
     indent <- paste(rep("  ",level), collapse="")
 
     #-- Inquire about the group ------------------------------------------------#
-    grpinfo <- try(grp.inq.nc(x))
+    grpinfo <- try(grp.inq.nc(x, ancestors=FALSE))
     if(class(grpinfo) == "try-error" || is.null(grpinfo))
         return(invisible(NULL))
 
@@ -698,10 +698,10 @@ print_grp <- function(x, level=0) {
     #-- Print groups recursively -----------------------------------------------#
     if(length(grpinfo$grps) != 0) {
         for (id in grpinfo$grps) {
-            subgrpinfo <- grp.inq.nc(id)
+            subgrpinfo <- grp.inq.nc(id, ancestors=FALSE)
             cat("\n", indent, "group: ", subgrpinfo$name, " {\n", sep="")
             print_grp(id, level=(level+1))
-            cat(indent, indent, "} // group ", subgrpinfo$name, "\n", sep="")
+            cat(indent, "  } // group ", subgrpinfo$name, "\n", sep="")
         }
     }
 }
@@ -1243,10 +1243,11 @@ grp.find <- function(ncid, grpname, full=isTRUE(grepl("/",grpname)))
 #  grp.inq.nc()                                                                 #
 #-------------------------------------------------------------------------------#
 
-grp.inq.nc <- function(ncid, grpname=NULL)
+grp.inq.nc <- function(ncid, grpname=NULL, ancestors=TRUE)
 {
   # Check arguments:
   stopifnot(class(ncid) == "NetCDF")
+  stopifnot(is.logical(ancestors))
 
   # If optional argument is specified, find a group by name:
   if (is.character(grpname)) {
@@ -1278,19 +1279,21 @@ grp.inq.nc <- function(ncid, grpname=NULL)
   out$name <- Cwrap("R_nc_inq_grpname",
 		    as.integer(ncid),
                     as.integer(FALSE))
-  out$fullname <- Cwrap("R_nc_inq_grpname",
-		        as.integer(ncid),
-                        as.integer(TRUE))
+  if (ancestors) {
+    out$fullname <- Cwrap("R_nc_inq_grpname",
+		          as.integer(ncid),
+                          as.integer(TRUE))
+  }
 
   # Dimensions visible in group (empty vector if none):
   out$dimids <- Cwrap("R_nc_inq_dimids",
 	              as.integer(ncid),
-	              as.integer(TRUE))
+	              as.integer(ancestors))
 
   # Unlimited dimensions visible in group (empty vector if none):
   out$unlimids <- Cwrap("R_nc_inq_unlimids",
 	                as.integer(ncid),
-	                as.integer(TRUE))
+	                as.integer(ancestors))
 
   # Variables in group (empty vector if none):
   out$varids <- Cwrap("R_nc_inq_varids",
