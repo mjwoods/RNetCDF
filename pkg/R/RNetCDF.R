@@ -626,42 +626,42 @@ open.nc <- function(con, write=FALSE, share=FALSE, prefill=TRUE, ...)
 #  print.nc()                                                                   #
 #-------------------------------------------------------------------------------#
 
-print.nc <- function(x, ...)
-{
-    #-- Check args -------------------------------------------------------------#
-    stopifnot(class(x) == "NetCDF") 
+# Private function to print metadata of groups recursively:
+print_grp <- function(x, level=0) {
 
-    #-- Inquire about the file -------------------------------------------------#
-    fileinfo <- try(file.inq.nc(x))
-    if(class(fileinfo) == "try-error" || is.null(fileinfo))
+    indent <- paste(rep("  ",level), collapse="")
+
+    #-- Inquire about the group ------------------------------------------------#
+    grpinfo <- try(grp.inq.nc(x))
+    if(class(grpinfo) == "try-error" || is.null(grpinfo))
         return(invisible(NULL))
 
     #-- Inquire about all dimensions -------------------------------------------#
-    if(fileinfo$ndims != 0) {
-	cat("dimensions:\n")
-	for(i in 0:(fileinfo$ndims-1)) {
-            diminfo <- dim.inq.nc(x, i)
+    if(length(grpinfo$dimids) != 0) {
+	cat(indent, "dimensions:\n", sep="")
+	for (id in grpinfo$dimids) {
+            diminfo <- dim.inq.nc(x, id)
             if(diminfo$unlim == FALSE)
-		cat("        ", diminfo$name, " = ", diminfo$length, " ;\n",
+		cat(indent, "        ", diminfo$name, " = ", diminfo$length, " ;\n",
 		    sep="")
 	    else
-	        cat("        ", diminfo$name, " = UNLIMITED ; // (", 
+	        cat(indent, "        ", diminfo$name, " = UNLIMITED ; // (", 
 		    diminfo$length, " currently)\n", sep="")
 	}
     }
     
     #-- Inquire about all variables --------------------------------------------#
-    if(fileinfo$nvars != 0) {
-	cat("variables:\n")
-	for(i in 0:(fileinfo$nvars-1)) {
-            varinfo <- var.inq.nc(x, i)
+    if(length(grpinfo$varids) != 0) {
+	cat(indent, "variables:\n", sep="")
+	for(id in grpinfo$varids) {
+            varinfo <- var.inq.nc(x, id)
 	    vartype <- substring(tolower(varinfo$type), 4)
-	    cat("        ", vartype, " ", varinfo$name, sep="")
+	    cat(indent, "        ", vartype, " ", varinfo$name, sep="")
 	    if(varinfo$ndims > 0) {
 	        cat("(")
-		for(j in 1:(varinfo$ndims-1))
-	            if(j > 0 && varinfo$ndims > 1)
-			cat(dim.inq.nc(x, varinfo$dimids[j])$name, ", ", sep="")
+		for (jj in seq_len(varinfo$ndims-1)) {
+		  cat(dim.inq.nc(x, varinfo$dimids[jj])$name, ", ", sep="")
+                }
 		cat(dim.inq.nc(x, varinfo$dimids[varinfo$ndims])$name, sep="")
 	        cat(")")
 	    }
@@ -669,31 +669,50 @@ print.nc <- function(x, ...)
 	    
 	    #-- Inquire about variable attributes ------------------------------#
 	    if(varinfo$natts != 0) {
-	        for(j in 0:(varinfo$natts-1)) {
-		    attinfo <- att.inq.nc(x, i, j)
-		    cat(rep(" ", 16), varinfo$name, ":", attinfo$name, sep="")
+	        for(jj in 0:(varinfo$natts-1)) {
+		    attinfo <- att.inq.nc(x, id, jj)
+		    cat(indent, rep(" ", 16), varinfo$name, ":", attinfo$name, sep="")
 		    if(attinfo$type == "NC_CHAR")
-		        cat(" = \"", att.get.nc(x, i, j), "\" ;\n", sep="")
+		        cat(" = \"", att.get.nc(x, id, jj), "\" ;\n", sep="")
 		    else
-		        cat( " = ", att.get.nc(x, i, j), " ;\n", sep="")
+		        cat( " = ", att.get.nc(x, id, jj), " ;\n", sep="")
 		}
 	    }
 	}
     }
 
-    #-- Inquire about gobal attributes------------------------------------------#
-    if(fileinfo$ngatts != 0) {
-        cat("\n// global attributes:\n")
-        i <- "NC_GLOBAL"
-	for(j in 0:(fileinfo$ngatts-1)) {
-	    attinfo <- att.inq.nc(x, i, j)
-	    cat(rep(" ", 16),  ":", attinfo$name, sep="")
+    #-- Inquire about global attributes ----------------------------------------#
+    if(grpinfo$ngatts != 0) {
+        cat("\n", indent, "// global attributes:\n", sep="")
+        id <- "NC_GLOBAL"
+	for(jj in 0:(grpinfo$ngatts-1)) {
+	    attinfo <- att.inq.nc(x, id, jj)
+	    cat(indent, rep(" ", 16),  ":", attinfo$name, sep="")
 	    if(attinfo$type == "NC_CHAR")
-		cat(" = \"", att.get.nc(x, i, j), "\" ;\n", sep="")
+		cat(" = \"", att.get.nc(x, id, jj), "\" ;\n", sep="")
 	    else
-		cat( " = ", att.get.nc(x, i, j), " ;\n", sep="")
+		cat( " = ", att.get.nc(x, id, jj), " ;\n", sep="")
 	}
     }
+
+    #-- Print groups recursively -----------------------------------------------#
+    if(length(grpinfo$grps) != 0) {
+        for (id in grpinfo$grps) {
+            subgrpinfo <- grp.inq.nc(id)
+            cat("\n", indent, "group: ", subgrpinfo$name, " {\n", sep="")
+            print_grp(id, level=(level+1))
+            cat(indent, indent, "} // group ", subgrpinfo$name, "\n", sep="")
+        }
+    }
+}
+
+print.nc <- function(x, ...)
+{
+    #-- Check args -------------------------------------------------------------#
+    stopifnot(class(x) == "NetCDF") 
+
+    # Display groups recursively:
+    print_grp(x, level=0)
 }
 
 
@@ -1236,7 +1255,7 @@ grp.inq.nc <- function(ncid, grpname=NULL)
 
   # Initialise output list:
   out <- list()
-  out$ncid <- ncid
+  out$self <- ncid
 
   # Get parent of group (NULL if none):
   out$parent <- Cwrap("R_nc_inq_grp_parent",
@@ -1282,7 +1301,7 @@ grp.inq.nc <- function(ncid, grpname=NULL)
 	               as.integer(ncid))
 
   # Number of group attributes:
-  out$natts <- Cwrap("R_nc_inq_natts", as.integer(ncid))
+  out$ngatts <- Cwrap("R_nc_inq_natts", as.integer(ncid))
 
   return(out)
 }

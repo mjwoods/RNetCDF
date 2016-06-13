@@ -23,21 +23,25 @@ The output of this function is almost identical with a \code{"ncdump -h"} call. 
 \author{Pavel Michna}
 
 \examples{
-##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("foo.nc")
+##  Create a new NetCDF dataset
+nc <- create.nc("foo.nc", format="netcdf4")
 
-dim.def.nc(nc, "station", 5)
+## Create a group (just because we can!):
+grp <- grp.def.nc(nc, "data")
+
+## Create some dimensions, putting one inside the group:
 dim.def.nc(nc, "time", unlim=TRUE)
+dim.def.nc(grp, "station", 5)
 
-##  Create two variables, one as coordinate variable
+##  Create two variables, putting one inside the group:
 var.def.nc(nc, "time", "NC_INT", "time")
-var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1))
+var.def.nc(grp, "temperature", "NC_DOUBLE", c("station","time"))
 
 ##  Put some attributes
-att.put.nc(nc, "temperature", "missing_value", "NC_DOUBLE", -99999.9)
-att.put.nc(nc, "temperature", "long_name", "NC_CHAR", "air temperature")
-att.put.nc(nc, "NC_GLOBAL", "title", "NC_CHAR", "Data from Foo")
 att.put.nc(nc, "NC_GLOBAL", "history", "NC_CHAR", paste("Created on", date()))
+att.put.nc(grp, "temperature", "missing_value", "NC_DOUBLE", -99999.9)
+att.put.nc(grp, "temperature", "long_name", "NC_CHAR", "air temperature")
+att.put.nc(grp, "NC_GLOBAL", "title", "NC_CHAR", "Data from Foo")
 
 ##  Print summary information about the dataset
 print.nc(nc)

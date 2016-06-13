@@ -848,7 +848,7 @@ int unlimdims (int ncid, int *nunlim, int **unlimids, int parents) {
       if (status != NC_NOERR) {
 	return status;
       }
-      if ((ntmp + *nunlim) < ndims) {
+      if ((ntmp + *nunlim) <= ndims) {
         memcpy(*unlimids + *nunlim*sizeof(int), tmpdims, ntmp*sizeof(int));
         *nunlim += ntmp;
       } else {
