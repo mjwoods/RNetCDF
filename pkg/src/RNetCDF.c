@@ -822,7 +822,7 @@ SEXP R_nc_def_dim (SEXP ncid, SEXP dimname, SEXP size, SEXP unlimp)
    The netcdf4 function nc_inq_unlimdims does not check ancestors of a group.
    Returns netcdf status. If no error occurs, nunlim and unlimids are set.
  */
-int _R_nc_unlimdims (int ncid, int *nunlim, int **unlimids, int ancestors) {
+static int R_nc_unlimdims (int ncid, int *nunlim, int **unlimids, int ancestors) {
   int status, format, ndims, ntmp, *tmpdims;
 
   *nunlim = 0;
@@ -897,7 +897,7 @@ SEXP R_nc_inq_dim (SEXP ncid, SEXP dimid, SEXP dimname, SEXP nameflag)
     }
 
     /*-- Check if it is an unlimited dimension -------------------------------*/
-    status = _R_nc_unlimdims (INTEGER(ncid)[0], &nunlim, &unlimids, 1);
+    status = R_nc_unlimdims (INTEGER(ncid)[0], &nunlim, &unlimids, 1);
     if (status != NC_NOERR) {
       RRETURN(status);
     }
@@ -1891,7 +1891,7 @@ SEXP R_nc_inq_dimids(SEXP ncid, SEXP ancestors)
 
 
 /* Private function called by qsort to compare integers */
-int _R_nc_int_cmp(const void *a, const void *b)
+static int R_nc_int_cmp(const void *a, const void *b)
 {
    const int *ia = (const int *)a; 
    const int *ib = (const int *)b;
@@ -1908,7 +1908,7 @@ SEXP R_nc_inq_unlimids(SEXP ncid, SEXP ancestors)
   int    status, nunlim, *unlimids;
   ROBJDEF(NOSXP,0);
 
-  status = _R_nc_unlimdims (INTEGER(ncid)[0], &nunlim, &unlimids, INTEGER(ancestors)[0]);
+  status = R_nc_unlimdims (INTEGER(ncid)[0], &nunlim, &unlimids, INTEGER(ancestors)[0]);
   if (status != NC_NOERR) {
     RRETURN(status);
   }
@@ -1917,7 +1917,7 @@ SEXP R_nc_inq_unlimids(SEXP ncid, SEXP ancestors)
 
   /* Sort the results for ease of presentation and searching */
   if (nunlim > 1) {
-    qsort(unlimids, nunlim, sizeof(int), _R_nc_int_cmp);
+    qsort(unlimids, nunlim, sizeof(int), R_nc_int_cmp);
   }
 
   /* Copy temporary results to output structure */
