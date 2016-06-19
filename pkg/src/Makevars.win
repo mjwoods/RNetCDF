@@ -1,25 +1,5 @@
-# Assume Rtools is installed from
-#   http://cran.r-project.org/bin/windows/Rtools/
-# and external software is installed from
-#   http://www.stats.ox.ac.uk/pub/Rtools/libs.html
-#
-# Note that the installation location of the external software 
-# should ideally be set in makefiles used by R when building packages.
-# For example, R/3.1 contains a file $R_HOME/etc/{i386,x64}/Makeconf
-# where the relevant variables are LOCAL_SOFT, LOCAL_CPPFLAGS and LOCAL_LIBS.
-# Please consult the R Installation and Administration manual of your R version.
+# Makevars.win can be tested by uploading package to win-builder.r-project.org
 
-#PKG_CPPFLAGS = -I${NETCDF}/include -I${UDUNITS2_HOME}/include
-#PKG_CPPFLAGS = -DHAVE_LIBUDUNITS2
-#PKG_LIBS = -L${NETCDF}/lib${R_ARCH} -lnetcdf \
-#  -L${UDUNITS2_HOME}/lib${R_ARCH} -ludunits2 -lexpat \
-#  -L${LIB_HDF5}/lib${R_ARCH} -lhdf5_hl -lhdf5 -lz 
-#PKG_LIBS = -lnetcdf -ludunits2 -lexpat
-
-$(info BEGIN Make variables:)
-$(foreach v, $(.VARIABLES), $(info $(v) = $($(v))))
-$(info END Make variables:)
-
-PKG_CPPFLAGS = -DHAVE_LIBUDUNITS2
-PKG_LIBS = -lnetcdf4 -ludunits2 -lexpat -L$(LIB_HDF5)/lib${R_ARCH} -lhdf5_hl -lhdf5 -lz
-
+PKG_CPPFLAGS = -DHAVE_LIBUDUNITS2 -DHAVE_DECL_RENAME_GRP=1
+PKG_LIBS = -lnetcdf4 -ludunits2 -lexpat \
+  -L${LIB_HDF5}/lib${R_ARCH} -lhdf5_hl -lhdf5 -lz

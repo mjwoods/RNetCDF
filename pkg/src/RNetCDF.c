@@ -72,12 +72,12 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "netcdf.h"
+#include <netcdf.h>
 
 #ifdef HAVE_UDUNITS2_UDUNITS_H
-  #include "udunits2/udunits.h"
+  #include <udunits2/udunits.h>
 #else
-  #include "udunits.h"
+  #include <udunits.h>
 #endif
 
 #include <R.h>
@@ -822,8 +822,8 @@ SEXP R_nc_def_dim (SEXP ncid, SEXP dimname, SEXP size, SEXP unlimp)
    The netcdf4 function nc_inq_unlimdims does not check ancestors of a group.
    Returns netcdf status. If no error occurs, nunlim and unlimids are set.
  */
-int unlimdims (int ncid, int *nunlim, int **unlimids, int ancestors) {
-  int status, format, ndims, ntmp, *tmpdims, parent;
+int _R_nc_unlimdims (int ncid, int *nunlim, int **unlimids, int ancestors) {
+  int status, format, ndims, ntmp, *tmpdims;
 
   *nunlim = 0;
 
@@ -875,7 +875,7 @@ int unlimdims (int ncid, int *nunlim, int **unlimids, int ancestors) {
 
 SEXP R_nc_inq_dim (SEXP ncid, SEXP dimid, SEXP dimname, SEXP nameflag)
 {
-    int    nunlim, *unlimids, isunlim, ncdimid, format, status, ii;
+    int    nunlim, *unlimids, isunlim, ncdimid, status, ii;
     size_t ncdimlen;
     char   ncdimname[NC_MAX_NAME+1];
     ROBJDEF(VECSXP, 4);
@@ -897,7 +897,7 @@ SEXP R_nc_inq_dim (SEXP ncid, SEXP dimid, SEXP dimname, SEXP nameflag)
     }
 
     /*-- Check if it is an unlimited dimension -------------------------------*/
-    status = unlimdims (INTEGER(ncid)[0], &nunlim, &unlimids, 1);
+    status = _R_nc_unlimdims (INTEGER(ncid)[0], &nunlim, &unlimids, 1);
     if (status != NC_NOERR) {
       RRETURN(status);
     }
@@ -1891,7 +1891,7 @@ SEXP R_nc_inq_dimids(SEXP ncid, SEXP ancestors)
 
 
 /* Private function called by qsort to compare integers */
-int int_cmp(const void *a, const void *b)
+int _R_nc_int_cmp(const void *a, const void *b)
 {
    const int *ia = (const int *)a; 
    const int *ib = (const int *)b;
@@ -1908,7 +1908,7 @@ SEXP R_nc_inq_unlimids(SEXP ncid, SEXP ancestors)
   int    status, nunlim, *unlimids;
   ROBJDEF(NOSXP,0);
 
-  status = unlimdims (INTEGER(ncid)[0], &nunlim, &unlimids, INTEGER(ancestors)[0]);
+  status = _R_nc_unlimdims (INTEGER(ncid)[0], &nunlim, &unlimids, INTEGER(ancestors)[0]);
   if (status != NC_NOERR) {
     RRETURN(status);
   }
@@ -1917,7 +1917,7 @@ SEXP R_nc_inq_unlimids(SEXP ncid, SEXP ancestors)
 
   /* Sort the results for ease of presentation and searching */
   if (nunlim > 1) {
-    qsort(unlimids, nunlim, sizeof(int), int_cmp);
+    qsort(unlimids, nunlim, sizeof(int), _R_nc_int_cmp);
   }
 
   /* Copy temporary results to output structure */
