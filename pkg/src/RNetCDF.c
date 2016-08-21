@@ -115,6 +115,146 @@
   UNPROTECT(1); \
   return(retlist);
 
+/*=============================================================================*\
+ *  Internal functions
+\*=============================================================================*/
+
+/* Convert netcdf type code to string label.
+   Argument str is assumed to be pre-allocated.
+   Returns NC_NOERR if ok, NC_EBADTYPE otherwise.
+ */
+static int R_nc_type2str(int ncid, nc_type xtype, char *str) {
+  switch (xtype) {
+    case NC_BYTE:
+      strcpy(str, "NC_BYTE");
+      break;
+    case NC_UBYTE:
+      strcpy(str, "NC_UBYTE");
+      break;
+    case NC_CHAR:
+      strcpy(str, "NC_CHAR");
+      break;
+    case NC_SHORT:
+      strcpy(str, "NC_SHORT");
+      break;
+    case NC_USHORT:
+      strcpy(str, "NC_USHORT");
+      break;
+    case NC_INT:
+      strcpy(str, "NC_INT");
+      break;
+    case NC_UINT:
+      strcpy(str, "NC_UINT");
+      break;
+    case NC_INT64:
+      strcpy(str, "NC_INT64");
+      break;
+    case NC_UINT64:
+      strcpy(str, "NC_UINT64");
+      break;
+    case NC_FLOAT:
+      strcpy(str, "NC_FLOAT");
+      break;
+    case NC_DOUBLE:
+      strcpy(str, "NC_DOUBLE");
+      break;
+    case NC_STRING:
+      strcpy(str, "NC_STRING");
+      break;
+    default:
+      /* Try to get name of a user defined type */
+      return nc_inq_user_type(ncid, xtype, str, NULL, NULL, NULL, NULL);
+  }
+  return NC_NOERR;
+}
+
+
+/* Convert netcdf string label to type code.
+   Return NC_NOERR if ok, NC_EBADTYPE otherwise.
+ */
+static int R_nc_str2type(int ncid, const char *str, nc_type *xtype) {
+  int typelen; 
+  typelen = strlen(str);
+  *xtype = NC_NAT;
+  if (typelen >= 6) {
+    switch (str[3]) {
+      case 'B':
+	if (strcmp(str, "NC_BYTE") == 0)
+	  *xtype = NC_BYTE;
+	break;
+      case 'C':
+	if (strcmp(str, "NC_CHAR") == 0)
+	  *xtype = NC_CHAR;
+	break;
+      case 'D':
+	if (strcmp(str, "NC_DOUBLE") == 0)
+	  *xtype = NC_DOUBLE;
+	break;
+      case 'F':
+	if (strcmp(str, "NC_FLOAT") == 0)
+	  *xtype = NC_FLOAT;
+	break;
+      case 'I':
+	switch (str[6]) {
+	  case '\0':
+	    if (strcmp(str, "NC_INT") == 0)
+	      *xtype = NC_INT;
+	    break;
+	  case '6':
+	    if (strcmp(str, "NC_INT64") == 0)
+	      *xtype = NC_INT64;
+	    break;
+	 }
+	 break;
+       case 'L':
+	 if (strcmp(str, "NC_LONG") == 0)
+	   *xtype = NC_LONG;
+	 break;
+       case 'S':
+	 switch (str[4]) {
+	   case 'H':
+	     if (strcmp(str, "NC_SHORT") == 0)
+	       *xtype = NC_SHORT;
+	     break;
+	   case 'T':
+	     if (strcmp(str, "NC_STRING") == 0)
+	       *xtype = NC_STRING;
+	     break;
+	 }
+         break;
+      case 'U':
+	if (typelen >= 7) {
+	  switch (str[7]) {
+	    case '\0':
+	      if (strcmp(str, "NC_UINT") == 0)
+		*xtype = NC_UINT;
+	      break;
+	    case '6':
+	      if (strcmp(str, "NC_UINT64") == 0)
+		*xtype = NC_UINT64;
+	      break;
+	    case 'E':
+	      if (strcmp(str, "NC_UBYTE") == 0)
+		*xtype = NC_UBYTE;
+	      break;
+	    case 'R':
+	      if (strcmp(str, "NC_USHORT") == 0)
+		*xtype = NC_USHORT;
+	      break;
+	  }
+	}
+        break;
+    }
+  }
+
+  if (*xtype == NC_NAT) {
+    /* Try to get id of a user defined type */
+    return nc_inq_typeid(ncid, str, xtype);
+  } else {
+    return NC_NOERR;
+  }
+}
+
 
 /*=============================================================================*\
  *  NetCDF library functions						       *
@@ -431,24 +571,14 @@ SEXP R_nc_inq_att (SEXP ncid, SEXP varid, SEXP attname, SEXP attid,
     attlen = (int)ncattlen;
 
     /*-- Convert nc_type to char ----------------------------------------------*/
-    if      (xtype == NC_BYTE  )
-        strcpy(atttype, "NC_BYTE"  );
-    else if (xtype == NC_CHAR  )
-        strcpy(atttype, "NC_CHAR"  );
-    else if (xtype == NC_SHORT )
-        strcpy(atttype, "NC_SHORT" );
-    else if (xtype == NC_INT   )
-        strcpy(atttype, "NC_INT"   );
-    else if (xtype == NC_FLOAT )
-        strcpy(atttype, "NC_FLOAT" );
-    else if (xtype == NC_DOUBLE)
-        strcpy(atttype, "NC_DOUBLE");
-    else {
-        strcpy(atttype, "UNKNOWN"  );
-        SET_VECTOR_ELT (retlist, 1, mkString("Unknown NC_TYPE"));
-	status = -1;
+    status = R_nc_type2str(INTEGER(ncid)[0], xtype, atttype);
+    if(status != NC_NOERR) {
+        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
+        REAL(VECTOR_ELT(retlist, 0))[0] = status;
+	UNPROTECT(2);
+	return(retlist);
     }
-    
+ 
     /*-- Returning the list ---------------------------------------------------*/
     REAL(VECTOR_ELT(retlist, 0))[0] = status;
     REAL(VECTOR_ELT(retlist, 2))[0] = ncattid;
@@ -498,21 +628,10 @@ SEXP R_nc_put_att (SEXP ncid, SEXP varid, SEXP name, SEXP type, SEXP attlen,
         ncvarid = INTEGER(varid)[0];
 
     /*-- Convert char to nc_type ----------------------------------------------*/
-    if     (strcmp(CHAR(STRING_ELT(type, 0)), "NC_BYTE"  ) == 0)
-        xtype = NC_BYTE;
-    else if(strcmp(CHAR(STRING_ELT(type, 0)), "NC_SHORT" ) == 0)
-        xtype = NC_SHORT;
-    else if(strcmp(CHAR(STRING_ELT(type, 0)), "NC_INT"   ) == 0)
-        xtype = NC_INT;
-    else if(strcmp(CHAR(STRING_ELT(type, 0)), "NC_FLOAT" ) == 0)
-        xtype = NC_FLOAT;
-    else if(strcmp(CHAR(STRING_ELT(type, 0)), "NC_DOUBLE") == 0)
-	xtype = NC_DOUBLE;
-    else if(strcmp(CHAR(STRING_ELT(type, 0)), "NC_CHAR"  ) == 0)
-	xtype = NC_CHAR;
-    else {
-        SET_VECTOR_ELT (retlist, 1, mkString("Unknown NC_TYPE"));
-	REAL(VECTOR_ELT(retlist, 0))[0] = -1;
+    status = R_nc_str2type(INTEGER(ncid)[0], CHAR(STRING_ELT(type, 0)), &xtype);
+    if (status != NC_NOERR) {
+        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
+	REAL(VECTOR_ELT(retlist, 0))[0] = status;
 	UNPROTECT(2);
 	return(retlist);
     }
@@ -1191,21 +1310,10 @@ SEXP R_nc_def_var (SEXP ncid, SEXP varname, SEXP type, SEXP ndims, SEXP dimids)
     REAL(VECTOR_ELT(retlist, 2))[0] = (double)varid;
 
     /*-- Convert char to nc_type ----------------------------------------------*/
-    if     (strcmp(CHAR(STRING_ELT(type, 0)), "NC_BYTE"  ) == 0)
-        xtype = NC_BYTE;
-    else if(strcmp(CHAR(STRING_ELT(type ,0)), "NC_SHORT" ) == 0)
-        xtype = NC_SHORT;
-    else if(strcmp(CHAR(STRING_ELT(type, 0)), "NC_INT"   ) == 0)
-        xtype = NC_INT;
-    else if(strcmp(CHAR(STRING_ELT(type, 0)), "NC_FLOAT" ) == 0)
-        xtype = NC_FLOAT;
-    else if(strcmp(CHAR(STRING_ELT(type, 0)), "NC_DOUBLE") == 0)
-	xtype = NC_DOUBLE;
-    else if(strcmp(CHAR(STRING_ELT(type, 0)), "NC_CHAR"  ) == 0)
-	xtype = NC_CHAR;
-    else {
-        SET_VECTOR_ELT (retlist, 1, mkString("Unknown NC_TYPE"));
-        REAL(VECTOR_ELT(retlist, 0))[0] = -1;
+    status = R_nc_str2type(INTEGER(ncid)[0], CHAR(STRING_ELT(type, 0)), &xtype);
+    if (status != NC_NOERR) {
+        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
+        REAL(VECTOR_ELT(retlist, 0))[0] = status;
 	UNPROTECT(2);
 	return(retlist);
     }
@@ -1493,21 +1601,13 @@ SEXP R_nc_inq_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag)
     }
 
     /*-- Convert nc_type to char ----------------------------------------------*/
-    if      (xtype == NC_BYTE  )
-        strcpy(vartype, "NC_BYTE"  );
-    else if (xtype == NC_CHAR  )
-        strcpy(vartype, "NC_CHAR"  );
-    else if (xtype == NC_SHORT )
-        strcpy(vartype, "NC_SHORT" );
-    else if (xtype == NC_INT   )
-        strcpy(vartype, "NC_INT"   );
-    else if (xtype == NC_FLOAT )
-        strcpy(vartype, "NC_FLOAT" );
-    else if (xtype == NC_DOUBLE)
-        strcpy(vartype, "NC_DOUBLE");
-    else {
-        strcpy(vartype, "UNKNOWN"  );
-        SET_VECTOR_ELT(retlist, 1, mkString("Unknown NC_TYPE"));
+    status = R_nc_type2str(INTEGER(ncid)[0], xtype, vartype);
+    if (status != NC_NOERR) {
+        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
+	REAL(VECTOR_ELT(retlist, 0))[0] = status;
+	UNPROTECT(2);
+	Free(dimids);
+        return(retlist);
     }
 
     /*-- Returning the list ---------------------------------------------------*/

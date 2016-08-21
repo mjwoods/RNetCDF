@@ -16,13 +16,13 @@
   \item{attribute}{Either the ID or the name of the attribute to be inquired.}
 }
 
-\details{This function returns information about a NetCDF attribute. Information about an attribute include its ID, its name, its type, and its length. The valid external NetCDF data types are \code{NC_BYTE}, \code{NC_CHAR}, \code{NC_SHORT}, \code{NC_INT}, \code{NC_FLOAT}, and \code{NC_DOUBLE}. In general, attributes are rather accessed by name than by their ID (which is called number) because the attribute number is more volatile than the name, since it can change when other attributes of the same variable are deleted.}
+\details{This function returns information about a NetCDF attribute. Information about an attribute include its ID, its name, its type, and its length. In general, attributes are accessed by name rather than by their ID number because the attribute number is more volatile than the name, since it can change when other attributes of the same variable are deleted.}
 
 \value{
   A list containing the following components:
   \item{id}{Attribute ID.}
   \item{name}{Attribute name.}
-  \item{type}{External NetCDF data type.}
+  \item{type}{External NetCDF data type as one of the following labels: \code{NC_BYTE}, \code{NC_UBYTE}, \code{NC_CHAR}, \code{NC_SHORT}, \code{NC_USHORT}, \code{NC_INT}, \code{NC_UINT}, \code{NC_INT64}, \code{NC_UINT64}, \code{NC_FLOAT}, \code{NC_DOUBLE}, \code{NC_STRING}, or a user-defined type name.}
   \item{length}{Length of this attribute.}
 }
 
