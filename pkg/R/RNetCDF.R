@@ -133,18 +133,16 @@ att.copy.nc <- function(ncfile.in, variable.in, attribute, ncfile.out,
         return(invisible(NULL))
     
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_copy_att",
+    nc <- Cwrap("R_nc_copy_att",
                 as.integer(ncfile.in),
 		as.integer(varid.in),
 		as.integer(globflag.in),
 		as.character(attname),
                 as.integer(ncfile.out),
 		as.integer(varid.out),
-		as.integer(globflag.out),
-		PACKAGE="RNetCDF")
+		as.integer(globflag.out))
 		
-    if(nc$status != 0)
-        stop(nc$errmsg, call.=FALSE)
+    return(invisible(NULL))
 }
 
 
@@ -186,15 +184,13 @@ att.delete.nc <- function(ncfile, variable, attribute)
         return(invisible(NULL))
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_delete_att",
+    nc <- Cwrap("R_nc_delete_att",
                 as.integer(ncfile),
 		as.integer(varid),
 		as.integer(globflag),
-		as.character(attname),
-		PACKAGE="RNetCDF")
-    
-    if(nc$status != 0)
-        stop(nc$errmsg, call.=FALSE)
+		as.character(attname))
+
+    return(invisible(NULL)) 
 }
 
 
@@ -343,7 +339,7 @@ att.put.nc <- function(ncfile, variable, name, type, value)
     ifelse(is.numeric(value), numflag <- 1, numflag <- 0)
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_put_att",
+    nc <- Cwrap("R_nc_put_att",
 	        as.integer(ncfile),
 		as.integer(varid),
 		as.character(name),
@@ -351,11 +347,9 @@ att.put.nc <- function(ncfile, variable, name, type, value)
 		as.integer(length(value)),
 		as.integer(numflag),
 		as.integer(globflag),
-		value,
-		PACKAGE="RNetCDF")
-    
-    if(nc$status != 0)
-        stop(nc$errmsg, call.=FALSE)
+		value)
+
+    return(invisible(NULL)) 
 }
 
 
@@ -398,16 +392,14 @@ att.rename.nc <- function(ncfile, variable, attribute, newname)
         return(invisible(NULL))
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_rename_att",
+    nc <- Cwrap("R_nc_rename_att",
                 as.integer(ncfile),
 		as.integer(varid),
 		as.integer(globflag),
 		as.character(attname),
-                as.character(newname),
-		PACKAGE="RNetCDF")
-    
-    if(nc$status != 0)
-        stop(nc$errmsg, call.=FALSE)
+                as.character(newname))
+
+    return(invisible(NULL))
 }
 
 
@@ -421,12 +413,10 @@ close.nc <- function(con, ...)
     stopifnot(class(con) == "NetCDF") 
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_close",
-                as.integer(con),
-		PACKAGE="RNetCDF")
+    nc <- Cwrap("R_nc_close",
+                as.integer(con))
 
-    if(nc$status != 0)
-        stop(nc$errmsg, call.=FALSE)
+    return(invisible(NULL))
 }
 # - How to close a file if object is garbage collected?
 
@@ -484,15 +474,13 @@ dim.def.nc <- function(ncfile, dimname, dimlength=1, unlim=FALSE)
     ncdimlength <- ifelse(unlim  == TRUE, 0, dimlength)
     
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_def_dim",
+    nc <- Cwrap("R_nc_def_dim",
 		as.integer(ncfile),
 		as.character(dimname),
 		as.integer(ncdimlength),
-		as.integer(unlimflag),
-		PACKAGE="RNetCDF")
+		as.integer(unlimflag))
 
-    if(nc$status != 0)
-        stop(nc$errmsg, call.=FALSE)
+    return(nc)
 }
 
 
@@ -546,16 +534,14 @@ dim.rename.nc <- function(ncfile, dimension, newname)
     ifelse(is.character(dimension), dimname <- dimension, dimid <- dimension)
     
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_rename_dim",
+    nc <- Cwrap("R_nc_rename_dim",
         	as.integer(ncfile),
 		as.integer(dimid),
 		as.character(dimname),
 		as.integer(nameflag),
-		as.character(newname),
-		PACKAGE="RNetCDF")
+		as.character(newname))
 
-    if(nc$status != 0)
-        stop(nc$errmsg, call.=FALSE)
+    return(invisible(NULL))
 }
 
 
@@ -726,12 +712,10 @@ sync.nc <- function(ncfile)
     stopifnot(class(ncfile) == "NetCDF")
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_sync",
-                as.integer(ncfile),
-		PACKAGE="RNetCDF")
-		
-    if(nc$status != 0)
-        stop(nc$errmsg, call.=FALSE)
+    nc <- Cwrap("R_nc_sync",
+                as.integer(ncfile))
+
+    return(invisible(NULL))
 }
 
 
@@ -775,16 +759,14 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions)
     }
     
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_def_var",
+    nc <- Cwrap("R_nc_def_var",
         	as.integer(ncfile),
 		as.character(varname),
 		as.character(vartype),
 		as.integer(ndims),
-		as.integer(dimids),
-		PACKAGE="RNetCDF")
-		
-    if(nc$status != 0)
-        stop(nc$errmsg, call.=FALSE)
+		as.integer(dimids))
+
+    return(invisible(NULL))
 }
 
 #-------------------------------------------------------------------------------#
@@ -1136,29 +1118,26 @@ var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0,
         if (!is.double(data)) {
           data <- as.double(data)
         }
-	nc <- .Call("R_nc_put_vara_double",
+	nc <- Cwrap("R_nc_put_vara_double",
         	    as.integer(ncfile),
 		    as.integer(varid),
 		    as.integer(c.start),
 		    as.integer(c.count),
 		    as.integer(ndims),
-		    data,
-		    PACKAGE="RNetCDF")
+		    data)
     } else {
         stopifnot(is.character(data) || is.raw(data))
-        nc <- .Call("R_nc_put_vara_text",
+        nc <- Cwrap("R_nc_put_vara_text",
         	    as.integer(ncfile),
 		    as.integer(varid),
 		    as.integer(c.start),
 		    as.integer(c.count),
 		    as.integer(ndims),
                     as.integer(is.raw(data)),
-		    data,
-		    PACKAGE="RNetCDF")
+		    data)
     }
-		    
-    if(nc$status != 0)
-        stop(nc$errmsg, call.=FALSE)
+
+    return(invisible(NULL))
 }
 
 
@@ -1181,16 +1160,14 @@ var.rename.nc <- function(ncfile, variable, newname)
     ifelse(is.character(variable), varname <- variable, varid <- variable)
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_rename_var",
+    nc <- Cwrap("R_nc_rename_var",
         	as.integer(ncfile),
 		as.integer(varid),
 		as.character(varname),
 		as.integer(nameflag),
-		as.character(newname),
-		PACKAGE="RNetCDF")
+		as.character(newname))
 
-    if(nc$status != 0)
-        stop(nc$errmsg, call.=FALSE)
+    return(invisible(NULL))
 }
 
 
@@ -1430,12 +1407,10 @@ utcal.nc <- function(unitstring, value, type="n")
 
 utinit.nc <- function(path="")
 {
-    ut <- .Call("R_ut_init", 
-                as.character(path),
-		PACKAGE="RNetCDF")
-		
-    if(ut$status != 0)
-        stop(ut$errmsg, call.=FALSE)
+    ut <- Cwrap("R_ut_init", 
+                as.character(path))
+
+    return(invisible(NULL))
 }
 
 
