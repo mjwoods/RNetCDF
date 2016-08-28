@@ -233,21 +233,13 @@ att.get.nc <- function(ncfile, variable, attribute)
     ifelse(attinfo$type == "NC_CHAR", numflag <- 0, numflag <- 1);
     
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_get_att",
+    nc <- Cwrap("R_nc_get_att",
 	        as.integer(ncfile),
 		as.integer(varid),
 		as.character(attname),
 		as.integer(numflag),
-		as.integer(globflag),
-		PACKAGE="RNetCDF")
-    
-    #-- Return object if no error ----------------------------------------------#
-    if(nc$status == 0) {
-        nc$status <- NULL
-	nc$errmsg <- NULL
-        return(nc$value)
-    } else
-	stop(nc$errmsg, call.=FALSE)
+		as.integer(globflag))
+    return(nc)
 }
 
 
@@ -414,11 +406,11 @@ close.nc <- function(con, ...)
 
     #-- C function call --------------------------------------------------------#
     nc <- Cwrap("R_nc_close",
-                as.integer(con))
+                attr(con, "handle_ptr"))
 
     return(invisible(NULL))
 }
-# - How to close a file if object is garbage collected?
+
 
 #-------------------------------------------------------------------------------#
 #  create.nc()                                                                  #
@@ -439,21 +431,15 @@ create.nc <- function(filename, clobber=TRUE, share=FALSE, prefill=TRUE,
     }
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_create",
+    nc <- Cwrap("R_nc_create",
 		as.character(filename),
 		as.integer(iclobber),
                 as.integer(ishare),
                 as.integer(iprefill),
-                as.integer(iformat),
-		PACKAGE="RNetCDF")
+                as.integer(iformat))
 
-    #-- Return object if no error ----------------------------------------------#
-    if(nc$status == 0) {
-        ncfile <- nc$ncid
-        attr(ncfile, "class") <- "NetCDF"
-	return(ncfile)
-    } else
-        stop(nc$errmsg, call.=FALSE)
+    attr(nc, "class") <- "NetCDF"
+    return(nc)
 }
 
 
@@ -591,20 +577,14 @@ open.nc <- function(con, write=FALSE, share=FALSE, prefill=TRUE, ...)
     iprefill <- ifelse(prefill == TRUE, 1, 0)
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_open",
+    nc <- Cwrap("R_nc_open",
 		as.character(con),
 		as.integer(iwrite),
 		as.integer(ishare),
-		as.integer(iprefill),
-		PACKAGE="RNetCDF")
-	     
-    #-- Return object if no error ----------------------------------------------#
-    if(nc$status == 0) {
-        ncfile <- nc$ncid
-        attr(ncfile, "class") <- "NetCDF"
-	return(ncfile)
-    } else
-       stop(nc$errmsg, call.=FALSE)
+		as.integer(iprefill))
+
+    attr(nc, "class") <- "NetCDF"
+    return(nc)
 }
 
 
@@ -1188,7 +1168,7 @@ grp.def.nc <- function(ncid, grpname)
 	      PACKAGE="RNetCDF")
 
   # Return object:
-  attr(nc, "class") <- "NetCDF"
+  attributes(nc) <- attributes(ncid)
   return(nc)
 }
 
@@ -1211,7 +1191,7 @@ grp.find <- function(ncid, grpname, full=isTRUE(grepl("/",grpname)))
               as.integer(full))
 
   # Return object:
-  attr(nc, "class") <- "NetCDF"
+  attributes(nc) <- attributes(ncid)
   return(nc)
 }
 
@@ -1239,7 +1219,7 @@ grp.inq.nc <- function(ncid, grpname=NULL, ancestors=TRUE)
   out$parent <- Cwrap("R_nc_inq_grp_parent",
 	              as.integer(ncid), ERRNULL=TRUE)
   if (!is.null(out$parent)) {
-    attr(out$parent,"class") <- "NetCDF"
+    attributes(out$parent) <- attributes(ncid)
   }
 
   # Get sub-groups of group (empty list if none):
@@ -1249,7 +1229,7 @@ grp.inq.nc <- function(ncid, grpname=NULL, ancestors=TRUE)
     out$grps <- list()
   } else {
     out$grps <- lapply(as.list(grpids),
-                  function(x) {attr(x, "class") <- "NetCDF"; return(x)})
+                  function(x) {attributes(x) <- attributes(ncid); return(x)})
   }
 
   # Names of group:

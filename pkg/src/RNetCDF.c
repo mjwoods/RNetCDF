@@ -382,28 +382,10 @@ SEXP R_nc_delete_att (SEXP ncid, SEXP varid, SEXP globflag, SEXP attname)
 SEXP R_nc_get_att (SEXP ncid, SEXP varid, SEXP name, 
                    SEXP numflag, SEXP globflag)
 {
-    int    ncvarid, i, status;
+    int    ncvarid, status;
     char   ncattname[NC_MAX_NAME+1], *cvalue;    
-    double *dvalue;    
     size_t attlen;
-    SEXP   retlist, retlistnames;
-
-    /*-- Create output object and initialize return values --------------------*/
-    PROTECT(retlist = allocVector(VECSXP, 3));
-    SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-
-    PROTECT(retlistnames = allocVector(STRSXP, 3)); 
-    SET_STRING_ELT(retlistnames, 0, mkChar("status")); 
-    SET_STRING_ELT(retlistnames, 1, mkChar("errmsg")); 
-    SET_STRING_ELT(retlistnames, 2, mkChar("value")); 
-    setAttrib(retlist, R_NamesSymbol, retlistnames); 
-
-    strcpy(ncattname, CHAR(STRING_ELT(name, 0)));
-
-    status = -1;
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
-    SET_VECTOR_ELT (retlist, 1, mkString(""));
+    ROBJDEF(NOSXP,0);
 
     /*-- Check if it is a global attribute ------------------------------------*/
     if(INTEGER(globflag)[0] == 1)
@@ -412,51 +394,31 @@ SEXP R_nc_get_att (SEXP ncid, SEXP varid, SEXP name,
         ncvarid = INTEGER(varid)[0];
 
     /*-- Get the attribute's length -------------------------------------------*/
+    strcpy(ncattname, CHAR(STRING_ELT(name, 0)));
     status = nc_inq_attlen(INTEGER(ncid)[0], ncvarid, ncattname, &attlen);
     if(status != NC_NOERR) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	REAL(VECTOR_ELT(retlist, 1))[0] = status;
-	UNPROTECT(2);
-	return(retlist);
+        RRETURN(status);
     }
     
     /*-- Get the attribute ----------------------------------------------------*/
     if(INTEGER(numflag)[0] == 1) {
-        dvalue = Calloc((int)attlen, double); 
-        status = nc_get_att_double(INTEGER(ncid)[0], ncvarid, ncattname, dvalue);
+        RDATADEF(REALSXP, attlen);
+        status = nc_get_att_double(INTEGER(ncid)[0], ncvarid, ncattname, REAL(RDATASET));
 	if(status != NC_NOERR) {
-            SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	    REAL(VECTOR_ELT(retlist, 1))[0] = status;
-	    UNPROTECT(2);
-	    Free(dvalue);
-	    return(retlist);
+            RRETURN(status);
 	}
     
-        SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, (int)attlen));
-        for(i=0; i<attlen; i++)
-            REAL(VECTOR_ELT(retlist, 2))[i] = (double)dvalue[i];
-        Free(dvalue);
     } else {
-        cvalue = Calloc((int)attlen+1, char);
+        RDATADEF(STRSXP, 1);
+        cvalue = (char *) R_alloc(attlen+1, sizeof(char));
 	status = nc_get_att_text(INTEGER(ncid)[0], ncvarid, ncattname, cvalue);
-	cvalue[(int)attlen] = '\0';
+	cvalue[attlen+1] = '\0';
 	if(status != NC_NOERR) {
-            SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-            REAL(VECTOR_ELT(retlist, 1))[0] = status;
-	    UNPROTECT(2);
-	    Free(cvalue);
-	    return(retlist);
+            RRETURN(status);
 	}
-        
-	SET_VECTOR_ELT(retlist, 2, allocVector(STRSXP, 1));
-        SET_VECTOR_ELT(retlist, 2, mkString(cvalue));
-        Free(cvalue);
+        SET_STRING_ELT(RDATASET, 0, mkChar(cvalue));
     }
-    
-    /*-- Returning the list ---------------------------------------------------*/
-    REAL(VECTOR_ELT(retlist, 0))[0] = status;
-    UNPROTECT(2);
-    return(retlist);
+    RRETURN(status);
 }
 
 
@@ -644,13 +606,21 @@ SEXP R_nc_rename_att (SEXP ncid, SEXP varid, SEXP globflag, SEXP attname,
  *  R_nc_close()                                                               *
 \*-----------------------------------------------------------------------------*/
 
-SEXP R_nc_close (SEXP ncid)
+SEXP R_nc_close (SEXP ptr)
 {
-    int  status;
+    int  status, *fileid;
     ROBJDEF(NOSXP,0);
 
-    /*-- Close the file -------------------------------------------------------*/
-    status = nc_close(INTEGER(ncid)[0]);
+    fileid = R_ExternalPtrAddr(ptr);
+    if(!fileid) {
+      RRETURN(NC_NOERR);
+    }
+
+    status = nc_close(*fileid);
+    if (status == NC_NOERR) {
+      R_Free(fileid);
+      R_ClearExternalPtr(ptr);
+    }
     RRETURN(status);
 }
 
@@ -662,26 +632,9 @@ SEXP R_nc_close (SEXP ncid)
 SEXP R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
                   SEXP format)
 {
-    int  cmode, fillmode, old_fillmode, ncid, status;
-    SEXP retlist, retlistnames;
-
-    /*-- Create output object and initialize return values --------------------*/
-    PROTECT(retlist = allocVector(VECSXP, 3));
-    SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, 1));
-
-    PROTECT(retlistnames = allocVector(STRSXP, 3)); 
-    SET_STRING_ELT(retlistnames, 0, mkChar("status")); 
-    SET_STRING_ELT(retlistnames, 1, mkChar("errmsg")); 
-    SET_STRING_ELT(retlistnames, 2, mkChar("ncid")); 
-    setAttrib(retlist, R_NamesSymbol, retlistnames); 
-
-    ncid   = -1;
-    status = -1;
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
-    SET_VECTOR_ELT (retlist, 1, mkString(""));
-    REAL(VECTOR_ELT(retlist, 2))[0] = (double)ncid;
+    int  cmode, fillmode, old_fillmode, ncid, status, *fileid;
+    SEXP Rptr;
+    ROBJDEF(INTSXP,1);
 
     /*-- Determine the cmode --------------------------------------------------*/
     if(INTEGER(clobber)[0] == 0)
@@ -719,19 +672,24 @@ SEXP R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
     /*-- Create the file ------------------------------------------------------*/
     status = nc_create(R_ExpandFileName(CHAR(STRING_ELT(filename, 0))), 
         cmode, &ncid);
+    if (status != NC_NOERR) {
+        RRETURN(status);
+    }
+    INTEGER(RDATASET)[0] = ncid;
+
+    /*-- Arrange for file to be closed if handle is garbage collected ---------*/
+    fileid = R_Calloc(1, int);
+    *fileid = ncid;
+    Rptr = R_MakeExternalPtr(fileid, R_NilValue, R_NilValue);
+    PROTECT(Rptr);
+    R_RegisterCFinalizerEx(Rptr, &R_nc_close, TRUE);
+    setAttrib(RDATASET, install("handle_ptr"), Rptr);
+    UNPROTECT(1);
 
     /*-- Set the fill mode ----------------------------------------------------*/
-    if(status == NC_NOERR)
-        status = nc_set_fill(ncid, fillmode, &old_fillmode);
+    status = nc_set_fill(ncid, fillmode, &old_fillmode);
 
-    /*-- Returning the list ---------------------------------------------------*/
-    if(status != NC_NOERR)
-        SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
-    REAL(VECTOR_ELT(retlist, 2))[0] = (double)ncid;
-    UNPROTECT(2);
-    return(retlist);
+    RRETURN(status); 
 }
 
 
@@ -1011,27 +969,10 @@ SEXP R_nc_inq_file (SEXP ncid)
 
 SEXP R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
 {
-    int  ncid, omode, fillmode, old_fillmode, status;
-    SEXP retlist, retlistnames;
+    int  ncid, omode, fillmode, old_fillmode, status, *fileid;
+    SEXP Rptr;
+    ROBJDEF(INTSXP,1);
 
-    /*-- Create output object and initialize return values --------------------*/
-    PROTECT(retlist = allocVector(VECSXP, 3));
-    SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, 1));
-
-    PROTECT(retlistnames = allocVector(STRSXP, 3)); 
-    SET_STRING_ELT(retlistnames, 0, mkChar("status")); 
-    SET_STRING_ELT(retlistnames, 1, mkChar("errmsg")); 
-    SET_STRING_ELT(retlistnames, 2, mkChar("ncid")); 
-    setAttrib(retlist, R_NamesSymbol, retlistnames); 
-
-    ncid   = -1;
-    status = -1;
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
-    SET_VECTOR_ELT (retlist, 1, mkString(""));
-    REAL(VECTOR_ELT(retlist, 2))[0] = (double)ncid;
-    
     /*-- Determine the omode --------------------------------------------------*/
     if(INTEGER(write)[0] == 0)
         omode = NC_NOWRITE;
@@ -1050,19 +991,26 @@ SEXP R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
     /*-- Open the file --------------------------------------------------------*/
     status = nc_open(R_ExpandFileName(CHAR(STRING_ELT(filename, 0))),
         omode, &ncid);
-    
+    if (status != NC_NOERR) {
+      RRETURN(status);
+    }
+    INTEGER(RDATASET)[0] = ncid;
+
+    /*-- Arrange for file to be closed if handle is garbage collected ---------*/
+    fileid = R_Calloc(1, int);
+    *fileid = ncid;
+    Rptr = R_MakeExternalPtr(fileid, R_NilValue, R_NilValue);
+    PROTECT(Rptr);
+    R_RegisterCFinalizerEx(Rptr, &R_nc_close, TRUE);
+    setAttrib(RDATASET, install("handle_ptr"), Rptr);
+    UNPROTECT(1);
+
     /*-- Set the fill mode ----------------------------------------------------*/
-    if((status == NC_NOERR) && (INTEGER(write)[0] != 0))
+    if(INTEGER(write)[0] != 0) {
         status = nc_set_fill(ncid, fillmode, &old_fillmode);
+    }
 
-    /*-- Returning the list ---------------------------------------------------*/
-    if(status != NC_NOERR)
-	SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
-    REAL(VECTOR_ELT(retlist, 2))[0] = (double)ncid;
-    UNPROTECT(2);
-    return(retlist);
+    RRETURN(status);
 }
 
 
