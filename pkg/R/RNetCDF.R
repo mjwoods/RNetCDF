@@ -802,107 +802,99 @@ var.get.nc <- function(ncfile, variable, start=NA, count=NA, na.mode=0,
 
     #-- C function calls -------------------------------------------------------#
     if(varinfo$type == "NC_CHAR") {
-        nc <- .Call("R_nc_get_vara_text",
+        nc <- Cwrap("R_nc_get_vara_text",
         	    as.integer(ncfile),
 		    as.integer(varid),
 		    as.integer(c.start),
 		    as.integer(c.count),
 		    as.integer(ndims),
-                    as.integer(rawchar),
-		    PACKAGE="RNetCDF")
+                    as.integer(rawchar))
     } else {
-	nc <- .Call("R_nc_get_vara_double",
+	nc <- Cwrap("R_nc_get_vara_double",
         	    as.integer(ncfile),
 		    as.integer(varid),
 		    as.integer(c.start),
 		    as.integer(c.count),
-		    as.integer(ndims),
-		    PACKAGE="RNetCDF")
+		    as.integer(ndims))
     }
 
-    #-- Adjust data ------------------------------------------------------------#
-    if(nc$status == 0) {
-	
-	#-- Convert missing value to NA if defined in NetCDF file --------------#
-        if (is.numeric(nc$data) && na.mode < 3) { 
-	  tolerance <- 1*10^-5                              ## Allow rounding error
-	  na.flag   <- 0
+    #-- Convert missing value to NA if defined in NetCDF file --------------#
+    if (is.numeric(nc) && na.mode < 3) { 
+      tolerance <- 1*10^-5                              ## Allow rounding error
+      na.flag   <- 0
 
-	  missval.flag <- 0
-	  fillval.flag <- 0
-	  
-	  fillval <- try(att.inq.nc(ncfile, varinfo$name, "_FillValue"   ), 
-	      silent=TRUE)
-	  missval <- try(att.inq.nc(ncfile, varinfo$name, "missing_value"), 
-	      silent=TRUE)
+      missval.flag <- 0
+      fillval.flag <- 0
+      
+      fillval <- try(att.inq.nc(ncfile, varinfo$name, "_FillValue"   ), 
+	  silent=TRUE)
+      missval <- try(att.inq.nc(ncfile, varinfo$name, "missing_value"), 
+	  silent=TRUE)
 
-	  if(!(class(fillval) == "try-error"))
-	      if(!is.null(fillval))
-		  fillval.flag <- 1
-	  if(!(class(missval) == "try-error"))
-	      if(!is.null(missval))
-		  missval.flag <- 1
+      if(!(class(fillval) == "try-error"))
+	  if(!is.null(fillval))
+	      fillval.flag <- 1
+      if(!(class(missval) == "try-error"))
+	  if(!is.null(missval))
+	      missval.flag <- 1
 
-	  if(na.mode == 0 && missval.flag == 1) {
-	      na.value <- att.get.nc(ncfile, varinfo$name, "missing_value")
-	      na.flag  <- 1
-	  }
-	  if(na.mode == 0 && fillval.flag == 1) {
-	      na.value <- att.get.nc(ncfile, varinfo$name, "_FillValue")
-	      na.flag  <- 1
-	  }
+      if(na.mode == 0 && missval.flag == 1) {
+	  na.value <- att.get.nc(ncfile, varinfo$name, "missing_value")
+	  na.flag  <- 1
+      }
+      if(na.mode == 0 && fillval.flag == 1) {
+	  na.value <- att.get.nc(ncfile, varinfo$name, "_FillValue")
+	  na.flag  <- 1
+      }
 
-	  if(na.mode == 1 && fillval.flag == 1) {
-	      na.value <- att.get.nc(ncfile, varinfo$name, "_FillValue")
-	      na.flag  <- 1
-	  }
+      if(na.mode == 1 && fillval.flag == 1) {
+	  na.value <- att.get.nc(ncfile, varinfo$name, "_FillValue")
+	  na.flag  <- 1
+      }
 
-	  if(na.mode == 2 && missval.flag == 1) {
-	      na.value <- att.get.nc(ncfile, varinfo$name, "missing_value")
-	      na.flag  <- 1
-	  }
+      if(na.mode == 2 && missval.flag == 1) {
+	  na.value <- att.get.nc(ncfile, varinfo$name, "missing_value")
+	  na.flag  <- 1
+      }
 
-	  if(na.flag == 1) {
-	      nc$data[abs(nc$data-as.numeric(na.value)) < tolerance] <- NA 
-	  }
-        }
+      if(na.flag == 1) {
+	  nc[abs(nc-as.numeric(na.value)) < tolerance] <- NA 
+      }
+    }
 
-	#-- Unpack variables if requested (missing values are preserved) -------#
-        if(unpack && is.numeric(nc$data)) {
-            offset <- try(att.inq.nc(ncfile, varinfo$name, "add_offset"),
-                          silent=TRUE)
-            scale  <- try(att.inq.nc(ncfile, varinfo$name, "scale_factor"),
-                          silent=TRUE)
-            if((!inherits(offset, "try-error")) &&
-               (!inherits(scale,  "try-error"))) {
-	        add_offset   <- att.get.nc(ncfile, varinfo$name, "add_offset")
-		scale_factor <- att.get.nc(ncfile, varinfo$name, "scale_factor")
-                nc$data      <- nc$data*scale_factor+add_offset
-            }
-        }
+    #-- Unpack variables if requested (missing values are preserved) -------#
+    if(unpack && is.numeric(nc)) {
+	offset <- try(att.inq.nc(ncfile, varinfo$name, "add_offset"),
+		      silent=TRUE)
+	scale  <- try(att.inq.nc(ncfile, varinfo$name, "scale_factor"),
+		      silent=TRUE)
+	if((!inherits(offset, "try-error")) &&
+	   (!inherits(scale,  "try-error"))) {
+	    add_offset   <- att.get.nc(ncfile, varinfo$name, "add_offset")
+	    scale_factor <- att.get.nc(ncfile, varinfo$name, "scale_factor")
+	    nc      <- nc*scale_factor+add_offset
+	}
+    }
 
-	#-- Set dimensions, collapse degenerate dimensions ---------------------#
-        if (is.character(nc$data) && ndims > 0) {
-          # Drop string length dimension
-          datadim <- count[-1]
-        } else {
-          datadim <- count
-        }
-        if (collapse) {
-          # Drop singleton dimensions
-          datadim <- datadim[datadim!=1]
-        }
-        if (length(datadim)<1) {
-          # For compatibility with code written for RNetCDF<=1.6.x,
-          # scalars and vectors always have a dimension attribute:
-          datadim <- length(nc$data)
-        }
-        dim(nc$data) <- datadim
+    #-- Set dimensions, collapse degenerate dimensions ---------------------#
+    if (is.character(nc) && ndims > 0) {
+      # Drop string length dimension
+      datadim <- count[-1]
+    } else {
+      datadim <- count
+    }
+    if (collapse) {
+      # Drop singleton dimensions
+      datadim <- datadim[datadim!=1]
+    }
+    if (length(datadim)<1) {
+      # For compatibility with code written for RNetCDF<=1.6.x,
+      # scalars and vectors always have a dimension attribute:
+      datadim <- length(nc)
+    }
+    dim(nc) <- datadim
 
-    #-- Return object if no error ----------------------------------------------#
-	return(nc$data)
-    } else
-        stop(nc$errmsg, call.=FALSE)
+    return(nc)
 }
 
 

@@ -699,70 +699,25 @@ SEXP R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
 
 SEXP R_nc_def_dim (SEXP ncid, SEXP dimname, SEXP size, SEXP unlimp)
 {
-    int  dimid, status, errstatus;
-    int  enddef = 0;               /* Keep for possible future use as argument */
-    SEXP retlist, retlistnames;
-
-    /*-- Create output object and initialize return values --------------------*/
-    PROTECT(retlist = allocVector(VECSXP, 3));
-    SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, 1));
-
-    PROTECT(retlistnames = allocVector(STRSXP, 3)); 
-    SET_STRING_ELT(retlistnames, 0, mkChar("status")); 
-    SET_STRING_ELT(retlistnames, 1, mkChar("errmsg")); 
-    SET_STRING_ELT(retlistnames, 2, mkChar("dimid")); 
-    setAttrib(retlist, R_NamesSymbol, retlistnames); 
-
-    dimid     = -1;
-    status    = -1;
-    errstatus = 0;
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
-    SET_VECTOR_ELT (retlist, 1, mkString(""));
-    REAL(VECTOR_ELT(retlist, 2))[0] = (double)dimid;
+    int  status;
+    ROBJDEF(INTSXP,1);
 
     /*-- Enter define mode ----------------------------------------------------*/
     status = nc_redef(INTEGER(ncid)[0]);
     if((status != NC_NOERR) && (status != NC_EINDEFINE)) {
-	SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-        REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
-        UNPROTECT(2);
-	return(retlist);
+      RRETURN(status);
     }
 
     /*-- Create the dimension -------------------------------------------------*/
     if(INTEGER(unlimp)[0] == 1) {
-	status = nc_def_dim(INTEGER(ncid)[0], CHAR(STRING_ELT(dimname, 0)), 
-	    NC_UNLIMITED, &dimid);
-	if(status != NC_NOERR) {
-	    SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-            errstatus = status;
-        }
+      status = nc_def_dim(INTEGER(ncid)[0], CHAR(STRING_ELT(dimname, 0)), 
+	         NC_UNLIMITED, INTEGER(RDATASET));
     } else {
-	status = nc_def_dim(INTEGER(ncid)[0], CHAR(STRING_ELT(dimname, 0)), 
-	    INTEGER(size)[0], &dimid);
-	if(status != NC_NOERR) {
-	    SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-            errstatus = status;
-        }
+      status = nc_def_dim(INTEGER(ncid)[0], CHAR(STRING_ELT(dimname, 0)), 
+	         INTEGER(size)[0], INTEGER(RDATASET));
     }
 
-    /*-- Leave define mode ----------------------------------------------------*/
-    if(enddef != 0) {
-        status = nc_enddef(INTEGER(ncid)[0]);
-    
-	if(status != NC_NOERR) {
-            SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-            errstatus = status;
-	}
-    }
-
-    /*-- Returning the list ---------------------------------------------------*/
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)errstatus;
-    REAL(VECTOR_ELT(retlist, 2))[0] = (double)dimid;
-    UNPROTECT(2);
-    return(retlist);
+    RRETURN(status);
 }
 
 
@@ -1041,71 +996,27 @@ SEXP R_nc_sync (SEXP ncid)
 
 SEXP R_nc_def_var (SEXP ncid, SEXP varname, SEXP type, SEXP ndims, SEXP dimids)
 {
-    int     varid, status, errstatus;
-    int     enddef = 0;            /* Keep for possible future use as argument */
+    int     status;
     nc_type xtype;
-    SEXP    retlist, retlistnames;
-
-    /*-- Create output object and initialize return values --------------------*/
-    PROTECT(retlist = allocVector(VECSXP, 3));
-    SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, 1));
-
-    PROTECT(retlistnames = allocVector(STRSXP, 3)); 
-    SET_STRING_ELT(retlistnames, 0, mkChar("status")); 
-    SET_STRING_ELT(retlistnames, 1, mkChar("errmsg")); 
-    SET_STRING_ELT(retlistnames, 2, mkChar("varid")); 
-    setAttrib(retlist, R_NamesSymbol, retlistnames); 
-
-    varid     = -1;
-    status    = -1;
-    errstatus = 0;
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
-    SET_VECTOR_ELT (retlist, 1, mkString(""));
-    REAL(VECTOR_ELT(retlist, 2))[0] = (double)varid;
+    ROBJDEF(INTSXP,1);
 
     /*-- Convert char to nc_type ----------------------------------------------*/
     status = R_nc_str2type(INTEGER(ncid)[0], CHAR(STRING_ELT(type, 0)), &xtype);
     if (status != NC_NOERR) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-        REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	return(retlist);
+      RRETURN(status);
     }
     
     /*-- Enter define mode ----------------------------------------------------*/
     status = nc_redef(INTEGER(ncid)[0]);
     if((status != NC_NOERR) && (status != NC_EINDEFINE)) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-        REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	return(retlist);
+      RRETURN(status);
     }
 
     /*-- Define the variable --------------------------------------------------*/
     status = nc_def_var(INTEGER(ncid)[0], CHAR(STRING_ELT(varname, 0)), xtype,
-        INTEGER(ndims)[0], INTEGER(dimids), &varid);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-        errstatus = status;
-    }
+        INTEGER(ndims)[0], INTEGER(dimids), INTEGER(RDATASET));
 
-    /*-- Leave define mode ----------------------------------------------------*/
-    if(enddef != 0) {
-        status = nc_enddef(INTEGER(ncid)[0]);
-
-	if(status != NC_NOERR) {
-            SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
-            errstatus = status;
-	}
-    }
-
-    /*-- Returning the list ---------------------------------------------------*/
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)errstatus;
-    REAL(VECTOR_ELT(retlist, 2))[0] = (double)varid;
-    UNPROTECT(2);
-    return(retlist);
+    RRETURN(status);
 }
 
 
@@ -1118,7 +1029,7 @@ SEXP R_nc_get_vara_double (SEXP ncid, SEXP varid, SEXP start,
 {
     int    i, status;
     size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS], varsize;
-    SEXP   retlist, retlistnames;
+    ROBJDEF(NOSXP,0);
 
     /*-- Copy dims from int to size_t, calculate total array size -------------*/
     varsize = 1;
@@ -1127,48 +1038,25 @@ SEXP R_nc_get_vara_double (SEXP ncid, SEXP varid, SEXP start,
 	s_count[i] = (size_t)INTEGER(count)[i];
 	varsize *= s_count[i];
     }
-	
-    /*-- Create output object and initialize return values --------------------*/
-    PROTECT(retlist = allocVector(VECSXP, 3));
-    SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, varsize));
 
-    PROTECT(retlistnames = allocVector(STRSXP, 3)); 
-    SET_STRING_ELT(retlistnames, 0, mkChar("status")); 
-    SET_STRING_ELT(retlistnames, 1, mkChar("errmsg")); 
-    SET_STRING_ELT(retlistnames, 2, mkChar("data")); 
-    setAttrib(retlist, R_NamesSymbol, retlistnames); 
-
-    status = -1;
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
-    SET_VECTOR_ELT (retlist, 1, mkString(""));
+    RDATADEF(REALSXP,varsize);	
 
     /*-- Enter data mode (if necessary) ---------------------------------------*/
     status = nc_enddef(INTEGER(ncid)[0]);
     if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-        REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	return(retlist);
+      RRETURN(status);
     }
 
     /*-- Read variable from file ----------------------------------------------*/
     if (varsize > 0) {
       /* Some netcdf versions cannot handle zero-sized arrays */
       status = nc_get_vara_double(INTEGER(ncid)[0], INTEGER(varid)[0],
-        s_start, s_count, REAL(VECTOR_ELT(retlist, 2)));
+        s_start, s_count, REAL(RDATASET));
     } else {
       status = NC_NOERR;
     }
-   
-    /*-- Returning the list ---------------------------------------------------*/
-    if(status != NC_NOERR) {
-      SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-    }
-    REAL(VECTOR_ELT(retlist, 0))[0] = status;
-    UNPROTECT(2);
-    return(retlist);
+
+    RRETURN(status);
 }
 
 
@@ -1183,7 +1071,7 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
     char   *data, *tx_str;
     size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS];
     size_t tx_len, tx_num, varsize;
-    SEXP   retlist, retlistnames;
+    ROBJDEF(NOSXP,0);
 
     /*-- Copy dims from int to size_t, calculate number and length of strings -*/
     for(i=0; i<INTEGER(ndims)[0]; i++) {
@@ -1203,39 +1091,22 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
     }
     varsize = tx_num*tx_len;
 
-    /*-- Create output object and initialize return values --------------------*/
-    PROTECT(retlist = allocVector(VECSXP, 3));
-    SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-
+    /*-- Create output object -------------------------------------------------*/
     if (INTEGER(rawchar)[0] > 0) {
-      SET_VECTOR_ELT(retlist, 2, allocVector(RAWSXP, varsize));
+      RDATADEF(RAWSXP,varsize);
     } else {
-      SET_VECTOR_ELT(retlist, 2, allocVector(STRSXP, tx_num));
+      RDATADEF(STRSXP,tx_num);
     }
-
-    PROTECT(retlistnames = allocVector(STRSXP, 3)); 
-    SET_STRING_ELT(retlistnames, 0, mkChar("status")); 
-    SET_STRING_ELT(retlistnames, 1, mkChar("errmsg")); 
-    SET_STRING_ELT(retlistnames, 2, mkChar("data")); 
-    setAttrib(retlist, R_NamesSymbol, retlistnames); 
-
-    status = -1;
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
-    SET_VECTOR_ELT (retlist, 1, mkString(""));
 
     /*-- Enter data mode (if necessary) ---------------------------------------*/
     status = nc_enddef(INTEGER(ncid)[0]);
     if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-        REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	return(retlist);
+      RRETURN(status);
     }
 
     /*-- Read variable from file ----------------------------------------------*/
     if (INTEGER(rawchar)[0] > 0) {
-      data = (char *) RAW(VECTOR_ELT(retlist, 2));
+      data = (char *) RAW(RDATASET);
     } else {
       data = (char *) R_alloc(varsize, sizeof(char));
     }
@@ -1254,17 +1125,11 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
       tx_str[tx_len] = '\0'; /* Final null character is never modified */
       for(i=0; i<tx_num; i++) {
         strncpy(tx_str, data+i*tx_len, tx_len);
-	SET_STRING_ELT(VECTOR_ELT(retlist, 2), i, mkChar(tx_str));
+	SET_STRING_ELT(RDATASET, i, mkChar(tx_str));
       }
     }
 
-    /*-- Returning the list ---------------------------------------------------*/
-    if (status != NC_NOERR) {
-      SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-    }
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
-    UNPROTECT(2);
-    return(retlist);
+    RRETURN(status);
 }
 
 
