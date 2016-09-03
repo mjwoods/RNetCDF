@@ -1343,32 +1343,28 @@ utcal.nc <- function(unitstring, value, type="n")
     count <- length(value)
    
     #-- C function call to udunits calendar function -----------------------#
-    ut <- .Call("R_ut_calendar", 
+    ut <- Cwrap("R_ut_calendar", 
 	        as.character(unitstring), 
 		as.integer(count),
-		as.double(value),
-		PACKAGE="RNetCDF")
+		as.double(value))
+    dim(ut) <- c(length(value),6)
 
     #-- Return object if no error ------------------------------------------#
-    if(ut$status == 0) {
-	if(type == "n") {
-	    colnames(ut$value) <- c("year", "month", "day", "hour", 
-		"minute", "second")
-	    return(ut$value)
-	} else if (type == "s") {
-	    x <- apply(ut$value, 1, function(x){paste(x[1],"-",
-		       sprintf("%02g",x[2]),"-",sprintf("%02g",x[3])," ",
-		       sprintf("%02g",x[4]),":",sprintf("%02g",x[5]),":",
-		       sprintf("%02g",x[6]),sep="")})
-	    return(x)
-        } else if (type == "c") {
-            ct <- as.POSIXct(
-                        utinvcal.nc("seconds since 1970-01-01 00:00:00 +00:00",ut$value),
-                        tz="UTC", origin=ISOdatetime(1970,1,1,0,0,0,tz="UTC"))
-            return(ct)
-        }
-    } else {
-	stop(ut$errmsg, call.=FALSE)
+    if(type == "n") {
+	colnames(ut) <- c("year", "month", "day", "hour", 
+	    "minute", "second")
+	return(ut)
+    } else if (type == "s") {
+	x <- apply(ut, 1, function(x){paste(x[1],"-",
+		   sprintf("%02g",x[2]),"-",sprintf("%02g",x[3])," ",
+		   sprintf("%02g",x[4]),":",sprintf("%02g",x[5]),":",
+		   sprintf("%02g",x[6]),sep="")})
+	return(x)
+    } else if (type == "c") {
+	ct <- as.POSIXct(
+		    utinvcal.nc("seconds since 1970-01-01 00:00:00 +00:00",ut),
+		    tz="UTC", origin=ISOdatetime(1970,1,1,0,0,0,tz="UTC"))
+	return(ct)
     }
 }
 
@@ -1421,18 +1417,11 @@ utinvcal.nc <- function(unitstring, value)
 	stop("ncol(value) not 6", call.=FALSE)
     
     #-- C function call --------------------------------------------------------#
-    ut <- .Call("R_ut_inv_calendar", 
+    ut <- Cwrap("R_ut_inv_calendar", 
 		as.character(unitstring), 
 		as.integer(count),
-		as.double(value),
-		PACKAGE="RNetCDF")
-
-    #-- Return object if no error ----------------------------------------------#
-    if(ut$status == 0) {
-	return(ut$value)
-    } else {
-	stop(ut$errmsg, call.=FALSE)
-    }
+		as.double(value))
+    return(ut)
 }
 
 

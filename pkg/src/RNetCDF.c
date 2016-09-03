@@ -1595,24 +1595,8 @@ SEXP R_ut_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
     double utvalue;
     char   strerror[64];
     utUnit utunit;
-    SEXP   retlist, retlistnames;
+    ROBJDEF(REALSXP,INTEGER(unitcount)[0]*6);
 
-    /*-- Create output object and initialize return values --------------------*/
-    PROTECT(retlist = allocVector(VECSXP, 3));
-    SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 2, allocMatrix(REALSXP, INTEGER(unitcount)[0], 6));
-
-    PROTECT(retlistnames = allocVector(STRSXP, 3)); 
-    SET_STRING_ELT(retlistnames, 0, mkChar("status"));
-    SET_STRING_ELT(retlistnames, 1, mkChar("errmsg"));
-    SET_STRING_ELT(retlistnames, 2, mkChar("value")); 
-    setAttrib(retlist, R_NamesSymbol, retlistnames); 
-
-    status = -1;
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
-    SET_VECTOR_ELT (retlist, 1, mkString(""));
-    
     /*-- Scan unitstring ------------------------------------------------------*/
 #ifdef HAVE_LIBUDUNITS2
     utIni(&utunit);
@@ -1640,13 +1624,16 @@ SEXP R_ut_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
         utvalue = (double)REAL(values)[i];
 	status  = utCalendar(utvalue, &utunit, &year, &month, &day,
 	    &hour, &minute, &second);
+        if (status != 0) {
+          goto cleanup;
+        }
 
-	REAL(VECTOR_ELT(retlist, 2))[i+0*count] = (double)year;
-	REAL(VECTOR_ELT(retlist, 2))[i+1*count] = (double)month;
-	REAL(VECTOR_ELT(retlist, 2))[i+2*count] = (double)day;
-	REAL(VECTOR_ELT(retlist, 2))[i+3*count] = (double)hour;
-	REAL(VECTOR_ELT(retlist, 2))[i+4*count] = (double)minute;
-	REAL(VECTOR_ELT(retlist, 2))[i+5*count] = (double)second;
+	REAL(RDATASET)[i+0*count] = (double)year;
+	REAL(RDATASET)[i+1*count] = (double)month;
+	REAL(RDATASET)[i+2*count] = (double)day;
+	REAL(RDATASET)[i+3*count] = (double)hour;
+	REAL(RDATASET)[i+4*count] = (double)minute;
+	REAL(RDATASET)[i+5*count] = (double)second;
     }
 
     /*-- Returning the list ---------------------------------------------------*/
@@ -1654,12 +1641,7 @@ cleanup:
 #ifdef HAVE_LIBUDUNITS2
     utFree(&utunit);
 #endif
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	     
-    if(status != 0) {
-        SET_VECTOR_ELT (retlist, 1, mkString(R_ut_strerror(status)));
-    }
-    UNPROTECT(2);
-    return(retlist);
+    RUTRETURN(status);
 }
 
 
@@ -1701,26 +1683,12 @@ SEXP R_ut_inv_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
     double utvalue;
     char   strerror[64];
     utUnit utunit;
-    SEXP   retlist, retlistnames;
+    ROBJDEF(NOSXP,0);
 
     /*-- Create output object and initialize return values --------------------*/
     count = (int)INTEGER(unitcount)[0];
     count = count/6;
-    
-    PROTECT(retlist = allocVector(VECSXP, 3));
-    SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, count));
-
-    PROTECT(retlistnames = allocVector(STRSXP, 3)); 
-    SET_STRING_ELT(retlistnames, 0, mkChar("status")); 
-    SET_STRING_ELT(retlistnames, 1, mkChar("errmsg"));
-    SET_STRING_ELT(retlistnames, 2, mkChar("value")); 
-    setAttrib(retlist, R_NamesSymbol, retlistnames); 
-
-    status = -1;
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
-    SET_VECTOR_ELT (retlist, 1, mkString(""));
+    RDATADEF(REALSXP,count);
     
     /*-- Scan unitstring ------------------------------------------------------*/
 #ifdef HAVE_LIBUDUNITS2
@@ -1754,8 +1722,11 @@ SEXP R_ut_inv_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
 
         status = utInvCalendar(year, month, day, hour, minute, second,
 	    &utunit, &utvalue);
+        if (status != 0) {
+          goto cleanup;
+        }
 
-        REAL(VECTOR_ELT(retlist, 2))[i] = (double)utvalue;
+        REAL(RDATASET)[i] = utvalue;
     }
 
     /*-- Returning the list ---------------------------------------------------*/
@@ -1763,12 +1734,7 @@ cleanup:
 #ifdef HAVE_LIBUDUNITS2
     utFree(&utunit);
 #endif
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	     
-    if(status != 0) {
-        SET_VECTOR_ELT (retlist, 1, mkString(R_ut_strerror(status)));
-    }
-    UNPROTECT(2);
-    return(retlist);
+    RUTRETURN(status);
 }
 
 /*=============================================================================*/
