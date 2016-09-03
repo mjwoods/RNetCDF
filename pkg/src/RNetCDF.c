@@ -586,6 +586,13 @@ SEXP R_nc_close (SEXP ptr)
     RRETURN(status);
 }
 
+/* Private function used as finalizer during garbage collection.
+   It is required to have no return value. */
+static void R_nc_finalizer(SEXP ptr)
+{
+  R_nc_close(ptr);
+}
+
 
 /*-----------------------------------------------------------------------------*\
  *  R_nc_create()                                                              *
@@ -644,7 +651,7 @@ SEXP R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
     *fileid = ncid;
     Rptr = R_MakeExternalPtr(fileid, R_NilValue, R_NilValue);
     PROTECT(Rptr);
-    R_RegisterCFinalizerEx(Rptr, &R_nc_close, TRUE);
+    R_RegisterCFinalizerEx(Rptr, &R_nc_finalizer, TRUE);
     setAttrib(RDATASET, install("handle_ptr"), Rptr);
     UNPROTECT(1);
 
@@ -893,7 +900,7 @@ SEXP R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
     *fileid = ncid;
     Rptr = R_MakeExternalPtr(fileid, R_NilValue, R_NilValue);
     PROTECT(Rptr);
-    R_RegisterCFinalizerEx(Rptr, &R_nc_close, TRUE);
+    R_RegisterCFinalizerEx(Rptr, &R_nc_finalizer, TRUE);
     setAttrib(RDATASET, install("handle_ptr"), Rptr);
     UNPROTECT(1);
 
