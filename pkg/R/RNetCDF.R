@@ -278,22 +278,16 @@ att.inq.nc <- function(ncfile, variable, attribute)
         return(invisible(NULL))
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_inq_att",
+    nc <- Cwrap("R_nc_inq_att",
         	as.integer(ncfile),
 		as.integer(varid),
 		as.character(attname),
 		as.integer(attid),
 		as.integer(nameflag),
-		as.integer(globflag),
-		PACKAGE="RNetCDF")
+		as.integer(globflag))
 
-    #-- Return object if no error ----------------------------------------------#
-    if(nc$status == 0) {
-        nc$status <- NULL
-	nc$errmsg <- NULL
-        return(nc)
-    } else
-	stop(nc$errmsg, call.=FALSE)
+    names(nc) <- c("id","name","type","length")
+    return(nc)
 }
 
 
@@ -541,21 +535,16 @@ file.inq.nc <- function(ncfile)
     stopifnot(class(ncfile) == "NetCDF") 
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_inq_file",
-                as.integer(ncfile),
-		PACKAGE="RNetCDF")
+    nc <- Cwrap("R_nc_inq_file",
+                as.integer(ncfile))
 
-    #-- Return object if no error ----------------------------------------------#
-    if(nc$status == 0) {
-        nc$status <- NULL
-	nc$errmsg <- NULL
-        
-	if(nc$unlimdimid == -1)
-            nc$unlimdimid <- NA
-	
-	return(nc)
-    } else
-	stop(nc$errmsg, call.=FALSE)
+    names(nc) <- c("ndims","nvars","ngatts","unlimdimid")
+
+    if(nc$unlimdimid == -1) {
+      nc$unlimdimid <- NA
+    }
+
+    return(nc)
 }
 
 
@@ -916,26 +905,21 @@ var.inq.nc <- function(ncfile, variable)
     ifelse(is.character(variable), varname <- variable, varid <- variable)
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_inq_var",
+    nc <- Cwrap("R_nc_inq_var",
         	as.integer(ncfile),
 		as.integer(varid),
 		as.character(varname),
-		as.integer(nameflag),
-		PACKAGE="RNetCDF")
+		as.integer(nameflag))
 
-    #-- Return object if no error ----------------------------------------------#
-    if(nc$status == 0) {
-        nc$status <- NULL
-	nc$errmsg <- NULL
-        
-	if(nc$ndims > 0)
-            nc$dimids <- nc$dimids[(nc$ndims):1]             ## C to R convention
-        else
-            nc$dimids <- NA
-	    
-	return(nc)
-    } else
-        stop(nc$errmsg, call.=FALSE)
+    names(nc) <- c("id", "name", "type", "ndims", "dimids", "natts")
+
+    if(nc$ndims > 0) {
+	nc$dimids <- nc$dimids[(nc$ndims):1]             ## C to R convention
+    } else {
+	nc$dimids <- NA
+    }
+	
+    return(nc)
 }
 
 

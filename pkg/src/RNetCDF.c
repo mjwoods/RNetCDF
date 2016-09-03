@@ -429,43 +429,15 @@ SEXP R_nc_get_att (SEXP ncid, SEXP varid, SEXP name,
 SEXP R_nc_inq_att (SEXP ncid, SEXP varid, SEXP attname, SEXP attid,
                    SEXP nameflag, SEXP globflag)
 {
-    int     ncvarid, ncattid, attlen, status;
+    int     ncvarid, ncattid, status;
     char    atttype[NC_MAX_NAME+1], ncattname[NC_MAX_NAME+1];
     size_t  ncattlen;
     nc_type xtype;
-    SEXP    retlist, retlistnames;
-
-    /*-- Create output object and initialize return values --------------------*/
-    PROTECT(retlist = allocVector(VECSXP, 6));
-    SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 3, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 4, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 5, allocVector(REALSXP, 1));
-
-    PROTECT(retlistnames = allocVector(STRSXP, 6)); 
-    SET_STRING_ELT(retlistnames, 0, mkChar("status")); 
-    SET_STRING_ELT(retlistnames, 1, mkChar("errmsg")); 
-    SET_STRING_ELT(retlistnames, 2, mkChar("id")); 
-    SET_STRING_ELT(retlistnames, 3, mkChar("name")); 
-    SET_STRING_ELT(retlistnames, 4, mkChar("type")); 
-    SET_STRING_ELT(retlistnames, 5, mkChar("length")); 
-    setAttrib(retlist, R_NamesSymbol, retlistnames); 
+    ROBJDEF(VECSXP,4);
 
     ncattid    = INTEGER(attid)[0];
-    strcpy(atttype,   "UNKNOWN");
     strcpy(ncattname, CHAR(STRING_ELT(attname, 0)));
 
-    attlen     = -1;
-    status     = -1;
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
-    SET_VECTOR_ELT (retlist, 1, mkString(""));
-    REAL(VECTOR_ELT(retlist, 2))[0] = (double)ncattid;
-    SET_VECTOR_ELT (retlist, 3, mkString(ncattname));
-    SET_VECTOR_ELT (retlist, 4, mkString(atttype));
-    REAL(VECTOR_ELT(retlist, 5))[0] = (double)attlen;
-    
     /*-- Check if it is a global attribute ------------------------------------*/
     if(INTEGER(globflag)[0] == 1)
         ncvarid = NC_GLOBAL;
@@ -476,10 +448,7 @@ SEXP R_nc_inq_att (SEXP ncid, SEXP varid, SEXP attname, SEXP attid,
     if(INTEGER(nameflag)[0] == 1) {
  	status = nc_inq_attid(INTEGER(ncid)[0], ncvarid, ncattname, &ncattid);
         if(status != NC_NOERR) {
-            SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	    REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	    UNPROTECT(2);
-	    return(retlist);
+            RRETURN(status);
 	}
     }
 
@@ -487,10 +456,7 @@ SEXP R_nc_inq_att (SEXP ncid, SEXP varid, SEXP attname, SEXP attid,
     if(INTEGER(nameflag)[0] == 0) {
  	status = nc_inq_attname(INTEGER(ncid)[0], ncvarid, ncattid, ncattname);
 	if(status != NC_NOERR) {
-            SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	    REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	    UNPROTECT(2);
-	    return(retlist);
+            RRETURN(status);
 	}
     }
 
@@ -498,31 +464,27 @@ SEXP R_nc_inq_att (SEXP ncid, SEXP varid, SEXP attname, SEXP attid,
     status = nc_inq_att(INTEGER(ncid)[0], ncvarid, ncattname, &xtype, 
         &ncattlen);
     if(status != NC_NOERR) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-        REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	return(retlist);
+        RRETURN(status);
     }
-
-    attlen = (int)ncattlen;
 
     /*-- Convert nc_type to char ----------------------------------------------*/
     status = R_nc_type2str(INTEGER(ncid)[0], xtype, atttype);
     if(status != NC_NOERR) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-        REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	return(retlist);
+        RRETURN(status);
     }
  
     /*-- Returning the list ---------------------------------------------------*/
-    REAL(VECTOR_ELT(retlist, 0))[0] = status;
-    REAL(VECTOR_ELT(retlist, 2))[0] = ncattid;
-    SET_VECTOR_ELT (retlist, 3, mkString(ncattname));
-    SET_VECTOR_ELT (retlist, 4, mkString(atttype));
-    REAL(VECTOR_ELT(retlist, 5))[0] = attlen;
-    UNPROTECT(2);
-    return(retlist);
+    SET_VECTOR_ELT(RDATASET, 0, allocVector(INTSXP, 1));
+    SET_VECTOR_ELT(RDATASET, 1, allocVector(STRSXP,  1));
+    SET_VECTOR_ELT(RDATASET, 2, allocVector(STRSXP, 1));
+    SET_VECTOR_ELT(RDATASET, 3, allocVector(INTSXP, 1));
+    
+    INTEGER(VECTOR_ELT(RDATASET, 0))[0] = ncattid;
+    SET_VECTOR_ELT(RDATASET, 1, mkString(ncattname));
+    SET_VECTOR_ELT(RDATASET, 2, mkString(atttype));
+    INTEGER(VECTOR_ELT(RDATASET, 3))[0] = (int) ncattlen;
+
+    RRETURN(status);
 }
 
 
@@ -870,51 +832,26 @@ SEXP R_nc_rename_dim (SEXP ncid, SEXP dimid, SEXP dimname, SEXP nameflag,
 SEXP R_nc_inq_file (SEXP ncid)
 {
     int  ndims, nvars, ngatts, unlimdimid, status;
-    SEXP retlist, retlistnames;
+    ROBJDEF(VECSXP,4);
 
-    /*-- Create output object and initialize return values --------------------*/
-    PROTECT(retlist = allocVector(VECSXP, 6));
-    SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 3, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 4, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 5, allocVector(REALSXP, 1));
-
-    PROTECT(retlistnames = allocVector(STRSXP, 6)); 
-    SET_STRING_ELT(retlistnames, 0, mkChar("status")); 
-    SET_STRING_ELT(retlistnames, 1, mkChar("errmsg")); 
-    SET_STRING_ELT(retlistnames, 2, mkChar("ndims")); 
-    SET_STRING_ELT(retlistnames, 3, mkChar("nvars")); 
-    SET_STRING_ELT(retlistnames, 4, mkChar("ngatts")); 
-    SET_STRING_ELT(retlistnames, 5, mkChar("unlimdimid")); 
-    setAttrib(retlist, R_NamesSymbol, retlistnames); 
-
-    ndims      = -1;
-    nvars      = -1;
-    ngatts     = -1;
-    unlimdimid = -1;
-    status     = -1;
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
-    SET_VECTOR_ELT (retlist, 1, mkString(""));
-    REAL(VECTOR_ELT(retlist, 2))[0] = (double)ndims;
-    REAL(VECTOR_ELT(retlist, 3))[0] = (double)nvars;
-    REAL(VECTOR_ELT(retlist, 4))[0] = (double)ngatts;
-    REAL(VECTOR_ELT(retlist, 5))[0] = (double)unlimdimid;
-    
     /*-- Inquire about the NetCDF dataset -------------------------------------*/
     status = nc_inq(INTEGER(ncid)[0], &ndims, &nvars, &ngatts, &unlimdimid);
-    if(status != NC_NOERR)
-	SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+    if(status != NC_NOERR) {
+      RRETURN(status);
+    }
 
     /*-- Returning the list ---------------------------------------------------*/
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
-    REAL(VECTOR_ELT(retlist, 2))[0] = (double)ndims;	 
-    REAL(VECTOR_ELT(retlist, 3))[0] = (double)nvars;	 
-    REAL(VECTOR_ELT(retlist, 4))[0] = (double)ngatts;	 
-    REAL(VECTOR_ELT(retlist, 5))[0] = (double)unlimdimid; 
-    UNPROTECT(2);
-    return(retlist);
+    SET_VECTOR_ELT(RDATASET, 0, allocVector(INTSXP, 1));
+    SET_VECTOR_ELT(RDATASET, 1, allocVector(INTSXP, 1));
+    SET_VECTOR_ELT(RDATASET, 2, allocVector(INTSXP, 1));
+    SET_VECTOR_ELT(RDATASET, 3, allocVector(INTSXP, 1));
+
+    INTEGER(VECTOR_ELT(RDATASET, 0))[0] = ndims;
+    INTEGER(VECTOR_ELT(RDATASET, 1))[0] = nvars;
+    INTEGER(VECTOR_ELT(RDATASET, 2))[0] = ngatts;
+    INTEGER(VECTOR_ELT(RDATASET, 3))[0] = unlimdimid;
+
+    RRETURN(status);
 }
 
 
@@ -1139,110 +1076,64 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
 
 SEXP R_nc_inq_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag)
 {
-    int     ncvarid, ndimsp, nattsp, i, status, *dimids;
+    int     ncvarid, ndims, natts, i, status, *dimids;
     char    ncvarname[NC_MAX_NAME+1], vartype[NC_MAX_NAME+1];
     nc_type xtype;
-    SEXP    retlist, retlistnames;
-
-    /*-- Create output object and initialize return values --------------------*/
-    PROTECT(retlist = allocVector(VECSXP, 8));
-    SET_VECTOR_ELT(retlist, 0, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 2, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 3, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 4, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(retlist, 5, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(retlist, 7, allocVector(REALSXP, 1));
-
-    PROTECT(retlistnames = allocVector(STRSXP, 8)); 
-    SET_STRING_ELT(retlistnames, 0, mkChar("status")); 
-    SET_STRING_ELT(retlistnames, 1, mkChar("errmsg")); 
-    SET_STRING_ELT(retlistnames, 2, mkChar("id")); 
-    SET_STRING_ELT(retlistnames, 3, mkChar("name")); 
-    SET_STRING_ELT(retlistnames, 4, mkChar("type")); 
-    SET_STRING_ELT(retlistnames, 5, mkChar("ndims")); 
-    SET_STRING_ELT(retlistnames, 6, mkChar("dimids")); 
-    SET_STRING_ELT(retlistnames, 7, mkChar("natts")); 
-    setAttrib(retlist, R_NamesSymbol, retlistnames); 
+    ROBJDEF(VECSXP,6);
 
     ncvarid = INTEGER(varid)[0];
     strcpy(ncvarname, CHAR(STRING_ELT(varname, 0)));
-    strcpy(vartype,   "UNKNOWN");
-
-    ndimsp  = -1;
-    dimids  = NULL;
-    nattsp  = -1;
-    status  = -1;
-    REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
-    SET_VECTOR_ELT (retlist, 1, mkString(""));
-    REAL(VECTOR_ELT(retlist, 2))[0] = (double)ncvarid;
-    SET_VECTOR_ELT (retlist, 3, mkString(ncvarname));
-    SET_VECTOR_ELT (retlist, 4, mkString(vartype));
-    REAL(VECTOR_ELT(retlist, 5))[0] = (double)ndimsp;
-    REAL(VECTOR_ELT(retlist, 7))[0] = (double)nattsp;
 
     /*-- Get the variable ID if necessary -------------------------------------*/
     if(INTEGER(nameflag)[0] == 1) {
  	status = nc_inq_varid(INTEGER(ncid)[0], ncvarname, &ncvarid);
         if(status != NC_NOERR) {
-            SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	    REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	    UNPROTECT(2);
-	    return(retlist);
+            RRETURN(status);
 	}
     }
 
     /*-- Get the number of dimensions -----------------------------------------*/
-    status = nc_inq_varndims(INTEGER(ncid)[0], ncvarid, &ndimsp);
+    status = nc_inq_varndims(INTEGER(ncid)[0], ncvarid, &ndims);
     if(status != NC_NOERR) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	return(retlist);
+        RRETURN(status);
     }
 
-    if(ndimsp == 0) {
-    	SET_VECTOR_ELT(retlist, 6, allocVector(REALSXP, 1));
-	dimids = Calloc(1, int);
-    }
-    else {
-    	SET_VECTOR_ELT(retlist, 6, allocVector(REALSXP, ndimsp));
-	dimids = Calloc(ndimsp, int);
+    if(ndims == 0) {
+        dimids = NULL;
+    } else {
+    	SET_VECTOR_ELT(RDATASET, 4, allocVector(INTSXP, ndims));
+	dimids = INTEGER(VECTOR_ELT(RDATASET, 4));
     }
 
     /*-- Inquire the variable -------------------------------------------------*/
-    status = nc_inq_var(INTEGER(ncid)[0], ncvarid, ncvarname, &xtype, &ndimsp,
-        dimids, &nattsp);
-    if(status != NC_NOERR) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	Free(dimids);
-	return(retlist);
+    status = nc_inq_var(INTEGER(ncid)[0], ncvarid, ncvarname, &xtype, &ndims,
+        dimids, &natts);
+    if (status != NC_NOERR) {
+        RRETURN(status);
     }
 
     /*-- Convert nc_type to char ----------------------------------------------*/
     status = R_nc_type2str(INTEGER(ncid)[0], xtype, vartype);
     if (status != NC_NOERR) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-	REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	Free(dimids);
-        return(retlist);
+        RRETURN(status);
     }
 
     /*-- Returning the list ---------------------------------------------------*/
-    REAL(VECTOR_ELT(retlist, 0))[0] = status;
-    REAL(VECTOR_ELT(retlist, 2))[0] = ncvarid;
-    SET_VECTOR_ELT (retlist, 3, mkString(ncvarname));
-    SET_VECTOR_ELT (retlist, 4, mkString(vartype));
-    REAL(VECTOR_ELT(retlist, 5))[0] = ndimsp;
-    for(i=0; i<ndimsp; i++)
-        REAL(VECTOR_ELT(retlist, 6))[i] = (double)dimids[i];
-    REAL(VECTOR_ELT(retlist, 7))[0] = nattsp;
-    Free(dimids);
-    UNPROTECT(2);
-    return(retlist);
+    SET_VECTOR_ELT(RDATASET, 0, allocVector(INTSXP, 1));
+    SET_VECTOR_ELT(RDATASET, 1, allocVector(STRSXP,  1));
+    SET_VECTOR_ELT(RDATASET, 2, allocVector(STRSXP, 1));
+    SET_VECTOR_ELT(RDATASET, 3, allocVector(INTSXP, 1));
+    /* List item 4 is already allocated */
+    SET_VECTOR_ELT(RDATASET, 5, allocVector(INTSXP, 1));
+    
+    INTEGER(VECTOR_ELT(RDATASET, 0))[0] = ncvarid;
+    SET_VECTOR_ELT (RDATASET, 1, mkString(ncvarname));
+    SET_VECTOR_ELT (RDATASET, 2, mkString(vartype));
+    INTEGER(VECTOR_ELT(RDATASET, 3))[0] = ndims;
+    /* List item 4 is defined by nc_inq_var above */
+    INTEGER(VECTOR_ELT(RDATASET, 5))[0] = natts;
+
+    RRETURN(status);
 }
 
 
