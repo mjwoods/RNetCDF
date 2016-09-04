@@ -98,39 +98,45 @@ att.copy.nc <- function(ncfile.in, variable.in, attribute, ncfile.out,
     globflag.in  <- 0
     globflag.out <- 0
     
-    if(is.character(variable.in) && variable.in != "NC_GLOBAL")
+    if(is.character(variable.in) && variable.in != "NC_GLOBAL") {
         varid.in <- try(var.inq.nc(ncfile.in, variable.in)$id)
-    else
+    } else {
         varid.in <- variable.in
+    }
 
     if(is.character(variable.in) && variable.in == "NC_GLOBAL") {
         globflag.in <-  1
         varid.in    <- -1
     }
     
-    if(is.character(variable.out) && variable.out != "NC_GLOBAL")
+    if(is.character(variable.out) && variable.out != "NC_GLOBAL") {
         varid.out <- try(var.inq.nc(ncfile.out, variable.out)$id)
-    else
+    } else {
         varid.out <- variable.out
+    }
 
     if(is.character(variable.out) && variable.out == "NC_GLOBAL") {
         globflag.out <-  1
         varid.out    <- -1
     }
 	
-    if(class(varid.in) == "try-error" || class(varid.out) == "try-error")
+    if(class(varid.in) == "try-error" || class(varid.out) == "try-error") {
         return(invisible(NULL))
-    if(is.null(varid.in) || is.null(varid.out))
+    }
+    if(is.null(varid.in) || is.null(varid.out)) {
         return(invisible(NULL))
+    }
 
     #-- Get the attribute name if necessary ------------------------------------#
-    if(is.character(attribute))
+    if(is.character(attribute)) {
         attname <- attribute
-    else
+    } else {
         attname <- try(att.inq.nc(ncfile.in, variable.in, attribute)$name)
+    }
     
-    if(class(attname) == "try-error" || is.null(attname))
+    if(class(attname) == "try-error" || is.null(attname)) {
         return(invisible(NULL))
+    }
     
     #-- C function call --------------------------------------------------------#
     nc <- Cwrap("R_nc_copy_att",
@@ -161,27 +167,31 @@ att.delete.nc <- function(ncfile, variable, attribute)
     varid     <- NULL
     globflag  <- 0
     
-    if(is.character(variable) && variable != "NC_GLOBAL")
+    if(is.character(variable) && variable != "NC_GLOBAL") {
         varid <- try(var.inq.nc(ncfile, variable)$id)
-    else
+    } else {
         varid <- variable
+    }
 
     if(is.character(variable) && variable == "NC_GLOBAL") {
         globflag <-  1
         varid    <- -1
     }
 
-    if(class(varid) == "try-error" || is.null(varid))
+    if(class(varid) == "try-error" || is.null(varid)) {
         return(invisible(NULL))
+    }
 
     #-- Get the attribute name if necessary ------------------------------------#
-    if(is.character(attribute))
+    if(is.character(attribute)) {
         attname <- attribute
-    else
+    } else {
         attname <- try(att.inq.nc(ncfile, variable, attribute)$name)
+    }
     
-    if(class(attname) == "try-error" || is.null(attname))
+    if(class(attname) == "try-error" || is.null(attname)) {
         return(invisible(NULL))
+    }
 
     #-- C function call --------------------------------------------------------#
     nc <- Cwrap("R_nc_delete_att",
@@ -209,23 +219,26 @@ att.get.nc <- function(ncfile, variable, attribute)
     varid     <- NULL
     globflag  <- 0
     
-    if(is.character(variable) && variable != "NC_GLOBAL")
+    if(is.character(variable) && variable != "NC_GLOBAL") {
         varid <- try(var.inq.nc(ncfile, variable)$id)
-    else
+    } else {
         varid <- variable
+    }
 
     if(is.character(variable) && variable == "NC_GLOBAL") {
         globflag <-  1
         varid    <- -1
     }
 
-    if(class(varid) == "try-error" || is.null(varid))
+    if(class(varid) == "try-error" || is.null(varid)) {
         return(invisible(NULL))
+    }
 
     #-- Inquire the attribute to get its name and storage mode -----------------#
     attinfo <- try(att.inq.nc(ncfile, variable, attribute))
-    if(class(attinfo) == "try-error" || is.null(attinfo))
+    if(class(attinfo) == "try-error" || is.null(attinfo)) {
         return(invisible(NULL))
+    }
 
     ifelse(is.character(attribute),
         attname <- attribute, attname <- attinfo$name)
@@ -264,18 +277,20 @@ att.inq.nc <- function(ncfile, variable, attribute)
     varid     <- NULL
     globflag  <- 0
     
-    if(is.character(variable) && variable != "NC_GLOBAL")
+    if(is.character(variable) && variable != "NC_GLOBAL") {
         varid <- try(var.inq.nc(ncfile, variable)$id)
-    else
+    } else {
         varid <- variable
+    }
 
     if(is.character(variable) && variable == "NC_GLOBAL") {
         globflag <-  1
         varid    <- -1
     }
 
-    if(class(varid) == "try-error" || is.null(varid))
+    if(class(varid) == "try-error" || is.null(varid)) {
         return(invisible(NULL))
+    }
 
     #-- C function call --------------------------------------------------------#
     nc <- Cwrap("R_nc_inq_att",
@@ -308,18 +323,20 @@ att.put.nc <- function(ncfile, variable, name, type, value)
     varid     <- NULL
     globflag  <- 0
     
-    if(is.character(variable) && variable != "NC_GLOBAL")
+    if(is.character(variable) && variable != "NC_GLOBAL") {
         varid <- try(var.inq.nc(ncfile, variable)$id)
-    else
+    } else {
         varid <- variable
+    }
 
     if(is.character(variable) && variable == "NC_GLOBAL") {
         globflag <-  1
         varid    <- -1
     }
 
-    if(class(varid) == "try-error" || is.null(varid))
+    if(class(varid) == "try-error" || is.null(varid)) {
         return(invisible(NULL))
+    }
 
     #-- Determine if attribute is numeric or character -------------------------#
     ifelse(is.numeric(value), numflag <- 1, numflag <- 0)
@@ -355,27 +372,31 @@ att.rename.nc <- function(ncfile, variable, attribute, newname)
     varid     <- NULL
     globflag  <- 0
     
-    if(is.character(variable) && variable != "NC_GLOBAL")
+    if(is.character(variable) && variable != "NC_GLOBAL") {
         varid <- try(var.inq.nc(ncfile, variable)$id)
-    else
+    } else {
         varid <- variable
+    }
 
     if(is.character(variable) && variable == "NC_GLOBAL") {
         globflag <-  1
         varid    <- -1
     }
 	
-    if(class(varid) == "try-error" || is.null(varid))
+    if(class(varid) == "try-error" || is.null(varid)) {
         return(invisible(NULL))
+    }
 
     #-- Get the attribute name if necessary ------------------------------------#
-    if(is.character(attribute))
+    if(is.character(attribute)) {
         attname <- attribute
-    else
+    } else {
         attname <- try(att.inq.nc(ncfile, variable, attribute)$name)
+    }
     
-    if(class(attname) == "try-error" || is.null(attname))
+    if(class(attname) == "try-error" || is.null(attname)) {
         return(invisible(NULL))
+    }
 
     #-- C function call --------------------------------------------------------#
     nc <- Cwrap("R_nc_rename_att",
@@ -588,20 +609,22 @@ print_grp <- function(x, level=0) {
 
     #-- Inquire about the group ------------------------------------------------#
     grpinfo <- try(grp.inq.nc(x, ancestors=FALSE))
-    if(class(grpinfo) == "try-error" || is.null(grpinfo))
+    if(class(grpinfo) == "try-error" || is.null(grpinfo)) {
         return(invisible(NULL))
+    }
 
     #-- Inquire about all dimensions -------------------------------------------#
     if(length(grpinfo$dimids) != 0) {
 	cat(indent, "dimensions:\n", sep="")
 	for (id in grpinfo$dimids) {
             diminfo <- dim.inq.nc(x, id)
-            if(diminfo$unlim == FALSE)
+            if(diminfo$unlim == FALSE) {
 		cat(indent, "        ", diminfo$name, " = ", diminfo$length, " ;\n",
 		    sep="")
-	    else
+	    } else {
 	        cat(indent, "        ", diminfo$name, " = UNLIMITED ; // (", 
 		    diminfo$length, " currently)\n", sep="")
+            }
 	}
     }
     
@@ -627,10 +650,11 @@ print_grp <- function(x, level=0) {
 	        for(jj in 0:(varinfo$natts-1)) {
 		    attinfo <- att.inq.nc(x, id, jj)
 		    cat(indent, rep(" ", 16), varinfo$name, ":", attinfo$name, sep="")
-		    if(attinfo$type == "NC_CHAR")
+		    if(attinfo$type == "NC_CHAR") {
 		        cat(" = \"", att.get.nc(x, id, jj), "\" ;\n", sep="")
-		    else
+		    } else {
 		        cat( " = ", att.get.nc(x, id, jj), " ;\n", sep="")
+                    }
 		}
 	    }
 	}
@@ -643,10 +667,11 @@ print_grp <- function(x, level=0) {
 	for(jj in 0:(grpinfo$ngatts-1)) {
 	    attinfo <- att.inq.nc(x, id, jj)
 	    cat(indent, rep(" ", 16),  ":", attinfo$name, sep="")
-	    if(attinfo$type == "NC_CHAR")
+	    if(attinfo$type == "NC_CHAR") {
 		cat(" = \"", att.get.nc(x, id, jj), "\" ;\n", sep="")
-	    else
+	    } else {
 		cat( " = ", att.get.nc(x, id, jj), " ;\n", sep="")
+            }
 	}
     }
 
@@ -699,13 +724,15 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions)
     stopifnot(is.character(varname))
     stopifnot(is.character(vartype))
     
-    if(any(is.na(dimensions)) && length(dimensions) != 1)
+    if(any(is.na(dimensions)) && length(dimensions) != 1) {
         stop("NAs not allowed in dimensions unless defining a scalar variable",
 	    call.=FALSE)
+    }
 
-    if(!any(is.na(dimensions)))
+    if(!any(is.na(dimensions))) {
 	stopifnot(mode(dimensions) == "character" || 
 	    mode(dimensions) == "numeric")
+    }
     
     #-- Determine dimids from dimname if necessary, handle scalar variables ----#
     dimids <- vector()
@@ -713,15 +740,18 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions)
         dimids <- -1
 	ndims  <-  0
     } else {	
-	if(mode(dimensions) == "numeric")
+	if(mode(dimensions) == "numeric") {
             dimids <- dimensions
-	else
-            for(i in seq_along(dimensions))
+	} else {
+            for(i in seq_along(dimensions)) {
         	try(dimids[i] <- dim.inq.nc(ncfile, dimensions[i])$id,
 	            silent=TRUE)
+            }
+        }
 
-	if(length(dimids) != length(dimensions))
+	if(length(dimids) != length(dimensions)) {
             stop("Could not determine all dimension ids", call.=FALSE)
+        }
 	    
 	dimids <- dimids[length(dimids):1]                   ## R to C convention
 	ndims  <- length(dimids)
@@ -759,8 +789,9 @@ var.get.nc <- function(ncfile, variable, start=NA, count=NA, na.mode=0,
     #-- Inquire the variable ---------------------------------------------------#
     varinfo <- try(var.inq.nc(ncfile, variable))
 
-    if(class(varinfo) == "try-error" || is.null(varinfo))
+    if(class(varinfo) == "try-error" || is.null(varinfo)) {
         return(invisible(NULL))
+    }
     
     ndims      <- varinfo$ndims
 
@@ -775,8 +806,9 @@ var.get.nc <- function(ncfile, variable, start=NA, count=NA, na.mode=0,
       count <- rep(NA, ndims)
     }
 
-    if(length(start) != ndims || length(count) != ndims)
+    if(length(start) != ndims || length(count) != ndims) {
       stop("Length of start/count is not ndims", call.=FALSE)
+    }
 
     start[is.na(start)] <- 1
     for (idim in seq_len(ndims)) {
@@ -820,12 +852,16 @@ var.get.nc <- function(ncfile, variable, start=NA, count=NA, na.mode=0,
       missval <- try(att.inq.nc(ncfile, varinfo$name, "missing_value"), 
 	  silent=TRUE)
 
-      if(!(class(fillval) == "try-error"))
-	  if(!is.null(fillval))
+      if(!(class(fillval) == "try-error")) {
+	  if(!is.null(fillval)) {
 	      fillval.flag <- 1
-      if(!(class(missval) == "try-error"))
-	  if(!is.null(missval))
+          }
+      }
+      if(!(class(missval) == "try-error")) {
+	  if(!is.null(missval)) {
 	      missval.flag <- 1
+          }
+      }
 
       if(na.mode == 0 && missval.flag == 1) {
 	  na.value <- att.get.nc(ncfile, varinfo$name, "missing_value")
@@ -943,8 +979,9 @@ var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0,
     #-- Inquire the variable ---------------------------------------------------#
     varinfo <- try(var.inq.nc(ncfile, variable))
 
-    if(class(varinfo) == "try-error" || is.null(varinfo))
+    if(class(varinfo) == "try-error" || is.null(varinfo)) {
         return(invisible(NULL))
+    }
 
     ndims <- varinfo$ndims
 
@@ -957,10 +994,11 @@ var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0,
 
     #-- Get correct mode (numeric/character) if data contain only NAs ----------#
     if(is.logical(data)) {
-	if(varinfo$type == "NC_CHAR")
+	if(varinfo$type == "NC_CHAR") {
 	    mode(data) <- "character"
-	else
+	} else {
 	    mode(data) <- "numeric"
+        }
     }
 
     #-- Check length of character strings --------------------------------------#
@@ -1033,12 +1071,16 @@ var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0,
       missval <- try(att.inq.nc(ncfile, varinfo$name, "missing_value"),
 	  silent=TRUE)
 
-      if(!(class(fillval) == "try-error"))
-	  if(!is.null(fillval))
+      if(!(class(fillval) == "try-error")) {
+	  if(!is.null(fillval)) {
 	      fillval.flag <- 1
-      if(!(class(missval) == "try-error"))
-	  if(!is.null(missval))
+          }
+      }
+      if(!(class(missval) == "try-error")) {
+	  if(!is.null(missval)) {
 	      missval.flag <- 1
+          }
+      }
 
       if(na.mode == 0 && missval.flag == 1) {
 	  na.value <- att.get.nc(ncfile, varinfo$name, "missing_value")
@@ -1059,10 +1101,11 @@ var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0,
 	  na.flag  <- 1
       }
 
-      if(na.flag == 1)
+      if(na.flag == 1) {
 	  data[is.na(data)] <- as.numeric(na.value)
-      else
+      } else {
 	  stop("Found NAs but no missing value attribute", call.=FALSE)
+      }
     }
 
     #-- Switch from R to C convention ------------------------------------------#
@@ -1394,11 +1437,13 @@ utinvcal.nc <- function(unitstring, value)
 
     count <- length(value)
     
-    if(is.vector(value) && count %% 6  != 0)
+    if(is.vector(value) && count %% 6  != 0) {
 	stop("length(value) not divisible by 6", call.=FALSE)
+    }
 
-    if(is.matrix(value) && ncol(value) != 6) 
+    if(is.matrix(value) && ncol(value) != 6) {
 	stop("ncol(value) not 6", call.=FALSE)
+    }
     
     #-- C function call --------------------------------------------------------#
     ut <- Cwrap("R_ut_inv_calendar", 
