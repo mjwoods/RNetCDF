@@ -127,52 +127,42 @@
 \*=============================================================================*/
 
 /* Convert netcdf type code to string label.
-   Argument str is assumed to be pre-allocated.
-   Returns NC_NOERR if ok, NC_EBADTYPE otherwise.
  */
-static int R_nc_type2str(int ncid, nc_type xtype, char *str) {
+static const char* R_nc_type2str(int ncid, nc_type xtype) {
+  static char str[NC_MAX_NAME+1];
   switch (xtype) {
     case NC_BYTE:
-      strcpy(str, "NC_BYTE");
-      break;
+      return "NC_BYTE";
     case NC_UBYTE:
-      strcpy(str, "NC_UBYTE");
-      break;
+      return "NC_UBYTE";
     case NC_CHAR:
-      strcpy(str, "NC_CHAR");
-      break;
+      return "NC_CHAR";
     case NC_SHORT:
-      strcpy(str, "NC_SHORT");
-      break;
+      return "NC_SHORT";
     case NC_USHORT:
-      strcpy(str, "NC_USHORT");
-      break;
+      return "NC_USHORT";
     case NC_INT:
-      strcpy(str, "NC_INT");
-      break;
+      return "NC_INT";
     case NC_UINT:
-      strcpy(str, "NC_UINT");
-      break;
+      return "NC_UINT";
     case NC_INT64:
-      strcpy(str, "NC_INT64");
-      break;
+      return "NC_INT64";
     case NC_UINT64:
-      strcpy(str, "NC_UINT64");
-      break;
+      return "NC_UINT64";
     case NC_FLOAT:
-      strcpy(str, "NC_FLOAT");
-      break;
+      return "NC_FLOAT";
     case NC_DOUBLE:
-      strcpy(str, "NC_DOUBLE");
-      break;
+      return "NC_DOUBLE";
     case NC_STRING:
-      strcpy(str, "NC_STRING");
-      break;
+      return "NC_STRING";
     default:
       /* Try to get name of a user defined type */
-      return nc_inq_user_type(ncid, xtype, str, NULL, NULL, NULL, NULL);
+      if (nc_inq_user_type(ncid, xtype, str, NULL, NULL, NULL, NULL) == NC_NOERR) {
+        return str;
+      } else {
+        return "UNKNOWN";
+      };
   }
-  return NC_NOERR;
 }
 
 
@@ -336,7 +326,7 @@ SEXP R_nc_copy_att (SEXP ncid_in, SEXP varid_in, SEXP globflag_in, SEXP attname,
                     SEXP ncid_out, SEXP varid_out, SEXP globflag_out)
 {
     int  ncvarid_in, ncvarid_out, status;
-    char ncattname[NC_MAX_NAME+1];
+    const char *ncattname;
     ROBJDEF(NOSXP, 0);
 
     /*-- Check if handling global attributes ----------------------------------*/
@@ -357,7 +347,7 @@ SEXP R_nc_copy_att (SEXP ncid_in, SEXP varid_in, SEXP globflag_in, SEXP attname,
     }
 
     /*-- Copy the attribute ---------------------------------------------------*/
-    strcpy(ncattname, CHAR(STRING_ELT(attname, 0)));
+    ncattname = CHAR(STRING_ELT(attname, 0));
     status = nc_copy_att(INTEGER(ncid_in)[0], ncvarid_in, ncattname,
                          INTEGER(ncid_out)[0], ncvarid_out);
     RRETURN(status);
@@ -371,7 +361,7 @@ SEXP R_nc_copy_att (SEXP ncid_in, SEXP varid_in, SEXP globflag_in, SEXP attname,
 SEXP R_nc_delete_att (SEXP ncid, SEXP varid, SEXP globflag, SEXP attname)
 {
     int  ncvarid, status;
-    char ncattname[NC_MAX_NAME+1];
+    const char *ncattname;
     ROBJDEF(NOSXP,0);
     
     /*-- Check if it is a global attribute ------------------------------------*/
@@ -387,7 +377,7 @@ SEXP R_nc_delete_att (SEXP ncid, SEXP varid, SEXP globflag, SEXP attname)
     }
 
     /*-- Delete the attribute -------------------------------------------------*/
-    strcpy(ncattname, CHAR(STRING_ELT(attname, 0)));
+    ncattname = CHAR(STRING_ELT(attname, 0));
     status = nc_del_att(INTEGER(ncid)[0], ncvarid, ncattname);
     RRETURN(status);
 }
@@ -401,7 +391,8 @@ SEXP R_nc_get_att (SEXP ncid, SEXP varid, SEXP name,
                    SEXP numflag, SEXP globflag)
 {
     int    ncvarid, status;
-    char   ncattname[NC_MAX_NAME+1], *cvalue;    
+    const char *ncattname;
+    char   *cvalue;    
     size_t attlen;
     ROBJDEF(NOSXP,0);
 
@@ -412,7 +403,7 @@ SEXP R_nc_get_att (SEXP ncid, SEXP varid, SEXP name,
         ncvarid = INTEGER(varid)[0];
 
     /*-- Get the attribute's length -------------------------------------------*/
-    strcpy(ncattname, CHAR(STRING_ELT(name, 0)));
+    ncattname = CHAR(STRING_ELT(name, 0));
     status = nc_inq_attlen(INTEGER(ncid)[0], ncvarid, ncattname, &attlen);
     if(status != NC_NOERR) {
         RRETURN(status);
@@ -448,13 +439,11 @@ SEXP R_nc_inq_att (SEXP ncid, SEXP varid, SEXP attname, SEXP attid,
                    SEXP nameflag, SEXP globflag)
 {
     int     ncvarid, ncattid, status;
-    char    atttype[NC_MAX_NAME+1], ncattname[NC_MAX_NAME+1];
+    const char *atttype, *ncattname;
+    char namebuf[NC_MAX_NAME+1];
     size_t  ncattlen;
     nc_type xtype;
     ROBJDEF(VECSXP,4);
-
-    ncattid    = INTEGER(attid)[0];
-    strcpy(ncattname, CHAR(STRING_ELT(attname, 0)));
 
     /*-- Check if it is a global attribute ------------------------------------*/
     if(INTEGER(globflag)[0] == 1)
@@ -462,20 +451,18 @@ SEXP R_nc_inq_att (SEXP ncid, SEXP varid, SEXP attname, SEXP attid,
     else
         ncvarid = INTEGER(varid)[0];
 
-    /*-- Get the attribute ID if necessary ------------------------------------*/
+    /*-- Get the attribute name or ID -----------------------------------------*/
     if(INTEGER(nameflag)[0] == 1) {
- 	status = nc_inq_attid(INTEGER(ncid)[0], ncvarid, ncattname, &ncattid);
-        if(status != NC_NOERR) {
-            RRETURN(status);
-	}
+        ncattname = CHAR(STRING_ELT(attname, 0));
+ 	status = nc_inq_attid(INTEGER(ncid)[0], ncvarid,
+            CHAR(STRING_ELT(attname, 0)), &ncattid);
+    } else {
+        ncattid   = INTEGER(attid)[0];
+ 	status = nc_inq_attname(INTEGER(ncid)[0], ncvarid, ncattid, namebuf);
+        ncattname = (const char*) namebuf;
     }
-
-    /*-- Get the attribute name if necessary ----------------------------------*/
-    if(INTEGER(nameflag)[0] == 0) {
- 	status = nc_inq_attname(INTEGER(ncid)[0], ncvarid, ncattid, ncattname);
-	if(status != NC_NOERR) {
-            RRETURN(status);
-	}
+    if(status != NC_NOERR) {
+        RRETURN(status);
     }
 
     /*-- Inquire the attribute ------------------------------------------------*/
@@ -486,11 +473,8 @@ SEXP R_nc_inq_att (SEXP ncid, SEXP varid, SEXP attname, SEXP attid,
     }
 
     /*-- Convert nc_type to char ----------------------------------------------*/
-    status = R_nc_type2str(INTEGER(ncid)[0], xtype, atttype);
-    if(status != NC_NOERR) {
-        RRETURN(status);
-    }
- 
+    atttype = R_nc_type2str(INTEGER(ncid)[0], xtype);
+
     /*-- Returning the list ---------------------------------------------------*/
     SET_VECTOR_ELT(RDATASET, 0, ScalarInteger(ncattid));
     SET_VECTOR_ELT(RDATASET, 1, mkString(ncattname));
@@ -508,7 +492,7 @@ SEXP R_nc_put_att (SEXP ncid, SEXP varid, SEXP name, SEXP type, SEXP attlen,
                    SEXP numflag, SEXP globflag, SEXP value)
 {
     int     ncvarid, ncattlen, status;
-    char    ncattname[NC_MAX_NAME+1];
+    const char *ncattname;
     nc_type xtype;
     ROBJDEF(NOSXP,0);
 
@@ -532,7 +516,7 @@ SEXP R_nc_put_att (SEXP ncid, SEXP varid, SEXP name, SEXP type, SEXP attlen,
 
     /*-- Create the attribute -------------------------------------------------*/
     ncattlen  = INTEGER(attlen)[0];
-    strcpy(ncattname, CHAR(STRING_ELT(name, 0)));
+    ncattname = CHAR(STRING_ELT(name, 0));
     if(INTEGER(numflag)[0] == 1) {
         status = nc_put_att_double(INTEGER(ncid)[0], ncvarid, ncattname, xtype,
 	    ncattlen, REAL(value));
@@ -553,7 +537,7 @@ SEXP R_nc_rename_att (SEXP ncid, SEXP varid, SEXP globflag, SEXP attname,
                       SEXP newname)
 {
     int  ncvarid, status;
-    char ncattname[NC_MAX_NAME+1], ncnewname[NC_MAX_NAME+1];
+    const char *ncattname, *ncnewname;
     ROBJDEF(NOSXP,0);
     
     /*-- Check if it is a global attribute ------------------------------------*/
@@ -569,8 +553,8 @@ SEXP R_nc_rename_att (SEXP ncid, SEXP varid, SEXP globflag, SEXP attname,
     }
 
     /*-- Rename the attribute -------------------------------------------------*/
-    strcpy(ncattname, CHAR(STRING_ELT(attname, 0)));
-    strcpy(ncnewname, CHAR(STRING_ELT(newname, 0)));
+    ncattname = CHAR(STRING_ELT(attname, 0));
+    ncnewname = CHAR(STRING_ELT(newname, 0));
     status = nc_rename_att(INTEGER(ncid)[0], ncvarid, ncattname, ncnewname);
     RRETURN(status);
 }
@@ -812,12 +796,12 @@ SEXP R_nc_rename_dim (SEXP ncid, SEXP dimid, SEXP dimname, SEXP nameflag,
                       SEXP newname)
 {
     int  ncdimid, status;
-    char ncdimname[NC_MAX_NAME+1], ncnewname[NC_MAX_NAME+1];
+    const char *ncdimname, *ncnewname;
     ROBJDEF(NOSXP,0);
 
     ncdimid   = INTEGER(dimid)[0];
-    strcpy(ncdimname, CHAR(STRING_ELT(dimname, 0)));
-    strcpy(ncnewname, CHAR(STRING_ELT(newname, 0)));
+    ncdimname = CHAR(STRING_ELT(dimname, 0));
+    ncnewname = CHAR(STRING_ELT(newname, 0));
     
     /*-- Get the dimension ID if necessary ------------------------------------*/
     if(INTEGER(nameflag)[0] == 1) {
@@ -1093,19 +1077,19 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
 SEXP R_nc_inq_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag)
 {
     int     ncvarid, ndims, natts, i, status, *dimids;
-    char    ncvarname[NC_MAX_NAME+1], vartype[NC_MAX_NAME+1];
+    const char *vartype;
+    char ncvarname[NC_MAX_NAME+1];
     nc_type xtype;
     ROBJDEF(VECSXP,6);
 
-    ncvarid = INTEGER(varid)[0];
-    strcpy(ncvarname, CHAR(STRING_ELT(varname, 0)));
-
     /*-- Get the variable ID if necessary -------------------------------------*/
     if(INTEGER(nameflag)[0] == 1) {
- 	status = nc_inq_varid(INTEGER(ncid)[0], ncvarname, &ncvarid);
+ 	status = nc_inq_varid(INTEGER(ncid)[0], CHAR(STRING_ELT(varname, 0)), &ncvarid);
         if(status != NC_NOERR) {
             RRETURN(status);
 	}
+    } else {
+        ncvarid = INTEGER(varid)[0];
     }
 
     /*-- Get the number of dimensions -----------------------------------------*/
@@ -1129,10 +1113,7 @@ SEXP R_nc_inq_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag)
     }
 
     /*-- Convert nc_type to char ----------------------------------------------*/
-    status = R_nc_type2str(INTEGER(ncid)[0], xtype, vartype);
-    if (status != NC_NOERR) {
-        RRETURN(status);
-    }
+    vartype = R_nc_type2str(INTEGER(ncid)[0], xtype);
 
     /*-- Returning the list ---------------------------------------------------*/
     SET_VECTOR_ELT(RDATASET, 0, ScalarInteger(ncvarid));
@@ -1251,11 +1232,11 @@ SEXP R_nc_rename_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag,
                       SEXP newname)
 {
     int  ncvarid, status;
-    char ncvarname[NC_MAX_NAME+1], ncnewname[NC_MAX_NAME+1];
+    const char *ncvarname, *ncnewname;
     ROBJDEF(NOSXP,0);
 
-    strcpy(ncvarname, CHAR(STRING_ELT(varname, 0)));
-    strcpy(ncnewname, CHAR(STRING_ELT(newname, 0)));
+    ncvarname = CHAR(STRING_ELT(varname, 0));
+    ncnewname = CHAR(STRING_ELT(newname, 0));
     ncvarid = INTEGER(varid)[0];
    
     /*-- Get the variable ID if necessary -------------------------------------*/
