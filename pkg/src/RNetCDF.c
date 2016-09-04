@@ -98,28 +98,26 @@
 #define ROBJDEF(RTYPE,RLEN) \
   SEXP retlist; \
   PROTECT(retlist = allocVector(VECSXP, 3)); \
-  SET_VECTOR_ELT(retlist, 0, allocVector(INTSXP, 1)); \
-  SET_VECTOR_ELT(retlist, 1, allocVector(STRSXP, 1)); \
   RDATADEF(RTYPE,RLEN);
 
 #define RDATASET VECTOR_ELT(retlist,2)
 
 #define RRETURN(STATUS) \
+  SET_VECTOR_ELT(retlist, 0, ScalarInteger(STATUS)); \
   if (STATUS == E_UNSUPPORTED) { \
     SET_VECTOR_ELT(retlist, 1, \
       mkString("Operation requires RNetCDF built with newer netcdf library")); \
   } else if (STATUS != NC_NOERR) { \
     SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(STATUS))); \
   } \
-  INTEGER(VECTOR_ELT(retlist, 0))[0] = STATUS; \
   UNPROTECT(1); \
   return(retlist);
 
 #define RUTRETURN(STATUS) \
+  SET_VECTOR_ELT(retlist, 0, ScalarInteger(STATUS)); \
   if (STATUS != 0) { \
     SET_VECTOR_ELT(retlist, 1, mkString(R_ut_strerror(STATUS))); \
   } \
-  INTEGER(VECTOR_ELT(retlist, 0))[0] = STATUS; \
   UNPROTECT(1); \
   return(retlist);
 
@@ -494,16 +492,10 @@ SEXP R_nc_inq_att (SEXP ncid, SEXP varid, SEXP attname, SEXP attid,
     }
  
     /*-- Returning the list ---------------------------------------------------*/
-    SET_VECTOR_ELT(RDATASET, 0, allocVector(INTSXP, 1));
-    SET_VECTOR_ELT(RDATASET, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(RDATASET, 2, allocVector(STRSXP, 1));
-    SET_VECTOR_ELT(RDATASET, 3, allocVector(INTSXP, 1));
-    
-    INTEGER(VECTOR_ELT(RDATASET, 0))[0] = ncattid;
+    SET_VECTOR_ELT(RDATASET, 0, ScalarInteger(ncattid));
     SET_VECTOR_ELT(RDATASET, 1, mkString(ncattname));
     SET_VECTOR_ELT(RDATASET, 2, mkString(atttype));
-    INTEGER(VECTOR_ELT(RDATASET, 3))[0] = (int) ncattlen;
-
+    SET_VECTOR_ELT(RDATASET, 3, ScalarInteger((int) ncattlen));
     RRETURN(status);
 }
 
@@ -803,15 +795,10 @@ SEXP R_nc_inq_dim (SEXP ncid, SEXP dimid, SEXP dimname, SEXP nameflag)
     }
 
     /*-- Returning the list ---------------------------------------------------*/
-    SET_VECTOR_ELT(RDATASET, 0, allocVector(INTSXP, 1));
-    SET_VECTOR_ELT(RDATASET, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(RDATASET, 2, allocVector(REALSXP, 1));
-    SET_VECTOR_ELT(RDATASET, 3, allocVector(INTSXP, 1));
-
-    INTEGER(VECTOR_ELT(RDATASET, 0))[0] = ncdimid;
-    SET_VECTOR_ELT (RDATASET, 1, mkString(ncdimname));
-    REAL(VECTOR_ELT(RDATASET, 2))[0] = (double)ncdimlen;
-    INTEGER(VECTOR_ELT(RDATASET, 3))[0] = isunlim;
+    SET_VECTOR_ELT(RDATASET, 0, ScalarInteger(ncdimid));
+    SET_VECTOR_ELT(RDATASET, 1, mkString(ncdimname));
+    SET_VECTOR_ELT(RDATASET, 2, ScalarInteger(ncdimlen));
+    SET_VECTOR_ELT(RDATASET, 3, ScalarInteger(isunlim));
 
     RRETURN(status);
 }
@@ -874,15 +861,10 @@ SEXP R_nc_inq_file (SEXP ncid)
     }
 
     /*-- Returning the list ---------------------------------------------------*/
-    SET_VECTOR_ELT(RDATASET, 0, allocVector(INTSXP, 1));
-    SET_VECTOR_ELT(RDATASET, 1, allocVector(INTSXP, 1));
-    SET_VECTOR_ELT(RDATASET, 2, allocVector(INTSXP, 1));
-    SET_VECTOR_ELT(RDATASET, 3, allocVector(INTSXP, 1));
-
-    INTEGER(VECTOR_ELT(RDATASET, 0))[0] = ndims;
-    INTEGER(VECTOR_ELT(RDATASET, 1))[0] = nvars;
-    INTEGER(VECTOR_ELT(RDATASET, 2))[0] = ngatts;
-    INTEGER(VECTOR_ELT(RDATASET, 3))[0] = unlimdimid;
+    SET_VECTOR_ELT(RDATASET, 0, ScalarInteger(ndims));
+    SET_VECTOR_ELT(RDATASET, 1, ScalarInteger(nvars));
+    SET_VECTOR_ELT(RDATASET, 2, ScalarInteger(ngatts));
+    SET_VECTOR_ELT(RDATASET, 3, ScalarInteger(unlimdimid));
     SET_VECTOR_ELT(RDATASET, 4, mkString(R_nc_format2str(format)));
 
     RRETURN(status);
@@ -1153,19 +1135,12 @@ SEXP R_nc_inq_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag)
     }
 
     /*-- Returning the list ---------------------------------------------------*/
-    SET_VECTOR_ELT(RDATASET, 0, allocVector(INTSXP, 1));
-    SET_VECTOR_ELT(RDATASET, 1, allocVector(STRSXP,  1));
-    SET_VECTOR_ELT(RDATASET, 2, allocVector(STRSXP, 1));
-    SET_VECTOR_ELT(RDATASET, 3, allocVector(INTSXP, 1));
-    /* List item 4 is already allocated */
-    SET_VECTOR_ELT(RDATASET, 5, allocVector(INTSXP, 1));
-    
-    INTEGER(VECTOR_ELT(RDATASET, 0))[0] = ncvarid;
-    SET_VECTOR_ELT (RDATASET, 1, mkString(ncvarname));
-    SET_VECTOR_ELT (RDATASET, 2, mkString(vartype));
-    INTEGER(VECTOR_ELT(RDATASET, 3))[0] = ndims;
-    /* List item 4 is defined by nc_inq_var above */
-    INTEGER(VECTOR_ELT(RDATASET, 5))[0] = natts;
+    SET_VECTOR_ELT(RDATASET, 0, ScalarInteger(ncvarid));
+    SET_VECTOR_ELT(RDATASET, 1, mkString(ncvarname));
+    SET_VECTOR_ELT(RDATASET, 2, mkString(vartype));
+    SET_VECTOR_ELT(RDATASET, 3, ScalarInteger(ndims));
+    /* List item 4 is already defined by nc_inq_var */
+    SET_VECTOR_ELT(RDATASET, 5, ScalarInteger(natts));
 
     RRETURN(status);
 }
