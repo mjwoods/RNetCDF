@@ -538,7 +538,7 @@ file.inq.nc <- function(ncfile)
     nc <- Cwrap("R_nc_inq_file",
                 as.integer(ncfile))
 
-    names(nc) <- c("ndims","nvars","ngatts","unlimdimid")
+    names(nc) <- c("ndims","nvars","ngatts","unlimdimid","format")
 
     if(nc$unlimdimid == -1) {
       nc$unlimdimid <- NA

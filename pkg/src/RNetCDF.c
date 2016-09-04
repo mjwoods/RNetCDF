@@ -306,6 +306,26 @@ static const char* R_ut_strerror (int errcode)
 }
 
 
+/* Convert netcdf file format code to string label.
+ */
+static const char* R_nc_format2str(int format) {
+  switch (format) {
+    case NC_FORMAT_CLASSIC:
+      return "classic";
+    case NC_FORMAT_64BIT_OFFSET:
+      return "offset64";
+    case NC_FORMAT_CDF5:
+      return "cdf5";
+    case NC_FORMAT_NETCDF4:
+      return "netcdf4";
+    case NC_FORMAT_NETCDF4_CLASSIC:
+      return "classic4";
+    default:
+      return "unknown";
+  }
+}
+
+
 /*=============================================================================*\
  *  NetCDF library functions						       *
 \*=============================================================================*/
@@ -838,11 +858,17 @@ SEXP R_nc_rename_dim (SEXP ncid, SEXP dimid, SEXP dimname, SEXP nameflag,
 
 SEXP R_nc_inq_file (SEXP ncid)
 {
-    int  ndims, nvars, ngatts, unlimdimid, status;
-    ROBJDEF(VECSXP,4);
+    int  ndims, nvars, ngatts, unlimdimid, format, status;
+    ROBJDEF(VECSXP,5);
 
     /*-- Inquire about the NetCDF dataset -------------------------------------*/
     status = nc_inq(INTEGER(ncid)[0], &ndims, &nvars, &ngatts, &unlimdimid);
+    if(status != NC_NOERR) {
+      RRETURN(status);
+    }
+
+    /*-- Inquire about the NetCDF format --------------------------------------*/
+    status = nc_inq_format(INTEGER(ncid)[0], &format);
     if(status != NC_NOERR) {
       RRETURN(status);
     }
@@ -857,6 +883,7 @@ SEXP R_nc_inq_file (SEXP ncid)
     INTEGER(VECTOR_ELT(RDATASET, 1))[0] = nvars;
     INTEGER(VECTOR_ELT(RDATASET, 2))[0] = ngatts;
     INTEGER(VECTOR_ELT(RDATASET, 3))[0] = unlimdimid;
+    SET_VECTOR_ELT(RDATASET, 4, mkString(R_nc_format2str(format)));
 
     RRETURN(status);
 }
