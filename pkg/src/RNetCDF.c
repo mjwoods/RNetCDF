@@ -338,6 +338,53 @@ R_nc_format2str (int format)
 }
 
 
+/* Convert attribute identifier from R string or number to a C string.
+   Argument attname must have space for NC_MAX_NAME+1 characters.
+   Result is a netcdf status value.
+ */
+static int R_nc_att_name(SEXP att, int ncid, int varid, char *attname) {
+  int attid;
+  if (isNumeric(att)) {
+    return nc_inq_attname(ncid, varid, asInteger(att), attname);
+  } else if (isString(att)) {
+    strcpy(attname, CHAR(STRING_ELT(att,0)));
+    return NC_NOERR;
+  } else {
+    return NC_EINVAL;
+  } 
+}
+
+
+/* Convert dimension identifier from R string or number to an integer.
+   Result is a netcdf status value.
+ */
+static int R_nc_dim_id(SEXP dim, int ncid, int *dimid) {
+  if (isNumeric(dim)) {
+    *dimid = asInteger(dim);
+    return NC_NOERR;
+  } else if (isString(dim)) {
+    return nc_inq_dimid(ncid, CHAR(STRING_ELT(dim,0)), dimid);
+  } else {
+    return NC_EINVAL;
+  } 
+}
+
+
+/* Convert variable identifier from R string or number to an integer.
+   Result is a netcdf status value.
+ */
+static int R_nc_var_id(SEXP var, int ncid, int *varid) {
+  if (isNumeric(var)) {
+    *varid = asInteger(var);
+    return NC_NOERR;
+  } else if (isString(var)) {
+    return nc_inq_varid(ncid, CHAR(STRING_ELT(var,0)), varid);
+  } else {
+    return NC_EINVAL;
+  } 
+}
+
+
 /*=============================================================================*\
  *  NetCDF library functions						       *
 \*=============================================================================*/
