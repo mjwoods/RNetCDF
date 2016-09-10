@@ -235,13 +235,8 @@ dim.def.nc <- function(ncfile, dimname, dimlength = 1, unlim = FALSE) {
   stopifnot(is.numeric(dimlength))
   stopifnot(is.logical(unlim))
   
-  #-- Handle UNLIMITED -------------------------------------------------------
-  unlimflag <- ifelse(unlim == TRUE, 1, 0)
-  ncdimlength <- ifelse(unlim == TRUE, 0, dimlength)
-  
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_def_dim", as.integer(ncfile), as.character(dimname), 
-    as.integer(ncdimlength), as.integer(unlimflag))
+  nc <- Cwrap("R_nc_def_dim", ncfile, dimname, dimlength, unlim)
   
   return(nc)
 }
@@ -256,20 +251,11 @@ dim.inq.nc <- function(ncfile, dimension) {
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(dimension) || is.numeric(dimension))
   
-  #-- Look if handle dimension by name or ID ---------------------------------
-  dimid <- -1
-  dimname <- ""
-  
-  ifelse(is.character(dimension), nameflag <- 1, nameflag <- 0)
-  ifelse(is.character(dimension), dimname <- dimension, dimid <- dimension)
-  
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_inq_dim", as.integer(ncfile), as.integer(dimid), as.character(dimname), 
-    as.integer(nameflag))
+  nc <- Cwrap("R_nc_inq_dim", ncfile, dimension)
   
   #-- Return object ----------------------------------------------------------
   names(nc) <- c("id", "name", "length", "unlim")
-  nc$unlim <- ifelse(nc$unlim == 1, TRUE, FALSE)
   return(nc)
 }
 
@@ -284,16 +270,8 @@ dim.rename.nc <- function(ncfile, dimension, newname) {
   stopifnot(is.character(dimension) || is.numeric(dimension))
   stopifnot(is.character(newname))
   
-  #-- Look if handle dimension by name or ID ---------------------------------
-  dimid <- -1
-  dimname <- ""
-  
-  ifelse(is.character(dimension), nameflag <- 1, nameflag <- 0)
-  ifelse(is.character(dimension), dimname <- dimension, dimid <- dimension)
-  
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_rename_dim", as.integer(ncfile), as.integer(dimid), 
-    as.character(dimname), as.integer(nameflag), as.character(newname))
+  nc <- Cwrap("R_nc_rename_dim", ncfile, dimension, newname)
   
   return(invisible(NULL))
 }

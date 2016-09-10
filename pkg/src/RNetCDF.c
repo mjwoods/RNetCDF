@@ -611,8 +611,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att,
               SEXP type, SEXP value)
 {
   int ncid, varid;
-  char attname[NC_MAX_NAME+1];
-  const char *charval;
+  const char *attname, *charval;
   nc_type nctype;
   size_t  nccnt;
   ROBJDEF (NOSXP, 0);
@@ -625,7 +624,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att,
   else
     RNCCHECK (R_nc_var_id (var, ncid, &varid));
 
-  RNCCHECK (R_nc_att_name (att, ncid, varid, attname));
+  attname = CHAR (STRING_ELT (att, 0));
 
   /*-- Convert char to nc_type ------------------------------------------------*/
   RNCCHECK (R_nc_str2type (ncid, CHAR (STRING_ELT (type, 0)), &nctype));
@@ -642,7 +641,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att,
     }
   else
     {
-      nccnt = length(value);
+      nccnt = xlength(value);
       RNCCHECK (nc_put_att_double
 		(ncid, varid, attname, nctype, nccnt, REAL (value)));
     }
@@ -777,24 +776,34 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_def_dim (SEXP ncid, SEXP dimname, SEXP size, SEXP unlimp)
+R_nc_def_dim (SEXP nc, SEXP dimname, SEXP size, SEXP unlim)
 {
+  int ncid;
+  const char *dimnamep;
+  size_t nccnt;
   ROBJDEF (INTSXP, 1);
 
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
+
+  dimnamep = CHAR (STRING_ELT (dimname, 0));
+
   /*-- Enter define mode ------------------------------------------------------*/
-  RNCREDEF (INTEGER (ncid)[0]);
+  RNCREDEF (ncid);
 
   /*-- Create the dimension ---------------------------------------------------*/
-  if (INTEGER (unlimp)[0] == 1)
-    {
-      RNCCHECK (nc_def_dim (INTEGER (ncid)[0], CHAR (STRING_ELT (dimname, 0)),
-			    NC_UNLIMITED, INTEGER (RDATASET)));
-    }
+  if (asLogical(unlim))
+    nccnt = NC_UNLIMITED;
   else
     {
-      RNCCHECK (nc_def_dim (INTEGER (ncid)[0], CHAR (STRING_ELT (dimname, 0)),
-			    INTEGER (size)[0], INTEGER (RDATASET)));
+      /* Allow size to be a double, which can be larger than integer */
+      if (isInteger(size))
+        nccnt = asInteger(size);
+      else
+        nccnt = (size_t) asReal(size);
     }
+
+  RNCCHECK (nc_def_dim (ncid, dimnamep, nccnt, INTEGER (RDATASET)));
 
   RNCRETURN (NC_NOERR);
 }
@@ -871,30 +880,23 @@ R_nc_unlimdims (int ncid, int *nunlim, int **unlimids, int ancestors)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_inq_dim (SEXP ncid, SEXP dimid, SEXP dimname, SEXP nameflag)
+R_nc_inq_dim (SEXP nc, SEXP dim)
 {
-  int nunlim, *unlimids, isunlim, ncdimid, ii;
-  size_t ncdimlen;
-  char ncdimname[NC_MAX_NAME + 1];
+  int ncid, nunlim, *unlimids, isunlim, dimid, ii;
+  size_t dimlen;
+  char dimname[NC_MAX_NAME + 1];
   ROBJDEF (VECSXP, 4);
 
-  /*-- Get the dimension ID if necessary --------------------------------------*/
-  if (INTEGER (nameflag)[0] != 0)
-    {
-      RNCCHECK (nc_inq_dimid
-		(INTEGER (ncid)[0], CHAR (STRING_ELT (dimname, 0)),
-		 &ncdimid));
-    }
-  else
-    {
-      ncdimid = INTEGER (dimid)[0];
-    }
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
+
+  RNCCHECK (R_nc_dim_id (dim, ncid, &dimid));
 
   /*-- Inquire the dimension --------------------------------------------------*/
-  RNCCHECK (nc_inq_dim (INTEGER (ncid)[0], ncdimid, ncdimname, &ncdimlen));
+  RNCCHECK (nc_inq_dim (ncid, dimid, dimname, &dimlen));
 
   /*-- Check if it is an unlimited dimension ---------------------------------*/
-  RNCCHECK (R_nc_unlimdims (INTEGER (ncid)[0], &nunlim, &unlimids, 1));
+  RNCCHECK (R_nc_unlimdims (ncid, &nunlim, &unlimids, 1));
 
   isunlim = 0;
   for (ii = 0; ii < nunlim; ii++)
@@ -907,10 +909,11 @@ R_nc_inq_dim (SEXP ncid, SEXP dimid, SEXP dimname, SEXP nameflag)
     }
 
   /*-- Returning the list -----------------------------------------------------*/
-  SET_VECTOR_ELT (RDATASET, 0, ScalarInteger (ncdimid));
-  SET_VECTOR_ELT (RDATASET, 1, mkString (ncdimname));
-  SET_VECTOR_ELT (RDATASET, 2, ScalarInteger (ncdimlen));
-  SET_VECTOR_ELT (RDATASET, 3, ScalarInteger (isunlim));
+  SET_VECTOR_ELT (RDATASET, 0, ScalarInteger (dimid));
+  SET_VECTOR_ELT (RDATASET, 1, mkString (dimname));
+  /* Dimension length may be larger than integer, so return as double */
+  SET_VECTOR_ELT (RDATASET, 2, ScalarReal (dimlen));
+  SET_VECTOR_ELT (RDATASET, 3, ScalarLogical (isunlim));
 
   RNCRETURN (NC_NOERR);
 }
@@ -921,28 +924,24 @@ R_nc_inq_dim (SEXP ncid, SEXP dimid, SEXP dimname, SEXP nameflag)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_rename_dim (SEXP ncid, SEXP dimid, SEXP dimname, SEXP nameflag,
-		 SEXP newname)
+R_nc_rename_dim (SEXP nc, SEXP dim, SEXP newname)
 {
-  int ncdimid;
-  const char *ncdimname, *ncnewname;
+  int ncid, dimid;
+  const char *newnamep;
   ROBJDEF (NOSXP, 0);
 
-  ncdimid = INTEGER (dimid)[0];
-  ncdimname = CHAR (STRING_ELT (dimname, 0));
-  ncnewname = CHAR (STRING_ELT (newname, 0));
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
 
-  /*-- Get the dimension ID if necessary --------------------------------------*/
-  if (INTEGER (nameflag)[0] == 1)
-    {
-      RNCCHECK (nc_inq_dimid (INTEGER (ncid)[0], ncdimname, &ncdimid));
-    }
+  RNCCHECK (R_nc_dim_id (dim, ncid, &dimid));
+
+  newnamep = CHAR (STRING_ELT (newname, 0));
 
   /*-- Enter define mode ------------------------------------------------------*/
-  RNCREDEF (INTEGER (ncid)[0]);
+  RNCREDEF (ncid);
 
   /*-- Rename the dimension ---------------------------------------------------*/
-  RNCCHECK (nc_rename_dim (INTEGER (ncid)[0], ncdimid, ncnewname));
+  RNCCHECK (nc_rename_dim (ncid, dimid, newnamep));
 
   RNCRETURN (NC_NOERR);
 }
