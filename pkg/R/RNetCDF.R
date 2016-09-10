@@ -90,56 +90,9 @@ att.copy.nc <- function(ncfile.in, variable.in, attribute, ncfile.out, variable.
   stopifnot(is.character(variable.in) || is.numeric(variable.in))
   stopifnot(is.character(variable.out) || is.numeric(variable.out))
   
-  #-- Get the varids as integer if necessary, handle global attributes -------
-  varid.in <- NULL
-  varid.out <- NULL
-  globflag.in <- 0
-  globflag.out <- 0
-  
-  if (is.character(variable.in) && variable.in != "NC_GLOBAL") {
-    varid.in <- try(var.inq.nc(ncfile.in, variable.in)$id)
-  } else {
-    varid.in <- variable.in
-  }
-  
-  if (is.character(variable.in) && variable.in == "NC_GLOBAL") {
-    globflag.in <- 1
-    varid.in <- -1
-  }
-  
-  if (is.character(variable.out) && variable.out != "NC_GLOBAL") {
-    varid.out <- try(var.inq.nc(ncfile.out, variable.out)$id)
-  } else {
-    varid.out <- variable.out
-  }
-  
-  if (is.character(variable.out) && variable.out == "NC_GLOBAL") {
-    globflag.out <- 1
-    varid.out <- -1
-  }
-  
-  if (class(varid.in) == "try-error" || class(varid.out) == "try-error") {
-    return(invisible(NULL))
-  }
-  if (is.null(varid.in) || is.null(varid.out)) {
-    return(invisible(NULL))
-  }
-  
-  #-- Get the attribute name if necessary ------------------------------------
-  if (is.character(attribute)) {
-    attname <- attribute
-  } else {
-    attname <- try(att.inq.nc(ncfile.in, variable.in, attribute)$name)
-  }
-  
-  if (class(attname) == "try-error" || is.null(attname)) {
-    return(invisible(NULL))
-  }
-  
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_copy_att", as.integer(ncfile.in), as.integer(varid.in), 
-    as.integer(globflag.in), as.character(attname), as.integer(ncfile.out), 
-    as.integer(varid.out), as.integer(globflag.out))
+  nc <- Cwrap("R_nc_copy_att", ncfile.in, variable.in, attribute,
+              ncfile.out, variable.out)
   
   return(invisible(NULL))
 }
@@ -155,39 +108,8 @@ att.delete.nc <- function(ncfile, variable, attribute) {
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.character(attribute) || is.numeric(attribute))
   
-  #-- Get the varid as integer if necessary, handle global attributes --------
-  varid <- NULL
-  globflag <- 0
-  
-  if (is.character(variable) && variable != "NC_GLOBAL") {
-    varid <- try(var.inq.nc(ncfile, variable)$id)
-  } else {
-    varid <- variable
-  }
-  
-  if (is.character(variable) && variable == "NC_GLOBAL") {
-    globflag <- 1
-    varid <- -1
-  }
-  
-  if (class(varid) == "try-error" || is.null(varid)) {
-    return(invisible(NULL))
-  }
-  
-  #-- Get the attribute name if necessary ------------------------------------
-  if (is.character(attribute)) {
-    attname <- attribute
-  } else {
-    attname <- try(att.inq.nc(ncfile, variable, attribute)$name)
-  }
-  
-  if (class(attname) == "try-error" || is.null(attname)) {
-    return(invisible(NULL))
-  }
-  
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_delete_att", as.integer(ncfile), as.integer(varid), 
-    as.integer(globflag), as.character(attname))
+  nc <- Cwrap("R_nc_delete_att", ncfile, variable, attribute)
   
   return(invisible(NULL))
 }
@@ -203,38 +125,9 @@ att.get.nc <- function(ncfile, variable, attribute) {
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.character(attribute) || is.numeric(attribute))
   
-  #-- Get the varid as integer if necessary, handle global attributes --------
-  varid <- NULL
-  globflag <- 0
-  
-  if (is.character(variable) && variable != "NC_GLOBAL") {
-    varid <- try(var.inq.nc(ncfile, variable)$id)
-  } else {
-    varid <- variable
-  }
-  
-  if (is.character(variable) && variable == "NC_GLOBAL") {
-    globflag <- 1
-    varid <- -1
-  }
-  
-  if (class(varid) == "try-error" || is.null(varid)) {
-    return(invisible(NULL))
-  }
-  
-  #-- Inquire the attribute to get its name and storage mode -----------------
-  attinfo <- try(att.inq.nc(ncfile, variable, attribute))
-  if (class(attinfo) == "try-error" || is.null(attinfo)) {
-    return(invisible(NULL))
-  }
-  
-  ifelse(is.character(attribute), attname <- attribute, attname <- attinfo$name)
-  
-  ifelse(attinfo$type == "NC_CHAR", numflag <- 0, numflag <- 1)
-  
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_get_att", as.integer(ncfile), as.integer(varid), as.character(attname), 
-    as.integer(numflag), as.integer(globflag))
+  nc <- Cwrap("R_nc_get_att", ncfile, variable, attribute)
+
   return(nc)
 }
 
@@ -249,34 +142,8 @@ att.inq.nc <- function(ncfile, variable, attribute) {
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.character(attribute) || is.numeric(attribute))
   
-  #-- Look if handle attribute by name or ID ---------------------------------
-  attid <- -1
-  attname <- ""
-  ifelse(is.character(attribute), nameflag <- 1, nameflag <- 0)
-  ifelse(is.character(attribute), attname <- attribute, attid <- attribute)
-  
-  #-- Get the varid as integer if necessary, handle global attributes --------
-  varid <- NULL
-  globflag <- 0
-  
-  if (is.character(variable) && variable != "NC_GLOBAL") {
-    varid <- try(var.inq.nc(ncfile, variable)$id)
-  } else {
-    varid <- variable
-  }
-  
-  if (is.character(variable) && variable == "NC_GLOBAL") {
-    globflag <- 1
-    varid <- -1
-  }
-  
-  if (class(varid) == "try-error" || is.null(varid)) {
-    return(invisible(NULL))
-  }
-  
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_inq_att", as.integer(ncfile), as.integer(varid), as.character(attname), 
-    as.integer(attid), as.integer(nameflag), as.integer(globflag))
+  nc <- Cwrap("R_nc_inq_att", ncfile, variable, attribute)
   
   names(nc) <- c("id", "name", "type", "length")
   return(nc)
@@ -295,32 +162,8 @@ att.put.nc <- function(ncfile, variable, name, type, value) {
   stopifnot(is.character(type))
   stopifnot(is.character(value) || is.numeric(value))
   
-  #-- Get the varids as integer if necessary, handle global attributes -------
-  varid <- NULL
-  globflag <- 0
-  
-  if (is.character(variable) && variable != "NC_GLOBAL") {
-    varid <- try(var.inq.nc(ncfile, variable)$id)
-  } else {
-    varid <- variable
-  }
-  
-  if (is.character(variable) && variable == "NC_GLOBAL") {
-    globflag <- 1
-    varid <- -1
-  }
-  
-  if (class(varid) == "try-error" || is.null(varid)) {
-    return(invisible(NULL))
-  }
-  
-  #-- Determine if attribute is numeric or character -------------------------
-  ifelse(is.numeric(value), numflag <- 1, numflag <- 0)
-  
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_put_att", as.integer(ncfile), as.integer(varid), as.character(name), 
-    as.character(type), as.integer(length(value)), as.integer(numflag), 
-    as.integer(globflag), value)
+  nc <- Cwrap("R_nc_put_att", ncfile, variable, name, type, value)
   
   return(invisible(NULL))
 }
@@ -337,39 +180,8 @@ att.rename.nc <- function(ncfile, variable, attribute, newname) {
   stopifnot(is.character(attribute) || is.numeric(attribute))
   stopifnot(is.character(newname))
   
-  #-- Get the varid as integer if necessary, handle global attributes --------
-  varid <- NULL
-  globflag <- 0
-  
-  if (is.character(variable) && variable != "NC_GLOBAL") {
-    varid <- try(var.inq.nc(ncfile, variable)$id)
-  } else {
-    varid <- variable
-  }
-  
-  if (is.character(variable) && variable == "NC_GLOBAL") {
-    globflag <- 1
-    varid <- -1
-  }
-  
-  if (class(varid) == "try-error" || is.null(varid)) {
-    return(invisible(NULL))
-  }
-  
-  #-- Get the attribute name if necessary ------------------------------------
-  if (is.character(attribute)) {
-    attname <- attribute
-  } else {
-    attname <- try(att.inq.nc(ncfile, variable, attribute)$name)
-  }
-  
-  if (class(attname) == "try-error" || is.null(attname)) {
-    return(invisible(NULL))
-  }
-  
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_rename_att", as.integer(ncfile), as.integer(varid), 
-    as.integer(globflag), as.character(attname), as.character(newname))
+  nc <- Cwrap("R_nc_rename_att", ncfile, variable, attribute, newname)
   
   return(invisible(NULL))
 }

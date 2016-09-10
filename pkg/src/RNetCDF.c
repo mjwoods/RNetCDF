@@ -429,6 +429,16 @@ R_nc_var_id (SEXP var, int ncid, int *varid)
 }
 
 
+/* Determine if a variable name matches "NC_GLOBAL".
+   Result is a logical value. */
+static int
+R_nc_global (SEXP var)
+{
+  return (isString(var) &&
+          strcmp(CHAR (STRING_ELT (var, 0)), "NC_GLOBAL") == 0);
+}
+
+
 /*=============================================================================*\
  *  NetCDF library functions						       *
 \*=============================================================================*/
@@ -438,31 +448,34 @@ R_nc_var_id (SEXP var, int ncid, int *varid)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_copy_att (SEXP ncid_in, SEXP varid_in, SEXP globflag_in, SEXP attname,
-	       SEXP ncid_out, SEXP varid_out, SEXP globflag_out)
+R_nc_copy_att (SEXP nc_in, SEXP var_in, SEXP att, SEXP nc_out, SEXP var_out)
 {
-  int ncvarid_in, ncvarid_out;
-  const char *ncattname;
+  int ncid_in, ncid_out, varid_in, varid_out;
+  char attname[NC_MAX_NAME+1];
   ROBJDEF (NOSXP, 0);
 
-  /*-- Check if handling global attributes ------------------------------------*/
-  if (INTEGER (globflag_in)[0] == 1)
-    ncvarid_in = NC_GLOBAL;
-  else
-    ncvarid_in = INTEGER (varid_in)[0];
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid_in = asInteger (nc_in);
+  ncid_out = asInteger (nc_out);
 
-  if (INTEGER (globflag_out)[0] == 1)
-    ncvarid_out = NC_GLOBAL;
+  if (R_nc_global(var_in))
+    varid_in = NC_GLOBAL;
   else
-    ncvarid_out = INTEGER (varid_out)[0];
+    RNCCHECK (R_nc_var_id (var_in, ncid_in, &varid_in));
+
+  if (R_nc_global(var_out))
+    varid_out = NC_GLOBAL;
+  else
+    RNCCHECK (R_nc_var_id (var_out, ncid_out, &varid_out));
+
+  RNCCHECK (R_nc_att_name (att, ncid_in, varid_in, attname));
 
   /*-- Enter define mode ------------------------------------------------------*/
-  RNCREDEF (INTEGER (ncid_out)[0]);
+  RNCREDEF (ncid_out);
 
   /*-- Copy the attribute -----------------------------------------------------*/
-  ncattname = CHAR (STRING_ELT (attname, 0));
-  RNCCHECK (nc_copy_att (INTEGER (ncid_in)[0], ncvarid_in, ncattname,
-			 INTEGER (ncid_out)[0], ncvarid_out));
+  RNCCHECK (nc_copy_att (ncid_in, varid_in, attname,
+			 ncid_out, varid_out));
 
   RNCRETURN (NC_NOERR);
 }
@@ -473,24 +486,27 @@ R_nc_copy_att (SEXP ncid_in, SEXP varid_in, SEXP globflag_in, SEXP attname,
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_delete_att (SEXP ncid, SEXP varid, SEXP globflag, SEXP attname)
+R_nc_delete_att (SEXP nc, SEXP var, SEXP att)
 {
-  int ncvarid;
-  const char *ncattname;
+  int ncid, varid;
+  char attname[NC_MAX_NAME+1];
   ROBJDEF (NOSXP, 0);
 
-  /*-- Check if it is a global attribute --------------------------------------*/
-  if (INTEGER (globflag)[0] == 1)
-    ncvarid = NC_GLOBAL;
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
+
+  if (R_nc_global(var))
+    varid = NC_GLOBAL;
   else
-    ncvarid = INTEGER (varid)[0];
+    RNCCHECK (R_nc_var_id (var, ncid, &varid));
+
+  RNCCHECK (R_nc_att_name (att, ncid, varid, attname));
 
   /*-- Enter define mode ------------------------------------------------------*/
-  RNCREDEF (INTEGER (ncid)[0]);
+  RNCREDEF (ncid);
 
   /*-- Delete the attribute ---------------------------------------------------*/
-  ncattname = CHAR (STRING_ELT (attname, 0));
-  RNCCHECK (nc_del_att (INTEGER (ncid)[0], ncvarid, ncattname));
+  RNCCHECK (nc_del_att (ncid, varid, attname));
 
   RNCRETURN (NC_NOERR);
 }
@@ -501,40 +517,43 @@ R_nc_delete_att (SEXP ncid, SEXP varid, SEXP globflag, SEXP attname)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_get_att (SEXP ncid, SEXP varid, SEXP name, SEXP numflag, SEXP globflag)
+R_nc_get_att (SEXP nc, SEXP var, SEXP att)
 {
-  int ncvarid;
-  const char *ncattname;
+  int ncid, varid;
+  char attname[NC_MAX_NAME+1];
   char *cvalue;
-  size_t attlen;
+  nc_type type;
+  size_t cnt;
   ROBJDEF (NOSXP, 0);
 
-  /*-- Check if it is a global attribute --------------------------------------*/
-  if (INTEGER (globflag)[0] == 1)
-    ncvarid = NC_GLOBAL;
-  else
-    ncvarid = INTEGER (varid)[0];
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
 
-  /*-- Get the attribute's length ---------------------------------------------*/
-  ncattname = CHAR (STRING_ELT (name, 0));
-  RNCCHECK (nc_inq_attlen (INTEGER (ncid)[0], ncvarid, ncattname, &attlen));
+  if (R_nc_global(var))
+    varid = NC_GLOBAL;
+  else
+    RNCCHECK (R_nc_var_id (var, ncid, &varid));
+
+  RNCCHECK (R_nc_att_name (att, ncid, varid, attname));
+
+  /*-- Get the attribute's type and size --------------------------------------*/
+  RNCCHECK(nc_inq_att (ncid, varid, attname, &type, &cnt));
 
   /*-- Get the attribute ------------------------------------------------------*/
-  if (INTEGER (numflag)[0] == 1)
+  if (type==NC_CHAR)
     {
-      RDATADEF (REALSXP, attlen);
-      RNCCHECK (nc_get_att_double (INTEGER (ncid)[0], ncvarid, ncattname,
-				   REAL (RDATASET)));
+      RDATADEF (STRSXP, 1);
+      cvalue = (char *) R_alloc (cnt + 1, sizeof (char));
+      RNCCHECK (nc_get_att_text (ncid, varid, attname, cvalue));
+      cvalue[cnt + 1] = '\0';
+      SET_STRING_ELT (RDATASET, 0, mkChar (cvalue));
     }
   else
     {
-      RDATADEF (STRSXP, 1);
-      cvalue = (char *) R_alloc (attlen + 1, sizeof (char));
-      RNCCHECK (nc_get_att_text
-		(INTEGER (ncid)[0], ncvarid, ncattname, cvalue));
-      cvalue[attlen + 1] = '\0';
-      SET_STRING_ELT (RDATASET, 0, mkChar (cvalue));
+      RDATADEF (REALSXP, cnt);
+      RNCCHECK (nc_get_att_double (ncid, varid, attname, REAL (RDATASET)));
     }
+
   RNCRETURN (NC_NOERR);
 }
 
@@ -544,49 +563,40 @@ R_nc_get_att (SEXP ncid, SEXP varid, SEXP name, SEXP numflag, SEXP globflag)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_inq_att (SEXP ncid, SEXP varid, SEXP attname, SEXP attid,
-	      SEXP nameflag, SEXP globflag)
+R_nc_inq_att (SEXP nc, SEXP var, SEXP att)
 {
-  int ncvarid, ncattid;
-  const char *atttype, *ncattname;
-  char namebuf[NC_MAX_NAME + 1];
-  size_t ncattlen;
-  nc_type xtype;
+  int ncid, varid, attid;
+  char attname[NC_MAX_NAME+1];
+  const char *atttype;
+  nc_type type;
+  size_t cnt;
   ROBJDEF (VECSXP, 4);
 
-  /*-- Check if it is a global attribute --------------------------------------*/
-  if (INTEGER (globflag)[0] == 1)
-    ncvarid = NC_GLOBAL;
-  else
-    ncvarid = INTEGER (varid)[0];
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
 
-  /*-- Get the attribute name or ID -------------------------------------------*/
-  if (INTEGER (nameflag)[0] == 1)
-    {
-      ncattname = CHAR (STRING_ELT (attname, 0));
-      RNCCHECK (nc_inq_attid (INTEGER (ncid)[0], ncvarid,
-			      CHAR (STRING_ELT (attname, 0)), &ncattid));
-    }
+  if (R_nc_global(var))
+    varid = NC_GLOBAL;
   else
-    {
-      ncattid = INTEGER (attid)[0];
-      RNCCHECK (nc_inq_attname
-		(INTEGER (ncid)[0], ncvarid, ncattid, namebuf));
-      ncattname = (const char *) namebuf;
-    }
+    RNCCHECK (R_nc_var_id (var, ncid, &varid));
 
-  /*-- Inquire the attribute --------------------------------------------------*/
-  RNCCHECK (nc_inq_att
-	    (INTEGER (ncid)[0], ncvarid, ncattname, &xtype, &ncattlen));
+  RNCCHECK (R_nc_att_name (att, ncid, varid, attname));
+
+  /*-- Inquire about the attribute --------------------------------------------*/
+  RNCCHECK (nc_inq_attid (ncid, varid, attname, &attid));
+
+  RNCCHECK (nc_inq_att (ncid, varid, attname, &type, &cnt));
 
   /*-- Convert nc_type to char ------------------------------------------------*/
-  atttype = R_nc_type2str (INTEGER (ncid)[0], xtype);
+  atttype = R_nc_type2str (ncid, type);
 
   /*-- Returning the list -----------------------------------------------------*/
-  SET_VECTOR_ELT (RDATASET, 0, ScalarInteger (ncattid));
-  SET_VECTOR_ELT (RDATASET, 1, mkString (ncattname));
+  SET_VECTOR_ELT (RDATASET, 0, ScalarInteger (attid));
+  SET_VECTOR_ELT (RDATASET, 1, mkString (attname));
   SET_VECTOR_ELT (RDATASET, 2, mkString (atttype));
-  SET_VECTOR_ELT (RDATASET, 3, ScalarInteger ((int) ncattlen));
+  /* cnt may not fit in integer, so return as double */
+  SET_VECTOR_ELT (RDATASET, 3, ScalarReal (cnt));
+
   RNCRETURN (NC_NOERR);
 }
 
@@ -596,41 +606,44 @@ R_nc_inq_att (SEXP ncid, SEXP varid, SEXP attname, SEXP attid,
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_put_att (SEXP ncid, SEXP varid, SEXP name, SEXP type, SEXP attlen,
-	      SEXP numflag, SEXP globflag, SEXP value)
+R_nc_put_att (SEXP nc, SEXP var, SEXP att,
+              SEXP type, SEXP value)
 {
-  int ncvarid, ncattlen;
-  const char *ncattname;
-  nc_type xtype;
+  int ncid, varid;
+  char attname[NC_MAX_NAME+1];
+  const char *charval;
+  nc_type nctype;
+  size_t  nccnt;
   ROBJDEF (NOSXP, 0);
 
-  /*-- Check if it is a global attribute --------------------------------------*/
-  if (INTEGER (globflag)[0] == 1)
-    ncvarid = NC_GLOBAL;
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
+
+  if (R_nc_global(var))
+    varid = NC_GLOBAL;
   else
-    ncvarid = INTEGER (varid)[0];
+    RNCCHECK (R_nc_var_id (var, ncid, &varid));
+
+  RNCCHECK (R_nc_att_name (att, ncid, varid, attname));
 
   /*-- Convert char to nc_type ------------------------------------------------*/
-  RNCCHECK (R_nc_str2type
-	    (INTEGER (ncid)[0], CHAR (STRING_ELT (type, 0)), &xtype));
+  RNCCHECK (R_nc_str2type (ncid, CHAR (STRING_ELT (type, 0)), &nctype));
 
   /*-- Enter define mode ------------------------------------------------------*/
-  RNCREDEF (INTEGER (ncid)[0]);
+  RNCREDEF (ncid);
 
   /*-- Create the attribute ---------------------------------------------------*/
-  ncattlen = INTEGER (attlen)[0];
-  ncattname = CHAR (STRING_ELT (name, 0));
-  if (INTEGER (numflag)[0] == 1)
+  if (nctype==NC_CHAR)
     {
-      RNCCHECK (nc_put_att_double
-		(INTEGER (ncid)[0], ncvarid, ncattname, xtype, ncattlen,
-		 REAL (value)));
+      charval = CHAR (STRING_ELT (value, 0));
+      nccnt = strlen (charval);
+      RNCCHECK (nc_put_att_text (ncid, varid, attname, nccnt, charval));
     }
   else
     {
-      ncattlen = strlen (CHAR (STRING_ELT (value, 0)));
-      RNCCHECK (nc_put_att_text (INTEGER (ncid)[0], ncvarid, ncattname,
-				 ncattlen, CHAR (STRING_ELT (value, 0))));
+      nccnt = length(value);
+      RNCCHECK (nc_put_att_double
+		(ncid, varid, attname, nctype, nccnt, REAL (value)));
     }
 
   RNCRETURN (NC_NOERR);
@@ -642,26 +655,28 @@ R_nc_put_att (SEXP ncid, SEXP varid, SEXP name, SEXP type, SEXP attlen,
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_rename_att (SEXP ncid, SEXP varid, SEXP globflag, SEXP attname,
-		 SEXP newname)
+R_nc_rename_att (SEXP nc, SEXP var, SEXP att, SEXP newname)
 {
-  int ncvarid;
-  const char *ncattname, *ncnewname;
+  int ncid, varid;
+  char attname[NC_MAX_NAME+1];
   ROBJDEF (NOSXP, 0);
 
-  /*-- Check if it is a global attribute --------------------------------------*/
-  if (INTEGER (globflag)[0] == 1)
-    ncvarid = NC_GLOBAL;
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
+
+  if (R_nc_global(var))
+    varid = NC_GLOBAL;
   else
-    ncvarid = INTEGER (varid)[0];
+    RNCCHECK (R_nc_var_id (var, ncid, &varid));
+
+  RNCCHECK (R_nc_att_name (att, ncid, varid, attname));
 
   /*-- Enter define mode ------------------------------------------------------*/
-  RNCREDEF (INTEGER (ncid)[0]);
+  RNCREDEF (ncid);
 
   /*-- Rename the attribute ---------------------------------------------------*/
-  ncattname = CHAR (STRING_ELT (attname, 0));
-  ncnewname = CHAR (STRING_ELT (newname, 0));
-  RNCCHECK (nc_rename_att (INTEGER (ncid)[0], ncvarid, ncattname, ncnewname));
+  RNCCHECK (nc_rename_att (ncid, varid, attname,
+                           CHAR (STRING_ELT (newname, 0))));
 
   RNCRETURN (NC_NOERR);
 }
