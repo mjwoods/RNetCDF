@@ -429,13 +429,14 @@ R_nc_var_id (SEXP var, int ncid, int *varid)
 }
 
 
-/* Determine if a variable name matches "NC_GLOBAL".
+/* Determine if a C string matches the first element of an R variable.
    Result is a logical value. */
 static int
-R_nc_global (SEXP var)
+R_nc_strcmp (SEXP var, const char *str)
 {
   return (isString(var) &&
-          strcmp(CHAR (STRING_ELT (var, 0)), "NC_GLOBAL") == 0);
+          length(var) >= 1 &&
+          strcmp(CHAR (STRING_ELT (var, 0)), str) == 0);
 }
 
 
@@ -458,12 +459,12 @@ R_nc_copy_att (SEXP nc_in, SEXP var_in, SEXP att, SEXP nc_out, SEXP var_out)
   ncid_in = asInteger (nc_in);
   ncid_out = asInteger (nc_out);
 
-  if (R_nc_global(var_in))
+  if (R_nc_strcmp(var_in, "NC_GLOBAL"))
     varid_in = NC_GLOBAL;
   else
     RNCCHECK (R_nc_var_id (var_in, ncid_in, &varid_in));
 
-  if (R_nc_global(var_out))
+  if (R_nc_strcmp(var_out, "NC_GLOBAL"))
     varid_out = NC_GLOBAL;
   else
     RNCCHECK (R_nc_var_id (var_out, ncid_out, &varid_out));
@@ -495,7 +496,7 @@ R_nc_delete_att (SEXP nc, SEXP var, SEXP att)
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
 
-  if (R_nc_global(var))
+  if (R_nc_strcmp(var, "NC_GLOBAL"))
     varid = NC_GLOBAL;
   else
     RNCCHECK (R_nc_var_id (var, ncid, &varid));
@@ -529,7 +530,7 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att)
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
 
-  if (R_nc_global(var))
+  if (R_nc_strcmp(var, "NC_GLOBAL"))
     varid = NC_GLOBAL;
   else
     RNCCHECK (R_nc_var_id (var, ncid, &varid));
@@ -575,7 +576,7 @@ R_nc_inq_att (SEXP nc, SEXP var, SEXP att)
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
 
-  if (R_nc_global(var))
+  if (R_nc_strcmp(var, "NC_GLOBAL"))
     varid = NC_GLOBAL;
   else
     RNCCHECK (R_nc_var_id (var, ncid, &varid));
@@ -619,7 +620,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att,
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
 
-  if (R_nc_global(var))
+  if (R_nc_strcmp(var, "NC_GLOBAL"))
     varid = NC_GLOBAL;
   else
     RNCCHECK (R_nc_var_id (var, ncid, &varid));
@@ -664,7 +665,7 @@ R_nc_rename_att (SEXP nc, SEXP var, SEXP att, SEXP newname)
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
 
-  if (R_nc_global(var))
+  if (R_nc_strcmp(var, "NC_GLOBAL"))
     varid = NC_GLOBAL;
   else
     RNCCHECK (R_nc_var_id (var, ncid, &varid));
@@ -727,37 +728,28 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
   ROBJDEF (INTSXP, 1);
 
   /*-- Determine the cmode ----------------------------------------------------*/
-  if (INTEGER (clobber)[0] == 0)
-    cmode = NC_NOCLOBBER;
-  else
+  if (asLogical(clobber))
     cmode = NC_CLOBBER;
+  else
+    cmode = NC_NOCLOBBER;
 
   /*-- Determine which buffer scheme shall be used ----------------------------*/
-  if (INTEGER (share)[0] != 0)
+  if (asLogical(share))
     cmode = cmode | NC_SHARE;
 
   /*-- Determine the fillmode -------------------------------------------------*/
-  if (INTEGER (prefill)[0] == 0)
-    fillmode = NC_NOFILL;
-  else
+  if (asLogical(prefill))
     fillmode = NC_FILL;
+  else
+    fillmode = NC_NOFILL;
 
-  /*-- Set file format --------------------------------------------------------*/
-  switch (INTEGER (format)[0])
-    {
-    case 2:
-      cmode = cmode | NC_64BIT_OFFSET;
-      break;
-    case 3:
-      cmode = cmode | NC_NETCDF4 | NC_CLASSIC_MODEL;
-      break;
-    case 4:
-      cmode = cmode | NC_NETCDF4;
-      break;
-    default:
-      /* Use default, which is netcdf classic */
-      break;
-    }
+  /*-- Set file format (default is netcdf classic) ----------------------------*/
+  if (R_nc_strcmp(format, "netcdf4"))
+    cmode = cmode | NC_NETCDF4;
+  else if (R_nc_strcmp(format, "classic4"))
+    cmode = cmode | NC_NETCDF4 | NC_CLASSIC_MODEL;
+  else if (R_nc_strcmp(format, "offset64"))
+    cmode = cmode | NC_64BIT_OFFSET;
 
   /*-- Create the file --------------------------------------------------------*/
   RNCCHECK (nc_create (R_ExpandFileName (CHAR (STRING_ELT (filename, 0))),
@@ -995,19 +987,19 @@ R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
   ROBJDEF (INTSXP, 1);
 
   /*-- Determine the omode ----------------------------------------------------*/
-  if (INTEGER (write)[0] == 0)
-    omode = NC_NOWRITE;
-  else
+  if (asLogical(write))
     omode = NC_WRITE;
+  else
+    omode = NC_NOWRITE;
 
-  if (INTEGER (share)[0] != 0)
+  if (asLogical(share))
     omode = omode | NC_SHARE;
 
   /*-- Determine the fillmode -------------------------------------------------*/
-  if (INTEGER (prefill)[0] == 0)
-    fillmode = NC_NOFILL;
-  else
+  if (asLogical(prefill))
     fillmode = NC_FILL;
+  else
+    fillmode = NC_NOFILL;
 
   /*-- Open the file ----------------------------------------------------------*/
   RNCCHECK (nc_open (R_ExpandFileName (CHAR (STRING_ELT (filename, 0))),
@@ -1024,10 +1016,8 @@ R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
   UNPROTECT (1);
 
   /*-- Set the fill mode ------------------------------------------------------*/
-  if (INTEGER (write)[0] != 0)
-    {
-      RNCCHECK (nc_set_fill (ncid, fillmode, &old_fillmode));
-    }
+  if (asLogical(write))
+    RNCCHECK (nc_set_fill (ncid, fillmode, &old_fillmode));
 
   RNCRETURN (NC_NOERR);
 }
@@ -1038,15 +1028,17 @@ R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_sync (SEXP ncid)
+R_nc_sync (SEXP nc)
 {
+  int ncid;
   ROBJDEF (NOSXP, 0);
 
   /*-- Enter data mode (if necessary) -----------------------------------------*/
-  RNCENDDEF (INTEGER (ncid)[0]);
+  ncid = asInteger(nc);
+  RNCENDDEF (ncid);
 
   /*-- Sync the file ----------------------------------------------------------*/
-  RNCCHECK (nc_sync (INTEGER (ncid)[0]));
+  RNCCHECK (nc_sync (ncid));
 
   RNCRETURN (NC_NOERR);
 }

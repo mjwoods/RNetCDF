@@ -208,21 +208,16 @@ close.nc <- function(con, ...) {
 
 create.nc <- function(filename, clobber = TRUE, share = FALSE, prefill = TRUE, 
   format = "classic", large = FALSE) {
-  #-- Convert logical values to integers -------------------------------------
-  iclobber <- ifelse(clobber == TRUE, 1, 0)  ## Overwrite existing file (y/n)
-  ishare <- ifelse(share == TRUE, 1, 0)
-  iprefill <- ifelse(prefill == TRUE, 1, 0)
-  if (isTRUE(large)) {
-    iformat <- 2
-  } else {
-    iformat <- switch(format, classic = 1, offset64 = 2, classic4 = 3, 
-      netcdf4 = 4)
-    stopifnot(!is.null(iformat))
-  }
-  
+  #-- Check args -------------------------------------------------------------
+  stopifnot(is.character(filename))
+  stopifnot(is.logical(clobber))
+  stopifnot(is.logical(share))
+  stopifnot(is.logical(prefill))
+  stopifnot(is.character(format))
+  stopifnot(is.logical(large))
+
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_create", as.character(filename), as.integer(iclobber), 
-    as.integer(ishare), as.integer(iprefill), as.integer(iformat))
+  nc <- Cwrap("R_nc_create", filename, clobber, share, prefill, format)
   
   attr(nc, "class") <- "NetCDF"
   return(nc)
@@ -336,14 +331,8 @@ open.nc <- function(con, write = FALSE, share = FALSE, prefill = TRUE, ...) {
   stopifnot(is.logical(share))
   stopifnot(is.logical(prefill))
   
-  #-- Open read only (y/n) ---------------------------------------------------
-  iwrite <- ifelse(write == TRUE, 1, 0)
-  ishare <- ifelse(share == TRUE, 1, 0)
-  iprefill <- ifelse(prefill == TRUE, 1, 0)
-  
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_open", as.character(con), as.integer(iwrite), as.integer(ishare), 
-    as.integer(iprefill))
+  nc <- Cwrap("R_nc_open", con, write, share, prefill)
   
   attr(nc, "class") <- "NetCDF"
   return(nc)
@@ -457,7 +446,7 @@ sync.nc <- function(ncfile) {
   stopifnot(class(ncfile) == "NetCDF")
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_sync", as.integer(ncfile))
+  nc <- Cwrap("R_nc_sync", ncfile)
   
   return(invisible(NULL))
 }
