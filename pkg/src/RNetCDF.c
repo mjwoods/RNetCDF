@@ -103,51 +103,44 @@
 #define RDATASET VECTOR_ELT(retlist,2)
 
 #define RNCRETURN(STATUS) \
-  { int result = STATUS; \
-    SET_VECTOR_ELT(retlist, 0, ScalarInteger(result)); \
-    if (result == E_UNSUPPORTED) { \
-      SET_VECTOR_ELT(retlist, 1, \
-        mkString("Operation requires RNetCDF built with newer netcdf library")); \
-    } else if (result != NC_NOERR) { \
-      SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(result))); \
-    } \
-    UNPROTECT(1); \
-    return(retlist); \
-  }
+  { R_nc_status(retlist, STATUS, 1); return(retlist); }
 
 #define RNCCHECK(STATUS) \
-  { int result = STATUS; \
-    if (result != NC_NOERR) { \
-        RNCRETURN(result); \
-    } \
-  }
-
-#define RNCREDEF(NCIDINT) \
-  { int result = nc_redef(NCIDINT); \
-    if ((result != NC_NOERR) && (result != NC_EINDEFINE)) { \
-      RNCRETURN (result); \
-    } \
-  }
-
-#define RNCENDDEF(NCIDINT) \
-  { int result = nc_enddef(NCIDINT); \
-    if ((result != NC_NOERR) && (result != NC_ENOTINDEFINE)) { \
-      RNCRETURN (result); \
-    } \
-  }
-
+  { if (R_nc_status(retlist, STATUS, 0)) return(retlist); }
+         
 #define RUTRETURN(STATUS) \
-  SET_VECTOR_ELT(retlist, 0, ScalarInteger(STATUS)); \
-  if (STATUS != 0) { \
-    SET_VECTOR_ELT(retlist, 1, mkString(R_ut_strerror(STATUS))); \
-  } \
-  UNPROTECT(1); \
-  return(retlist);
+  { R_ut_status(retlist, STATUS, 1); return(retlist); }
 
 
 /*=============================================================================*\
  *  Reusable internal functions
 \*=============================================================================*/
+
+/* Enter netcdf define mode if possible.
+   Returns netcdf error code if an unhandled error occurs.
+ */
+static int
+R_nc_redef (int ncid)
+{
+  int status;
+  status = nc_redef(ncid);
+  if (status == NC_EINDEFINE) status = NC_NOERR;
+  return status;
+}
+
+
+/* Enter netcdf data mode if possible.
+   Returns netcdf error code if an unhandled error occurs.
+ */
+static int
+R_nc_enddef (int ncid)
+{
+  int status;
+  status = nc_enddef(ncid);
+  if (status == NC_ENOTINDEFINE) status = NC_NOERR;
+  return status;
+}
+
 
 /* Convert netcdf type code to string label.
  */
@@ -368,7 +361,6 @@ R_nc_format2str (int format)
 static int
 R_nc_att_name (SEXP att, int ncid, int varid, char *attname)
 {
-  int attid;
   if (isNumeric (att))
     {
       return nc_inq_attname (ncid, varid, asInteger (att), attname);
@@ -440,6 +432,55 @@ R_nc_strcmp (SEXP var, const char *str)
 }
 
 
+/* Set return status and netcdf error message in list returned to R.
+   The retlist is only modified if status indicates an error
+   or if logical argument force is true (non-zero).
+   The return value is true if retlist was modified, false otherwise.
+ */
+static int
+R_nc_status(SEXP retlist, int status, int force)
+{
+  if (force || status != NC_NOERR)
+    {
+      SET_VECTOR_ELT(retlist, 0, ScalarInteger(status));
+      if (status == E_UNSUPPORTED)
+        {
+          SET_VECTOR_ELT(retlist, 1, mkString(
+            "Operation requires RNetCDF built with newer netcdf library"));
+        }
+      else if (status != NC_NOERR)
+        {
+          SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+        }
+      UNPROTECT(1);
+      return 1;
+    }
+  return 0;
+}
+
+
+/* Set return status and udunits error message in list returned to R.
+   The retlist is only modified if status indicates an error
+   or if logical argument force is true (non-zero).
+   The return value is true if retlist was modified, false otherwise.
+ */
+static int
+R_ut_status(SEXP retlist, int status, int force)
+{
+  if (force || status != 0)
+    {
+      SET_VECTOR_ELT(retlist, 0, ScalarInteger(status));
+      if (status != 0)
+        {
+          SET_VECTOR_ELT(retlist, 1, mkString(R_ut_strerror(status)));
+        }
+      UNPROTECT(1);
+      return 1;
+    }
+  return 0;
+}
+
+
 /*=============================================================================*\
  *  NetCDF library functions						       *
 \*=============================================================================*/
@@ -472,7 +513,7 @@ R_nc_copy_att (SEXP nc_in, SEXP var_in, SEXP att, SEXP nc_out, SEXP var_out)
   RNCCHECK (R_nc_att_name (att, ncid_in, varid_in, attname));
 
   /*-- Enter define mode ------------------------------------------------------*/
-  RNCREDEF (ncid_out);
+  RNCCHECK( R_nc_redef (ncid_out));
 
   /*-- Copy the attribute -----------------------------------------------------*/
   RNCCHECK (nc_copy_att (ncid_in, varid_in, attname,
@@ -504,7 +545,7 @@ R_nc_delete_att (SEXP nc, SEXP var, SEXP att)
   RNCCHECK (R_nc_att_name (att, ncid, varid, attname));
 
   /*-- Enter define mode ------------------------------------------------------*/
-  RNCREDEF (ncid);
+  RNCCHECK( R_nc_redef (ncid));
 
   /*-- Delete the attribute ---------------------------------------------------*/
   RNCCHECK (nc_del_att (ncid, varid, attname));
@@ -612,6 +653,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att,
 {
   int ncid, varid;
   const char *attname, *charval;
+  const double *realval;
   nc_type nctype;
   size_t  nccnt;
   ROBJDEF (NOSXP, 0);
@@ -629,21 +671,29 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att,
   /*-- Convert char to nc_type ------------------------------------------------*/
   RNCCHECK (R_nc_str2type (ncid, CHAR (STRING_ELT (type, 0)), &nctype));
 
-  /*-- Enter define mode ------------------------------------------------------*/
-  RNCREDEF (ncid);
-
-  /*-- Create the attribute ---------------------------------------------------*/
+  /*-- Find length of the attribute -------------------------------------------*/
   if (nctype==NC_CHAR)
     {
       charval = CHAR (STRING_ELT (value, 0));
       nccnt = strlen (charval);
+    }
+  else
+    {
+      realval = REAL (value);
+      nccnt = xlength(value);
+    }
+
+  /*-- Enter define mode ------------------------------------------------------*/
+  RNCCHECK( R_nc_redef (ncid));
+
+  /*-- Create the attribute ---------------------------------------------------*/
+  if (nctype==NC_CHAR)
+    {
       RNCCHECK (nc_put_att_text (ncid, varid, attname, nccnt, charval));
     }
   else
     {
-      nccnt = xlength(value);
-      RNCCHECK (nc_put_att_double
-		(ncid, varid, attname, nctype, nccnt, REAL (value)));
+      RNCCHECK (nc_put_att_double (ncid, varid, attname, nctype, nccnt, realval));
     }
 
   RNCRETURN (NC_NOERR);
@@ -672,7 +722,7 @@ R_nc_rename_att (SEXP nc, SEXP var, SEXP att, SEXP newname)
   RNCCHECK (R_nc_att_name (att, ncid, varid, attname));
 
   /*-- Enter define mode ------------------------------------------------------*/
-  RNCREDEF (ncid);
+  RNCCHECK( R_nc_redef (ncid));
 
   /*-- Rename the attribute ---------------------------------------------------*/
   RNCCHECK (nc_rename_att (ncid, varid, attname,
@@ -789,7 +839,7 @@ R_nc_def_dim (SEXP nc, SEXP dimname, SEXP size, SEXP unlim)
   dimnamep = CHAR (STRING_ELT (dimname, 0));
 
   /*-- Enter define mode ------------------------------------------------------*/
-  RNCREDEF (ncid);
+  RNCCHECK( R_nc_redef (ncid));
 
   /*-- Create the dimension ---------------------------------------------------*/
   if (asLogical(unlim))
@@ -901,7 +951,7 @@ R_nc_inq_dim (SEXP nc, SEXP dim)
   isunlim = 0;
   for (ii = 0; ii < nunlim; ii++)
     {
-      if (unlimids[ii] == ncdimid)
+      if (unlimids[ii] == dimid)
 	{
 	  isunlim = 1;
 	  break;
@@ -938,7 +988,7 @@ R_nc_rename_dim (SEXP nc, SEXP dim, SEXP newname)
   newnamep = CHAR (STRING_ELT (newname, 0));
 
   /*-- Enter define mode ------------------------------------------------------*/
-  RNCREDEF (ncid);
+  RNCCHECK( R_nc_redef (ncid));
 
   /*-- Rename the dimension ---------------------------------------------------*/
   RNCCHECK (nc_rename_dim (ncid, dimid, newnamep));
@@ -1034,7 +1084,7 @@ R_nc_sync (SEXP nc)
 
   /*-- Enter data mode (if necessary) -----------------------------------------*/
   ncid = asInteger(nc);
-  RNCENDDEF (ncid);
+  RNCCHECK( R_nc_enddef (ncid));
 
   /*-- Sync the file ----------------------------------------------------------*/
   RNCCHECK (nc_sync (ncid));
@@ -1058,7 +1108,7 @@ R_nc_def_var (SEXP ncid, SEXP varname, SEXP type, SEXP ndims, SEXP dimids)
 	    (INTEGER (ncid)[0], CHAR (STRING_ELT (type, 0)), &xtype));
 
   /*-- Enter define mode ------------------------------------------------------*/
-  RNCREDEF (INTEGER (ncid)[0]);
+  RNCCHECK( R_nc_redef (INTEGER (ncid)[0]));
 
   /*-- Define the variable ----------------------------------------------------*/
   RNCCHECK (nc_def_var
@@ -1093,7 +1143,7 @@ R_nc_get_vara_double (SEXP ncid, SEXP varid, SEXP start,
   RDATADEF (REALSXP, varsize);
 
   /*-- Enter data mode (if necessary) -----------------------------------------*/
-  RNCENDDEF (INTEGER (ncid)[0]);
+  RNCCHECK( R_nc_enddef (INTEGER (ncid)[0]));
 
   /*-- Read variable from file ------------------------------------------------*/
   if (varsize > 0)
@@ -1155,7 +1205,7 @@ R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
     }
 
   /*-- Enter data mode (if necessary) -----------------------------------------*/
-  RNCENDDEF (INTEGER (ncid)[0]);
+  RNCCHECK( R_nc_enddef (INTEGER (ncid)[0]));
 
   /*-- Read variable from file ------------------------------------------------*/
   if (INTEGER (rawchar)[0] > 0)
@@ -1197,7 +1247,7 @@ R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
 SEXP
 R_nc_inq_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag)
 {
-  int ncvarid, ndims, natts, i, *dimids;
+  int ncvarid, ndims, natts, *dimids;
   const char *vartype;
   char ncvarname[NC_MAX_NAME + 1];
   nc_type xtype;
@@ -1269,7 +1319,7 @@ R_nc_put_vara_double (SEXP ncid, SEXP varid, SEXP start,
     }
 
   /*-- Enter data mode (if necessary) -----------------------------------------*/
-  RNCENDDEF (INTEGER (ncid)[0]);
+  RNCCHECK( R_nc_enddef (INTEGER (ncid)[0]));
 
   /*-- Put the var ------------------------------------------------------------*/
   if (varsize > 0)
@@ -1321,7 +1371,7 @@ R_nc_put_vara_text (SEXP ncid, SEXP varid, SEXP start,
   varsize = tx_num * tx_len;
 
   /*-- Enter data mode (if necessary) -----------------------------------------*/
-  RNCENDDEF (INTEGER (ncid)[0]);
+  RNCCHECK( R_nc_enddef (INTEGER (ncid)[0]));
 
   /*-- Prepare output array ---------------------------------------------------*/
   if (INTEGER (rawchar)[0] > 0)
@@ -1372,7 +1422,7 @@ R_nc_rename_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag,
     }
 
   /*-- Enter define mode ------------------------------------------------------*/
-  RNCREDEF (INTEGER (ncid)[0]);
+  RNCCHECK( R_nc_redef (INTEGER (ncid)[0]));
 
   /*-- Rename the variable ----------------------------------------------------*/
   RNCCHECK (nc_rename_var (INTEGER (ncid)[0], ncvarid, ncnewname));
@@ -1391,7 +1441,7 @@ R_nc_def_grp (SEXP ncid, SEXP grpname)
   ROBJDEF (INTSXP, 1);
 
   /* Enter define mode */
-  RNCREDEF (INTEGER (ncid)[0]);
+  RNCCHECK( R_nc_redef (INTEGER (ncid)[0]));
 
   /* Define the group */
   RNCCHECK (nc_def_grp (INTEGER (ncid)[0], CHAR (STRING_ELT (grpname, 0)),
@@ -1569,7 +1619,7 @@ R_nc_rename_grp (SEXP ncid, SEXP grpname)
 
 #if defined HAVE_DECL_NC_RENAME_GRP && HAVE_DECL_NC_RENAME_GRP
   /* Enter define mode */
-  RNCREDEF (INTEGER (ncid)[0]);
+  RNCCHECK( R_nc_redef (INTEGER (ncid)[0]));
 
   /* Rename the group */
   RNCCHECK (nc_rename_grp
@@ -1597,7 +1647,6 @@ R_ut_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
   int year, month, day, hour, minute, count, i, status;
   float second;
   double utvalue;
-  char strerror[64];
   utUnit utunit;
   ROBJDEF (REALSXP, INTEGER (unitcount)[0] * 6);
 
@@ -1692,7 +1741,6 @@ R_ut_inv_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
   int year, month, day, hour, minute, count, i, status;
   float second;
   double utvalue;
-  char strerror[64];
   utUnit utunit;
   ROBJDEF (NOSXP, 0);
 
