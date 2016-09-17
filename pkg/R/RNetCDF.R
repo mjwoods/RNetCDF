@@ -286,13 +286,9 @@ file.inq.nc <- function(ncfile) {
   stopifnot(class(ncfile) == "NetCDF")
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_inq_file", as.integer(ncfile))
+  nc <- Cwrap("R_nc_inq_file", ncfile)
   
   names(nc) <- c("ndims", "nvars", "ngatts", "unlimdimid", "format")
-  
-  if (nc$unlimdimid == -1) {
-    nc$unlimdimid <- NA
-  }
   
   return(nc)
 }
@@ -439,44 +435,17 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions) {
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(varname))
   stopifnot(is.character(vartype))
-  
-  if (any(is.na(dimensions)) && length(dimensions) != 1) {
-    stop("NAs not allowed in dimensions unless defining a scalar variable", 
-      call. = FALSE)
+
+  if (length(dimensions) == 1 && is.na(dimensions)) {
+    dimensions <- integer(0)
   }
-  
-  if (!any(is.na(dimensions))) {
-    stopifnot(mode(dimensions) == "character" || mode(dimensions) == 
-      "numeric")
-  }
-  
-  #-- Determine dimids from dimname if necessary, handle scalar variables ----
-  dimids <- vector()
-  if (any(is.na(dimensions))) {
-    dimids <- -1
-    ndims <- 0
-  } else {
-    if (mode(dimensions) == "numeric") {
-      dimids <- dimensions
-    } else {
-      for (i in seq_along(dimensions)) {
-        try(dimids[i] <- dim.inq.nc(ncfile, dimensions[i])$id, silent = TRUE)
-      }
-    }
-    
-    if (length(dimids) != length(dimensions)) {
-      stop("Could not determine all dimension ids", call. = FALSE)
-    }
-    
-    dimids <- dimids[length(dimids):1]  ## R to C convention
-    ndims <- length(dimids)
-  }
-  
+
+  stopifnot(is.character(dimensions) || is.numeric(dimensions))
+
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_def_var", as.integer(ncfile), as.character(varname), 
-    as.character(vartype), as.integer(ndims), as.integer(dimids))
+  nc <- Cwrap("R_nc_def_var", ncfile, varname, vartype, dimensions)
   
-  return(invisible(NULL))
+  return(nc)
 }
 
 #-------------------------------------------------------------------------------

@@ -291,16 +291,6 @@ R_nc_str2type (int ncid, const char *str, nc_type * xtype)
 }
 
 
-/* Private function called by qsort to compare integers */
-static int
-R_nc_int_cmp (const void *a, const void *b)
-{
-  const int *ia = (const int *) a;
-  const int *ib = (const int *) b;
-  return *ia - *ib;
-}
-
-
 /* Convert udunits error code to a string */
 static const char *
 R_ut_strerror (int errcode)
@@ -378,13 +368,16 @@ R_nc_att_name (SEXP att, int ncid, int varid, char *attname)
    Result is a netcdf status value.
  */
 static int
-R_nc_dim_id (SEXP dim, int ncid, int *dimid)
+R_nc_dim_id (SEXP dim, int ncid, int *dimid, int idx)
 {
-  if (isNumeric (dim)) {
-    *dimid = asInteger (dim);
+  if (isInteger (dim)) {
+    *dimid = INTEGER (dim)[idx];
+    return NC_NOERR;
+  } else if (isReal (dim)) {
+    *dimid = REAL (dim)[idx];
     return NC_NOERR;
   } else if (isString (dim)) {
-    return nc_inq_dimid (ncid, CHAR (STRING_ELT (dim, 0)), dimid);
+    return nc_inq_dimid (ncid, CHAR (STRING_ELT (dim, idx)), dimid);
   } else {
     return NC_EINVAL;
   }
@@ -687,6 +680,7 @@ R_nc_rename_att (SEXP nc, SEXP var, SEXP att, SEXP newname)
 {
   int ncid, varid;
   char attname[NC_MAX_NAME+1];
+  const char *newnamep;
   ROBJDEF (NOSXP, 0);
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
@@ -700,12 +694,13 @@ R_nc_rename_att (SEXP nc, SEXP var, SEXP att, SEXP newname)
 
   RNCCHECK (R_nc_att_name (att, ncid, varid, attname));
 
+  newnamep = CHAR (STRING_ELT (newname, 0));
+
   /*-- Enter define mode ------------------------------------------------------*/
   RNCCHECK( R_nc_redef (ncid));
 
   /*-- Rename the attribute ---------------------------------------------------*/
-  RNCCHECK (nc_rename_att (ncid, varid, attname,
-                           CHAR (STRING_ELT (newname, 0))));
+  RNCCHECK (nc_rename_att (ncid, varid, attname, newnamep));
 
   RNCRETURN (NC_NOERR);
 }
@@ -910,7 +905,7 @@ R_nc_inq_dim (SEXP nc, SEXP dim)
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
 
-  RNCCHECK (R_nc_dim_id (dim, ncid, &dimid));
+  RNCCHECK (R_nc_dim_id (dim, ncid, &dimid, 0));
 
   /*-- Inquire the dimension --------------------------------------------------*/
   RNCCHECK (nc_inq_dim (ncid, dimid, dimname, &dimlen));
@@ -951,7 +946,7 @@ R_nc_rename_dim (SEXP nc, SEXP dim, SEXP newname)
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
 
-  RNCCHECK (R_nc_dim_id (dim, ncid, &dimid));
+  RNCCHECK (R_nc_dim_id (dim, ncid, &dimid, 0));
 
   newnamep = CHAR (STRING_ELT (newname, 0));
 
@@ -970,16 +965,22 @@ R_nc_rename_dim (SEXP nc, SEXP dim, SEXP newname)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_inq_file (SEXP ncid)
+R_nc_inq_file (SEXP nc)
 {
-  int ndims, nvars, ngatts, unlimdimid, format;
+  int ncid, ndims, nvars, ngatts, unlimdimid, format;
   ROBJDEF (VECSXP, 5);
 
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
+
   /*-- Inquire about the NetCDF dataset ---------------------------------------*/
-  RNCCHECK (nc_inq (INTEGER (ncid)[0], &ndims, &nvars, &ngatts, &unlimdimid));
+  RNCCHECK (nc_inq (ncid, &ndims, &nvars, &ngatts, &unlimdimid));
+  if (unlimdimid == -1 ) {
+    unlimdimid = NA_INTEGER;
+  }
 
   /*-- Inquire about the NetCDF format ----------------------------------------*/
-  RNCCHECK (nc_inq_format (INTEGER (ncid)[0], &format));
+  RNCCHECK (nc_inq_format (ncid, &format));
 
   /*-- Returning the list -----------------------------------------------------*/
   SET_VECTOR_ELT (RDATASET, 0, ScalarInteger (ndims));
@@ -1070,22 +1071,36 @@ R_nc_sync (SEXP nc)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_def_var (SEXP ncid, SEXP varname, SEXP type, SEXP ndims, SEXP dimids)
+R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
 {
+  int ncid, ii, dimids[NC_MAX_VAR_DIMS], ndims;
   nc_type xtype;
+  const char *varnamep;
   ROBJDEF (INTSXP, 1);
 
-  /*-- Convert char to nc_type ------------------------------------------------*/
-  RNCCHECK (R_nc_str2type
-            (INTEGER (ncid)[0], CHAR (STRING_ELT (type, 0)), &xtype));
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
+
+  varnamep = CHAR (STRING_ELT (varname, 0));
+
+  RNCCHECK (R_nc_str2type (ncid, CHAR (STRING_ELT (type, 0)), &xtype));
+
+  ndims = length(dims);
+  if (ndims > NC_MAX_VAR_DIMS) {
+    RNCRETURN(NC_EMAXDIMS);
+  }
+
+  for (ii=0; ii<ndims; ii++) {
+    /* Handle dimension names and convert from R to C storage order */
+    RNCCHECK (R_nc_dim_id (dims, ncid, dimids+ndims-1-ii, ii));
+  }
 
   /*-- Enter define mode ------------------------------------------------------*/
-  RNCCHECK( R_nc_redef (INTEGER (ncid)[0]));
+  RNCCHECK( R_nc_redef (ncid));
 
   /*-- Define the variable ----------------------------------------------------*/
-  RNCCHECK (nc_def_var
-            (INTEGER (ncid)[0], CHAR (STRING_ELT (varname, 0)), xtype,
-             INTEGER (ndims)[0], INTEGER (dimids), INTEGER (RDATASET)));
+  RNCCHECK (nc_def_var (
+            ncid, varnamep, xtype, ndims, dimids, INTEGER (RDATASET)));
 
   RNCRETURN (NC_NOERR);
 }
@@ -1524,13 +1539,9 @@ R_nc_inq_unlimids (SEXP ncid, SEXP ancestors)
 
   RDATADEF (INTSXP, nunlim);
 
-  /* Sort the results for ease of presentation and searching */
-  if (nunlim > 1) {
-    qsort (unlimids, nunlim, sizeof (int), R_nc_int_cmp);
-  }
-
-  /* Copy temporary results to output structure */
+  /* Sort temporary results and copy to output structure */
   if (nunlim > 0) {
+    R_isort(unlimids, nunlim);
     memcpy (INTEGER (RDATASET), unlimids, nunlim * sizeof (int));
   }
 
