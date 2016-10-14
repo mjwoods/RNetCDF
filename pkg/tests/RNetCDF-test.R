@@ -173,7 +173,6 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   cat("Read numeric scalar ... ")
   x <- myint0
-  dim(x) <- 1
   y <- var.get.nc(nc, "int0")
   tally <- testfun(x,y,tally)
 
@@ -216,13 +215,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   cat("Read 1D char slice ... ")
   x <- substring(myqcflag,2,3)
-  dim(x) <- 1
   y <- var.get.nc(nc, "qcflag", c(2), c(2))
   tally <- testfun(x,y,tally)
 
   cat("Read scalar char ... ")
   x <- mychar0
-  dim(x) <- 1
   y <- var.get.nc(nc, "char0")
   tally <- testfun(x,y,tally)
 
@@ -244,6 +241,8 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   y <- try(file.inq.nc(nc), silent=TRUE)
   tally <- testfun(inherits(y, "try-error"), TRUE, tally)
 }
+# Add tests of modifying existing files?
+# Can we hide the file pointer or make the NetCDF object a pointer?
 
 #-------------------------------------------------------------------------------#
 #  UDUNITS calendar functions                                                   #

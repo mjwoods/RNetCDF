@@ -84,9 +84,10 @@
 #include <Rinternals.h>
 
 /*=============================================================================*\
- *  Macros to initialise and return R data structures                          *
+ *  Local macro definitions                                                    *
 \*=============================================================================*/
 
+#define NA_SIZE ((size_t) -1)
 #define NOSXP -11111
 #define E_UNSUPPORTED -22222
 
@@ -452,6 +453,114 @@ R_ut_status(SEXP retlist, int status, int force)
     return 1;
   }
   return 0;
+}
+
+
+/* Copy R vector rv to C vector cv, converting type to size_t and reversing order.
+   The length of cv is specified by nc.
+   Elements beyond the length of rv and non-finite values are stored as fillval.
+ */
+static void
+R_nc_size_r2c(SEXP rv, size_t nc, size_t fillval, size_t *cv)
+{
+  double *realp;
+  int *intp;
+  size_t nr, ii;
+
+  nr = xlength (rv);
+  nr = (nr < nc) ? nr : nc;
+
+  /* Copy elements */
+  if (isReal (rv)) {
+    realp = REAL (rv);
+    for ( ii=0; ii<nr; ii++ ) {
+      if (R_FINITE (realp[ii])) {
+        cv[nc-1-ii] = realp[ii];
+      } else {
+        cv[nc-1-ii] = fillval;
+      }
+    }
+  } else if (isInteger (rv)) {
+    intp = INTEGER (rv);
+    for ( ii=0; ii<nr; ii++ ) {
+      if (intp[ii] == NA_INTEGER) {
+        cv[nc-1-ii] = fillval;
+      } else {
+        cv[nc-1-ii] = intp[ii];
+      }
+    }
+  } else {
+    nr = 0;
+  }    
+
+  /* Fill remaining elements */
+  for ( ii=nr; ii<nc; ii++ ) {
+    cv[nc-1-ii] = fillval;
+  }
+
+}
+
+
+/* Handle NA values in user-specified variable slices.
+   Store slice ranges in cstart and ccount vectors with C dimension order.
+   Both C vectors should have allocated length MAX_NC_DIMS,
+   and the number of dimensions actually stored is returned in ndims.
+   Result is a netcdf status value.
+ */
+static int
+R_nc_slice (SEXP start, SEXP count, int ncid, int varid,
+            int *ndims, size_t *cstart, size_t *ccount)
+{
+  int ii, status, dimids[MAX_NC_DIMS];
+  size_t clen;
+
+  /* Get dimension identifiers of the variable */
+  status = nc_inq_var (ncid, varid, NULL, NULL, ndims, dimids, NULL);
+  if (status != NC_NOERR) {
+    return(status);
+  }
+
+  /* Store start in C dimension order as size_t,
+     converting missing values to 1 */
+  R_nc_size_r2c(start, *ndims, 1, cstart);
+
+  /* Convert Fortran indices (1-based) to C (0-based) */
+  for (ii=0; ii<*ndims; ii++) {
+    cstart[ii] -= 1;
+  }
+  
+  /* Store count in C dimension order as size_t,
+     handling missing values so that corresponding dimensions are
+     read/written from specified start index to the highest index.
+   */
+  R_nc_size_r2c(count, *ndims, NA_SIZE, ccount);
+  for ( ii=0; ii<*ndims; ii++ ) {
+    if (ccount[ii] == NA_SIZE) {
+      status = nc_inq_dimlen (ncid, dimids[ii], &clen);
+      if (status != NC_NOERR) {
+        return(status);
+      }
+      ccount[ii] = clen - cstart[ii];
+    }
+  }
+
+  return(NC_NOERR);
+}
+
+
+/* Find total number of elements in an array from dimension lengths.
+   Result is 1 for a scalar or product of dimensions for an array. */
+static size_t
+R_nc_length (int ndims, const size_t *count)
+{
+  int ii;
+  size_t length;
+
+  length = 1;
+  for ( ii=0; ii<ndims; ii++ ) {
+    length *= count[ii]; 
+  }
+  return (length);
 }
 
 
@@ -1092,7 +1201,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
 
   for (ii=0; ii<ndims; ii++) {
     /* Handle dimension names and convert from R to C storage order */
-    RNCCHECK (R_nc_dim_id (dims, ncid, dimids+ndims-1-ii, ii));
+    RNCCHECK (R_nc_dim_id (dims, ncid, &dimids[ndims-1-ii], ii));
   }
 
   /*-- Enter define mode ------------------------------------------------------*/
@@ -1107,104 +1216,111 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
 
 
 /*-----------------------------------------------------------------------------*\
- *  R_nc_get_vara_double()                                                     *
+ *  R_nc_get_var()                                                             *
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_get_vara_double (SEXP ncid, SEXP varid, SEXP start,
-                      SEXP count, SEXP ndims)
+R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
 {
-  int i;
-  size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS], varsize;
+  int ncid, varid, ndims, rank, *intp;
+  size_t ii, cstart[MAX_NC_DIMS], ccount[MAX_NC_DIMS], arrlen, strcnt, strlen;
+  nc_type xtype;
+  char *charbuf, *nextstr, **strbuf;
+  SEXP rdim;
   ROBJDEF (NOSXP, 0);
 
-  /*-- Copy dims from int to size_t, calculate total array size ---------------*/
-  varsize = 1;
-  for (i = 0; i < INTEGER (ndims)[0]; i++) {
-    s_start[i] = (size_t) INTEGER (start)[i];
-    s_count[i] = (size_t) INTEGER (count)[i];
-    varsize *= s_count[i];
-  }
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
 
-  RDATADEF (REALSXP, varsize);
+  RNCCHECK (R_nc_var_id (var, ncid, &varid));
 
-  /*-- Enter data mode (if necessary) -----------------------------------------*/
-  RNCCHECK( R_nc_enddef (INTEGER (ncid)[0]));
+  /*-- Handle NA values in start & count and reverse dimension order ----------*/
+  RNCCHECK ( R_nc_slice (start, count, ncid, varid, &ndims, cstart, ccount));
 
-  /*-- Read variable from file ------------------------------------------------*/
-  if (varsize > 0) {
-    /* Some netcdf versions cannot handle zero-sized arrays */
-    RNCCHECK (nc_get_vara_double (INTEGER (ncid)[0], INTEGER (varid)[0],
-                                  s_start, s_count, REAL (RDATASET)));
-  }
+  /*-- Determine total number of elements in data array -----------------------*/
+  arrlen = R_nc_length (ndims, ccount);
+  rank = ndims;
 
-  RNCRETURN (NC_NOERR);
-}
-
-
-/*-----------------------------------------------------------------------------*\
- *  R_nc_get_vara_text()                                                       *
-\*-----------------------------------------------------------------------------*/
-
-SEXP
-R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
-                    SEXP count, SEXP ndims, SEXP rawchar)
-{
-  int i;
-  char *data, *tx_str;
-  size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS];
-  size_t tx_len, tx_num, varsize;
-  ROBJDEF (NOSXP, 0);
-
-  /*-- Copy dims from int to size_t, calculate number and length of strings ---*/
-  for (i = 0; i < INTEGER (ndims)[0]; i++) {
-    s_start[i] = (size_t) INTEGER (start)[i];
-    s_count[i] = (size_t) INTEGER (count)[i];
-  }
-
-  if (INTEGER (ndims)[0] > 0) {
-    tx_num = 1;
-    for (i = 0; i < INTEGER (ndims)[0] - 1; i++) {
-      tx_num *= s_count[i];
-    }
-    tx_len = s_count[INTEGER (ndims)[0] - 1];
-  } else {
-    tx_num = 1;
-    tx_len = 1;
-  }
-  varsize = tx_num * tx_len;
-
-  /*-- Create output object ---------------------------------------------------*/
-  if (INTEGER (rawchar)[0] > 0) {
-    RDATADEF (RAWSXP, varsize);
-  } else {
-    RDATADEF (STRSXP, tx_num);
-  }
+  /*-- Determine type of external data ----------------------------------------*/
+  RNCCHECK (nc_inq_vartype ( ncid, varid, &xtype));
 
   /*-- Enter data mode (if necessary) -----------------------------------------*/
-  RNCCHECK( R_nc_enddef (INTEGER (ncid)[0]));
+  RNCCHECK (R_nc_enddef (ncid));
 
-  /*-- Read variable from file ------------------------------------------------*/
-  if (INTEGER (rawchar)[0] > 0) {
-    data = (char *) RAW (RDATASET);
-  } else {
-    data = (char *) R_alloc (varsize, sizeof (char));
-  }
-
-  if (varsize > 0) {
-    /* Some netcdf versions cannot handle zero-sized arrays */
-    RNCCHECK (nc_get_vara_text (INTEGER (ncid)[0], INTEGER (varid)[0],
-                                s_start, s_count, data));
-  }
-
-  /*-- Copy from C to R character vector (if specified) -----------------------*/
-  if (INTEGER (rawchar)[0] <= 0) {
-    tx_str = (char *) R_alloc (tx_len + 1, sizeof (char));
-    tx_str[tx_len] = '\0';	/* Final null character is never modified */
-    for (i = 0; i < tx_num; i++) {
-      strncpy (tx_str, data + i * tx_len, tx_len);
-      SET_STRING_ELT (RDATASET, i, mkChar (tx_str));
+  /*-- Allocate memory and read variable from file ----------------------------*/
+  switch (xtype) {
+  case NC_CHAR:
+    if (asLogical (rawchar)) {
+      RDATADEF (RAWSXP, arrlen);
+      if (arrlen > 0) {
+        RNCCHECK (nc_get_vara_text (ncid, varid, cstart, ccount,
+                                    (char *) RAW (RDATASET)));
+      }
+    } else {
+      charbuf = (char *) R_alloc (arrlen, sizeof (char));
+      if (ndims > 0) {
+        /* Form strings along the fastest varying dimension -------------------*/
+        strlen = ccount[ndims-1];
+        strcnt = R_nc_length (ndims-1, ccount);
+        rank = ndims - 1;
+     } else {
+        /* Scalar character is a single string */
+        strlen = 1;
+        strcnt = 1;
+        rank = 0;
+      }
+      RDATADEF (STRSXP, strcnt);
+      if (arrlen > 0) {
+        RNCCHECK (nc_get_vara_text (ncid, varid, cstart, ccount, charbuf));
+        for (ii=0; ii<strcnt; ii++) {
+          nextstr = &charbuf[ii*strlen];
+          SET_STRING_ELT (RDATASET, ii, 
+                          mkCharLen (nextstr, strnlen (nextstr, strlen)));
+        }
+      }
     }
+    break;
+  case NC_STRING:
+    RDATADEF (STRSXP, arrlen);
+    if (arrlen > 0) {
+      strbuf = (char **) R_alloc (arrlen, sizeof(char *));
+      RNCCHECK (nc_get_vara_string (ncid, varid, cstart, ccount, strbuf));
+      for (ii=0; ii<arrlen; ii++) {
+        SET_STRING_ELT (RDATASET, ii, mkChar (strbuf[ii]));
+      }
+      RNCCHECK (nc_free_string (arrlen, strbuf));
+    }
+    break;
+  case NC_BYTE:
+  case NC_SHORT:
+  case NC_INT:
+  case NC_FLOAT:
+  case NC_DOUBLE:
+  case NC_UBYTE:
+  case NC_USHORT:
+  case NC_UINT:
+  case NC_INT64:
+  case NC_UINT64:
+    RDATADEF (REALSXP, arrlen);
+    if (arrlen > 0) {
+      RNCCHECK (nc_get_vara_double (ncid, varid,
+                                    cstart, ccount, REAL (RDATASET)));
+    }
+    break;
+  default:
+    RNCRETURN (NC_EBADTYPE);
+    break;
+  }
+
+  /*-- Set dimension attribute for arrays -------------------------------------*/
+  if (rank > 0) {
+    rdim = PROTECT( allocVector (INTSXP, rank));
+    intp = INTEGER (rdim);
+    for ( ii=0; ii<rank; ii++ ) {
+      intp[ii] = ccount[rank-1-ii];
+    }
+    setAttrib(RDATASET, R_DimSymbol, rdim);
+    UNPROTECT(1);
   }
 
   RNCRETURN (NC_NOERR);

@@ -465,127 +465,49 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 0,
   
   stopifnot(isTRUE(na.mode %in% c(0, 1, 2, 3)))
   
-  #-- Inquire the variable ---------------------------------------------------
-  varinfo <- try(var.inq.nc(ncfile, variable))
-  
-  if (class(varinfo) == "try-error" || is.null(varinfo)) {
-    return(invisible(NULL))
-  }
-  
-  ndims <- varinfo$ndims
-  
-  #-- Get the varid as integer if necessary ----------------------------------
-  ifelse(is.character(variable), varid <- varinfo$id, varid <- variable)
-  
-  #-- Replace NA by defined limits -------------------------------------------
-  if (isTRUE(is.na(start))) {
-    start <- rep(NA, ndims)
-  }
-  if (isTRUE(is.na(count))) {
-    count <- rep(NA, ndims)
-  }
-  
-  if (length(start) != ndims || length(count) != ndims) {
-    stop("Length of start/count is not ndims", call. = FALSE)
-  }
-  
-  start[is.na(start)] <- 1
-  for (idim in seq_len(ndims)) {
-    if (is.na(count[idim])) {
-      count[idim] <- dim.inq.nc(ncfile, varinfo$dimids[idim])$length
-    }
-  }
-  
-  #-- Switch from R to C convention ------------------------------------------
-  c.start <- rev(start - 1)
-  c.count <- rev(count)
-  
-  #-- C function calls -------------------------------------------------------
-  if (varinfo$type == "NC_CHAR") {
-    nc <- Cwrap("R_nc_get_vara_text", as.integer(ncfile), as.integer(varid), 
-      as.integer(c.start), as.integer(c.count), as.integer(ndims), 
-      as.integer(rawchar))
-  } else {
-    nc <- Cwrap("R_nc_get_vara_double", as.integer(ncfile), as.integer(varid), 
-      as.integer(c.start), as.integer(c.count), as.integer(ndims))
-  }
+  #-- C function call --------------------------------------------------------
+  nc <- Cwrap("R_nc_get_var", ncfile, variable, start, count, rawchar) 
   
   #-- Convert missing value to NA if defined in NetCDF file --------------
   if (is.numeric(nc) && na.mode < 3) {
-    tolerance <- 1 * 10^-5  ## Allow rounding error
-    na.flag <- 0
+    na.flag <- FALSE
     
-    missval.flag <- 0
-    fillval.flag <- 0
-    
-    fillval <- try(att.inq.nc(ncfile, varinfo$name, "_FillValue"), silent = TRUE)
-    missval <- try(att.inq.nc(ncfile, varinfo$name, "missing_value"), 
-      silent = TRUE)
-    
-    if (!(class(fillval) == "try-error")) {
-      if (!is.null(fillval)) {
-        fillval.flag <- 1
+    if (na.mode == 0) {
+      na.value <- try(att.get.nc(ncfile, variable, "_FillValue"), silent = TRUE)
+      na.flag <- !inherits(na.value, "try-error")
+      if (!na.flag) {
+        na.value <- try(att.get.nc(ncfile, variable, "missing_value"), silent = TRUE)
+        na.flag <- !inherits(na.value, "try-error")
       }
-    }
-    if (!(class(missval) == "try-error")) {
-      if (!is.null(missval)) {
-        missval.flag <- 1
-      }
-    }
-    
-    if (na.mode == 0 && missval.flag == 1) {
-      na.value <- att.get.nc(ncfile, varinfo$name, "missing_value")
-      na.flag <- 1
-    }
-    if (na.mode == 0 && fillval.flag == 1) {
-      na.value <- att.get.nc(ncfile, varinfo$name, "_FillValue")
-      na.flag <- 1
+    } else if (na.mode == 1) {
+      na.value <- try(att.get.nc(ncfile, variable, "_FillValue"), silent = TRUE)
+      na.flag <- !inherits(na.value, "try-error")
+    } else if (na.mode == 2) {
+      na.value <- try(att.get.nc(ncfile, variable, "missing_value"), silent = TRUE)
+      na.flag <- !inherits(na.value, "try-error")
     }
     
-    if (na.mode == 1 && fillval.flag == 1) {
-      na.value <- att.get.nc(ncfile, varinfo$name, "_FillValue")
-      na.flag <- 1
-    }
-    
-    if (na.mode == 2 && missval.flag == 1) {
-      na.value <- att.get.nc(ncfile, varinfo$name, "missing_value")
-      na.flag <- 1
-    }
-    
-    if (na.flag == 1) {
-      nc[abs(nc - as.numeric(na.value)) < tolerance] <- NA
+    if (na.flag && is.numeric(na.value)) {
+      nc[nc == na.value] <- NA
     }
   }
   
   #-- Unpack variables if requested (missing values are preserved) -------
   if (unpack && is.numeric(nc)) {
-    offset <- try(att.inq.nc(ncfile, varinfo$name, "add_offset"), silent = TRUE)
-    scale <- try(att.inq.nc(ncfile, varinfo$name, "scale_factor"), silent = TRUE)
-    if ((!inherits(offset, "try-error")) && (!inherits(scale, "try-error"))) {
-      add_offset <- att.get.nc(ncfile, varinfo$name, "add_offset")
-      scale_factor <- att.get.nc(ncfile, varinfo$name, "scale_factor")
-      nc <- nc * scale_factor + add_offset
+    offset <- try(att.get.nc(ncfile, variable, "add_offset"), silent = TRUE)
+    scale <- try(att.get.nc(ncfile, variable, "scale_factor"), silent = TRUE)
+    if ((!inherits(offset, "try-error")) && is.numeric(offset) &&
+        (!inherits(scale,  "try-error")) && is.numeric(scale)) {
+      nc <- nc * scale + offset
     }
   }
   
-  #-- Set dimensions, collapse degenerate dimensions ---------------------
-  if (is.character(nc) && ndims > 0) {
-    # Drop string length dimension
-    datadim <- count[-1]
-  } else {
-    datadim <- count
+  #-- Collapse singleton dimensions --------------------------------------
+  if (collapse && !is.null(dim(nc))) {
+    datadim <- dim(nc)
+    dim(nc) <- datadim[datadim != 1]
   }
-  if (collapse) {
-    # Drop singleton dimensions
-    datadim <- datadim[datadim != 1]
-  }
-  if (length(datadim) < 1) {
-    # For compatibility with code written for RNetCDF<=1.6.x, scalars and
-    # vectors always have a dimension attribute:
-    datadim <- length(nc)
-  }
-  dim(nc) <- datadim
-  
+ 
   return(nc)
 }
 
