@@ -1472,27 +1472,24 @@ R_nc_put_vara_text (SEXP ncid, SEXP varid, SEXP start,
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_rename_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag,
-                 SEXP newname)
+R_nc_rename_var (SEXP nc, SEXP var, SEXP newname)
 {
-  int ncvarid;
-  const char *ncvarname, *ncnewname;
+  int ncid, varid;
+  const char *cnewname;
   ROBJDEF (NOSXP, 0);
 
-  ncvarname = CHAR (STRING_ELT (varname, 0));
-  ncnewname = CHAR (STRING_ELT (newname, 0));
-  ncvarid = INTEGER (varid)[0];
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
 
-  /*-- Get the variable ID if necessary ---------------------------------------*/
-  if (INTEGER (nameflag)[0] == 1) {
-    RNCCHECK (nc_inq_varid (INTEGER (ncid)[0], ncvarname, &ncvarid));
-  }
+  RNCCHECK (R_nc_var_id (var, ncid, &varid));
+
+  cnewname = CHAR (STRING_ELT (newname, 0));
 
   /*-- Enter define mode ------------------------------------------------------*/
-  RNCCHECK( R_nc_redef (INTEGER (ncid)[0]));
+  RNCCHECK( R_nc_redef (ncid));
 
   /*-- Rename the variable ----------------------------------------------------*/
-  RNCCHECK (nc_rename_var (INTEGER (ncid)[0], ncvarid, ncnewname));
+  RNCCHECK (nc_rename_var (ncid, varid, cnewname));
 
   RNCRETURN (NC_NOERR);
 }
@@ -1503,16 +1500,22 @@ R_nc_rename_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag,
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_def_grp (SEXP ncid, SEXP grpname)
+R_nc_def_grp (SEXP nc, SEXP grpname)
 {
+  int ncid;
+  const char *cgrpname;
   ROBJDEF (INTSXP, 1);
 
+  /* Convert arguments to netcdf ids */
+  ncid = asInteger (nc);
+
+  cgrpname = CHAR (STRING_ELT (grpname, 0));
+
   /* Enter define mode */
-  RNCCHECK( R_nc_redef (INTEGER (ncid)[0]));
+  RNCCHECK( R_nc_redef (ncid));
 
   /* Define the group */
-  RNCCHECK (nc_def_grp (INTEGER (ncid)[0], CHAR (STRING_ELT (grpname, 0)),
-                        INTEGER (RDATASET)));
+  RNCCHECK (nc_def_grp (ncid, cgrpname, INTEGER (RDATASET)));
 
   RNCRETURN (NC_NOERR);
 }
@@ -1522,12 +1525,12 @@ R_nc_def_grp (SEXP ncid, SEXP grpname)
  *  R_nc_inq_grp_parent()                                                      *
 \*-----------------------------------------------------------------------------*/
 SEXP
-R_nc_inq_grp_parent (SEXP ncid)
+R_nc_inq_grp_parent (SEXP nc)
 {
   ROBJDEF (INTSXP, 1);
 
   /* Get parent group */
-  RNCCHECK (nc_inq_grp_parent (INTEGER (ncid)[0], INTEGER (RDATASET)));
+  RNCCHECK (nc_inq_grp_parent (asInteger (nc), INTEGER (RDATASET)));
 
   RNCRETURN (NC_NOERR);
 }
@@ -1537,12 +1540,12 @@ R_nc_inq_grp_parent (SEXP ncid)
  *  R_nc_inq_natts()                                                      *
 \*-----------------------------------------------------------------------------*/
 SEXP
-R_nc_inq_natts (SEXP ncid)
+R_nc_inq_natts (SEXP nc)
 {
   ROBJDEF (INTSXP, 1);
 
   /* Get number of attributes in group */
-  RNCCHECK (nc_inq_natts (INTEGER (ncid)[0], INTEGER (RDATASET)));
+  RNCCHECK (nc_inq_natts (asInteger (nc), INTEGER (RDATASET)));
 
   RNCRETURN (NC_NOERR);
 }
@@ -1552,22 +1555,24 @@ R_nc_inq_natts (SEXP ncid)
  *  R_nc_inq_grpname()                                                         *
 \*-----------------------------------------------------------------------------*/
 SEXP
-R_nc_inq_grpname (SEXP ncid, SEXP full)
+R_nc_inq_grpname (SEXP nc, SEXP full)
 {
+  int ncid;
   size_t namelen;
-  char *name;
+  char *name, *fullname, namebuf[NC_MAX_NAME+1];
   ROBJDEF (STRSXP, 1);
 
-  if (INTEGER (full)[0]) {
-    RNCCHECK (nc_inq_grpname_full (INTEGER (ncid)[0], &namelen, NULL));
+  ncid = asInteger (nc);
 
-    name = (char *) R_alloc (namelen + 1, sizeof (char));
-    RNCCHECK (nc_inq_grpname_full (INTEGER (ncid)[0], NULL, name));
+  if (asLogical (full)) {
+    RNCCHECK (nc_inq_grpname_full (ncid, &namelen, NULL));
 
+    fullname = (char *) R_alloc (namelen + 1, sizeof (char));
+    RNCCHECK (nc_inq_grpname_full (ncid, NULL, fullname));
+    name = fullname;
   } else {
-    name = (char *) R_alloc (NC_MAX_NAME + 1, sizeof (char));
-    RNCCHECK (nc_inq_grpname (INTEGER (ncid)[0], name));
-
+    RNCCHECK (nc_inq_grpname (ncid, namebuf));
+    name = namebuf;
   }
 
   SET_STRING_ELT (RDATASET, 0, mkChar (name));
@@ -1580,18 +1585,19 @@ R_nc_inq_grpname (SEXP ncid, SEXP full)
  *  R_nc_inq_grp_ncid()                                                        *
 \*-----------------------------------------------------------------------------*/
 SEXP
-R_nc_inq_grp_ncid (SEXP ncid, SEXP grpname, SEXP full)
+R_nc_inq_grp_ncid (SEXP nc, SEXP grpname, SEXP full)
 {
+  int ncid;
+  const char *cgrpname;
   ROBJDEF (INTSXP, 1);
 
-  if (INTEGER (full)[0]) {
-    RNCCHECK (nc_inq_grp_full_ncid (INTEGER (ncid)[0],
-                                    CHAR (STRING_ELT (grpname, 0)),
-                                    INTEGER (RDATASET)));
+  ncid = asInteger (nc);
+  cgrpname = CHAR (STRING_ELT (grpname, 0));
+
+  if (asLogical (full)) {
+    RNCCHECK (nc_inq_grp_full_ncid (ncid, cgrpname, INTEGER (RDATASET)));
   } else {
-    RNCCHECK (nc_inq_grp_ncid (INTEGER (ncid)[0],
-                               CHAR (STRING_ELT (grpname, 0)),
-                               INTEGER (RDATASET)));
+    RNCCHECK (nc_inq_grp_ncid (ncid, cgrpname, INTEGER (RDATASET)));
   }
 
   RNCRETURN (NC_NOERR);
@@ -1604,13 +1610,14 @@ R_nc_inq_grp_ncid (SEXP ncid, SEXP grpname, SEXP full)
 
 /* Template function returning a list of ncids for a group */
 #define INQGRPIDS(RFUN, NCFUN) \
-SEXP RFUN (SEXP ncid) \
+SEXP RFUN (SEXP nc) \
 { \
-  int    count; \
+  int    ncid, count; \
+  ncid = asInteger (nc); \
   ROBJDEF(NOSXP,0); \
-  RNCCHECK(NCFUN(INTEGER(ncid)[0], &count, NULL)); \
+  RNCCHECK(NCFUN(ncid, &count, NULL)); \
   RDATADEF(INTSXP,count); \
-  RNCCHECK(NCFUN(INTEGER(ncid)[0], NULL, INTEGER(RDATASET))); \
+  RNCCHECK(NCFUN(ncid, NULL, INTEGER(RDATASET))); \
   RNCRETURN(NC_NOERR); \
 }
 
@@ -1624,16 +1631,17 @@ INQGRPIDS (R_nc_inq_varids, nc_inq_varids);
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_inq_dimids (SEXP ncid, SEXP ancestors)
+R_nc_inq_dimids (SEXP nc, SEXP ancestors)
 {
-  int count;
+  int ncid, full, count;
   ROBJDEF (NOSXP, 0);
 
-  RNCCHECK (nc_inq_dimids (INTEGER (ncid)[0], &count, NULL,
-                           INTEGER (ancestors)[0]));
+  ncid = asInteger (nc);
+  full = asLogical (ancestors);
+
+  RNCCHECK (nc_inq_dimids (ncid, &count, NULL, full));
   RDATADEF (INTSXP, count);
-  RNCCHECK (nc_inq_dimids (INTEGER (ncid)[0], NULL, INTEGER (RDATASET),
-                           INTEGER (ancestors)[0]));
+  RNCCHECK (nc_inq_dimids (ncid, NULL, INTEGER (RDATASET), full));
 
   RNCRETURN (NC_NOERR);
 }
@@ -1644,13 +1652,15 @@ R_nc_inq_dimids (SEXP ncid, SEXP ancestors)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_inq_unlimids (SEXP ncid, SEXP ancestors)
+R_nc_inq_unlimids (SEXP nc, SEXP ancestors)
 {
-  int nunlim, *unlimids;
+  int ncid, full, nunlim, *unlimids;
   ROBJDEF (NOSXP, 0);
 
-  RNCCHECK (R_nc_unlimdims (INTEGER (ncid)[0], &nunlim, &unlimids,
-                            INTEGER (ancestors)[0]));
+  ncid = asInteger (nc);
+  full = asLogical (ancestors);
+
+  RNCCHECK (R_nc_unlimdims (ncid, &nunlim, &unlimids, full));
 
   RDATADEF (INTSXP, nunlim);
 
@@ -1668,17 +1678,21 @@ R_nc_inq_unlimids (SEXP ncid, SEXP ancestors)
  *  R_nc_rename_grp()                                                          *
 \*-----------------------------------------------------------------------------*/
 SEXP
-R_nc_rename_grp (SEXP ncid, SEXP grpname)
+R_nc_rename_grp (SEXP nc, SEXP grpname)
 {
+  int ncid;
+  const char *cgrpname;
   ROBJDEF (NOSXP, 0);
 
 #if defined HAVE_DECL_NC_RENAME_GRP && HAVE_DECL_NC_RENAME_GRP
+  ncid = asInteger (nc);
+  cgrpname = CHAR (STRING_ELT (grpname, 0));
+
   /* Enter define mode */
-  RNCCHECK( R_nc_redef (INTEGER (ncid)[0]));
+  RNCCHECK( R_nc_redef (ncid));
 
   /* Rename the group */
-  RNCCHECK (nc_rename_grp
-            (INTEGER (ncid)[0], CHAR (STRING_ELT (grpname, 0))));
+  RNCCHECK (nc_rename_grp (ncid, cgrpname));
 
   RNCRETURN (NC_NOERR);
 

@@ -710,16 +710,8 @@ var.rename.nc <- function(ncfile, variable, newname) {
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.character(newname))
   
-  #-- Look if handle variable by name or ID ----------------------------------
-  varid <- -1
-  varname <- ""
-  
-  ifelse(is.character(variable), nameflag <- 1, nameflag <- 0)
-  ifelse(is.character(variable), varname <- variable, varid <- variable)
-  
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_rename_var", as.integer(ncfile), as.integer(varid), 
-    as.character(varname), as.integer(nameflag), as.character(newname))
+  nc <- Cwrap("R_nc_rename_var", ncfile, variable, newname)
   
   return(invisible(NULL))
 }
@@ -735,7 +727,7 @@ grp.def.nc <- function(ncid, grpname) {
   stopifnot(is.character(grpname))
   
   # C function call:
-  nc <- Cwrap("R_nc_def_grp", as.integer(ncid), grpname, PACKAGE = "RNetCDF")
+  nc <- Cwrap("R_nc_def_grp", ncid, grpname)
   
   # Return object:
   attributes(nc) <- attributes(ncid)
@@ -754,7 +746,7 @@ grp.find <- function(ncid, grpname, full = isTRUE(grepl("/", grpname))) {
   stopifnot(is.logical(full))
   
   # C function call:
-  nc <- Cwrap("R_nc_inq_grp_ncid", as.integer(ncid), grpname, as.integer(full))
+  nc <- Cwrap("R_nc_inq_grp_ncid", ncid, grpname, full)
   
   # Return object:
   attributes(nc) <- attributes(ncid)
@@ -770,9 +762,10 @@ grp.inq.nc <- function(ncid, grpname = NULL, ancestors = TRUE) {
   # Check arguments:
   stopifnot(class(ncid) == "NetCDF")
   stopifnot(is.logical(ancestors))
+  stopifnot(is.null(grpname) || is.character(grpname))
   
   # If optional argument is specified, find a group by name:
-  if (is.character(grpname)) {
+  if (!is.null(grpname)) {
     ncid <- grp.find(ncid, grpname)
   }
   
@@ -781,13 +774,13 @@ grp.inq.nc <- function(ncid, grpname = NULL, ancestors = TRUE) {
   out$self <- ncid
   
   # Get parent of group (NULL if none):
-  out$parent <- Cwrap("R_nc_inq_grp_parent", as.integer(ncid), ERRNULL = TRUE)
+  out$parent <- Cwrap("R_nc_inq_grp_parent", ncid, ERRNULL = TRUE)
   if (!is.null(out$parent)) {
     attributes(out$parent) <- attributes(ncid)
   }
   
   # Get sub-groups of group (empty list if none):
-  grpids <- Cwrap("R_nc_inq_grps", as.integer(ncid), ERRNULL = TRUE)
+  grpids <- Cwrap("R_nc_inq_grps", ncid, ERRNULL = TRUE)
   if (is.null(grpids)) {
     out$grps <- list()
   } else {
@@ -798,25 +791,25 @@ grp.inq.nc <- function(ncid, grpname = NULL, ancestors = TRUE) {
   }
   
   # Names of group:
-  out$name <- Cwrap("R_nc_inq_grpname", as.integer(ncid), as.integer(FALSE))
+  out$name <- Cwrap("R_nc_inq_grpname", ncid, FALSE)
   if (ancestors) {
-    out$fullname <- Cwrap("R_nc_inq_grpname", as.integer(ncid), as.integer(TRUE))
+    out$fullname <- Cwrap("R_nc_inq_grpname", ncid, TRUE)
   }
   
   # Dimensions visible in group (empty vector if none):
-  out$dimids <- Cwrap("R_nc_inq_dimids", as.integer(ncid), as.integer(ancestors))
+  out$dimids <- Cwrap("R_nc_inq_dimids", ncid, ancestors)
   
   # Unlimited dimensions visible in group (empty vector if none):
-  out$unlimids <- Cwrap("R_nc_inq_unlimids", as.integer(ncid), as.integer(ancestors))
+  out$unlimids <- Cwrap("R_nc_inq_unlimids", ncid, ancestors)
   
   # Variables in group (empty vector if none):
-  out$varids <- Cwrap("R_nc_inq_varids", as.integer(ncid))
+  out$varids <- Cwrap("R_nc_inq_varids", ncid)
   
   # Types in group (empty vector if none):
-  out$typeids <- Cwrap("R_nc_inq_typeids", as.integer(ncid))
+  out$typeids <- Cwrap("R_nc_inq_typeids", ncid)
   
   # Number of group attributes:
-  out$ngatts <- Cwrap("R_nc_inq_natts", as.integer(ncid))
+  out$ngatts <- Cwrap("R_nc_inq_natts", ncid)
   
   return(out)
 }
@@ -830,14 +823,15 @@ grp.rename.nc <- function(ncid, newname, oldname = NULL) {
   # Check arguments:
   stopifnot(class(ncid) == "NetCDF")
   stopifnot(is.character(newname))
+  stopifnot(is.null(oldname) || is.character(oldname))
   
   # If optional argument is specified, find a group by name:
-  if (is.character(oldname)) {
+  if (!is.null(oldname)) {
     ncid <- grp.find(ncid, oldname)
   }
   
   # C function call:
-  nc <- Cwrap("R_nc_rename_grp", as.integer(ncid), newname)
+  nc <- Cwrap("R_nc_rename_grp", ncid, newname)
   
   return(invisible(NULL))
 }
