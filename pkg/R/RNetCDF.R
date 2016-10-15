@@ -890,14 +890,11 @@ read.nc <- function(ncfile, recursive = FALSE, ...) {
 utcal.nc <- function(unitstring, value, type = "n") {
   #-- Check args -------------------------------------------------------------
   stopifnot(is.character(unitstring))
-  stopifnot(is.numeric(value) && !any(is.na(value)))
+  stopifnot(is.numeric(value))
   stopifnot(type == "n" || type == "s" || type == "c")
   
-  count <- length(value)
-  
   #-- C function call to udunits calendar function -----------------------
-  ut <- Cwrap("R_ut_calendar", as.character(unitstring), as.integer(count), 
-    as.double(value))
+  ut <- Cwrap("R_ut_calendar", unitstring, value)
   dim(ut) <- c(length(value), 6)
   
   #-- Return object if no error ------------------------------------------
@@ -946,25 +943,13 @@ utinvcal.nc <- function(unitstring, value) {
     
     value <- matrix(as.numeric(value), ncol = 6)
   } else if (inherits(value, "POSIXct")) {
-    value <- utcal.nc("seconds since 1970-01-01 00:00:00 +00:00", as.numeric(value), 
-      "n")
+    value <- utcal.nc("seconds since 1970-01-01 00:00:00 +00:00", as.vector(value), "n") 
   }
   
-  stopifnot(is.numeric(value) && !any(is.na(value)))
-  
-  count <- length(value)
-  
-  if (is.vector(value) && count%%6 != 0) {
-    stop("length(value) not divisible by 6", call. = FALSE)
-  }
-  
-  if (is.matrix(value) && ncol(value) != 6) {
-    stop("ncol(value) not 6", call. = FALSE)
-  }
+  stopifnot(is.numeric(value))
   
   #-- C function call --------------------------------------------------------
-  ut <- Cwrap("R_ut_inv_calendar", as.character(unitstring), as.integer(count), 
-    as.double(value))
+  ut <- Cwrap("R_ut_inv_calendar", unitstring, value) 
   return(ut)
 }
 

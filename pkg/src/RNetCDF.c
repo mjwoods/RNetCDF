@@ -1711,20 +1711,37 @@ R_nc_rename_grp (SEXP nc, SEXP grpname)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_ut_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
+R_ut_calendar (SEXP unitstring, SEXP values)
 {
-  int year, month, day, hour, minute, count, i, status;
+  int year, month, day, hour, minute, status, isreal;
   float second;
-  double utvalue;
+  const int *ivals=NULL;
+  const double *dvals=NULL;
+  const char *cstring;
+  double dtmp, *dout;
+  size_t ii, count;
   utUnit utunit;
-  ROBJDEF (REALSXP, INTEGER (unitcount)[0] * 6);
+  ROBJDEF (NOSXP, 0);
+
+  /* Handle arguments and initialise outputs */
+  cstring = CHAR (STRING_ELT (unitstring, 0));
+  isreal = isReal (values);
+  if (isreal) {
+    dvals = REAL (values);
+  } else {
+    ivals = INTEGER (values);
+  }
+  count = xlength (values);
+
+  RDATADEF (REALSXP, count * 6);
+  dout = REAL (RDATASET);
 
   /*-- Scan unitstring --------------------------------------------------------*/
 #ifdef HAVE_LIBUDUNITS2
   utIni (&utunit);
 #endif
 
-  status = utScan (CHAR (STRING_ELT (unitstring, 0)), &utunit);
+  status = utScan (cstring, &utunit);
   if (status != 0) {
     goto cleanup;
   }
@@ -1741,21 +1758,32 @@ R_ut_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
   }
 
   /*-- Convert values ---------------------------------------------------------*/
-  count = (int) INTEGER (unitcount)[0];
-  for (i = 0; i < count; i++) {
-    utvalue = (double) REAL (values)[i];
-    status = utCalendar (utvalue, &utunit, &year, &month, &day,
-                         &hour, &minute, &second);
-    if (status != 0) {
-      goto cleanup;
+  for (ii = 0; ii < count; ii++) {
+    if (isreal) {
+      dtmp = dvals[ii];
+    } else {
+      dtmp = (ivals[ii] == NA_INTEGER) ? NA_REAL : ((double) ivals[ii]);
+    } 
+    if (R_FINITE (dtmp)) {
+      status = utCalendar (dtmp, &utunit, &year, &month, &day,
+                           &hour, &minute, &second);
+      if (status != 0) {
+	goto cleanup;
+      }
+      dout[ii] = year;
+      dout[ii + count] = month;
+      dout[ii + 2 * count] = day;
+      dout[ii + 3 * count] = hour;
+      dout[ii + 4 * count] = minute;
+      dout[ii + 5 * count] = second;
+    } else {
+      dout[ii] = NA_REAL;
+      dout[ii + count] = NA_REAL;
+      dout[ii + 2 * count] = NA_REAL;
+      dout[ii + 3 * count] = NA_REAL;
+      dout[ii + 4 * count] = NA_REAL;
+      dout[ii + 5 * count] = NA_REAL;
     }
-
-    REAL (RDATASET)[i + 0 * count] = (double) year;
-    REAL (RDATASET)[i + 1 * count] = (double) month;
-    REAL (RDATASET)[i + 2 * count] = (double) day;
-    REAL (RDATASET)[i + 3 * count] = (double) hour;
-    REAL (RDATASET)[i + 4 * count] = (double) minute;
-    REAL (RDATASET)[i + 5 * count] = (double) second;
   }
 
   /*-- Returning the list -----------------------------------------------------*/
@@ -1800,25 +1828,36 @@ R_ut_init (SEXP path)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_ut_inv_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
+R_ut_inv_calendar (SEXP unitstring, SEXP values)
 {
-  int year, month, day, hour, minute, count, i, status;
-  float second;
-  double utvalue;
+  int status, itmp, isreal, isfinite, jj;
+  const int *ivals=NULL;
+  const double *dvals=NULL;
+  const char *cstring;
+  double datetime[6], *dout, dtmp;
+  size_t ii, count;
   utUnit utunit;
   ROBJDEF (NOSXP, 0);
 
-  /*-- Create output object and initialize return values ----------------------*/
-  count = (int) INTEGER (unitcount)[0];
-  count = count / 6;
+  /* Handle arguments and initialise outputs */
+  cstring = CHAR (STRING_ELT (unitstring, 0));
+  isreal = isReal (values);
+  if (isreal) {
+    dvals = REAL (values);
+  } else {
+    ivals = INTEGER (values);
+  }
+  count = xlength (values) / 6;
+
   RDATADEF (REALSXP, count);
+  dout = REAL (RDATASET);
 
   /*-- Scan unitstring --------------------------------------------------------*/
 #ifdef HAVE_LIBUDUNITS2
   utIni (&utunit);
 #endif
 
-  status = utScan (CHAR (STRING_ELT (unitstring, 0)), &utunit);
+  status = utScan (cstring, &utunit);
   if (status != 0) {
     goto cleanup;
   }
@@ -1835,21 +1874,39 @@ R_ut_inv_calendar (SEXP unitstring, SEXP unitcount, SEXP values)
   }
 
   /*-- Convert values ---------------------------------------------------------*/
-  for (i = 0; i < count; i++) {
-    year = (int) REAL (values)[i + 0 * count];
-    month = (int) REAL (values)[i + 1 * count];
-    day = (int) REAL (values)[i + 2 * count];
-    hour = (int) REAL (values)[i + 3 * count];
-    minute = (int) REAL (values)[i + 4 * count];
-    second = (double) REAL (values)[i + 5 * count];
-
-    status = utInvCalendar (year, month, day, hour, minute, second,
-                            &utunit, &utvalue);
-    if (status != 0) {
-      goto cleanup;
+  for (ii = 0; ii < count; ii++) {
+    isfinite = 1;
+    if (isreal) {
+      for (jj = 0; jj < 6; jj++) {
+        dtmp = dvals[ii + jj*count];
+        if (R_FINITE (dtmp)) {
+          datetime[jj] = dtmp;
+        } else {
+          isfinite = 0;
+          break;
+        }
+      }
+    } else {
+      for (jj = 0; jj < 6; jj++) {
+        itmp = ivals[ii + jj*count];
+        if (itmp == NA_INTEGER) {
+          isfinite = 0;
+          break;
+        } else {
+          datetime[jj] = itmp;
+        }
+      }
     }
-
-    REAL (RDATASET)[i] = utvalue;
+    if (isfinite) {
+      status = utInvCalendar (datetime[0], datetime[1], datetime[2],
+                              datetime[3], datetime[4], datetime[5],
+                              &utunit, &dout[ii]);
+      if (status != 0) {
+        goto cleanup;
+      }
+    } else {
+      dout[ii] = NA_REAL;
+    }
   }
 
   /*-- Returning the list -----------------------------------------------------*/
