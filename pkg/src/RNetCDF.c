@@ -1332,46 +1332,45 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_inq_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag)
+R_nc_inq_var (SEXP nc, SEXP var)
 {
-  int ncvarid, ndims, natts, *dimids;
+  int ii, ncid, varid, ndims, natts, cdimids[MAX_NC_DIMS], *rdimids;
   const char *vartype;
-  char ncvarname[NC_MAX_NAME + 1];
+  char varname[NC_MAX_NAME + 1];
   nc_type xtype;
   ROBJDEF (VECSXP, 6);
 
-  /*-- Get the variable ID if necessary ---------------------------------------*/
-  if (INTEGER (nameflag)[0] == 1) {
-    RNCCHECK (nc_inq_varid
-              (INTEGER (ncid)[0], CHAR (STRING_ELT (varname, 0)),
-               &ncvarid));
-  } else {
-    ncvarid = INTEGER (varid)[0];
-  }
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
 
-  /*-- Get the number of dimensions -------------------------------------------*/
-  RNCCHECK (nc_inq_varndims (INTEGER (ncid)[0], ncvarid, &ndims));
-
-  if (ndims == 0) {
-    dimids = NULL;
-  } else {
-    SET_VECTOR_ELT (RDATASET, 4, allocVector (INTSXP, ndims));
-    dimids = INTEGER (VECTOR_ELT (RDATASET, 4));
-  }
+  RNCCHECK (R_nc_var_id (var, ncid, &varid));
 
   /*-- Inquire the variable ---------------------------------------------------*/
-  RNCCHECK (nc_inq_var (INTEGER (ncid)[0], ncvarid, ncvarname, &xtype, &ndims,
-                        dimids, &natts));
+  RNCCHECK (nc_inq_var (ncid, varid, varname, &xtype, &ndims,
+                        cdimids, &natts));
 
   /*-- Convert nc_type to char ------------------------------------------------*/
-  vartype = R_nc_type2str (INTEGER (ncid)[0], xtype);
+  vartype = R_nc_type2str (ncid, xtype);
 
-  /*-- Returning the list -----------------------------------------------------*/
-  SET_VECTOR_ELT (RDATASET, 0, ScalarInteger (ncvarid));
-  SET_VECTOR_ELT (RDATASET, 1, mkString (ncvarname));
+  /*-- Construct the output list ----------------------------------------------*/
+  SET_VECTOR_ELT (RDATASET, 0, ScalarInteger (varid));
+  SET_VECTOR_ELT (RDATASET, 1, mkString (varname));
   SET_VECTOR_ELT (RDATASET, 2, mkString (vartype));
   SET_VECTOR_ELT (RDATASET, 3, ScalarInteger (ndims));
-  /* List item 4 is already defined by nc_inq_var */
+
+  if (ndims > 0) {
+    /* Return vector of dimension ids in R order */
+    SET_VECTOR_ELT (RDATASET, 4, allocVector (INTSXP, ndims));
+    rdimids = INTEGER (VECTOR_ELT (RDATASET, 4));
+    for (ii=0; ii<ndims; ii++) {
+      rdimids[ii] = cdimids[ndims-1-ii];
+    }
+  } else {
+    /* Return single NA for scalars */
+    SET_VECTOR_ELT (RDATASET, 4, allocVector (INTSXP, 1));
+    INTEGER (VECTOR_ELT (RDATASET, 4))[0] = NA_INTEGER;
+  }
+
   SET_VECTOR_ELT (RDATASET, 5, ScalarInteger (natts));
 
   RNCRETURN (NC_NOERR);

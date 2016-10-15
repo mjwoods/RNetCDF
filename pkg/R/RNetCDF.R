@@ -523,24 +523,10 @@ var.inq.nc <- function(ncfile, variable) {
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(variable) || is.numeric(variable))
   
-  #-- Look if handle variable by name or ID ----------------------------------
-  varid <- -1
-  varname <- ""
-  
-  ifelse(is.character(variable), nameflag <- 1, nameflag <- 0)
-  ifelse(is.character(variable), varname <- variable, varid <- variable)
-  
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_inq_var", as.integer(ncfile), as.integer(varid), as.character(varname), 
-    as.integer(nameflag))
+  nc <- Cwrap("R_nc_inq_var", ncfile, variable)
   
   names(nc) <- c("id", "name", "type", "ndims", "dimids", "natts")
-  
-  if (nc$ndims > 0) {
-    nc$dimids <- nc$dimids[(nc$ndims):1]  ## C to R convention
-  } else {
-    nc$dimids <- NA
-  }
   
   return(nc)
 }
