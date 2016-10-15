@@ -333,10 +333,16 @@ R_nc_format2str (int format)
   switch (format) {
   case NC_FORMAT_CLASSIC:
     return "classic";
+#ifdef NC_FORMAT_64BIT
+  case NC_FORMAT_64BIT:
+#elif defined NC_FORMAT_64BIT_OFFSET
   case NC_FORMAT_64BIT_OFFSET:
+#endif
     return "offset64";
+#ifdef NC_FORMAT_CDF5
   case NC_FORMAT_CDF5:
     return "cdf5";
+#endif
   case NC_FORMAT_NETCDF4:
     return "netcdf4";
   case NC_FORMAT_NETCDF4_CLASSIC:
