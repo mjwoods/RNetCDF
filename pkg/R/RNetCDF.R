@@ -220,7 +220,7 @@ create.nc <- function(filename, clobber = TRUE, share = FALSE, prefill = TRUE,
   nc <- Cwrap("R_nc_create", filename, clobber, share, prefill, format)
   
   attr(nc, "class") <- "NetCDF"
-  return(nc)
+  return(invisible(nc))
 }
 
 
@@ -238,7 +238,7 @@ dim.def.nc <- function(ncfile, dimname, dimlength = 1, unlim = FALSE) {
   #-- C function call --------------------------------------------------------
   nc <- Cwrap("R_nc_def_dim", ncfile, dimname, dimlength, unlim)
   
-  return(nc)
+  return(invisible(nc))
 }
 
 
@@ -309,7 +309,7 @@ open.nc <- function(con, write = FALSE, share = FALSE, prefill = TRUE, ...) {
   nc <- Cwrap("R_nc_open", con, write, share, prefill)
   
   attr(nc, "class") <- "NetCDF"
-  return(nc)
+  return(invisible(nc))
 }
 
 
@@ -408,6 +408,8 @@ print.nc <- function(x, ...) {
   
   # Display groups recursively:
   print_grp(x, level = 0)
+
+  return(invisible(NULL))
 }
 
 
@@ -445,7 +447,7 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions) {
   #-- C function call --------------------------------------------------------
   nc <- Cwrap("R_nc_def_var", ncfile, varname, vartype, dimensions)
   
-  return(nc)
+  return(invisible(nc))
 }
 
 #-------------------------------------------------------------------------------
@@ -751,7 +753,7 @@ grp.def.nc <- function(ncid, grpname) {
   
   # Return object:
   attributes(nc) <- attributes(ncid)
-  return(nc)
+  return(invisible(nc))
 }
 
 

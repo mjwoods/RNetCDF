@@ -18,6 +18,8 @@
   \item{large}{(Deprecated) \code{large=TRUE} is equivalent to \code{format="offset64"}.}
 }
 
+\value{Object of class "\code{NetCDF}" which points to the NetCDF dataset, returned invisibly.}
+
 \details{This function creates a new NetCDF dataset, returning an object of class "\code{NetCDF}" that can be used in R.
 
 The file format is specified by the \code{format} argument, which may take the following values:
@@ -28,8 +30,6 @@ The file format is specified by the \code{format} argument, which may take the f
   \item{"classic4"}{Same file format as "netcdf4", but this options ensures that only classic netcdf data structures are stored in the file for compatibility with older software (when linked with the netcdf4 library).}
 }
 }
-
-\value{Object of class "\code{NetCDF}" which points to the NetCDF dataset.}
 
 \references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 

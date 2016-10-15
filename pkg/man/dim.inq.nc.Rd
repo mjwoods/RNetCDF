@@ -13,8 +13,6 @@
   \item{dimension}{Either the ID or the name of the dimension to be inquired.}
 }
 
-\details{This function returns information about a NetCDF dimension. Information about a dimension include its name, its ID, its length and a flag if it is the unlimited dimension of this NetCDF dataset, if any. The length of the unlimited dimension, if any, is the number of records written so far.}
-
 \value{
   A list containing the following components:
   \item{id}{Dimension ID.}
@@ -22,6 +20,8 @@
   \item{length}{Length of dimension. For the unlimited dimension, this is the number of records written so far.}
   \item{unlim}{\code{TRUE} if it is the unlimited dimension, \code{FALSE} otherwise.} 
 }
+
+\details{This function returns information about a NetCDF dimension. Information about a dimension include its name, its ID, its length and a flag if it is the unlimited dimension of this NetCDF dataset, if any. The length of the unlimited dimension, if any, is the number of records written so far.}
 
 \references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 

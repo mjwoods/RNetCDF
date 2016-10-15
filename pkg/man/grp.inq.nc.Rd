@@ -14,8 +14,6 @@
  \item{ancestors}{If \code{TRUE}, dimensions and names of ancestor groups are examined. Otherwise, only dimensions and names defined in the current group are reported.}
 }
 
-\details{This function provides information about the structure of a NetCDF group or dataset. The results allow programs to explore a dataset without prior knowledge of the contents.}
-
 \value{
   A list containing the following components:
   \item{self}{Object of class \code{NetCDF} representing the group.}
@@ -29,6 +27,8 @@
   \item{typeids}{Vector of identifiers for types in the group.}
   \item{ngatts}{Number of group attributes.}
 }
+
+\details{This function provides information about the structure of a NetCDF group or dataset. The results allow programs to explore a dataset without prior knowledge of the contents.}
 
 \references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 

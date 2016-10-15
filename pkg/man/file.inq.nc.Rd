@@ -12,8 +12,6 @@
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
 }
 
-\details{This function returns values for the number of dimensions, the number of variables, the number of global attributes, the dimension ID of the dimension defined with unlimited length (if any), and the format of the file.}
-
 \value{
   A list containing the following components:
   \item{ndims}{Number of dimensions defined for this NetCDF dataset.}
@@ -22,6 +20,8 @@
   \item{unlimdimid}{ID of the unlimited dimension, if there is one for this NetCDF dataset. Otherwise \code{NA} will be returned.} 
   \item{format}{Format of file, typically "classic", "offset64", "classic4" or "netcdf4".}
 }
+
+\details{This function returns values for the number of dimensions, the number of variables, the number of global attributes, the dimension ID of the dimension defined with unlimited length (if any), and the format of the file.}
 
 \references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 

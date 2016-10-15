@@ -16,12 +16,12 @@
   \item{...}{Optional arguments passed to \code{var.get.nc}.}
 }
 
+\value{A list with the list elements containing an array for each variable or a (possibly nested) list for each group in the NetCDF dataset.}
+
 \details{This function reads all variable data from a NetCDF dataset into a list. The list elements (arrays) have the same names as the variables in the NetCDF dataset.
 
 Groups in the dataset may optionally be read recursively and returned as nested lists. Each list has the name of the corresponding group in the dataset.
 }
-
-\value{A list with the list elements containing an array for each variable or a (possibly nested) list for each group in the NetCDF dataset.}
 
 \references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 

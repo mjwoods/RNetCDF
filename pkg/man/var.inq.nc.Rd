@@ -13,8 +13,6 @@
   \item{variable}{Either the ID or the name of the variable to be inquired.}
 }
 
-\details{This function returns information about a NetCDF variable. Information about a variable include its name, its ID, its type, its number of dimensions, a vector of the dimension IDs of this variable and the number of attributes.}
-
 \value{
   A list containing the following components:
   \item{id}{Variable ID.}
@@ -24,6 +22,8 @@
   \item{dimids}{Vector of dimension IDs corresponding to the variable dimensions (\code{NA} for scalar variables). Order is leftmost varying fastest.}
   \item{natts}{Number of variable attributes assigned to this variable.}
 }
+
+\details{This function returns information about a NetCDF variable. Information about a variable include its name, its ID, its type, its number of dimensions, a vector of the dimension IDs of this variable and the number of attributes.}
 
 \references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 

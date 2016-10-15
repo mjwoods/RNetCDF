@@ -15,6 +15,8 @@
   \item{dimensions}{Vector of \code{ndims} dimension IDs or their names corresponding to the variable dimensions or \code{NA} if a scalar variable should be created. If the ID (or name) of the unlimited dimension is included, it must be last.}
 }
 
+\value{NetCDF variable identifier, returned invisibly.}
+
 \details{This function creates a new NetCDF variable. A NetCDF variable has a name, a type, and a shape, which are specified when it is defined. A variable may also have values, which are established later in data mode. 
 
 Ordinarily, the name, type, and shape are fixed when the variable is first defined. The name may be changed, but the type and shape of a variable cannot be changed. However, a variable defined in terms of the unlimited dimension can grow without bound in that dimension. The fastetst varying dimension has to be first in \code{dimensions}, the slowest varying dimension last (this is the same way as an array is defined in R; i.e., opposite to the CDL conventions).
@@ -22,8 +24,6 @@ Ordinarily, the name, type, and shape are fixed when the variable is first defin
 A NetCDF variable in an open NetCDF dataset is referred to by a small integer called a variable ID. Variable IDs are 0, 1, 2,..., in the order in which the variables were defined within a NetCDF dataset.
 
 Attributes may be associated with a variable to specify such properties as units.}
-
-\value{NetCDF variable identifier}
 
 \references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 
