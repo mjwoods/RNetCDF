@@ -88,7 +88,7 @@
 \*=============================================================================*/
 
 #define NA_SIZE ((size_t) -1)
-#define NOSXP -11111
+#define NOSXP ((SEXPTYPE) -11111)
 #define E_UNSUPPORTED -22222
 
 #define RDATADEF(RTYPE,RLEN) \
@@ -196,7 +196,7 @@ R_nc_type2str (int ncid, nc_type xtype)
 static int
 R_nc_str2type (int ncid, const char *str, nc_type * xtype)
 {
-  int typelen;
+  size_t typelen;
   typelen = strlen (str);
   *xtype = NC_NAT;
   if (typelen >= 6) {
@@ -671,7 +671,7 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att)
   /*-- Get the attribute ------------------------------------------------------*/
   if (type==NC_CHAR) {
     RDATADEF (STRSXP, 1);
-    cvalue = (char *) R_alloc (cnt + 1, sizeof (char));
+    cvalue = R_alloc (cnt + 1, sizeof (char));
     RNCCHECK (nc_get_att_text (ncid, varid, attname, cvalue));
     cvalue[cnt + 1] = '\0';
     SET_STRING_ELT (RDATASET, 0, mkChar (cvalue));
@@ -737,8 +737,8 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att,
               SEXP type, SEXP value)
 {
   int ncid, varid;
-  const char *attname, *charval;
-  const double *realval;
+  const char *attname, *charval=NULL;
+  const double *realval=NULL;
   nc_type nctype;
   size_t  nccnt;
   ROBJDEF (NOSXP, 0);
@@ -935,7 +935,7 @@ R_nc_def_dim (SEXP nc, SEXP dimname, SEXP size, SEXP unlim)
     if (isInteger(size)) {
       nccnt = asInteger(size);
     } else {
-      nccnt = (size_t) asReal(size);
+      nccnt = asReal(size);
     }
   }
 
@@ -968,8 +968,8 @@ R_nc_unlimdims (int ncid, int *nunlim, int **unlimids, int ancestors)
     }
 
     /* At most, all visible dimensions could be unlimited */
-    *unlimids = (int *) R_alloc (ndims, sizeof (int));
-    tmpdims = (int *) R_alloc (ndims, sizeof (int));
+    *unlimids = (void *) (R_alloc (ndims, sizeof (int)));
+    tmpdims = (void *) (R_alloc (ndims, sizeof (int)));
 
     /* Get unlimited dimensions in this group and (optionally) its ancestors */
     do {
@@ -978,8 +978,7 @@ R_nc_unlimdims (int ncid, int *nunlim, int **unlimids, int ancestors)
         return status;
       }
       if ((ntmp + *nunlim) <= ndims) {
-        memcpy (*unlimids + *nunlim * sizeof (int), tmpdims,
-                ntmp * sizeof (int));
+        memcpy (&*unlimids[*nunlim], tmpdims, ntmp * sizeof (int));
         *nunlim += ntmp;
       } else {
         /* Avoid a segfault in case nc_inq_unlimdims starts checking ancestors */
@@ -988,7 +987,7 @@ R_nc_unlimdims (int ncid, int *nunlim, int **unlimids, int ancestors)
     } while (ancestors && nc_inq_grp_parent (ncid, &ncid) == NC_NOERR);
 
   } else {
-    *unlimids = (int *) R_alloc (1, sizeof (int));
+    *unlimids = (void *) (R_alloc (1, sizeof (int)));
     status = nc_inq_unlimdim (ncid, *unlimids);
     if (status == NC_NOERR && **unlimids != -1) {
       *nunlim = 1;
@@ -1257,7 +1256,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
                                     (char *) RAW (RDATASET)));
       }
     } else {
-      charbuf = (char *) R_alloc (arrlen, sizeof (char));
+      charbuf = R_alloc (arrlen, sizeof (char));
       if (ndims > 0) {
         /* Form strings along the fastest varying dimension -------------------*/
         strlen = ccount[ndims-1];
@@ -1283,7 +1282,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
   case NC_STRING:
     RDATADEF (STRSXP, arrlen);
     if (arrlen > 0) {
-      strbuf = (char **) R_alloc (arrlen, sizeof(char *));
+      strbuf = (void *) R_alloc (arrlen, sizeof(char *));
       RNCCHECK (nc_get_vara_string (ncid, varid, cstart, ccount, strbuf));
       for (ii=0; ii<arrlen; ii++) {
         SET_STRING_ELT (RDATASET, ii, mkChar (strbuf[ii]));
@@ -1309,7 +1308,6 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
     break;
   default:
     RNCRETURN (NC_EBADTYPE);
-    break;
   }
 
   /*-- Set dimension attribute for arrays -------------------------------------*/
@@ -1392,8 +1390,8 @@ R_nc_put_vara_double (SEXP ncid, SEXP varid, SEXP start,
   /*-- Copy dims from int to size_t -------------------------------------------*/
   varsize = 1;
   for (i = 0; i < INTEGER (ndims)[0]; i++) {
-    s_start[i] = (size_t) INTEGER (start)[i];
-    s_count[i] = (size_t) INTEGER (count)[i];
+    s_start[i] = INTEGER (start)[i];
+    s_count[i] = INTEGER (count)[i];
     varsize *= s_count[i];
   }
 
@@ -1419,16 +1417,15 @@ SEXP
 R_nc_put_vara_text (SEXP ncid, SEXP varid, SEXP start,
                     SEXP count, SEXP ndims, SEXP rawchar, SEXP data)
 {
-  int i;
   char *ncdata;
   size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS];
-  size_t tx_len, tx_num, varsize;
+  size_t i, tx_len, tx_num, varsize;
   ROBJDEF (NOSXP, 0);
 
   /*-- Copy dims from int to size_t, calculate number and length of strings ---*/
   for (i = 0; i < INTEGER (ndims)[0]; i++) {
-    s_start[i] = (size_t) INTEGER (start)[i];
-    s_count[i] = (size_t) INTEGER (count)[i];
+    s_start[i] = INTEGER (start)[i];
+    s_count[i] = INTEGER (count)[i];
   }
 
   if (INTEGER (ndims)[0] > 0) {
@@ -1450,9 +1447,9 @@ R_nc_put_vara_text (SEXP ncid, SEXP varid, SEXP start,
   if (INTEGER (rawchar)[0] > 0) {
     ncdata = (char *) RAW (data);
   } else {
-    ncdata = (char *) R_alloc (varsize, sizeof (char));
+    ncdata = R_alloc (varsize, sizeof (char));
     for (i = 0; i < tx_num; i++) {
-      strncpy (ncdata + i * tx_len, CHAR (STRING_ELT (data, i)), tx_len);
+      strncpy (&ncdata[i*tx_len], CHAR (STRING_ELT (data, i)), tx_len);
     }
   }
 
@@ -1567,7 +1564,7 @@ R_nc_inq_grpname (SEXP nc, SEXP full)
   if (asLogical (full)) {
     RNCCHECK (nc_inq_grpname_full (ncid, &namelen, NULL));
 
-    fullname = (char *) R_alloc (namelen + 1, sizeof (char));
+    fullname = R_alloc (namelen + 1, sizeof (char));
     RNCCHECK (nc_inq_grpname_full (ncid, NULL, fullname));
     name = fullname;
   } else {
@@ -1621,9 +1618,9 @@ SEXP RFUN (SEXP nc) \
   RNCRETURN(NC_NOERR); \
 }
 
-INQGRPIDS (R_nc_inq_grps, nc_inq_grps);
-INQGRPIDS (R_nc_inq_typeids, nc_inq_typeids);
-INQGRPIDS (R_nc_inq_varids, nc_inq_varids);
+INQGRPIDS (R_nc_inq_grps, nc_inq_grps)
+INQGRPIDS (R_nc_inq_typeids, nc_inq_typeids)
+INQGRPIDS (R_nc_inq_varids, nc_inq_varids)
 
 
 /*-----------------------------------------------------------------------------*\
@@ -1830,12 +1827,12 @@ R_ut_init (SEXP path)
 SEXP
 R_ut_inv_calendar (SEXP unitstring, SEXP values)
 {
-  int status, itmp, isreal, isfinite, jj;
+  int status, itmp, isreal, isfinite;
   const int *ivals=NULL;
   const double *dvals=NULL;
   const char *cstring;
   double datetime[6], *dout, dtmp;
-  size_t ii, count;
+  size_t ii, jj, count;
   utUnit utunit;
   ROBJDEF (NOSXP, 0);
 
