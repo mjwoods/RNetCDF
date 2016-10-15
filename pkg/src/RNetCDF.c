@@ -408,7 +408,7 @@ static int
 R_nc_strcmp (SEXP var, const char *str)
 {
   return (isString(var) &&
-          length(var) >= 1 &&
+          xlength(var) >= 1 &&
           strcmp(CHAR (STRING_ELT (var, 0)), str) == 0);
 }
 
@@ -673,7 +673,7 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att)
     RDATADEF (STRSXP, 1);
     cvalue = R_alloc (cnt + 1, sizeof (char));
     RNCCHECK (nc_get_att_text (ncid, varid, attname, cvalue));
-    cvalue[cnt + 1] = '\0';
+    cvalue[cnt] = '\0';
     SET_STRING_ELT (RDATASET, 0, mkChar (cvalue));
   } else {
     RDATADEF (REALSXP, cnt);
@@ -1224,7 +1224,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
   int ncid, varid, ndims, rank, *intp;
   size_t ii, cstart[MAX_NC_DIMS], ccount[MAX_NC_DIMS], arrlen, strcnt, strlen;
   nc_type xtype;
-  char *charbuf, *nextstr, **strbuf;
+  char *charbuf, *charcpy, **strbuf;
   SEXP rdim;
   ROBJDEF (NOSXP, 0);
 
@@ -1256,13 +1256,12 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
                                     (char *) RAW (RDATASET)));
       }
     } else {
-      charbuf = R_alloc (arrlen, sizeof (char));
       if (ndims > 0) {
         /* Form strings along the fastest varying dimension -------------------*/
         strlen = ccount[ndims-1];
         strcnt = R_nc_length (ndims-1, ccount);
         rank = ndims - 1;
-     } else {
+      } else {
         /* Scalar character is a single string */
         strlen = 1;
         strcnt = 1;
@@ -1270,11 +1269,15 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
       }
       RDATADEF (STRSXP, strcnt);
       if (arrlen > 0) {
+        charbuf = R_alloc (arrlen, sizeof (char));
+        charcpy = R_alloc (strlen+1, sizeof (char));
+        charcpy[strlen] = '\0';
         RNCCHECK (nc_get_vara_text (ncid, varid, cstart, ccount, charbuf));
         for (ii=0; ii<strcnt; ii++) {
-          nextstr = &charbuf[ii*strlen];
-          SET_STRING_ELT (RDATASET, ii, 
-                          mkCharLen (nextstr, strnlen (nextstr, strlen)));
+          /* mkCharLen+strnlen would be more efficient than strncpy+mkChar,
+             but strnlen is not available on all supported R platforms */
+          strncpy(charcpy, &charbuf[ii*strlen], strlen);
+          SET_STRING_ELT (RDATASET, ii, mkChar(charcpy));
         }
       }
     }
