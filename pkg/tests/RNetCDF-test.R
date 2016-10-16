@@ -112,6 +112,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   var.def.nc(nc, "char0", "NC_CHAR", NA)
   var.def.nc(nc, "numempty", "NC_FLOAT", c("station","empty"))
 
+  if (format == "netcdf4") {
+    var.def.nc(nc, "namestr", "NC_STRING", c("station"))
+  }
+
   ##  Put some missing_value attribute for temperature
   att.put.nc(nc, "temperature", "missing_value", "NC_DOUBLE", -99999.9)
 
@@ -137,6 +141,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   var.put.nc(nc, "int0", myint0)
   var.put.nc(nc, "char0", mychar0)
 
+  if (format == "netcdf4") {
+    var.put.nc(nc, "namestr", myname)
+  }
+
   sync.nc(nc)
 
   ## Read tests
@@ -145,8 +153,13 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   tally <- testfun(grpinfo$grps,list(),tally)
   cat("Inquire about dimension ids in file/group ...")
   tally <- testfun(grpinfo$dimids,c(0:3),tally)
-  cat("Inquire about variable ids in file/group ...")
-  tally <- testfun(grpinfo$varids,c(0:7),tally)
+  if (format == "netcdf4") {
+    cat("Inquire about variable ids in file/group ...")
+    tally <- testfun(grpinfo$varids,c(0:8),tally)
+  } else {
+    cat("Inquire about variable ids in file/group ...")
+    tally <- testfun(grpinfo$varids,c(0:7),tally)
+  }
   cat("Inquire about fullname of file/group ...")
   if (format == "netcdf4") {
     tally <- testfun(grpinfo$fullname,"/testgrp",tally)
@@ -239,6 +252,20 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   x <- mychar0
   y <- var.get.nc(nc, "char0")
   tally <- testfun(x,y,tally)
+
+  if (format == "netcdf4") {
+    cat("Read 1D string array ...")
+    x <- myname
+    dim(x) <- length(x)
+    y <- var.get.nc(nc, "namestr")
+    tally <- testfun(x,y,tally)
+
+    cat("Read 1D string slice ...")
+    x <- myname[2:3]
+    dim(x) <- length(x)
+    y <- var.get.nc(nc, "namestr", c(2), c(2))
+    tally <- testfun(x,y,tally)
+  }
 
   cat("Read and unpack numeric array ... ")
   x <- mypackvar

@@ -1266,8 +1266,8 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
         charcpy[strlen] = '\0';
         RNCCHECK (nc_get_vara_text (ncid, varid, cstart, ccount, charbuf));
         for (ii=0; ii<strcnt; ii++) {
-          /* mkCharLen+strnlen would be more efficient than strncpy+mkChar,
-             but strnlen is not available on all supported R platforms */
+          /* Rows of character array may not be null-terminated,
+             so we pad each string with null before passing to R. */
           strncpy(charcpy, &charbuf[ii*strlen], strlen);
           SET_STRING_ELT (RDATASET, ii, mkChar(charcpy));
         }
