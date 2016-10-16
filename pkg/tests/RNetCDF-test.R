@@ -69,7 +69,11 @@ testfun <- function(x,y,tally=NULL) {
     cat("OK\n")
     return(tally+c(1,0))
   } else {
-    cat("failed\n")
+    cat("Failed\n")
+    cat("x:\n")
+    print(x)
+    cat("y:\n")
+    print(y)
     return(tally+c(0,1))
   }
 }
@@ -136,16 +140,29 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   sync.nc(nc)
 
   ## Read tests
-  cat("Inquire about file or group ...")
   grpinfo <- grp.inq.nc(nc)
-  tally <- testfun(length(grpinfo$grps),0,tally)
-  tally <- testfun(length(grpinfo$dimids),4,tally)
-  tally <- testfun(length(grpinfo$unlimids),1,tally)
-  tally <- testfun(length(grpinfo$varids),8,tally)
+  cat("Inquire about groups in file/group ...")
+  tally <- testfun(grpinfo$grps,list(),tally)
+  cat("Inquire about dimension ids in file/group ...")
+  tally <- testfun(grpinfo$dimids,c(0:3),tally)
+  cat("Inquire about variable ids in file/group ...")
+  tally <- testfun(grpinfo$varids,c(0:7),tally)
+  cat("Inquire about fullname of file/group ...")
   if (format == "netcdf4") {
     tally <- testfun(grpinfo$fullname,"/testgrp",tally)
   } else {
     tally <- testfun(grpinfo$fullname,"/",tally)
+  }
+  cat("Inquire about unlimited dimension ids of file/group ...")
+  if (format == "netcdf4") {
+    # Some versions of netcdf4 do not list unlimited dimensions in ancestor groups:
+    if (length(grpinfo$unlimids)==0) {
+      tally <- testfun(grpinfo$unlimids,integer(0),tally)
+    } else {
+      tally <- testfun(grpinfo$unlimids,3,tally)
+    }
+  } else {
+    tally <- testfun(grpinfo$unlimids,3,tally)
   }
 
   cat("Read numeric vector ... ")
