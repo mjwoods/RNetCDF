@@ -471,7 +471,7 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 0,
   nc <- Cwrap("R_nc_get_var", ncfile, variable, start, count, rawchar) 
   
   #-- Convert missing value to NA if defined in NetCDF file --------------
-  if (is.numeric(nc) && na.mode < 3) {
+  if (na.mode < 3 && is.numeric(nc)) {
     na.flag <- FALSE
     
     if (na.mode == 0) {
@@ -548,154 +548,45 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA, na.mode =
   
   stopifnot(isTRUE(na.mode %in% c(0, 1, 2)))
   
-  #-- Inquire the variable ---------------------------------------------------
-  varinfo <- try(var.inq.nc(ncfile, variable))
-  
-  if (class(varinfo) == "try-error" || is.null(varinfo)) {
-    return(invisible(NULL))
-  }
-  
-  ndims <- varinfo$ndims
-  
-  if ((is.character(data) || is.raw(data)) && varinfo$type != "NC_CHAR") {
-    stop("R character data can only be written to NC_CHAR variable", 
-      call. = FALSE)
-  }
-  
-  #-- Get the varid as integer if necessary ----------------------------------
-  ifelse(is.character(variable), varid <- varinfo$id, varid <- variable)
-  
-  #-- Get correct mode (numeric/character) if data contain only NAs ----------
-  if (is.logical(data)) {
-    if (varinfo$type == "NC_CHAR") {
-      mode(data) <- "character"
-    } else {
-      mode(data) <- "numeric"
-    }
-  }
-  
-  #-- Check length of character strings --------------------------------------
-  if (is.character(data)) {
-    if (ndims > 0) {
-      strlen <- dim.inq.nc(ncfile, varinfo$dimids[1])$length
-    } else {
-      strlen <- 1
-    }
-    if (max(nchar(data, type = "bytes")) > strlen) {
-      stop("String length exceeds netcdf dimension", call. = FALSE)
-    }
-  }
-  
-  #-- Replace NA by dimensions of data ---------------------------------------
-  if (any(is.na(start))) {
-    start <- rep(1, ndims)
-  }
-  
-  if (any(is.na(count))) {
-    if (!is.null(dim(data))) {
-      count <- dim(data)
-    } else if (ndims > 0) {
-      count <- length(data)
-    } else {
-      count <- integer(0)
-    }
-    if (is.character(data) && ndims > 0) {
-      count <- c(strlen, count)
-    }
-  }
-  
-  if (length(start) != ndims || length(count) != ndims) {
-    stop("Length of start/count is not ndims", call. = FALSE)
-  }
-  
-  #-- Check that length of data and count match ------------------------------
-  if (is.character(data) && ndims > 0) {
-    numelem <- prod(count[-1])
-  } else {
-    numelem <- prod(count)
-  }
-  if (length(data) != numelem) {
-    stop("Mismatch between count and length(data)", call. = FALSE)
-  }
-  
   #-- Pack variables if requested (missing values are preserved) -------------
   if (pack && is.numeric(data)) {
-    offset <- try(att.inq.nc(ncfile, varinfo$name, "add_offset"), silent = TRUE)
-    scale <- try(att.inq.nc(ncfile, varinfo$name, "scale_factor"), silent = TRUE)
-    if ((!inherits(offset, "try-error")) && (!inherits(scale, "try-error"))) {
-      add_offset <- att.get.nc(ncfile, varinfo$name, "add_offset")
-      scale_factor <- att.get.nc(ncfile, varinfo$name, "scale_factor")
-      data <- (data - add_offset) * (1/scale_factor)
+    offset <- try(att.get.nc(ncfile, variable, "add_offset"), silent = TRUE)
+    scale <- try(att.get.nc(ncfile, variable, "scale_factor"), silent = TRUE)
+    if ((!inherits(offset, "try-error")) && is.numeric(offset) &&
+        (!inherits(scale,  "try-error")) && is.numeric(scale)) {
+      data <- (data - offset) * (1/scale)
     }
   }
-  
-  #-- Convert missing value to NA if defined in NetCDF file ------------------
-  if (is.numeric(data) && any(is.na(data))) {
-    na.flag <- 0
+ 
+  #-- Convert missing values to a suitable netcdf value ----------------------
+  if (na.mode < 3 && is.numeric(data) && any(is.na(data))) {
+    na.flag <- FALSE
     
-    missval.flag <- 0
-    fillval.flag <- 0
-    
-    fillval <- try(att.inq.nc(ncfile, varinfo$name, "_FillValue"), silent = TRUE)
-    missval <- try(att.inq.nc(ncfile, varinfo$name, "missing_value"), 
-      silent = TRUE)
-    
-    if (!(class(fillval) == "try-error")) {
-      if (!is.null(fillval)) {
-        fillval.flag <- 1
+    if (na.mode == 0) {
+      na.value <- try(att.get.nc(ncfile, variable, "_FillValue"), silent = TRUE)
+      na.flag <- !inherits(na.value, "try-error")
+      if (!na.flag) {
+        na.value <- try(att.get.nc(ncfile, variable, "missing_value"), silent = TRUE)
+        na.flag <- !inherits(na.value, "try-error")
       }
+    } else if (na.mode == 1) {
+      na.value <- try(att.get.nc(ncfile, variable, "_FillValue"), silent = TRUE)
+      na.flag <- !inherits(na.value, "try-error")
+    } else if (na.mode == 2) {
+      na.value <- try(att.get.nc(ncfile, variable, "missing_value"), silent = TRUE)
+      na.flag <- !inherits(na.value, "try-error")
     }
-    if (!(class(missval) == "try-error")) {
-      if (!is.null(missval)) {
-        missval.flag <- 1
-      }
-    }
-    
-    if (na.mode == 0 && missval.flag == 1) {
-      na.value <- att.get.nc(ncfile, varinfo$name, "missing_value")
-      na.flag <- 1
-    }
-    if (na.mode == 0 && fillval.flag == 1) {
-      na.value <- att.get.nc(ncfile, varinfo$name, "_FillValue")
-      na.flag <- 1
-    }
-    
-    if (na.mode == 1 && fillval.flag == 1) {
-      na.value <- att.get.nc(ncfile, varinfo$name, "_FillValue")
-      na.flag <- 1
-    }
-    
-    if (na.mode == 2 && missval.flag == 1) {
-      na.value <- att.get.nc(ncfile, varinfo$name, "missing_value")
-      na.flag <- 1
-    }
-    
-    if (na.flag == 1) {
-      data[is.na(data)] <- as.numeric(na.value)
+
+    if (na.flag && is.numeric(na.value)) {
+      data[is.na(data)] <- na.value
     } else {
-      stop("Found NAs but no missing value attribute", call. = FALSE)
+      stop("Found NAs but no applicable missing value attribute", call. = FALSE)
     }
   }
-  
-  #-- Switch from R to C convention ------------------------------------------
-  c.start <- rev(start - 1)
-  c.count <- rev(count)
-  
-  #-- C function calls -------------------------------------------------------
-  if (is.numeric(data)) {
-    if (!is.double(data)) {
-      data <- as.double(data)
-    }
-    nc <- Cwrap("R_nc_put_vara_double", as.integer(ncfile), as.integer(varid), 
-      as.integer(c.start), as.integer(c.count), as.integer(ndims), 
-      data)
-  } else {
-    stopifnot(is.character(data) || is.raw(data))
-    nc <- Cwrap("R_nc_put_vara_text", as.integer(ncfile), as.integer(varid), 
-      as.integer(c.start), as.integer(c.count), as.integer(ndims), 
-      as.integer(is.raw(data)), data)
-  }
-  
+ 
+  #-- C function call --------------------------------------------------------
+  nc <- Cwrap("R_nc_put_var", ncfile, variable, start, count, data) 
+ 
   return(invisible(NULL))
 }
 

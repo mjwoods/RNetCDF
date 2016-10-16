@@ -1385,91 +1385,108 @@ R_nc_inq_var (SEXP nc, SEXP var)
 
 
 /*-----------------------------------------------------------------------------*\
- *  R_nc_put_vara_double()                                                     *
+ *  R_nc_put_var()                                                             *
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_put_vara_double (SEXP ncid, SEXP varid, SEXP start,
-                      SEXP count, SEXP ndims, SEXP data)
+R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
 {
-  int i;
-  size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS], varsize;
+  int ncid, varid, ndims;
+  size_t ii, cstart[MAX_NC_DIMS], ccount[MAX_NC_DIMS], arrlen, strcnt, strlen;
+  nc_type xtype;
+  char *charbuf;
+  const char **strbuf;
   ROBJDEF (NOSXP, 0);
 
-  /*-- Copy dims from int to size_t -------------------------------------------*/
-  varsize = 1;
-  for (i = 0; i < INTEGER (ndims)[0]; i++) {
-    s_start[i] = INTEGER (start)[i];
-    s_count[i] = INTEGER (count)[i];
-    varsize *= s_count[i];
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
+
+  RNCCHECK (R_nc_var_id (var, ncid, &varid));
+
+  /*-- Handle NA values in start & count and reverse dimension order ----------*/
+  RNCCHECK ( R_nc_slice (start, count, ncid, varid, &ndims, cstart, ccount));
+
+  /*-- Find total number of elements in data array ----------------------------*/
+  arrlen = R_nc_length (ndims, ccount);
+  if (arrlen == 0) {
+    /* Nothing to write, so return immediately */
+    RNCRETURN(NC_NOERR)
   }
+
+  /*-- Determine type of external data ----------------------------------------*/
+  RNCCHECK (nc_inq_vartype ( ncid, varid, &xtype));
 
   /*-- Enter data mode (if necessary) -----------------------------------------*/
-  RNCCHECK( R_nc_enddef (INTEGER (ncid)[0]));
-
-  /*-- Put the var ------------------------------------------------------------*/
-  if (varsize > 0) {
-    /* Some netcdf versions cannot handle zero-sized arrays */
-    RNCCHECK (nc_put_vara_double (INTEGER (ncid)[0], INTEGER (varid)[0],
-                                  s_start, s_count, REAL (data)));
-  }
-
-  RNCRETURN (NC_NOERR);
-}
-
-
-/*-----------------------------------------------------------------------------*\
- *  R_nc_put_vara_text()                                                       *
-\*-----------------------------------------------------------------------------*/
-
-SEXP
-R_nc_put_vara_text (SEXP ncid, SEXP varid, SEXP start,
-                    SEXP count, SEXP ndims, SEXP rawchar, SEXP data)
-{
-  char *ncdata;
-  size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS];
-  size_t i, tx_len, tx_num, varsize;
-  ROBJDEF (NOSXP, 0);
-
-  /*-- Copy dims from int to size_t, calculate number and length of strings ---*/
-  for (i = 0; i < INTEGER (ndims)[0]; i++) {
-    s_start[i] = INTEGER (start)[i];
-    s_count[i] = INTEGER (count)[i];
-  }
-
-  if (INTEGER (ndims)[0] > 0) {
-    tx_num = 1;
-    for (i = 0; i < INTEGER (ndims)[0] - 1; i++) {
-      tx_num *= s_count[i];
-    }
-    tx_len = s_count[INTEGER (ndims)[0] - 1];
-  } else {
-    tx_num = 1;
-    tx_len = 1;
-  }
-  varsize = tx_num * tx_len;
-
-  /*-- Enter data mode (if necessary) -----------------------------------------*/
-  RNCCHECK( R_nc_enddef (INTEGER (ncid)[0]));
-
-  /*-- Prepare output array ---------------------------------------------------*/
-  if (INTEGER (rawchar)[0] > 0) {
-    ncdata = (char *) RAW (data);
-  } else {
-    ncdata = R_alloc (varsize, sizeof (char));
-    for (i = 0; i < tx_num; i++) {
-      strncpy (&ncdata[i*tx_len], CHAR (STRING_ELT (data, i)), tx_len);
-    }
-  }
+  RNCCHECK (R_nc_enddef (ncid));
 
   /*-- Write variable to file -------------------------------------------------*/
-  if (varsize > 0) {
-    /* Some netcdf versions cannot handle zero-sized arrays */
-    RNCCHECK (nc_put_vara_text (INTEGER (ncid)[0], INTEGER (varid)[0],
-                                s_start, s_count, ncdata));
+  switch (xtype) {
+  case NC_CHAR:
+    if (TYPEOF (data) == RAWSXP) {
+      if (xlength (data) >= arrlen) {
+        RNCCHECK (nc_put_vara_text (ncid, varid, cstart, ccount,
+                                    (char *) RAW (data)));
+        RNCRETURN (NC_NOERR);
+      }
+    } else if (isString (data)) {
+      if (ndims > 0) {
+        /* Store strings along the fastest varying dimension ------------------*/
+        strlen = ccount[ndims-1];
+        strcnt = R_nc_length (ndims-1, ccount);
+      } else {
+        /* Scalar character is a single string */
+        strlen = 1;
+        strcnt = 1;
+      }
+      if (xlength (data) >= strcnt) {
+        charbuf = R_alloc (strcnt*strlen, sizeof (char));
+        for (ii=0; ii<strcnt; ii++) {
+          /* Copy strings from R to buffer,
+             trimming or padding with '\0' to length strlen */
+	  strncpy(&charbuf[ii*strlen], CHAR( STRING_ELT (data, ii)), strlen);
+        }
+        RNCCHECK (nc_put_vara_text (ncid, varid, cstart, ccount, charbuf));
+        RNCRETURN (NC_NOERR);
+      }
+    }
+    break;
+  case NC_STRING:
+    if (isString (data)) {
+      if (xlength (data) >= arrlen) {
+	strbuf = (void *) R_alloc (arrlen, sizeof(char *));
+	for (ii=0; ii<arrlen; ii++) {
+	  strbuf[ii] = CHAR( STRING_ELT( data, ii));
+	}
+	RNCCHECK (nc_put_vara_string (ncid, varid, cstart, ccount, strbuf));
+        RNCRETURN (NC_NOERR);
+      }
+    }
+    break;
+  case NC_BYTE:
+  case NC_SHORT:
+  case NC_INT:
+  case NC_FLOAT:
+  case NC_DOUBLE:
+  case NC_UBYTE:
+  case NC_USHORT:
+  case NC_UINT:
+  case NC_INT64:
+  case NC_UINT64:
+    if (xlength (data) >= arrlen) {
+      if (isReal (data)) {
+	RNCCHECK (nc_put_vara_double (ncid, varid, cstart, ccount, REAL (data)));
+        RNCRETURN (NC_NOERR);
+      } else if (isInteger (data) || isLogical (data)) {
+	RNCCHECK (nc_put_vara_int (ncid, varid, cstart, ccount, INTEGER (data)));
+        RNCRETURN (NC_NOERR);
+      }
+    }
+    break;
+  default:
+    RNCRETURN (NC_EBADTYPE);
   }
 
-  RNCRETURN (NC_NOERR);
+  RNCRETURN (NC_EINVAL);
 }
 
 
