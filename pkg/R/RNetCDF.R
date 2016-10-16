@@ -691,7 +691,7 @@ grp.inq.nc <- function(ncid, grpname = NULL, ancestors = TRUE) {
   out$dimids <- Cwrap("R_nc_inq_dimids", ncid, ancestors)
   
   # Unlimited dimensions visible in group (empty vector if none):
-  out$unlimids <- Cwrap("R_nc_inq_unlimids", ncid, ancestors)
+  out$unlimids <- Cwrap("R_nc_inq_unlimids", ncid)
   
   # Variables in group (empty vector if none):
   out$varids <- Cwrap("R_nc_inq_varids", ncid)

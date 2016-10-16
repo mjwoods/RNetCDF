@@ -951,14 +951,15 @@ R_nc_def_dim (SEXP nc, SEXP dimname, SEXP size, SEXP unlim)
 }
 
 
-/* Private function to find all unlimited dimensions visible in a file or group.
-   The netcdf4 function nc_inq_unlimdims does not check ancestors of a group.
+/* Private function to find unlimited dimensions of a file or group.
    Returns netcdf status. If no error occurs, nunlim and unlimids are set.
+   Note - some netcdf4 versions only return unlimited dimensions defined in a group,
+     not those defined in the group and its ancestors as claimed in documentation.
  */
 static int
-R_nc_unlimdims (int ncid, int *nunlim, int **unlimids, int ancestors)
+R_nc_unlimdims (int ncid, int *nunlim, int **unlimids)
 {
-  int status, format, ndims, ntmp, *tmpdims;
+  int status, format;
 
   *nunlim = 0;
 
@@ -968,29 +969,14 @@ R_nc_unlimdims (int ncid, int *nunlim, int **unlimids, int ancestors)
   }
 
   if (format == NC_FORMAT_NETCDF4) {
-    status = nc_inq_dimids (ncid, &ndims, NULL, 1);
+    status = nc_inq_unlimdims (ncid, nunlim, NULL);
     if (status != NC_NOERR) {
-      return (status);
+      return status;
     }
 
-    /* At most, all visible dimensions could be unlimited */
-    *unlimids = (void *) (R_alloc (ndims, sizeof (int)));
-    tmpdims = (void *) (R_alloc (ndims, sizeof (int)));
+    *unlimids = (void *) (R_alloc (*nunlim, sizeof (int)));
 
-    /* Get unlimited dimensions in this group and (optionally) its ancestors */
-    do {
-      status = nc_inq_unlimdims (ncid, &ntmp, tmpdims);
-      if (status != NC_NOERR) {
-        return status;
-      }
-      if ((ntmp + *nunlim) <= ndims) {
-        memcpy (&*unlimids[*nunlim], tmpdims, ntmp * sizeof (int));
-        *nunlim += ntmp;
-      } else {
-        /* Avoid a segfault in case nc_inq_unlimdims starts checking ancestors */
-        return NC_ENOMEM;
-      }
-    } while (ancestors && nc_inq_grp_parent (ncid, &ncid) == NC_NOERR);
+    status = nc_inq_unlimdims (ncid, NULL, *unlimids);
 
   } else {
     *unlimids = (void *) (R_alloc (1, sizeof (int)));
@@ -1024,8 +1010,8 @@ R_nc_inq_dim (SEXP nc, SEXP dim)
   /*-- Inquire the dimension --------------------------------------------------*/
   RNCCHECK (nc_inq_dim (ncid, dimid, dimname, &dimlen));
 
-  /*-- Check if it is an unlimited dimension ---------------------------------*/
-  RNCCHECK (R_nc_unlimdims (ncid, &nunlim, &unlimids, 1));
+  /*-- Check if it is an unlimited dimension ----------------------------------*/
+  RNCCHECK (R_nc_unlimdims (ncid, &nunlim, &unlimids));
 
   isunlim = 0;
   for (ii = 0; ii < nunlim; ii++) {
@@ -1675,15 +1661,14 @@ R_nc_inq_dimids (SEXP nc, SEXP ancestors)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_inq_unlimids (SEXP nc, SEXP ancestors)
+R_nc_inq_unlimids (SEXP nc)
 {
-  int ncid, full, nunlim, *unlimids;
+  int ncid, nunlim, *unlimids;
   ROBJDEF (NOSXP, 0);
 
   ncid = asInteger (nc);
-  full = asLogical (ancestors);
 
-  RNCCHECK (R_nc_unlimdims (ncid, &nunlim, &unlimids, full));
+  RNCCHECK (R_nc_unlimdims (ncid, &nunlim, &unlimids));
 
   RDATADEF (INTSXP, nunlim);
 
