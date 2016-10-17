@@ -1214,9 +1214,10 @@ SEXP
 R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
 {
   int ncid, varid, ndims, rank, *intp;
-  size_t ii, cstart[MAX_NC_DIMS], ccount[MAX_NC_DIMS], arrlen, strcnt, strlen;
+  size_t ii, inext,  arrlen, strcnt, strlen;
+  size_t cstart[MAX_NC_DIMS], ccount[MAX_NC_DIMS];
   nc_type xtype;
-  char *charbuf, *charcpy, **strbuf;
+  char nextchar, *charbuf, **strbuf;
   SEXP rdim;
   ROBJDEF (NOSXP, 0);
 
@@ -1261,15 +1262,16 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
       }
       RDATADEF (STRSXP, strcnt);
       if (arrlen > 0) {
-        charbuf = R_alloc (arrlen, sizeof (char));
-        charcpy = R_alloc (strlen+1, sizeof (char));
-        charcpy[strlen] = '\0';
+        charbuf = R_alloc (arrlen+1, sizeof (char));
         RNCCHECK (nc_get_vara_text (ncid, varid, cstart, ccount, charbuf));
         for (ii=0; ii<strcnt; ii++) {
-          /* Rows of character array may not be null-terminated,
-             so we pad each string with null before passing to R. */
-          strncpy(charcpy, &charbuf[ii*strlen], strlen);
-          SET_STRING_ELT (RDATASET, ii, mkChar(charcpy));
+          /* Rows of character array may not be null-terminated, so set
+             first character of next row to null before passing each row to R. */
+          inext = (ii+1)*strlen;
+          nextchar = charbuf[inext];
+          charbuf[inext] = '\0';
+          SET_STRING_ELT (RDATASET, ii, mkChar(&charbuf[ii*strlen]));
+          charbuf[inext] = nextchar;
         }
       }
     }
