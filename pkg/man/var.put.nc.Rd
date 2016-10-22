@@ -12,7 +12,7 @@
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{variable}{ID or name of the variable.}
   \item{data}{The (multidimensional) array containing the data to write.}
-  \item{start}{A vector of indices indicating where to start writing the passed values (beginning at 1). The length of this vector must equal the number of dimensions the variable has. Order is leftmost varying fastest (as got from \code{\link[RNetCDF]{print.nc}}; opposite to the CDL conventions). If set to \code{NA}, writing starts for each dimension at position 1.}
+  \item{start}{A vector of indices indicating where to start writing the passed values (beginning at 1). The length of this vector must equal the number of dimensions the variable has. Order is leftmost varying fastest (as shown by \code{\link[RNetCDF]{print.nc}}; opposite to the CDL conventions). If set to \code{NA}, writing starts for each dimension at position 1.}
   \item{count}{A vector of integers indicating the count of values to write along each dimension. Order is leftmost varying fastest (as got from \code{\link[RNetCDF]{print.nc}}; opposite to the CDL conventions). The length of this vector must equal the number of dimensions the variable has. If set to \code{NA}, the dimesions are taken from \code{data}.}
   \item{na.mode}{Set the mode for handling missing values (\code{NA}) in numeric variables: 0=accept \code{_FillValue} or \code{missing_value} attribute, 1=accept only \code{_FillValue} attribute, 2=accept only \code{missing_value} attribute.}
   \item{pack}{Variables are packed if \code{pack=TRUE} and the attributes \code{add_offset} and \code{scale_factor} are defined. Default is \code{FALSE}.}
@@ -20,7 +20,7 @@
 
 \details{This function writes values to a NetCDF variable. Type conversion is performed by the NetCDF library, so that numeric values in R are automatically converted to the correct type of NetCDF variable.
 
-However, text represented by R types \code{raw} and \code{character} can only be written to NetCDF type \code{NC_CHAR}. The dimensions of R \code{raw} variables map directly to NetCDF dimensions, but \code{character} variables have an implied dimension corresponding to the string length. This implied dimension must be defined explicitly as the fastest-varying dimension of the \code{NC_CHAR} variable, and it must be included as the first element of arguments \code{start} and \code{count} taken by this function.
+However, text represented by R type \code{character} can only be written to NetCDF types \code{NC_CHAR} and \code{NC_STRING}, and R type \code{raw} can only be written to NetCDF type \code{NC_CHAR}. The dimensions of R \code{raw} variables map directly to NetCDF dimensions, but \code{character} variables have an implied dimension corresponding to the string length. This implied dimension must be defined explicitly as the fastest-varying dimension of the \code{NC_CHAR} variable, and it must be included as the first element of arguments \code{start} and \code{count} taken by this function.
 
 Values of \code{NA} are supported in numeric variables if the variable's missing value attribute (as defined in \code{na.mode}) is set. They are converted to the corresponding value before writing to disk. If \code{na.mode=0} and both attributes are defined, the value of \code{_FillValue} is used.
 

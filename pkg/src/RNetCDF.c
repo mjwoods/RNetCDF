@@ -84,20 +84,24 @@
 #include <Rinternals.h>
 
 /*=============================================================================*\
- *  Local macro definitions                                                    *
+ *  Local macros, constants and variables
 \*=============================================================================*/
 
 #define NA_SIZE ((size_t) -1)
 
 #define RRETURN(object) { R_nc_unprotect (); return (object); }
 
+static int R_nc_protect_count = 0;
+
+static const char RNC_EDATALEN[]="Not enough data", \
+  RNC_EDATATYPE[]="Incompatible data for external type", \
+  RNC_ETYPEDROP[]="Unsupported external type";
+
 /*=============================================================================*\
  *  Reusable internal functions
 \*=============================================================================*/
 
 /* Protect and unprotect objects from garbage collection by R */
-static int R_nc_protect_count = 0;
-
 static SEXP
 R_nc_protect (SEXP obj)
 {
@@ -623,13 +627,13 @@ R_nc_delete_att (SEXP nc, SEXP var, SEXP att)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_get_att (SEXP nc, SEXP var, SEXP att)
+R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar)
 {
   int ncid, varid;
   char attname[NC_MAX_NAME+1];
-  char *cvalue;
-  nc_type type;
-  size_t cnt;
+  size_t cnt, ii;
+  nc_type xtype;
+  char *charbuf, **strbuf;
   SEXP result;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
@@ -644,24 +648,63 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att)
   R_nc_check (R_nc_att_name (att, ncid, varid, attname));
 
   /*-- Get the attribute's type and size --------------------------------------*/
-  R_nc_check(nc_inq_att (ncid, varid, attname, &type, &cnt));
+  R_nc_check(nc_inq_att (ncid, varid, attname, &xtype, &cnt));
 
-  /*-- Get the attribute ------------------------------------------------------*/
-  if (type==NC_CHAR) {
-    cvalue = R_alloc (cnt + 1, sizeof (char));
-    R_nc_check (nc_get_att_text (ncid, varid, attname, cvalue));
-    cvalue[cnt] = '\0';
-    result = R_nc_protect (mkString (cvalue));
-  } else {
+  /*-- Enter data mode (if necessary) -----------------------------------------*/
+  R_nc_check (R_nc_enddef (ncid));
+
+  /*-- Allocate memory and read attribute from file ---------------------------*/
+  switch (xtype) {
+  case NC_CHAR:
+    if (asLogical (rawchar)) {
+      result = R_nc_protect (allocVector (RAWSXP, cnt));
+      if (cnt > 0) {
+        R_nc_check (nc_get_att_text (ncid, varid, attname,
+                                    (char *) RAW (result)));
+      }
+    } else {
+      result = R_nc_protect (allocVector (STRSXP, cnt));
+      if (cnt > 0) {
+        charbuf = R_alloc (cnt + 1, sizeof (char));
+        R_nc_check (nc_get_att_text (ncid, varid, attname, charbuf));
+        charbuf[cnt] = '\0';
+        SET_STRING_ELT (result, 0, mkChar (charbuf));
+      }
+    }
+    break;
+  case NC_STRING:
+    result = R_nc_protect (allocVector (STRSXP, cnt));
+    if (cnt > 0) {
+      strbuf = (void *) R_alloc (cnt, sizeof(char *));
+      R_nc_check (nc_get_att_string (ncid, varid, attname, strbuf));
+      for (ii=0; ii<cnt; ii++) {
+        SET_STRING_ELT (result, ii, mkChar (strbuf[ii]));
+      }
+      R_nc_check (nc_free_string (cnt, strbuf));
+    }
+    break;
+  case NC_BYTE:
+  case NC_SHORT:
+  case NC_INT:
+  case NC_FLOAT:
+  case NC_DOUBLE:
+  case NC_UBYTE:
+  case NC_USHORT:
+  case NC_UINT:
+  case NC_INT64:
+  case NC_UINT64:
     result = R_nc_protect (allocVector (REALSXP, cnt));
-    R_nc_check (nc_get_att_double (ncid, varid, attname, REAL (result)));
+    if (cnt > 0) {
+      R_nc_check (nc_get_att_double (ncid, varid, attname, REAL (result)));
+    }
+    break;
+  default:
+    R_nc_error (RNC_ETYPEDROP);
   }
 
   RRETURN(result);
 }
-/* TODO: handle netcdf4 types. 
-         What about character arrays containing null characters?
-         Repeat for R_nc_put_att. */
+
 
 /*-----------------------------------------------------------------------------*\
  *  R_nc_inq_att()                                                             *
@@ -713,14 +756,14 @@ R_nc_inq_att (SEXP nc, SEXP var, SEXP att)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_put_att (SEXP nc, SEXP var, SEXP att,
-              SEXP type, SEXP value)
+R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
 {
   int ncid, varid;
-  const char *attname, *charval=NULL;
-  const double *realval=NULL;
-  nc_type nctype;
-  size_t  nccnt;
+  size_t cnt, ii;
+  nc_type xtype;
+  const char *attname;
+  char *charbuf;
+  const char **strbuf;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -734,25 +777,61 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att,
   attname = CHAR (STRING_ELT (att, 0));
 
   /*-- Convert char to nc_type ------------------------------------------------*/
-  R_nc_check (R_nc_str2type (ncid, CHAR (STRING_ELT (type, 0)), &nctype));
-
-  /*-- Find length of the attribute -------------------------------------------*/
-  if (nctype==NC_CHAR) {
-    charval = CHAR (STRING_ELT (value, 0));
-    nccnt = strlen (charval);
-  } else {
-    realval = REAL (value);
-    nccnt = xlength(value);
-  }
+  R_nc_check (R_nc_str2type (ncid, CHAR (STRING_ELT (type, 0)), &xtype));
 
   /*-- Enter define mode ------------------------------------------------------*/
   R_nc_check( R_nc_redef (ncid));
 
-  /*-- Create the attribute ---------------------------------------------------*/
-  if (nctype==NC_CHAR) {
-    R_nc_check (nc_put_att_text (ncid, varid, attname, nccnt, charval));
-  } else {
-    R_nc_check (nc_put_att_double (ncid, varid, attname, nctype, nccnt, realval));
+  /*-- Write attribute to file ------------------------------------------------*/
+  switch (xtype) {
+  case NC_CHAR:
+    if (TYPEOF (data) == RAWSXP) {
+      charbuf = (char *) RAW (data);
+      cnt = xlength (data);
+      R_nc_check (nc_put_att_text (ncid, varid, attname, cnt, charbuf));
+    } else if (isString (data)) {
+      /* Only write a single string */
+      charbuf = CHAR (STRING_ELT (data, 0));
+      cnt = strlen (data);
+      R_nc_check (nc_put_att_text (ncid, varid, attname, cnt, charbuf));
+    } else {
+      R_nc_error (RNC_EDATATYPE);
+    }
+    break;
+  case NC_STRING:
+    if (isString (data)) {
+      cnt = xlength (data);
+      strbuf = (void *) R_alloc (cnt, sizeof(char *));
+      for (ii=0; ii<cnt; ii++) {
+	strbuf[ii] = CHAR( STRING_ELT (data, ii));
+      }
+      R_nc_check (nc_put_att_string (ncid, varid, attname, cnt, strbuf));
+    } else {
+      R_nc_error (RNC_EDATATYPE);
+    }
+    break;
+  case NC_BYTE:
+  case NC_SHORT:
+  case NC_INT:
+  case NC_FLOAT:
+  case NC_DOUBLE:
+  case NC_UBYTE:
+  case NC_USHORT:
+  case NC_UINT:
+  case NC_INT64:
+  case NC_UINT64:
+    if (isReal (data)) {
+      cnt = xlength (data);
+      R_nc_check (nc_put_att_double (ncid, varid, attname, xtype, cnt, REAL (data)));
+    } else if (isInteger (data) || isLogical (data)) {
+      cnt = xlength (data);
+      R_nc_check (nc_put_att_int (ncid, varid, attname, xtype, cnt, INTEGER (data)));
+    } else {
+      R_nc_error (RNC_EDATATYPE);
+    }
+    break;
+  default:
+    R_nc_error (RNC_ETYPEDROP);
   }
 
   RRETURN(R_NilValue);
@@ -1270,7 +1349,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
     }
     break;
   default:
-    R_nc_error ("Unsupported external type in R_nc_get_var");
+    R_nc_error (RNC_ETYPEDROP);
   }
 
   /*-- Set dimension attribute for arrays -------------------------------------*/
@@ -1379,7 +1458,8 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
       if (xlength (data) >= arrlen) {
         R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount,
                                     (char *) RAW (data)));
-        RRETURN(R_NilValue);
+      } else {
+        R_nc_error (RNC_EDATALEN);
       }
     } else if (isString (data)) {
       if (ndims > 0) {
@@ -1399,8 +1479,11 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
 	  strncpy(&charbuf[ii*strlen], CHAR( STRING_ELT (data, ii)), strlen);
         }
         R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount, charbuf));
-        RRETURN(R_NilValue);
+      } else {
+        R_nc_error (RNC_EDATALEN);
       }
+    } else {
+      R_nc_error (RNC_EDATATYPE);
     }
     break;
   case NC_STRING:
@@ -1411,8 +1494,11 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
 	  strbuf[ii] = CHAR( STRING_ELT( data, ii));
 	}
 	R_nc_check (nc_put_vara_string (ncid, varid, cstart, ccount, strbuf));
-        RRETURN(R_NilValue);
+      } else {
+        R_nc_error (RNC_EDATALEN);
       }
+    } else {
+      R_nc_error (RNC_EDATATYPE);
     }
     break;
   case NC_BYTE:
@@ -1428,20 +1514,19 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
     if (xlength (data) >= arrlen) {
       if (isReal (data)) {
 	R_nc_check (nc_put_vara_double (ncid, varid, cstart, ccount, REAL (data)));
-        RRETURN(R_NilValue);
       } else if (isInteger (data) || isLogical (data)) {
 	R_nc_check (nc_put_vara_int (ncid, varid, cstart, ccount, INTEGER (data)));
-        RRETURN(R_NilValue);
+      } else {
+        R_nc_error (RNC_EDATATYPE);
       }
+    } else {
+      R_nc_error (RNC_EDATALEN);
     }
     break;
   default:
-    R_nc_error ("Unsupported external type in R_nc_put_var");
+    R_nc_error (RNC_ETYPEDROP);
   }
 
-  R_nc_error ("Invalid argument in R_nc_put_var");
-
-  /* This should never be reached, but just in case ... */
   RRETURN(R_NilValue);
 }
 

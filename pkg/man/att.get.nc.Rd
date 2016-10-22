@@ -6,15 +6,16 @@
 
 \description{Get an attribute from a NetCDF dataset.}
 
-\usage{att.get.nc(ncfile, variable, attribute)}
+\usage{att.get.nc(ncfile, variable, attribute, rawchar=FALSE)}
 
 \arguments{
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{variable}{ID or name of the variable from which the attribute will be read, or \code{"NC_GLOBAL"} for a global attribute.}
   \item{attribute}{Attribute name or ID.}
+  \item{rawchar}{This option only relates to NetCDF attributes of type \code{NC_CHAR}. When \code{rawchar} is \code{FALSE} (default), a NetCDF attribute of type \code{NC_CHAR} is converted to a \code{character} string in R. If \code{rawchar} is \code{TRUE}, the bytes of \code{NC_CHAR} data are read into an R \code{raw} vector.}
 }
 
-\value{A vector of type \code{character} if the on-disk type is \code{NC_CHAR}, otherwise \code{numeric}. No distinction is made between the different storage types of numeric objects.}
+\value{Vector with a data type that depends on the NetCDF variable. For NetCDF variables of type \code{NC_CHAR}, the R type is either \code{character} or \code{raw}, as specified by argument \code{rawchar}. For \code{NC_STRING}, R type is \code{character}. All other NetCDF variables are returned to R as type \code{numeric} (double precision).}
 
 \details{This function returns the value of the attribute.}
 

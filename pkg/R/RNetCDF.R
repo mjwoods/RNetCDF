@@ -100,14 +100,16 @@ att.delete.nc <- function(ncfile, variable, attribute) {
 # att.get.nc()
 #-------------------------------------------------------------------------------
 
-att.get.nc <- function(ncfile, variable, attribute) {
+att.get.nc <- function(ncfile, variable, attribute, rawchar = FALSE) {
   #-- Check args -------------------------------------------------------------
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.character(attribute) || is.numeric(attribute))
+  stopifnot(is.logical(rawchar))
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_get_att", ncfile, variable, attribute, PACKAGE="RNetCDF")
+  nc <- .Call("R_nc_get_att", ncfile, variable, attribute, rawchar,
+              PACKAGE="RNetCDF")
 
   return(nc)
 }
