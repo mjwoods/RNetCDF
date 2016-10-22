@@ -58,21 +58,10 @@
 # Private utility functions
 # ===============================================================================
 
-Cwrap <- function(..., PACKAGE = "RNetCDF", ERRNULL = FALSE) {
-  # Invoke C routine and check result for errors.  On success, return
-  # object created by C routine, otherwise raise an exception (default) or
-  # return NULL if ERRNULL is TRUE.
-  nc <- .Call(..., PACKAGE = PACKAGE)
-  if (nc[[1]] != 0) {
-    if (ERRNULL) {
-      return(NULL)
-    } else {
-      stop(nc[[2]], call. = FALSE)
-    }
-  }
-  return(nc[[3]])
+Cwrap <- function(..., PACKAGE = "RNetCDF") {
+  # Invoke C routine and return result (or error).
+  return(.Call(..., PACKAGE = PACKAGE))
 }
-
 
 # ===============================================================================
 # NetCDF library functions
@@ -665,14 +654,15 @@ grp.inq.nc <- function(ncid, grpname = NULL, ancestors = TRUE) {
   out$self <- ncid
   
   # Get parent of group (NULL if none):
-  out$parent <- Cwrap("R_nc_inq_grp_parent", ncid, ERRNULL = TRUE)
-  if (!is.null(out$parent)) {
-    attributes(out$parent) <- attributes(ncid)
+  pgrp <- try(Cwrap("R_nc_inq_grp_parent", ncid), silent = TRUE)
+  if (!inherits(pgrp, "try-error")) {
+    attributes(pgrp) <- attributes(ncid)
+    out$parent <- pgrp
   }
   
   # Get sub-groups of group (empty list if none):
-  grpids <- Cwrap("R_nc_inq_grps", ncid, ERRNULL = TRUE)
-  if (is.null(grpids)) {
+  grpids <- try(Cwrap("R_nc_inq_grps", ncid), silent = TRUE)
+  if (inherits(grpids, "try-error")) {
     out$grps <- list()
   } else {
     out$grps <- lapply(as.list(grpids), function(x) {
@@ -785,8 +775,7 @@ utcal.nc <- function(unitstring, value, type = "n") {
   stopifnot(type == "n" || type == "s" || type == "c")
   
   #-- C function call to udunits calendar function -----------------------
-  ut <- Cwrap("R_ut_calendar", unitstring, value)
-  dim(ut) <- c(length(value), 6)
+  ut <- Cwrap("R_nc_calendar", unitstring, value)
   
   #-- Return object if no error ------------------------------------------
   if (type == "n") {
@@ -812,7 +801,7 @@ utcal.nc <- function(unitstring, value, type = "n") {
 #-------------------------------------------------------------------------------
 
 utinit.nc <- function(path = "") {
-  ut <- Cwrap("R_ut_init", as.character(path))
+  ut <- Cwrap("R_nc_utinit", as.character(path))
   
   return(invisible(NULL))
 }
@@ -840,7 +829,7 @@ utinvcal.nc <- function(unitstring, value) {
   stopifnot(is.numeric(value))
   
   #-- C function call --------------------------------------------------------
-  ut <- Cwrap("R_ut_inv_calendar", unitstring, value) 
+  ut <- Cwrap("R_nc_inv_calendar", unitstring, value) 
   return(ut)
 }
 
