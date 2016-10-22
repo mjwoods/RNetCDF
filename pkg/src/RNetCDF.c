@@ -487,44 +487,53 @@ R_nc_size_r2c(SEXP rv, size_t nc, size_t fillval, size_t *cv)
 
 /* Handle NA values in user-specified variable slices.
    Store slice ranges in cstart and ccount vectors with C dimension order.
-   Both C vectors should have allocated length MAX_NC_DIMS,
-   and the number of dimensions actually stored is returned in ndims.
+   The number of dimensions is returned in ndims,
+   and both C vectors are allocated (via R_alloc) to length ndims.
    Result is a netcdf status value.
  */
 static int
 R_nc_slice (SEXP start, SEXP count, int ncid, int varid,
-            int *ndims, size_t *cstart, size_t *ccount)
+            int *ndims, size_t **cstart, size_t **ccount)
 {
-  int ii, status, dimids[MAX_NC_DIMS];
+  int ii, status, *dimids;
   size_t clen;
 
   /* Get dimension identifiers of the variable */
-  status = nc_inq_var (ncid, varid, NULL, NULL, ndims, dimids, NULL);
+  status = nc_inq_var (ncid, varid, NULL, NULL, ndims, NULL, NULL);
+  if (status != NC_NOERR) {
+    return(status);
+  }
+
+  dimids = (void *) R_alloc (*ndims, sizeof (int));
+  *cstart = (void *) R_alloc (*ndims, sizeof (int));
+  *ccount = (void *) R_alloc (*ndims, sizeof (int));
+
+  status = nc_inq_vardimid (ncid, varid, dimids);
   if (status != NC_NOERR) {
     return(status);
   }
 
   /* Store start in C dimension order as size_t,
      converting missing values to 1 */
-  R_nc_size_r2c(start, *ndims, 1, cstart);
+  R_nc_size_r2c(start, *ndims, 1, *cstart);
 
   /* Convert Fortran indices (1-based) to C (0-based) */
   for (ii=0; ii<*ndims; ii++) {
-    cstart[ii] -= 1;
+    (*cstart)[ii] -= 1;
   }
   
   /* Store count in C dimension order as size_t,
      handling missing values so that corresponding dimensions are
      read/written from specified start index to the highest index.
    */
-  R_nc_size_r2c(count, *ndims, NA_SIZE, ccount);
+  R_nc_size_r2c(count, *ndims, NA_SIZE, *ccount);
   for ( ii=0; ii<*ndims; ii++ ) {
-    if (ccount[ii] == NA_SIZE) {
+    if ((*ccount)[ii] == NA_SIZE) {
       status = nc_inq_dimlen (ncid, dimids[ii], &clen);
       if (status != NC_NOERR) {
         return(status);
       }
-      ccount[ii] = clen - cstart[ii];
+      (*ccount)[ii] = clen - (*cstart)[ii];
     }
   }
 
@@ -1216,7 +1225,7 @@ R_nc_sync (SEXP nc)
 SEXP
 R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
 {
-  int ncid, ii, dimids[NC_MAX_VAR_DIMS], ndims, varid;
+  int ncid, ii, *dimids, ndims, varid;
   nc_type xtype;
   const char *varnamep;
   SEXP result;
@@ -1229,9 +1238,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
   R_nc_check (R_nc_str2type (ncid, CHAR (STRING_ELT (type, 0)), &xtype));
 
   ndims = length(dims);
-  if (ndims > NC_MAX_VAR_DIMS) {
-    R_nc_error (nc_strerror (NC_EMAXDIMS));
-  }
+  dimids = (void *) R_alloc (ndims, sizeof(int));
 
   for (ii=0; ii<ndims; ii++) {
     /* Handle dimension names and convert from R to C storage order */
@@ -1259,7 +1266,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
 {
   int ncid, varid, ndims, rank, *intp;
   size_t ii, inext,  arrlen, strcnt, strlen;
-  size_t cstart[MAX_NC_DIMS], ccount[MAX_NC_DIMS];
+  size_t *cstart, *ccount;
   nc_type xtype;
   char nextchar, *charbuf, **strbuf;
   SEXP rdim, result=R_NilValue;
@@ -1270,7 +1277,8 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
   R_nc_check (R_nc_var_id (var, ncid, &varid));
 
   /*-- Handle NA values in start & count and reverse dimension order ----------*/
-  R_nc_check ( R_nc_slice (start, count, ncid, varid, &ndims, cstart, ccount));
+  R_nc_check ( R_nc_slice (start, count, ncid, varid,
+                           &ndims, &cstart, &ccount));
 
   /*-- Determine total number of elements in data array -----------------------*/
   arrlen = R_nc_length (ndims, ccount);
@@ -1371,7 +1379,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
 SEXP
 R_nc_inq_var (SEXP nc, SEXP var)
 {
-  int ii, ncid, varid, ndims, natts, cdimids[MAX_NC_DIMS], *rdimids;
+  int ii, ncid, varid, ndims, natts, *cdimids, *rdimids;
   const char *vartype;
   char varname[NC_MAX_NAME + 1];
   nc_type xtype;
@@ -1383,8 +1391,12 @@ R_nc_inq_var (SEXP nc, SEXP var)
   R_nc_check (R_nc_var_id (var, ncid, &varid));
 
   /*-- Inquire the variable ---------------------------------------------------*/
-  R_nc_check (nc_inq_var (ncid, varid, varname, &xtype, &ndims,
-                        cdimids, &natts));
+  R_nc_check (nc_inq_var (ncid, varid, varname, &xtype, &ndims, NULL, &natts));
+
+  if (ndims > 0) {
+    cdimids = (void *) R_alloc (ndims, sizeof (int));
+    R_nc_check (nc_inq_vardimid (ncid, varid, cdimids));
+  }
 
   /*-- Convert nc_type to char ------------------------------------------------*/
   vartype = R_nc_type2str (ncid, xtype);
@@ -1423,7 +1435,7 @@ SEXP
 R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
 {
   int ncid, varid, ndims;
-  size_t ii, cstart[MAX_NC_DIMS], ccount[MAX_NC_DIMS], arrlen, strcnt, strlen;
+  size_t ii, *cstart, *ccount, arrlen, strcnt, strlen;
   nc_type xtype;
   char *charbuf;
   const char **strbuf;
@@ -1434,7 +1446,8 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
   R_nc_check (R_nc_var_id (var, ncid, &varid));
 
   /*-- Handle NA values in start & count and reverse dimension order ----------*/
-  R_nc_check ( R_nc_slice (start, count, ncid, varid, &ndims, cstart, ccount));
+  R_nc_check ( R_nc_slice (start, count, ncid, varid,
+                           &ndims, &cstart, &ccount));
 
   /*-- Find total number of elements in data array ----------------------------*/
   arrlen = R_nc_length (ndims, ccount);
