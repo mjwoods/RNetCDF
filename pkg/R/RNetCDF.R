@@ -54,14 +54,6 @@
 #										
 #===============================================================================
 
-# ===============================================================================
-# Private utility functions
-# ===============================================================================
-
-Cwrap <- function(..., PACKAGE = "RNetCDF") {
-  # Invoke C routine and return result (or error).
-  return(.Call(..., PACKAGE = PACKAGE))
-}
 
 # ===============================================================================
 # NetCDF library functions
@@ -80,8 +72,8 @@ att.copy.nc <- function(ncfile.in, variable.in, attribute, ncfile.out, variable.
   stopifnot(is.character(variable.out) || is.numeric(variable.out))
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_copy_att", ncfile.in, variable.in, attribute,
-              ncfile.out, variable.out)
+  nc <- .Call("R_nc_copy_att", ncfile.in, variable.in, attribute,
+              ncfile.out, variable.out, PACKAGE="RNetCDF")
   
   return(invisible(NULL))
 }
@@ -98,7 +90,7 @@ att.delete.nc <- function(ncfile, variable, attribute) {
   stopifnot(is.character(attribute) || is.numeric(attribute))
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_delete_att", ncfile, variable, attribute)
+  nc <- .Call("R_nc_delete_att", ncfile, variable, attribute, PACKAGE="RNetCDF")
   
   return(invisible(NULL))
 }
@@ -115,7 +107,7 @@ att.get.nc <- function(ncfile, variable, attribute) {
   stopifnot(is.character(attribute) || is.numeric(attribute))
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_get_att", ncfile, variable, attribute)
+  nc <- .Call("R_nc_get_att", ncfile, variable, attribute, PACKAGE="RNetCDF")
 
   return(nc)
 }
@@ -132,7 +124,7 @@ att.inq.nc <- function(ncfile, variable, attribute) {
   stopifnot(is.character(attribute) || is.numeric(attribute))
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_inq_att", ncfile, variable, attribute)
+  nc <- .Call("R_nc_inq_att", ncfile, variable, attribute, PACKAGE="RNetCDF")
   
   names(nc) <- c("id", "name", "type", "length")
   return(nc)
@@ -152,7 +144,8 @@ att.put.nc <- function(ncfile, variable, name, type, value) {
   stopifnot(is.character(value) || is.numeric(value))
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_put_att", ncfile, variable, name, type, value)
+  nc <- .Call("R_nc_put_att", ncfile, variable, name, type, value,
+              PACKAGE="RNetCDF")
   
   return(invisible(NULL))
 }
@@ -170,7 +163,8 @@ att.rename.nc <- function(ncfile, variable, attribute, newname) {
   stopifnot(is.character(newname))
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_rename_att", ncfile, variable, attribute, newname)
+  nc <- .Call("R_nc_rename_att", ncfile, variable, attribute, newname,
+              PACKAGE="RNetCDF")
   
   return(invisible(NULL))
 }
@@ -185,7 +179,7 @@ close.nc <- function(con, ...) {
   stopifnot(class(con) == "NetCDF")
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_close", attr(con, "handle_ptr"))
+  nc <- .Call("R_nc_close", attr(con, "handle_ptr"), PACKAGE="RNetCDF")
   
   return(invisible(NULL))
 }
@@ -206,7 +200,8 @@ create.nc <- function(filename, clobber = TRUE, share = FALSE, prefill = TRUE,
   stopifnot(is.logical(large))
 
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_create", filename, clobber, share, prefill, format)
+  nc <- .Call("R_nc_create", filename, clobber, share, prefill, format,
+              PACKAGE="RNetCDF")
   
   attr(nc, "class") <- "NetCDF"
   return(invisible(nc))
@@ -225,7 +220,8 @@ dim.def.nc <- function(ncfile, dimname, dimlength = 1, unlim = FALSE) {
   stopifnot(is.logical(unlim))
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_def_dim", ncfile, dimname, dimlength, unlim)
+  nc <- .Call("R_nc_def_dim", ncfile, dimname, dimlength, unlim,
+              PACKAGE="RNetCDF")
   
   return(invisible(nc))
 }
@@ -241,7 +237,7 @@ dim.inq.nc <- function(ncfile, dimension) {
   stopifnot(is.character(dimension) || is.numeric(dimension))
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_inq_dim", ncfile, dimension)
+  nc <- .Call("R_nc_inq_dim", ncfile, dimension, PACKAGE="RNetCDF")
   
   #-- Return object ----------------------------------------------------------
   names(nc) <- c("id", "name", "length", "unlim")
@@ -260,7 +256,7 @@ dim.rename.nc <- function(ncfile, dimension, newname) {
   stopifnot(is.character(newname))
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_rename_dim", ncfile, dimension, newname)
+  nc <- .Call("R_nc_rename_dim", ncfile, dimension, newname, PACKAGE="RNetCDF")
   
   return(invisible(NULL))
 }
@@ -275,7 +271,7 @@ file.inq.nc <- function(ncfile) {
   stopifnot(class(ncfile) == "NetCDF")
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_inq_file", ncfile)
+  nc <- .Call("R_nc_inq_file", ncfile, PACKAGE="RNetCDF")
   
   names(nc) <- c("ndims", "nvars", "ngatts", "unlimdimid", "format")
   
@@ -295,7 +291,7 @@ open.nc <- function(con, write = FALSE, share = FALSE, prefill = TRUE, ...) {
   stopifnot(is.logical(prefill))
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_open", con, write, share, prefill)
+  nc <- .Call("R_nc_open", con, write, share, prefill, PACKAGE="RNetCDF")
   
   attr(nc, "class") <- "NetCDF"
   return(invisible(nc))
@@ -312,7 +308,7 @@ print_grp <- function(x, level = 0) {
   indent <- paste(rep("  ", level), collapse = "")
   
   #-- Inquire about the group ------------------------------------------------
-  grpinfo <- try(grp.inq.nc(x, ancestors = FALSE))
+  grpinfo <- try(grp.inq.nc(x, ancestors = FALSE), silent = TRUE)
   if (class(grpinfo) == "try-error" || is.null(grpinfo)) {
     return(invisible(NULL))
   }
@@ -411,7 +407,7 @@ sync.nc <- function(ncfile) {
   stopifnot(class(ncfile) == "NetCDF")
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_sync", ncfile)
+  nc <- .Call("R_nc_sync", ncfile, PACKAGE="RNetCDF")
   
   return(invisible(NULL))
 }
@@ -434,7 +430,8 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions) {
   stopifnot(is.character(dimensions) || is.numeric(dimensions))
 
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_def_var", ncfile, varname, vartype, dimensions)
+  nc <- .Call("R_nc_def_var", ncfile, varname, vartype, dimensions,
+              PACKAGE="RNetCDF")
   
   return(invisible(nc))
 }
@@ -457,7 +454,8 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 0,
   stopifnot(isTRUE(na.mode %in% c(0, 1, 2, 3)))
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_get_var", ncfile, variable, start, count, rawchar) 
+  nc <- .Call("R_nc_get_var", ncfile, variable, start, count, rawchar,
+              PACKAGE="RNetCDF") 
   
   #-- Convert missing value to NA if defined in NetCDF file --------------
   if (na.mode < 3 && is.numeric(nc)) {
@@ -513,7 +511,7 @@ var.inq.nc <- function(ncfile, variable) {
   stopifnot(is.character(variable) || is.numeric(variable))
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_inq_var", ncfile, variable)
+  nc <- .Call("R_nc_inq_var", ncfile, variable, PACKAGE="RNetCDF")
   
   names(nc) <- c("id", "name", "type", "ndims", "dimids", "natts")
   
@@ -574,7 +572,8 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA, na.mode =
   }
  
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_put_var", ncfile, variable, start, count, data) 
+  nc <- .Call("R_nc_put_var", ncfile, variable, start, count, data,
+              PACKAGE="RNetCDF") 
  
   return(invisible(NULL))
 }
@@ -591,7 +590,7 @@ var.rename.nc <- function(ncfile, variable, newname) {
   stopifnot(is.character(newname))
   
   #-- C function call --------------------------------------------------------
-  nc <- Cwrap("R_nc_rename_var", ncfile, variable, newname)
+  nc <- .Call("R_nc_rename_var", ncfile, variable, newname, PACKAGE="RNetCDF")
   
   return(invisible(NULL))
 }
@@ -607,7 +606,7 @@ grp.def.nc <- function(ncid, grpname) {
   stopifnot(is.character(grpname))
   
   # C function call:
-  nc <- Cwrap("R_nc_def_grp", ncid, grpname)
+  nc <- .Call("R_nc_def_grp", ncid, grpname, PACKAGE="RNetCDF")
   
   # Return object:
   attributes(nc) <- attributes(ncid)
@@ -626,7 +625,7 @@ grp.find <- function(ncid, grpname, full = isTRUE(grepl("/", grpname))) {
   stopifnot(is.logical(full))
   
   # C function call:
-  nc <- Cwrap("R_nc_inq_grp_ncid", ncid, grpname, full)
+  nc <- .Call("R_nc_inq_grp_ncid", ncid, grpname, full, PACKAGE="RNetCDF")
   
   # Return object:
   attributes(nc) <- attributes(ncid)
@@ -654,14 +653,16 @@ grp.inq.nc <- function(ncid, grpname = NULL, ancestors = TRUE) {
   out$self <- ncid
   
   # Get parent of group (NULL if none):
-  pgrp <- try(Cwrap("R_nc_inq_grp_parent", ncid), silent = TRUE)
+  pgrp <- try(.Call("R_nc_inq_grp_parent", ncid, PACKAGE="RNetCDF"),
+              silent = TRUE)
   if (!inherits(pgrp, "try-error")) {
     attributes(pgrp) <- attributes(ncid)
     out$parent <- pgrp
   }
   
   # Get sub-groups of group (empty list if none):
-  grpids <- try(Cwrap("R_nc_inq_grps", ncid), silent = TRUE)
+  grpids <- try(.Call("R_nc_inq_grps", ncid, PACKAGE="RNetCDF"),
+                silent = TRUE)
   if (inherits(grpids, "try-error")) {
     out$grps <- list()
   } else {
@@ -672,25 +673,25 @@ grp.inq.nc <- function(ncid, grpname = NULL, ancestors = TRUE) {
   }
   
   # Names of group:
-  out$name <- Cwrap("R_nc_inq_grpname", ncid, FALSE)
+  out$name <- .Call("R_nc_inq_grpname", ncid, FALSE, PACKAGE="RNetCDF")
   if (ancestors) {
-    out$fullname <- Cwrap("R_nc_inq_grpname", ncid, TRUE)
+    out$fullname <- .Call("R_nc_inq_grpname", ncid, TRUE, PACKAGE="RNetCDF")
   }
   
   # Dimensions visible in group (empty vector if none):
-  out$dimids <- Cwrap("R_nc_inq_dimids", ncid, ancestors)
+  out$dimids <- .Call("R_nc_inq_dimids", ncid, ancestors, PACKAGE="RNetCDF")
   
   # Unlimited dimensions visible in group (empty vector if none):
-  out$unlimids <- Cwrap("R_nc_inq_unlimids", ncid)
+  out$unlimids <- .Call("R_nc_inq_unlimids", ncid, PACKAGE="RNetCDF")
   
   # Variables in group (empty vector if none):
-  out$varids <- Cwrap("R_nc_inq_varids", ncid)
+  out$varids <- .Call("R_nc_inq_varids", ncid, PACKAGE="RNetCDF")
   
   # Types in group (empty vector if none):
-  out$typeids <- Cwrap("R_nc_inq_typeids", ncid)
+  out$typeids <- .Call("R_nc_inq_typeids", ncid, PACKAGE="RNetCDF")
   
   # Number of group attributes:
-  out$ngatts <- Cwrap("R_nc_inq_natts", ncid)
+  out$ngatts <- .Call("R_nc_inq_natts", ncid, PACKAGE="RNetCDF")
   
   return(out)
 }
@@ -712,7 +713,7 @@ grp.rename.nc <- function(ncid, newname, oldname = NULL) {
   }
   
   # C function call:
-  nc <- Cwrap("R_nc_rename_grp", ncid, newname)
+  nc <- .Call("R_nc_rename_grp", ncid, newname, PACKAGE="RNetCDF")
   
   return(invisible(NULL))
 }
@@ -775,7 +776,7 @@ utcal.nc <- function(unitstring, value, type = "n") {
   stopifnot(type == "n" || type == "s" || type == "c")
   
   #-- C function call to udunits calendar function -----------------------
-  ut <- Cwrap("R_nc_calendar", unitstring, value)
+  ut <- .Call("R_nc_calendar", unitstring, value, PACKAGE="RNetCDF")
   
   #-- Return object if no error ------------------------------------------
   if (type == "n") {
@@ -801,7 +802,7 @@ utcal.nc <- function(unitstring, value, type = "n") {
 #-------------------------------------------------------------------------------
 
 utinit.nc <- function(path = "") {
-  ut <- Cwrap("R_nc_utinit", as.character(path))
+  ut <- .Call("R_nc_utinit", as.character(path), PACKAGE="RNetCDF")
   
   return(invisible(NULL))
 }
@@ -829,7 +830,7 @@ utinvcal.nc <- function(unitstring, value) {
   stopifnot(is.numeric(value))
   
   #-- C function call --------------------------------------------------------
-  ut <- Cwrap("R_nc_inv_calendar", unitstring, value) 
+  ut <- .Call("R_nc_inv_calendar", unitstring, value, PACKAGE="RNetCDF") 
   return(ut)
 }
 
