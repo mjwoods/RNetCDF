@@ -672,8 +672,9 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar)
                                     (char *) RAW (result)));
       }
     } else {
-      result = R_nc_protect (allocVector (STRSXP, cnt));
+      result = R_nc_protect (allocVector (STRSXP, 1));
       if (cnt > 0) {
+        /* Read characters as a single string */
         charbuf = R_alloc (cnt + 1, sizeof (char));
         R_nc_check (nc_get_att_text (ncid, varid, attname, charbuf));
         charbuf[cnt] = '\0';
