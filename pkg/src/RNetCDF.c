@@ -634,7 +634,7 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar)
   size_t cnt, ii;
   nc_type xtype;
   char *charbuf, **strbuf;
-  SEXP result;
+  SEXP result=R_NilValue;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -761,9 +761,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
   int ncid, varid;
   size_t cnt, ii;
   nc_type xtype;
-  const char *attname;
-  char *charbuf;
-  const char **strbuf;
+  const char *attname, *charbuf, **strbuf;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -792,7 +790,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
     } else if (isString (data)) {
       /* Only write a single string */
       charbuf = CHAR (STRING_ELT (data, 0));
-      cnt = strlen (data);
+      cnt = strlen (charbuf);
       R_nc_check (nc_put_att_text (ncid, varid, attname, cnt, charbuf));
     } else {
       R_nc_error (RNC_EDATATYPE);
@@ -1264,7 +1262,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
   size_t cstart[MAX_NC_DIMS], ccount[MAX_NC_DIMS];
   nc_type xtype;
   char nextchar, *charbuf, **strbuf;
-  SEXP rdim, result;
+  SEXP rdim, result=R_NilValue;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
