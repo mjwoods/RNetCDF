@@ -506,6 +506,11 @@ R_nc_slice (SEXP start, SEXP count, int ncid, int varid,
     return(status);
   }
 
+  if (*ndims <= 0) {
+    /* Shortcut for scalar variables */
+    return NC_NOERR;
+  }
+
   dimids = (void *) R_alloc (*ndims, sizeof (int));
   *cstart = (void *) R_alloc (*ndims, sizeof (int));
   *ccount = (void *) R_alloc (*ndims, sizeof (int));
