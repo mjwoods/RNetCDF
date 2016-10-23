@@ -153,7 +153,8 @@ R_nc_enddef (int ncid)
 static const char *
 R_nc_type2str (int ncid, nc_type xtype)
 {
-  static char str[NC_MAX_NAME + 1];
+  char *str;
+
   switch (xtype) {
   case NC_BYTE:
     return "NC_BYTE";
@@ -181,6 +182,7 @@ R_nc_type2str (int ncid, nc_type xtype)
     return "NC_STRING";
   default:
     /* Try to get name of a user defined type */
+    str = R_alloc (NC_MAX_NAME + 1, sizeof (char));
     if (nc_inq_user_type (ncid, xtype, str, NULL, NULL, NULL, NULL) ==
         NC_NOERR) {
       return str;
