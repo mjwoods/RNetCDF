@@ -114,6 +114,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   if (format == "netcdf4") {
     var.def.nc(nc, "namestr", "NC_STRING", c("station"))
+    var.def.nc(nc, "stationid", "NC_UINT64", c("station"))
   }
 
   ##  Put some missing_value attribute for temperature
@@ -123,11 +124,24 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   att.put.nc(nc, "packvar", "scale_factor", "NC_DOUBLE", 10)
   att.put.nc(nc, "packvar", "add_offset", "NC_DOUBLE", -5)
 
+  ## Define some additional test attributes:
+  att_text <- "This is some text"
+  att_text2 <- c("This is string 1", "This is string 2")
+  hugeint <- -2^52
+  att.put.nc(nc, "NC_GLOBAL", "char_att", "NC_CHAR", att_text)
+  att.put.nc(nc, "name", "char_att", "NC_CHAR", att_text)
+  att.put.nc(nc, "name", "raw_att", "NC_CHAR", charToRaw(att_text))
+  if (format == "netcdf4") {
+    att.put.nc(nc, "temperature", "string_att", "NC_STRING", att_text2)
+    att.put.nc(nc, "temperature", "int64_att", "NC_INT64", hugeint)
+  }
+
   ##  Define variable values
   mytime        <- c(1:2)
   mytemperature <- matrix(c(1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, NA, NA, 9.9),ncol=ntime)
   mypackvar     <- seq_len(5)*10-5
   myname        <- c("alfa", "bravo", "charlie", "delta", "echo")
+  myid          <- seq_len(5)+2^52
   myqcflag      <- "ABCDE"
   myint0        <- 12345
   mychar0       <- "?"
@@ -143,11 +157,40 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   if (format == "netcdf4") {
     var.put.nc(nc, "namestr", myname)
+    var.put.nc(nc, "stationid", myid)
   }
 
   sync.nc(nc)
 
   ## Read tests
+
+  cat("Read NC_CHAR global attribute ...")
+  x <- att_text
+  y <- att.get.nc(nc, "NC_GLOBAL", "char_att")
+  tally <- testfun(x,y,tally)
+
+  cat("Read NC_CHAR variable attribute ...")
+  x <- att_text
+  y <- att.get.nc(nc, "name", "char_att")
+  tally <- testfun(x,y,tally)
+
+  cat("Read NC_CHAR variable attribute as raw bytes ...")
+  x <- charToRaw(att_text)
+  y <- att.get.nc(nc, "name", "raw_att", rawchar=TRUE)
+  tally <- testfun(x,y,tally)
+
+  if (format == "netcdf4") {
+    cat("Read NC_STRING variable attribute ...")
+    x <- att_text2
+    y <- att.get.nc(nc, "temperature", "string_att")
+    tally <- testfun(x,y,tally)
+
+    cat("Read NC_INT64 variable attribute ...")
+    x <- hugeint
+    y <- att.get.nc(nc, "temperature", "int64_att")
+    tally <- testfun(x,y,tally)
+  }
+
   grpinfo <- grp.inq.nc(nc)
   cat("Inquire about groups in file/group ...")
   tally <- testfun(grpinfo$grps,list(),tally)
@@ -155,7 +198,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   tally <- testfun(grpinfo$dimids,c(0:3),tally)
   if (format == "netcdf4") {
     cat("Inquire about variable ids in file/group ...")
-    tally <- testfun(grpinfo$varids,c(0:8),tally)
+    tally <- testfun(grpinfo$varids,c(0:9),tally)
   } else {
     cat("Inquire about variable ids in file/group ...")
     tally <- testfun(grpinfo$varids,c(0:7),tally)
@@ -264,6 +307,12 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     x <- myname[2:3]
     dim(x) <- length(x)
     y <- var.get.nc(nc, "namestr", c(2), c(2))
+    tally <- testfun(x,y,tally)
+
+    cat("Read 1D int64 array ...")
+    x <- myid
+    dim(x) <- length(x)
+    y <- var.get.nc(nc, "stationid")
     tally <- testfun(x,y,tally)
   }
 
