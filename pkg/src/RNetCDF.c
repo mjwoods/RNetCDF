@@ -1270,13 +1270,16 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
+R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
+              SEXP rawchar, SEXP fitnum)
 {
   int ncid, varid, ndims, rank, *intp;
   size_t ii, inext,  arrlen, strcnt, strlen;
   size_t *cstart, *ccount;
   nc_type xtype;
-  char nextchar, *charbuf, **strbuf;
+  char nextchar, *charbuf, **strbuf, int64str[32];
+  long long *int64buf;
+  unsigned long long *uint64buf;
   SEXP rdim, result=R_NilValue;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
@@ -1347,19 +1350,55 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP rawchar)
     }
     break;
   case NC_BYTE:
+  case NC_UBYTE:
   case NC_SHORT:
+  case NC_USHORT:
   case NC_INT:
+    if (asLogical (fitnum) == TRUE) {
+      result = R_nc_protect (allocVector (INTSXP, arrlen));
+      if (arrlen > 0) {
+	R_nc_check (nc_get_vara_int (ncid, varid, cstart, ccount, 
+                                     INTEGER (result)));
+      }
+      break;
+    } /* else fall through to double */
+  case NC_INT64:
+    if (xtype == NC_INT64 && asLogical (fitnum) == TRUE) {
+      result = R_nc_protect (allocVector (STRSXP, arrlen));
+      if (arrlen > 0) {
+        int64buf = (void *) R_alloc (arrlen, sizeof (long long));
+        R_nc_check (nc_get_vara_longlong (ncid, varid, cstart, ccount,
+                                          int64buf));
+	for (ii=0; ii<arrlen; ii++) {
+	  if (sprintf (int64str, "%lli", int64buf[ii]) > 0) {
+	    SET_STRING_ELT (result, ii, mkChar (int64str));
+	  }
+	}
+      }
+      break;
+    } /* else fall through to double */
+  case NC_UINT64:
+    if (xtype == NC_UINT64 && asLogical (fitnum) == TRUE) {
+      result = R_nc_protect (allocVector (STRSXP, arrlen));
+      if (arrlen > 0) {
+	uint64buf = (void *) R_alloc (arrlen, sizeof (unsigned long long));
+	R_nc_check (nc_get_vara_ulonglong (ncid, varid, cstart, ccount,
+					   uint64buf));
+	for (ii=0; ii<arrlen; ii++) {
+	  if (sprintf (int64str, "%llu", uint64buf[ii]) > 0) {
+	    SET_STRING_ELT (result, ii, mkChar (int64str));
+	  }
+	}
+      }
+      break;
+    } /* else fall through to double */
+  case NC_UINT:
   case NC_FLOAT:
   case NC_DOUBLE:
-  case NC_UBYTE:
-  case NC_USHORT:
-  case NC_UINT:
-  case NC_INT64:
-  case NC_UINT64:
     result = R_nc_protect (allocVector (REALSXP, arrlen));
     if (arrlen > 0) {
-      R_nc_check (nc_get_vara_double (ncid, varid,
-                                    cstart, ccount, REAL (result)));
+      R_nc_check (nc_get_vara_double (ncid, varid, cstart, ccount,
+                                      REAL (result)));
     }
     break;
   default:

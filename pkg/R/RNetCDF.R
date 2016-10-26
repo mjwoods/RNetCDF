@@ -444,7 +444,7 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions) {
 #-------------------------------------------------------------------------------
 
 var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 0, 
-  collapse = TRUE, unpack = FALSE, rawchar = FALSE) {
+  collapse = TRUE, unpack = FALSE, rawchar = FALSE, fitnum = FALSE) {
   #-- Check args -------------------------------------------------------------
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(variable) || is.numeric(variable))
@@ -453,11 +453,12 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 0,
   stopifnot(is.logical(collapse))
   stopifnot(is.logical(unpack))
   stopifnot(is.logical(rawchar))
+  stopifnot(is.logical(fitnum))
   
   stopifnot(isTRUE(na.mode %in% c(0, 1, 2, 3)))
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_get_var", ncfile, variable, start, count, rawchar,
+  nc <- .Call("R_nc_get_var", ncfile, variable, start, count, rawchar, fitnum,
               PACKAGE="RNetCDF") 
   
   #-- Convert missing value to NA if defined in NetCDF file --------------

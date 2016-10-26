@@ -221,11 +221,19 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     tally <- testfun(grpinfo$unlimids,3,tally)
   }
 
-  cat("Read numeric vector ... ")
+  cat("Read integer vector as double ... ")
   x <- mytime
   dim(x) <- length(x)
   y <- var.get.nc(nc, 0)
   tally <- testfun(x,y,tally)
+  tally <- testfun(is.double(y),TRUE,tally)
+
+  cat("Read integer vector as integer ... ")
+  x <- mytime
+  dim(x) <- length(x)
+  y <- var.get.nc(nc, 0, fitnum=TRUE)
+  tally <- testfun(x,y,tally)
+  tally <- testfun(is.integer(y),TRUE,tally)
 
   cat("Read numeric matrix ... ")
   x <- mytemperature
@@ -309,10 +317,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     y <- var.get.nc(nc, "namestr", c(2), c(2))
     tally <- testfun(x,y,tally)
 
-    cat("Read 1D int64 array ...")
-    x <- myid
+    cat("Read 1D int64 array as characters ...")
+    x <- as.character(myid)
     dim(x) <- length(x)
-    y <- var.get.nc(nc, "stationid")
+    y <- var.get.nc(nc, "stationid", fitnum=TRUE)
     tally <- testfun(x,y,tally)
   }
 
