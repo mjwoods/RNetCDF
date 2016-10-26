@@ -672,7 +672,7 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar)
   /*-- Allocate memory and read attribute from file ---------------------------*/
   switch (xtype) {
   case NC_CHAR:
-    if (asLogical (rawchar)) {
+    if (asLogical (rawchar) == TRUE) {
       result = R_nc_protect (allocVector (RAWSXP, cnt));
       if (cnt > 0) {
         R_nc_check (nc_get_att_text (ncid, varid, attname,
@@ -929,19 +929,19 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
   SEXP Rptr, result;
 
   /*-- Determine the cmode ----------------------------------------------------*/
-  if (asLogical(clobber)) {
+  if (asLogical(clobber) == TRUE) {
     cmode = NC_CLOBBER;
   } else {
     cmode = NC_NOCLOBBER;
   }
 
   /*-- Determine which buffer scheme shall be used ----------------------------*/
-  if (asLogical(share)) {
+  if (asLogical(share) == TRUE) {
     cmode = cmode | NC_SHARE;
   }
 
   /*-- Determine the fillmode -------------------------------------------------*/
-  if (asLogical(prefill)) {
+  if (asLogical(prefill) == TRUE) {
     fillmode = NC_FILL;
   } else {
     fillmode = NC_NOFILL;
@@ -996,7 +996,7 @@ R_nc_def_dim (SEXP nc, SEXP dimname, SEXP size, SEXP unlim)
   R_nc_check( R_nc_redef (ncid));
 
   /*-- Create the dimension ---------------------------------------------------*/
-  if (asLogical(unlim)) {
+  if (asLogical(unlim) == TRUE) {
     nccnt = NC_UNLIMITED;
   } else {
     /* Allow size to be a double, which can be larger than integer */
@@ -1168,18 +1168,18 @@ R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
   SEXP Rptr, result;
 
   /*-- Determine the omode ----------------------------------------------------*/
-  if (asLogical(write)) {
+  if (asLogical(write) == TRUE) {
     omode = NC_WRITE;
   } else {
     omode = NC_NOWRITE;
   }
 
-  if (asLogical(share)) {
+  if (asLogical(share) == TRUE) {
     omode = omode | NC_SHARE;
   }
 
   /*-- Determine the fillmode -------------------------------------------------*/
-  if (asLogical(prefill)) {
+  if (asLogical(prefill) == TRUE) {
     fillmode = NC_FILL;
   } else {
     fillmode = NC_NOFILL;
@@ -1198,7 +1198,7 @@ R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
   setAttrib (result, install ("handle_ptr"), Rptr);
 
   /*-- Set the fill mode ------------------------------------------------------*/
-  if (asLogical(write)) {
+  if (asLogical(write) == TRUE) {
     R_nc_check (nc_set_fill (ncid, fillmode, &old_fillmode));
   }
 
@@ -1304,7 +1304,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   /*-- Allocate memory and read variable from file ----------------------------*/
   switch (xtype) {
   case NC_CHAR:
-    if (asLogical (rawchar)) {
+    if (asLogical (rawchar) == TRUE) {
       result = R_nc_protect (allocVector (RAWSXP, arrlen));
       if (arrlen > 0) {
         R_nc_check (nc_get_vara_text (ncid, varid, cstart, ccount,
@@ -1692,7 +1692,7 @@ R_nc_inq_grpname (SEXP nc, SEXP full)
 
   ncid = asInteger (nc);
 
-  if (asLogical (full)) {
+  if (asLogical (full) == TRUE) {
     R_nc_check (nc_inq_grpname_full (ncid, &namelen, NULL));
 
     fullname = R_alloc (namelen + 1, sizeof (char));
@@ -1721,7 +1721,7 @@ R_nc_inq_grp_ncid (SEXP nc, SEXP grpname, SEXP full)
   ncid = asInteger (nc);
   cgrpname = CHAR (STRING_ELT (grpname, 0));
 
-  if (asLogical (full)) {
+  if (asLogical (full) == TRUE) {
     R_nc_check (nc_inq_grp_full_ncid (ncid, cgrpname, &grpid));
   } else {
     R_nc_check (nc_inq_grp_ncid (ncid, cgrpname, &grpid));
@@ -1765,7 +1765,7 @@ R_nc_inq_dimids (SEXP nc, SEXP ancestors)
   SEXP result;
 
   ncid = asInteger (nc);
-  full = asLogical (ancestors);
+  full = (asLogical (ancestors) == TRUE);
 
   R_nc_check (nc_inq_dimids (ncid, &count, NULL, full));
   result = R_nc_protect (allocVector (INTSXP, count));
