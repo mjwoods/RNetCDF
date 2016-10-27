@@ -141,7 +141,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   mytemperature <- matrix(c(1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, NA, NA, 9.9),ncol=ntime)
   mypackvar     <- seq_len(5)*10-5
   myname        <- c("alfa", "bravo", "charlie", "delta", "echo")
-  myid          <- seq_len(5)+2^52
+  myid          <- paste("1234567890123456789",c("0","1","2","3","4"),sep="")
   myqcflag      <- "ABCDE"
   myint0        <- 12345
   mychar0       <- "?"
@@ -318,7 +318,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     tally <- testfun(x,y,tally)
 
     cat("Read 1D int64 array as characters ...")
-    x <- as.character(myid)
+    x <- myid
     dim(x) <- length(x)
     y <- var.get.nc(nc, "stationid", fitnum=TRUE)
     tally <- testfun(x,y,tally)

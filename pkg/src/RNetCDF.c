@@ -1485,7 +1485,10 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
   size_t ii, *cstart, *ccount, arrlen, strcnt, strlen;
   nc_type xtype;
   char *charbuf;
-  const char **strbuf;
+  const char **strbuf, *charptr;
+  char *endptr;
+  long long *int64buf;
+  unsigned long long *uint64buf;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -1549,7 +1552,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
       if (xlength (data) >= arrlen) {
 	strbuf = (void *) R_alloc (arrlen, sizeof(char *));
 	for (ii=0; ii<arrlen; ii++) {
-	  strbuf[ii] = CHAR( STRING_ELT( data, ii));
+	  strbuf[ii] = CHAR( STRING_ELT (data, ii));
 	}
 	R_nc_check (nc_put_vara_string (ncid, varid, cstart, ccount, strbuf));
       } else {
@@ -1559,6 +1562,42 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
       R_nc_error (RNC_EDATATYPE);
     }
     break;
+  case NC_INT64:
+    if (xtype == NC_INT64 && isString (data)) {
+      if (xlength (data) >= arrlen) {
+        int64buf = (void *) R_alloc (arrlen, sizeof (long long));
+        errno = 0;
+        for (ii=0; ii<arrlen; ii++) {
+          charptr = CHAR (STRING_ELT (data, ii));
+          int64buf[ii] = strtoll (charptr, &endptr, 10);
+          if (endptr == charptr || *endptr != '\0' || errno != 0) {
+            R_nc_error ("Could not convert R string to NC_INT64\n");
+          }
+        }
+        R_nc_check (nc_put_vara_longlong (ncid, varid, cstart, ccount, int64buf));
+        break;
+      } else {
+        R_nc_error (RNC_EDATALEN);
+      }
+    } /* else fall through to numeric types below */
+  case NC_UINT64:
+    if (xtype == NC_UINT64 && isString (data)) {
+      if (xlength (data) >= arrlen) {
+        uint64buf = (void *) R_alloc (arrlen, sizeof (unsigned long long));
+        errno = 0;
+        for (ii=0; ii<arrlen; ii++) {
+          charptr = CHAR (STRING_ELT (data, ii));
+          uint64buf[ii] = strtoull (charptr, &endptr, 10);
+          if (endptr == charptr || *endptr != '\0' || errno != 0) {
+            R_nc_error ("Could not convert R string to NC_UINT64\n");
+          }
+        }
+        R_nc_check (nc_put_vara_ulonglong (ncid, varid, cstart, ccount, uint64buf));
+        break;
+      } else {
+        R_nc_error (RNC_EDATALEN);
+      }
+    } /* else fall through to numeric types below */
   case NC_BYTE:
   case NC_SHORT:
   case NC_INT:
@@ -1567,8 +1606,6 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
   case NC_UBYTE:
   case NC_USHORT:
   case NC_UINT:
-  case NC_INT64:
-  case NC_UINT64:
     if (xlength (data) >= arrlen) {
       if (isReal (data)) {
 	R_nc_check (nc_put_vara_double (ncid, varid, cstart, ccount, REAL (data)));

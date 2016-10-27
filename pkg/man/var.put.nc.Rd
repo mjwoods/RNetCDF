@@ -15,12 +15,14 @@
   \item{start}{A vector of indices indicating where to start writing the passed values (beginning at 1). The length of this vector must equal the number of dimensions the variable has. Order is leftmost varying fastest (as shown by \code{\link[RNetCDF]{print.nc}}; opposite to the CDL conventions). If set to \code{NA}, writing starts for each dimension at position 1.}
   \item{count}{A vector of integers indicating the count of values to write along each dimension. Order is leftmost varying fastest (as got from \code{\link[RNetCDF]{print.nc}}; opposite to the CDL conventions). The length of this vector must equal the number of dimensions the variable has. If set to \code{NA}, the dimesions are taken from \code{data}.}
   \item{na.mode}{Set the mode for handling missing values (\code{NA}) in numeric variables: 0=accept \code{_FillValue} or \code{missing_value} attribute, 1=accept only \code{_FillValue} attribute, 2=accept only \code{missing_value} attribute.}
-  \item{pack}{Variables are packed if \code{pack=TRUE} and the attributes \code{add_offset} and \code{scale_factor} are defined. Default is \code{FALSE}.}
+  \item{pack}{Numeric variables are packed if \code{pack=TRUE} and the attributes \code{add_offset} and \code{scale_factor} are defined. Default is \code{FALSE}.}
 }
 
 \details{This function writes values to a NetCDF variable. Type conversion is performed by the NetCDF library, so that numeric values in R are automatically converted to the correct type of NetCDF variable.
 
-However, text represented by R type \code{character} can only be written to NetCDF types \code{NC_CHAR} and \code{NC_STRING}, and R type \code{raw} can only be written to NetCDF type \code{NC_CHAR}. The dimensions of R \code{raw} variables map directly to NetCDF dimensions, but \code{character} variables have an implied dimension corresponding to the string length. This implied dimension must be defined explicitly as the fastest-varying dimension of the \code{NC_CHAR} variable, and it must be included as the first element of arguments \code{start} and \code{count} taken by this function.
+Text represented by R type \code{character} can be written to NetCDF types \code{NC_CHAR} and \code{NC_STRING}, and R type \code{raw} can be written to NetCDF type \code{NC_CHAR}. The dimensions of R \code{raw} variables map directly to NetCDF dimensions, but \code{character} variables have an implied dimension corresponding to the string length. This implied dimension must be defined explicitly as the fastest-varying dimension of the \code{NC_CHAR} variable, and it must be included as the first element of arguments \code{start} and \code{count} taken by this function.
+
+Due to the lack of native support for 64-bit integers in R, NetCDF types \code{NC_INT64} and \code{NC_UINT64} require special attention. This function accepts the usual R \code{integer} (signed 32-bit) and \code{numeric} (double precision) types, but to represent integers larger than about 53-bits without truncation, \code{character} vectors are also supported.
 
 Values of \code{NA} are supported in numeric variables if the variable's missing value attribute (as defined in \code{na.mode}) is set. They are converted to the corresponding value before writing to disk. If \code{na.mode=0} and both attributes are defined, the value of \code{_FillValue} is used.
 
