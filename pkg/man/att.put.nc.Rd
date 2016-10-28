@@ -16,7 +16,12 @@
   \item{value}{Attribute value. This can be either a single numeric value or a vector of numeric values, or alternatively a character string.}
 }
 
-\details{Names commencing with underscore ("\code{_}") are reserved for use by the NetCDF library. Most generic applications that process NetCDF datasets assume standard attribute conventions and it is strongly recommended that these be followed unless there are good reasons for not doing so.}
+\details{Names commencing with underscore ("\code{_}") are reserved for use by the NetCDF library. Most generic applications that process NetCDF datasets assume standard attribute conventions and it is strongly recommended that these be followed unless there are good reasons for not doing so.
+
+Text represented by R type \code{character} can be written to NetCDF types \code{NC_CHAR} and \code{NC_STRING}, and R type \code{raw} can be written to NetCDF type \code{NC_CHAR}.
+
+R \code{numeric} and \code{integer} variables can be written to NetCDF numeric types. The NetCDF library handles type conversions, but conversions of values outside the range of a type will result in an error. Due to the lack of native support for 64-bit integers in R, this function accepts \code{character} vectors for NetCDF types \code{NC_INT64} and \code{NC_UINT64}.
+}
 
 \references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 

@@ -127,7 +127,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   ## Define some additional test attributes:
   att_text <- "This is some text"
   att_text2 <- c("This is string 1", "This is string 2")
-  hugeint <- -2^52
+  hugeint <- "-1234567890123456789"
   att.put.nc(nc, "NC_GLOBAL", "char_att", "NC_CHAR", att_text)
   att.put.nc(nc, "name", "char_att", "NC_CHAR", att_text)
   att.put.nc(nc, "name", "raw_att", "NC_CHAR", charToRaw(att_text))
@@ -185,8 +185,13 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     y <- att.get.nc(nc, "temperature", "string_att")
     tally <- testfun(x,y,tally)
 
-    cat("Read NC_INT64 variable attribute ...")
+    cat("Read NC_INT64 variable attribute as character ...")
     x <- hugeint
+    y <- att.get.nc(nc, "temperature", "int64_att", fitnum=TRUE)
+    tally <- testfun(x,y,tally)
+
+    cat("Read NC_INT64 variable attribute as numeric ...")
+    x <- as.numeric(hugeint)
     y <- att.get.nc(nc, "temperature", "int64_att")
     tally <- testfun(x,y,tally)
   }
@@ -342,8 +347,6 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   y <- try(file.inq.nc(nc), silent=TRUE)
   tally <- testfun(inherits(y, "try-error"), TRUE, tally)
 }
-# Add tests of modifying existing files?
-# Can we hide the file pointer or make the NetCDF object a pointer?
 
 #-------------------------------------------------------------------------------#
 #  UDUNITS calendar functions                                                   #

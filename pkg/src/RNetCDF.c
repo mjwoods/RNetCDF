@@ -643,13 +643,15 @@ R_nc_delete_att (SEXP nc, SEXP var, SEXP att)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar)
+R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
 {
   int ncid, varid;
   char attname[NC_MAX_NAME+1];
   size_t cnt, ii;
   nc_type xtype;
-  char *charbuf, **strbuf;
+  char *charbuf, **strbuf, int64str[32];
+  long long *int64buf;
+  unsigned long long *uint64buf;
   SEXP result=R_NilValue;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
@@ -701,15 +703,48 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar)
     }
     break;
   case NC_BYTE:
+  case NC_UBYTE:
   case NC_SHORT:
+  case NC_USHORT:
   case NC_INT:
+    if (asLogical (fitnum) == TRUE) {
+      result = R_nc_protect (allocVector (INTSXP, cnt));
+      if (cnt > 0) {
+        R_nc_check (nc_get_att_int (ncid, varid, attname, INTEGER (result)));
+      }
+      break;
+    } /* else fall through to double */
+  case NC_INT64:
+    if (xtype == NC_INT64 && asLogical (fitnum) == TRUE) {
+      result = R_nc_protect (allocVector (STRSXP, cnt));
+      if (cnt > 0) {
+        int64buf = (void *) R_alloc (cnt, sizeof (long long));
+        R_nc_check (nc_get_att_longlong (ncid, varid, attname, int64buf));
+        for (ii=0; ii<cnt; ii++) {
+          if (sprintf (int64str, "%lli", int64buf[ii]) > 0) {
+            SET_STRING_ELT (result, ii, mkChar (int64str));
+          }
+        }
+      }
+      break;
+    } /* else fall through to double */
+  case NC_UINT64:
+    if (xtype == NC_UINT64 && asLogical (fitnum) == TRUE) {
+      result = R_nc_protect (allocVector (STRSXP, cnt));
+      if (cnt > 0) {
+        uint64buf = (void *) R_alloc (cnt, sizeof (unsigned long long));
+        R_nc_check (nc_get_att_ulonglong (ncid, varid, attname, uint64buf));
+        for (ii=0; ii<cnt; ii++) {
+          if (sprintf (int64str, "%llu", uint64buf[ii]) > 0) {
+            SET_STRING_ELT (result, ii, mkChar (int64str));
+          }
+        }
+      }
+      break;
+    } /* else fall through to double */
+  case NC_UINT:
   case NC_FLOAT:
   case NC_DOUBLE:
-  case NC_UBYTE:
-  case NC_USHORT:
-  case NC_UINT:
-  case NC_INT64:
-  case NC_UINT64:
     result = R_nc_protect (allocVector (REALSXP, cnt));
     if (cnt > 0) {
       R_nc_check (nc_get_att_double (ncid, varid, attname, REAL (result)));
@@ -778,7 +813,10 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
   int ncid, varid;
   size_t cnt, ii;
   nc_type xtype;
-  const char *attname, *charbuf, **strbuf;
+  const char *attname, *charbuf, **strbuf, *charptr;
+  char *endptr;
+  long long *int64buf;
+  unsigned long long *uint64buf;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -825,6 +863,38 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
       R_nc_error (RNC_EDATATYPE);
     }
     break;
+  case NC_INT64:
+    if (xtype == NC_INT64 && isString (data)) {
+      cnt = xlength (data);
+      int64buf = (void *) R_alloc (cnt, sizeof (long long));
+      errno = 0;
+      for (ii=0; ii<cnt; ii++) {
+	charptr = CHAR (STRING_ELT (data, ii));
+	int64buf[ii] = strtoll (charptr, &endptr, 10);
+	if (endptr == charptr || *endptr != '\0' || errno != 0) {
+	  R_nc_error ("Could not convert R string to NC_INT64\n");
+	}
+      }
+      R_nc_check (nc_put_att_longlong (ncid, varid, attname,
+                                       xtype, cnt, int64buf));
+      break;
+    } /* else fall through to numeric types below */
+  case NC_UINT64:
+    if (xtype == NC_UINT64 && isString (data)) {
+      cnt = xlength (data);
+      uint64buf = (void *) R_alloc (cnt, sizeof (unsigned long long));
+      errno = 0;
+      for (ii=0; ii<cnt; ii++) {
+	charptr = CHAR (STRING_ELT (data, ii));
+	uint64buf[ii] = strtoull (charptr, &endptr, 10);
+	if (endptr == charptr || *endptr != '\0' || errno != 0) {
+	  R_nc_error ("Could not convert R string to NC_UINT64\n");
+	}
+      }
+      R_nc_check (nc_put_att_ulonglong (ncid, varid, attname,
+                                        xtype, cnt, uint64buf));
+      break;
+    } /* else fall through to numeric types below */
   case NC_BYTE:
   case NC_SHORT:
   case NC_INT:
@@ -833,8 +903,6 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
   case NC_UBYTE:
   case NC_USHORT:
   case NC_UINT:
-  case NC_INT64:
-  case NC_UINT64:
     if (isReal (data)) {
       cnt = xlength (data);
       R_nc_check (nc_put_att_double (ncid, varid, attname, xtype, cnt, REAL (data)));
