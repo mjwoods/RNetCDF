@@ -639,6 +639,125 @@ R_nc_delete_att (SEXP nc, SEXP var, SEXP att)
 
 
 /*-----------------------------------------------------------------------------*\
+ *  Private functions used by R_nc_get_att()                                   *
+\*-----------------------------------------------------------------------------*/
+
+/* Read NC_CHAR attribute as R raw */
+static SEXP
+R_nc_get_att_raw (int ncid, int varid, const char *attname, size_t cnt)
+{
+  SEXP result;
+  result = R_nc_protect (allocVector (RAWSXP, cnt));
+  if (cnt > 0) {
+    R_nc_check (nc_get_att_text (ncid, varid, attname,
+                                 (char *) RAW (result)));
+  }
+  return result;
+}
+
+/* Read NC_CHAR attribute as a single R string */
+static SEXP
+R_nc_get_att_char (int ncid, int varid, const char *attname, size_t cnt)
+{
+  SEXP result;
+  char *charbuf;
+  result = R_nc_protect (allocVector (STRSXP, 1));
+  if (cnt > 0) {
+    charbuf = R_alloc (cnt + 1, sizeof (char));
+    R_nc_check (nc_get_att_text (ncid, varid, attname, charbuf));
+    charbuf[cnt] = '\0';
+    SET_STRING_ELT (result, 0, mkChar (charbuf));
+  }
+  return result;
+}
+
+/* Read NC_STRING attribute as a vector of R strings */
+static SEXP
+R_nc_get_att_string (int ncid, int varid, const char *attname, size_t cnt)
+{
+  SEXP result;
+  char **strbuf;
+  size_t ii;
+  result = R_nc_protect (allocVector (STRSXP, cnt));
+  if (cnt > 0) {
+    strbuf = (void *) R_alloc (cnt, sizeof(char *));
+    R_nc_check (nc_get_att_string (ncid, varid, attname, strbuf));
+    for (ii=0; ii<cnt; ii++) {
+      SET_STRING_ELT (result, ii, mkChar (strbuf[ii]));
+    }
+    R_nc_check (nc_free_string (cnt, strbuf));
+  }
+  return result;
+}
+
+/* Read numeric attribute as R integers */
+static SEXP
+R_nc_get_att_int (int ncid, int varid, const char *attname, size_t cnt)
+{
+  SEXP result;
+  result = R_nc_protect (allocVector (INTSXP, cnt));
+  if (cnt > 0) {
+    R_nc_check (nc_get_att_int (ncid, varid, attname, INTEGER (result)));
+  }
+  return result;
+}
+
+/* Read NC_INT64 attribute as R strings */
+static SEXP
+R_nc_get_att_int64 (int ncid, int varid, const char *attname, size_t cnt)
+{
+  SEXP result;
+  long long *int64buf;
+  size_t ii;
+  char chartmp[24];
+  result = R_nc_protect (allocVector (STRSXP, cnt));
+  if (cnt > 0) {
+    int64buf = (void *) R_alloc (cnt, sizeof (long long));
+    R_nc_check (nc_get_att_longlong (ncid, varid, attname, int64buf));
+    for (ii=0; ii<cnt; ii++) {
+      if (sprintf (chartmp, "%lli", int64buf[ii]) > 0) {
+	SET_STRING_ELT (result, ii, mkChar (chartmp));
+      }
+    }
+  }
+  return result;
+}
+
+/* Read NC_UINT64 attribute as R strings */
+static SEXP
+R_nc_get_att_uint64 (int ncid, int varid, const char *attname, size_t cnt)
+{
+  SEXP result;
+  unsigned long long *uint64buf;
+  size_t ii;
+  char chartmp[24];
+  result = R_nc_protect (allocVector (STRSXP, cnt));
+  if (cnt > 0) {
+    uint64buf = (void *) R_alloc (cnt, sizeof (unsigned long long));
+    R_nc_check (nc_get_att_ulonglong (ncid, varid, attname, uint64buf));
+    for (ii=0; ii<cnt; ii++) {
+      if (sprintf (chartmp, "%llu", uint64buf[ii]) > 0) {
+	SET_STRING_ELT (result, ii, mkChar (chartmp));
+      }
+    }
+  }
+  return result;
+}
+
+/* Read numeric attribute as R double precision */
+static SEXP
+R_nc_get_att_double (int ncid, int varid, const char *attname, size_t cnt)
+{
+  SEXP result;
+  result = R_nc_protect (allocVector (REALSXP, cnt));
+  if (cnt > 0) {
+    R_nc_check (nc_get_att_double (ncid, varid, attname, REAL (result)));
+  }
+  return result;
+}
+
+
+/*-----------------------------------------------------------------------------*\
  *  R_nc_get_att()                                                             *
 \*-----------------------------------------------------------------------------*/
 
@@ -647,11 +766,8 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
 {
   int ncid, varid;
   char attname[NC_MAX_NAME+1];
-  size_t cnt, ii;
+  size_t cnt;
   nc_type xtype;
-  char *charbuf, **strbuf, int64str[32];
-  long long *int64buf;
-  unsigned long long *uint64buf;
   SEXP result=R_NilValue;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
@@ -673,85 +789,58 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
 
   /*-- Allocate memory and read attribute from file ---------------------------*/
   switch (xtype) {
-  case NC_CHAR:
-    if (asLogical (rawchar) == TRUE) {
-      result = R_nc_protect (allocVector (RAWSXP, cnt));
-      if (cnt > 0) {
-        R_nc_check (nc_get_att_text (ncid, varid, attname,
-                                    (char *) RAW (result)));
-      }
-    } else {
-      result = R_nc_protect (allocVector (STRSXP, 1));
-      if (cnt > 0) {
-        /* Read characters as a single string */
-        charbuf = R_alloc (cnt + 1, sizeof (char));
-        R_nc_check (nc_get_att_text (ncid, varid, attname, charbuf));
-        charbuf[cnt] = '\0';
-        SET_STRING_ELT (result, 0, mkChar (charbuf));
-      }
-    }
-    break;
-  case NC_STRING:
-    result = R_nc_protect (allocVector (STRSXP, cnt));
-    if (cnt > 0) {
-      strbuf = (void *) R_alloc (cnt, sizeof(char *));
-      R_nc_check (nc_get_att_string (ncid, varid, attname, strbuf));
-      for (ii=0; ii<cnt; ii++) {
-        SET_STRING_ELT (result, ii, mkChar (strbuf[ii]));
-      }
-      R_nc_check (nc_free_string (cnt, strbuf));
-    }
-    break;
-  case NC_BYTE:
-  case NC_UBYTE:
-  case NC_SHORT:
-  case NC_USHORT:
-  case NC_INT:
-    if (asLogical (fitnum) == TRUE) {
-      result = R_nc_protect (allocVector (INTSXP, cnt));
-      if (cnt > 0) {
-        R_nc_check (nc_get_att_int (ncid, varid, attname, INTEGER (result)));
+    case NC_CHAR:
+      if (asLogical (rawchar) == TRUE) {
+	result = R_nc_get_att_raw (ncid, varid, attname, cnt);
+      } else {
+	result = R_nc_get_att_char (ncid, varid, attname, cnt);
       }
       break;
-    } /* else fall through to double */
-  case NC_INT64:
-    if (xtype == NC_INT64 && asLogical (fitnum) == TRUE) {
-      result = R_nc_protect (allocVector (STRSXP, cnt));
-      if (cnt > 0) {
-        int64buf = (void *) R_alloc (cnt, sizeof (long long));
-        R_nc_check (nc_get_att_longlong (ncid, varid, attname, int64buf));
-        for (ii=0; ii<cnt; ii++) {
-          if (sprintf (int64str, "%lli", int64buf[ii]) > 0) {
-            SET_STRING_ELT (result, ii, mkChar (int64str));
-          }
-        }
-      }
+    case NC_STRING:
+      result = R_nc_get_att_string (ncid, varid, attname, cnt);
       break;
-    } /* else fall through to double */
-  case NC_UINT64:
-    if (xtype == NC_UINT64 && asLogical (fitnum) == TRUE) {
-      result = R_nc_protect (allocVector (STRSXP, cnt));
-      if (cnt > 0) {
-        uint64buf = (void *) R_alloc (cnt, sizeof (unsigned long long));
-        R_nc_check (nc_get_att_ulonglong (ncid, varid, attname, uint64buf));
-        for (ii=0; ii<cnt; ii++) {
-          if (sprintf (int64str, "%llu", uint64buf[ii]) > 0) {
-            SET_STRING_ELT (result, ii, mkChar (int64str));
-          }
-        }
+    default:
+      if (asLogical (fitnum) == TRUE) {
+	switch (xtype) {
+	  case NC_BYTE:
+	  case NC_UBYTE:
+	  case NC_SHORT:
+	  case NC_USHORT:
+	  case NC_INT:
+	    result = R_nc_get_att_int (ncid, varid, attname, cnt);
+	    break;
+	  case NC_INT64:
+	    result = R_nc_get_att_int64 (ncid, varid, attname, cnt);
+	    break;
+	  case NC_UINT64:
+	    result = R_nc_get_att_uint64 (ncid, varid, attname, cnt);
+	    break;
+	  case NC_UINT:
+	  case NC_FLOAT:
+	  case NC_DOUBLE:
+	    result = R_nc_get_att_double (ncid, varid, attname, cnt);
+	    break;
+	  default:
+	    R_nc_error (RNC_ETYPEDROP);
+	}
+      } else {
+	switch (xtype) {
+	  case NC_BYTE:
+	  case NC_UBYTE:
+	  case NC_SHORT:
+	  case NC_USHORT:
+	  case NC_INT:
+	  case NC_UINT:
+	  case NC_FLOAT:
+	  case NC_DOUBLE:
+	  case NC_INT64:
+	  case NC_UINT64:
+	    result = R_nc_get_att_double (ncid, varid, attname, cnt);
+            break;
+	  default:
+	    R_nc_error (RNC_ETYPEDROP);
+	}
       }
-      break;
-    } /* else fall through to double */
-  case NC_UINT:
-  case NC_FLOAT:
-  case NC_DOUBLE:
-    result = R_nc_protect (allocVector (REALSXP, cnt));
-    if (cnt > 0) {
-      R_nc_check (nc_get_att_double (ncid, varid, attname, REAL (result)));
-    }
-    break;
-  default:
-    R_nc_error (RNC_ETYPEDROP);
   }
 
   RRETURN(result);
