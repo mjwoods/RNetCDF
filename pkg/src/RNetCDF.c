@@ -88,6 +88,7 @@
 \*=============================================================================*/
 
 #define NA_SIZE ((size_t) -1)
+#define INT64CHAR 24
 
 #define RRETURN(object) { R_nc_unprotect (); return (object); }
 
@@ -719,7 +720,7 @@ R_nc_get_att_int64 (int ncid, int varid, const char *attname, size_t cnt)
   SEXP result;
   long long *int64buf;
   size_t ii;
-  char chartmp[24];
+  char chartmp[INT64CHAR];
   result = R_nc_protect (allocVector (STRSXP, cnt));
   if (cnt > 0) {
     int64buf = (void *) R_alloc (cnt, sizeof (long long));
@@ -740,7 +741,7 @@ R_nc_get_att_uint64 (int ncid, int varid, const char *attname, size_t cnt)
   SEXP result;
   unsigned long long *uint64buf;
   size_t ii;
-  char chartmp[24];
+  char chartmp[INT64CHAR];
   result = R_nc_protect (allocVector (STRSXP, cnt));
   if (cnt > 0) {
     uint64buf = (void *) R_alloc (cnt, sizeof (unsigned long long));
@@ -1557,7 +1558,7 @@ R_nc_get_var_int64 (int ncid, int varid, int ndims,
   SEXP result;
   size_t arrlen, ii;
   long long *int64buf;
-  char chartmp[24];
+  char chartmp[INT64CHAR];
   result = R_nc_allocArray (STRSXP, ndims, ccount);
   arrlen = xlength (result);
   if (arrlen > 0) {
@@ -1580,7 +1581,7 @@ R_nc_get_var_uint64 (int ncid, int varid, int ndims,
   SEXP result;
   size_t arrlen, ii;
   unsigned long long *uint64buf;
-  char chartmp[24];
+  char chartmp[INT64CHAR];
   result = R_nc_allocArray (STRSXP, ndims, ccount);
   arrlen = xlength (result);
   if (arrlen > 0) {
