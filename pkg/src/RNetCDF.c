@@ -791,58 +791,58 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
 
   /*-- Allocate memory and read attribute from file ---------------------------*/
   switch (xtype) {
-    case NC_CHAR:
-      if (asLogical (rawchar) == TRUE) {
-	result = R_nc_get_att_raw (ncid, varid, attname, cnt);
-      } else {
-	result = R_nc_get_att_char (ncid, varid, attname, cnt);
+  case NC_CHAR:
+    if (asLogical (rawchar) == TRUE) {
+      result = R_nc_get_att_raw (ncid, varid, attname, cnt);
+    } else {
+      result = R_nc_get_att_char (ncid, varid, attname, cnt);
+    }
+    break;
+  case NC_STRING:
+    result = R_nc_get_att_string (ncid, varid, attname, cnt);
+    break;
+  default:
+    if (asLogical (fitnum) == TRUE) {
+      switch (xtype) {
+      case NC_BYTE:
+      case NC_UBYTE:
+      case NC_SHORT:
+      case NC_USHORT:
+      case NC_INT:
+	result = R_nc_get_att_int (ncid, varid, attname, cnt);
+	break;
+      case NC_INT64:
+	result = R_nc_get_att_int64 (ncid, varid, attname, cnt);
+	break;
+      case NC_UINT64:
+	result = R_nc_get_att_uint64 (ncid, varid, attname, cnt);
+	break;
+      case NC_UINT:
+      case NC_FLOAT:
+      case NC_DOUBLE:
+	result = R_nc_get_att_double (ncid, varid, attname, cnt);
+	break;
+      default:
+	RERROR (RNC_ETYPEDROP);
       }
-      break;
-    case NC_STRING:
-      result = R_nc_get_att_string (ncid, varid, attname, cnt);
-      break;
-    default:
-      if (asLogical (fitnum) == TRUE) {
-	switch (xtype) {
-	  case NC_BYTE:
-	  case NC_UBYTE:
-	  case NC_SHORT:
-	  case NC_USHORT:
-	  case NC_INT:
-	    result = R_nc_get_att_int (ncid, varid, attname, cnt);
-	    break;
-	  case NC_INT64:
-	    result = R_nc_get_att_int64 (ncid, varid, attname, cnt);
-	    break;
-	  case NC_UINT64:
-	    result = R_nc_get_att_uint64 (ncid, varid, attname, cnt);
-	    break;
-	  case NC_UINT:
-	  case NC_FLOAT:
-	  case NC_DOUBLE:
-	    result = R_nc_get_att_double (ncid, varid, attname, cnt);
-	    break;
-	  default:
-	    RERROR (RNC_ETYPEDROP);
-	}
-      } else {
-	switch (xtype) {
-	  case NC_BYTE:
-	  case NC_UBYTE:
-	  case NC_SHORT:
-	  case NC_USHORT:
-	  case NC_INT:
-	  case NC_UINT:
-	  case NC_FLOAT:
-	  case NC_DOUBLE:
-	  case NC_INT64:
-	  case NC_UINT64:
-	    result = R_nc_get_att_double (ncid, varid, attname, cnt);
-            break;
-	  default:
-	    RERROR (RNC_ETYPEDROP);
-	}
+    } else {
+      switch (xtype) {
+      case NC_BYTE:
+      case NC_UBYTE:
+      case NC_SHORT:
+      case NC_USHORT:
+      case NC_INT:
+      case NC_UINT:
+      case NC_FLOAT:
+      case NC_DOUBLE:
+      case NC_INT64:
+      case NC_UINT64:
+	result = R_nc_get_att_double (ncid, varid, attname, cnt);
+	break;
+      default:
+	RERROR (RNC_ETYPEDROP);
       }
+    }
   }
 
   RRETURN(result);
@@ -1479,7 +1479,7 @@ R_nc_get_var_char (int ncid, int varid, int ndims,
     if (strlen > INT_MAX) {
       RERROR ("R string length cannot exceed range of type int");
     }
- } else {
+  } else {
     /* Scalar character */
     strlen = 1;
   }
@@ -1641,43 +1641,43 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   default:
     if (asLogical (fitnum) == TRUE) {
       switch (xtype) {
-	case NC_BYTE:
-	case NC_UBYTE:
-	case NC_SHORT:
-	case NC_USHORT:
-	case NC_INT:
-	  result = R_nc_get_var_int (ncid, varid, ndims, cstart, ccount);
-	  break;
-	case NC_INT64:
-	  result = R_nc_get_var_int64 (ncid, varid, ndims, cstart, ccount);
-	  break;
-	case NC_UINT64:
-	  result = R_nc_get_var_uint64 (ncid, varid, ndims, cstart, ccount);
-	  break;
-	case NC_UINT:
-	case NC_FLOAT:
-	case NC_DOUBLE:
-	  result = R_nc_get_var_double (ncid, varid, ndims, cstart, ccount);
-	  break;
-	default:
-	  RERROR (RNC_ETYPEDROP);
+      case NC_BYTE:
+      case NC_UBYTE:
+      case NC_SHORT:
+      case NC_USHORT:
+      case NC_INT:
+	result = R_nc_get_var_int (ncid, varid, ndims, cstart, ccount);
+	break;
+      case NC_INT64:
+	result = R_nc_get_var_int64 (ncid, varid, ndims, cstart, ccount);
+	break;
+      case NC_UINT64:
+	result = R_nc_get_var_uint64 (ncid, varid, ndims, cstart, ccount);
+	break;
+      case NC_UINT:
+      case NC_FLOAT:
+      case NC_DOUBLE:
+	result = R_nc_get_var_double (ncid, varid, ndims, cstart, ccount);
+	break;
+      default:
+	RERROR (RNC_ETYPEDROP);
       }
     } else {
       switch (xtype) {
-	case NC_BYTE:
-	case NC_UBYTE:
-	case NC_SHORT:
-	case NC_USHORT:
-	case NC_INT:
-	case NC_UINT:
-	case NC_FLOAT:
-	case NC_DOUBLE:
-	case NC_INT64:
-	case NC_UINT64:
-	  result = R_nc_get_var_double (ncid, varid, ndims, cstart, ccount);
-	  break;
-	default:
-	  RERROR (RNC_ETYPEDROP);
+      case NC_BYTE:
+      case NC_UBYTE:
+      case NC_SHORT:
+      case NC_USHORT:
+      case NC_INT:
+      case NC_UINT:
+      case NC_FLOAT:
+      case NC_DOUBLE:
+      case NC_INT64:
+      case NC_UINT64:
+	result = R_nc_get_var_double (ncid, varid, ndims, cstart, ccount);
+	break;
+      default:
+	RERROR (RNC_ETYPEDROP);
       }
     }
   }
