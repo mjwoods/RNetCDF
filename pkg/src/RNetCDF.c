@@ -91,6 +91,8 @@
 
 #define RRETURN(object) { R_nc_unprotect (); return (object); }
 
+#define RERROR(msg) { R_nc_error (msg); return R_NilValue; }
+
 static int R_nc_protect_count = 0;
 
 static const char RNC_EDATALEN[]="Not enough data", \
@@ -768,7 +770,7 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
   char attname[NC_MAX_NAME+1];
   size_t cnt;
   nc_type xtype;
-  SEXP result=R_NilValue;
+  SEXP result;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -821,7 +823,7 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
 	    result = R_nc_get_att_double (ncid, varid, attname, cnt);
 	    break;
 	  default:
-	    R_nc_error (RNC_ETYPEDROP);
+	    RERROR (RNC_ETYPEDROP);
 	}
       } else {
 	switch (xtype) {
@@ -838,7 +840,7 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
 	    result = R_nc_get_att_double (ncid, varid, attname, cnt);
             break;
 	  default:
-	    R_nc_error (RNC_ETYPEDROP);
+	    RERROR (RNC_ETYPEDROP);
 	}
       }
   }
@@ -937,7 +939,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
       cnt = strlen (charbuf);
       R_nc_check (nc_put_att_text (ncid, varid, attname, cnt, charbuf));
     } else {
-      R_nc_error (RNC_EDATATYPE);
+      RERROR (RNC_EDATATYPE);
     }
     break;
   case NC_STRING:
@@ -949,7 +951,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
       }
       R_nc_check (nc_put_att_string (ncid, varid, attname, cnt, strbuf));
     } else {
-      R_nc_error (RNC_EDATATYPE);
+      RERROR (RNC_EDATATYPE);
     }
     break;
   case NC_INT64:
@@ -961,7 +963,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
 	charptr = CHAR (STRING_ELT (data, ii));
 	int64buf[ii] = strtoll (charptr, &endptr, 10);
 	if (endptr == charptr || *endptr != '\0' || errno != 0) {
-	  R_nc_error ("Could not convert R string to NC_INT64\n");
+	  RERROR ("Could not convert R string to NC_INT64\n");
 	}
       }
       R_nc_check (nc_put_att_longlong (ncid, varid, attname,
@@ -977,7 +979,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
 	charptr = CHAR (STRING_ELT (data, ii));
 	uint64buf[ii] = strtoull (charptr, &endptr, 10);
 	if (endptr == charptr || *endptr != '\0' || errno != 0) {
-	  R_nc_error ("Could not convert R string to NC_UINT64\n");
+	  RERROR ("Could not convert R string to NC_UINT64\n");
 	}
       }
       R_nc_check (nc_put_att_ulonglong (ncid, varid, attname,
@@ -999,11 +1001,11 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
       cnt = xlength (data);
       R_nc_check (nc_put_att_int (ncid, varid, attname, xtype, cnt, INTEGER (data)));
     } else {
-      R_nc_error (RNC_EDATATYPE);
+      RERROR (RNC_EDATATYPE);
     }
     break;
   default:
-    R_nc_error (RNC_ETYPEDROP);
+    RERROR (RNC_ETYPEDROP);
   }
 
   RRETURN(R_NilValue);
@@ -1437,7 +1439,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   char nextchar, *charbuf, **strbuf, int64str[32];
   long long *int64buf;
   unsigned long long *uint64buf;
-  SEXP rdim, result=R_NilValue;
+  SEXP rdim, result;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -1559,7 +1561,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
     }
     break;
   default:
-    R_nc_error (RNC_ETYPEDROP);
+    RERROR (RNC_ETYPEDROP);
   }
 
   /*-- Set dimension attribute for arrays -------------------------------------*/
@@ -1677,7 +1679,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
         R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount,
                                     (char *) RAW (data)));
       } else {
-        R_nc_error (RNC_EDATALEN);
+        RERROR (RNC_EDATALEN);
       }
     } else if (isString (data)) {
       if (ndims > 0) {
@@ -1698,10 +1700,10 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
         }
         R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount, charbuf));
       } else {
-        R_nc_error (RNC_EDATALEN);
+        RERROR (RNC_EDATALEN);
       }
     } else {
-      R_nc_error (RNC_EDATATYPE);
+      RERROR (RNC_EDATATYPE);
     }
     break;
   case NC_STRING:
@@ -1713,10 +1715,10 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
 	}
 	R_nc_check (nc_put_vara_string (ncid, varid, cstart, ccount, strbuf));
       } else {
-        R_nc_error (RNC_EDATALEN);
+        RERROR (RNC_EDATALEN);
       }
     } else {
-      R_nc_error (RNC_EDATATYPE);
+      RERROR (RNC_EDATATYPE);
     }
     break;
   case NC_INT64:
@@ -1728,13 +1730,13 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
           charptr = CHAR (STRING_ELT (data, ii));
           int64buf[ii] = strtoll (charptr, &endptr, 10);
           if (endptr == charptr || *endptr != '\0' || errno != 0) {
-            R_nc_error ("Could not convert R string to NC_INT64\n");
+            RERROR ("Could not convert R string to NC_INT64\n");
           }
         }
         R_nc_check (nc_put_vara_longlong (ncid, varid, cstart, ccount, int64buf));
         break;
       } else {
-        R_nc_error (RNC_EDATALEN);
+        RERROR (RNC_EDATALEN);
       }
     } /* else fall through to numeric types below */
   case NC_UINT64:
@@ -1746,13 +1748,13 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
           charptr = CHAR (STRING_ELT (data, ii));
           uint64buf[ii] = strtoull (charptr, &endptr, 10);
           if (endptr == charptr || *endptr != '\0' || errno != 0) {
-            R_nc_error ("Could not convert R string to NC_UINT64\n");
+            RERROR ("Could not convert R string to NC_UINT64\n");
           }
         }
         R_nc_check (nc_put_vara_ulonglong (ncid, varid, cstart, ccount, uint64buf));
         break;
       } else {
-        R_nc_error (RNC_EDATALEN);
+        RERROR (RNC_EDATALEN);
       }
     } /* else fall through to numeric types below */
   case NC_BYTE:
@@ -1769,14 +1771,14 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
       } else if (isInteger (data) || isLogical (data)) {
 	R_nc_check (nc_put_vara_int (ncid, varid, cstart, ccount, INTEGER (data)));
       } else {
-        R_nc_error (RNC_EDATATYPE);
+        RERROR (RNC_EDATATYPE);
       }
     } else {
-      R_nc_error (RNC_EDATALEN);
+      RERROR (RNC_EDATALEN);
     }
     break;
   default:
-    R_nc_error (RNC_ETYPEDROP);
+    RERROR (RNC_ETYPEDROP);
   }
 
   RRETURN(R_NilValue);
@@ -2017,7 +2019,7 @@ R_nc_rename_grp (SEXP nc, SEXP grpname)
   RRETURN(R_NilValue);
 
 #else
-  R_nc_error ("nc_rename_grp not supported by netcdf library");
+  RERROR ("nc_rename_grp not supported by netcdf library");
 #endif
 }
 
@@ -2112,7 +2114,7 @@ cleanup:
   utFree (&utunit);
 #endif
   if (status != 0) {
-    R_nc_error (R_nc_uterror (status));
+    RERROR (R_nc_uterror (status));
   }
   RRETURN(result);
 }
@@ -2142,7 +2144,7 @@ R_nc_utinit (SEXP path)
 
   /*-- Returning the list -----------------------------------------------------*/
   if (status != 0) {
-    R_nc_error (R_nc_uterror (status));
+    RERROR (R_nc_uterror (status));
   }
   RRETURN(R_NilValue);
 }
@@ -2240,7 +2242,7 @@ cleanup:
   utFree (&utunit);
 #endif
   if (status != 0) {
-    R_nc_error (R_nc_uterror (status));
+    RERROR (R_nc_uterror (status));
   }
   RRETURN(result);
 }
