@@ -97,7 +97,8 @@ static int R_nc_protect_count = 0;
 
 static const char RNC_EDATALEN[]="Not enough data", \
   RNC_EDATATYPE[]="Incompatible data for external type", \
-  RNC_ETYPEDROP[]="Unsupported external type";
+  RNC_ETYPEDROP[]="Unsupported external type", \
+  RNC_ESTRLEN[]="R string length cannot exceed range of type int";
 
 /*=============================================================================*\
  *  Reusable internal functions
@@ -664,7 +665,9 @@ R_nc_get_att_char (int ncid, int varid, const char *attname, size_t cnt)
   SEXP result;
   char *charbuf;
   result = R_nc_protect (allocVector (STRSXP, 1));
-  if (cnt > 0) {
+  if (cnt > INT_MAX) {
+    RERROR (RNC_ESTRLEN);
+  } else if (cnt > 0) {
     charbuf = R_alloc (cnt + 1, sizeof (char));
     R_nc_check (nc_get_att_text (ncid, varid, attname, charbuf));
     charbuf[cnt] = '\0';
@@ -679,13 +682,18 @@ R_nc_get_att_string (int ncid, int varid, const char *attname, size_t cnt)
 {
   SEXP result;
   char **strbuf;
-  size_t ii;
+  size_t ii, nchar;
   result = R_nc_protect (allocVector (STRSXP, cnt));
   if (cnt > 0) {
     strbuf = (void *) R_alloc (cnt, sizeof(char *));
     R_nc_check (nc_get_att_string (ncid, varid, attname, strbuf));
     for (ii=0; ii<cnt; ii++) {
-      SET_STRING_ELT (result, ii, mkChar (strbuf[ii]));
+      nchar = strlen (strbuf[ii]);
+      if (nchar > INT_MAX) {
+        RERROR (RNC_ESTRLEN);
+      } else if (nchar > 0) {
+        SET_STRING_ELT (result, ii, mkChar (strbuf[ii]));
+      }
     }
     R_nc_check (nc_free_string (cnt, strbuf));
   }
@@ -1477,7 +1485,7 @@ R_nc_get_var_char (int ncid, int varid, int ndims,
   if (ndims > 0) {
     strlen = ccount[ndims-1];
     if (strlen > INT_MAX) {
-      RERROR ("R string length cannot exceed range of type int");
+      RERROR (RNC_ESTRLEN);
     }
   } else {
     /* Scalar character */
@@ -1507,7 +1515,7 @@ R_nc_get_var_string (int ncid, int varid, int ndims,
                      const size_t *cstart, const size_t *ccount)
 {
   SEXP result;
-  size_t strcnt, ii;
+  size_t strcnt, ii, nchar;
   char **strbuf;
   result = R_nc_allocArray (STRSXP, ndims, ccount);
   strcnt = xlength (result);
@@ -1515,7 +1523,12 @@ R_nc_get_var_string (int ncid, int varid, int ndims,
     strbuf = (void *) R_alloc (strcnt, sizeof(char *));
     R_nc_check (nc_get_vara_string (ncid, varid, cstart, ccount, strbuf));
     for (ii=0; ii<strcnt; ii++) {
-      SET_STRING_ELT (result, ii, mkChar (strbuf[ii]));
+      nchar = strlen (strbuf[ii]);
+      if (nchar > INT_MAX) {
+        RERROR (RNC_ESTRLEN);
+      } else if (nchar > 0) {
+        SET_STRING_ELT (result, ii, mkChar (strbuf[ii]));
+      }
     }
     R_nc_check (nc_free_string (strcnt, strbuf));
   }
