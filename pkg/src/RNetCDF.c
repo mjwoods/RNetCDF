@@ -1073,69 +1073,91 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
   R_nc_check( R_nc_redef (ncid));
 
   /*-- Write attribute to file ------------------------------------------------*/
-  switch (xtype) {
-  case NC_CHAR:
-    if (TYPEOF (data) == RAWSXP) {
+  switch (TYPEOF (data)) {
+  case RAWSXP:
+    switch (xtype) {
+    case NC_CHAR:
       charbuf = (char *) RAW (data);
       cnt = xlength (data);
       R_nc_check (nc_put_att_text (ncid, varid, attname, cnt, charbuf));
-    } else if (isString (data)) {
+      break;
+    default:
+      RERROR (RNC_EDATATYPE);
+    }
+    break;
+  case STRSXP:
+    switch (xtype) {
+    case NC_CHAR:
       /* Only write a single string */
       charbuf = CHAR (STRING_ELT (data, 0));
       cnt = strlen (charbuf);
       R_nc_check (nc_put_att_text (ncid, varid, attname, cnt, charbuf));
-    } else {
-      RERROR (RNC_EDATATYPE);
-    }
-    break;
-  case NC_STRING:
-    if (isString (data)) {
+      break;
+    case NC_STRING:
       cnt = xlength (data);
       strbuf = (void *) R_alloc (cnt, sizeof(char *));
       R_nc_strsxp_str (data, cnt, strbuf);
       R_nc_check (nc_put_att_string (ncid, varid, attname, cnt, strbuf));
-    } else {
-      RERROR (RNC_EDATATYPE);
-    }
-    break;
-  case NC_INT64:
-    if (xtype == NC_INT64 && isString (data)) {
+      break;
+    case NC_INT64:
       cnt = xlength (data);
       int64buf = (void *) R_alloc (cnt, sizeof (long long));
       R_nc_strsxp_int64 (data, cnt, int64buf);
       R_nc_check (nc_put_att_longlong (ncid, varid, attname,
                                        xtype, cnt, int64buf));
       break;
-    } /* else fall through to numeric types below */
-  case NC_UINT64:
-    if (xtype == NC_UINT64 && isString (data)) {
+    case NC_UINT64:
       cnt = xlength (data);
       uint64buf = (void *) R_alloc (cnt, sizeof (unsigned long long));
       R_nc_strsxp_uint64 (data, cnt, uint64buf);
       R_nc_check (nc_put_att_ulonglong (ncid, varid, attname,
                                         xtype, cnt, uint64buf));
       break;
-    } /* else fall through to numeric types below */
-  case NC_BYTE:
-  case NC_SHORT:
-  case NC_INT:
-  case NC_FLOAT:
-  case NC_DOUBLE:
-  case NC_UBYTE:
-  case NC_USHORT:
-  case NC_UINT:
-    if (isReal (data)) {
-      cnt = xlength (data);
-      R_nc_check (nc_put_att_double (ncid, varid, attname, xtype, cnt, REAL (data)));
-    } else if (isInteger (data) || isLogical (data)) {
+    default:
+      RERROR (RNC_EDATATYPE);
+    }
+    break;
+  case INTSXP:
+  case LGLSXP:
+    switch (xtype) {
+    case NC_BYTE:
+    case NC_UBYTE:
+    case NC_SHORT:
+    case NC_USHORT:
+    case NC_INT:
+    case NC_UINT:
+    case NC_FLOAT:
+    case NC_DOUBLE:
+    case NC_INT64:
+    case NC_UINT64:
       cnt = xlength (data);
       R_nc_check (nc_put_att_int (ncid, varid, attname, xtype, cnt, INTEGER (data)));
-    } else {
+      break;
+    default:
+      RERROR (RNC_EDATATYPE);
+    }
+    break;
+  case REALSXP:
+    switch (xtype) {
+    case NC_BYTE:
+    case NC_UBYTE:
+    case NC_SHORT:
+    case NC_USHORT:
+    case NC_INT:
+    case NC_UINT:
+    case NC_FLOAT:
+    case NC_DOUBLE:
+    case NC_INT64:
+    case NC_UINT64:
+      cnt = xlength (data);
+      R_nc_check (nc_put_att_double (ncid, varid, attname, xtype, cnt, REAL (data)));
+      break;
+    default:
       RERROR (RNC_EDATATYPE);
     }
     break;
   default:
-    RERROR (RNC_ETYPEDROP);
+    RERROR (RNC_EDATATYPE);
   }
 
   RRETURN(R_NilValue);
@@ -1886,18 +1908,26 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
   R_nc_check (R_nc_enddef (ncid));
 
   /*-- Write variable to file -------------------------------------------------*/
-  switch (xtype) {
-  case NC_CHAR:
-    if (TYPEOF (data) == RAWSXP) {
+  switch (TYPEOF (data)) {
+  case RAWSXP:
+    switch (xtype) {
+    case NC_CHAR:
       if (xlength (data) >= arrlen) {
         R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount,
                                     (char *) RAW (data)));
       } else {
         RERROR (RNC_EDATALEN);
       }
-    } else if (isString (data)) {
+      break;
+    default:
+      RERROR (RNC_EDATATYPE);
+    }
+    break;
+  case STRSXP:
+    switch (xtype) {
+    case NC_CHAR:
       if (ndims > 0) {
-        /* Store strings along the fastest varying dimension ------------------*/
+        /* Store strings along the fastest varying dimension */
         strlen = ccount[ndims-1];
         strcnt = R_nc_length (ndims-1, ccount);
       } else {
@@ -1912,12 +1942,8 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
       } else {
         RERROR (RNC_EDATALEN);
       }
-    } else {
-      RERROR (RNC_EDATATYPE);
-    }
-    break;
-  case NC_STRING:
-    if (isString (data)) {
+      break;
+    case NC_STRING:
       if (xlength (data) >= arrlen) {
 	strbuf = (void *) R_alloc (arrlen, sizeof(char *));
         R_nc_strsxp_str (data, arrlen, strbuf);
@@ -1925,12 +1951,8 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
       } else {
         RERROR (RNC_EDATALEN);
       }
-    } else {
-      RERROR (RNC_EDATATYPE);
-    }
-    break;
-  case NC_INT64:
-    if (xtype == NC_INT64 && isString (data)) {
+      break;
+    case NC_INT64:
       if (xlength (data) >= arrlen) {
         int64buf = (void *) R_alloc (arrlen, sizeof (long long));
         R_nc_strsxp_int64 (data, arrlen, int64buf);
@@ -1939,9 +1961,8 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
       } else {
         RERROR (RNC_EDATALEN);
       }
-    } /* else fall through to numeric types below */
-  case NC_UINT64:
-    if (xtype == NC_UINT64 && isString (data)) {
+      break;
+    case NC_UINT64:
       if (xlength (data) >= arrlen) {
         uint64buf = (void *) R_alloc (arrlen, sizeof (unsigned long long));
         R_nc_strsxp_uint64 (data, arrlen, uint64buf);
@@ -1950,29 +1971,50 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
       } else {
         RERROR (RNC_EDATALEN);
       }
-    } /* else fall through to numeric types below */
-  case NC_BYTE:
-  case NC_SHORT:
-  case NC_INT:
-  case NC_FLOAT:
-  case NC_DOUBLE:
-  case NC_UBYTE:
-  case NC_USHORT:
-  case NC_UINT:
-    if (xlength (data) >= arrlen) {
-      if (isReal (data)) {
-	R_nc_check (nc_put_vara_double (ncid, varid, cstart, ccount, REAL (data)));
-      } else if (isInteger (data) || isLogical (data)) {
-	R_nc_check (nc_put_vara_int (ncid, varid, cstart, ccount, INTEGER (data)));
-      } else {
-        RERROR (RNC_EDATATYPE);
-      }
-    } else {
-      RERROR (RNC_EDATALEN);
+      break;
+    default:
+      RERROR (RNC_EDATATYPE);
+    }
+    break;
+  case INTSXP:
+  case LGLSXP:
+    switch (xtype) {
+    case NC_BYTE:
+    case NC_UBYTE:
+    case NC_SHORT:
+    case NC_USHORT:
+    case NC_INT:
+    case NC_UINT:
+    case NC_FLOAT:
+    case NC_DOUBLE:
+    case NC_INT64:
+    case NC_UINT64:
+      R_nc_check (nc_put_vara_int (ncid, varid, cstart, ccount, INTEGER (data)));
+      break;
+    default:
+      RERROR (RNC_EDATATYPE);
+    }
+    break;
+  case REALSXP:
+    switch (xtype) {
+    case NC_BYTE:
+    case NC_UBYTE:
+    case NC_SHORT:
+    case NC_USHORT:
+    case NC_INT:
+    case NC_UINT:
+    case NC_FLOAT:
+    case NC_DOUBLE:
+    case NC_INT64:
+    case NC_UINT64:
+      R_nc_check (nc_put_vara_double (ncid, varid, cstart, ccount, REAL (data)));
+      break;
+    default:
+      RERROR (RNC_EDATATYPE);
     }
     break;
   default:
-    RERROR (RNC_ETYPEDROP);
+    RERROR (RNC_EDATATYPE);
   }
 
   RRETURN(R_NilValue);
