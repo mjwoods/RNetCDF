@@ -88,7 +88,6 @@
 \*=============================================================================*/
 
 #define NA_SIZE ((size_t) -1)
-#define INT64CHAR 24
 
 #define RRETURN(object) { R_nc_unprotect (); return (object); }
 
@@ -568,6 +567,167 @@ R_nc_length (int ndims, const size_t *count)
 }
 
 
+/* Convert a char array to R strings.
+   Argument carr is assumed to contain cnt strings of length len,
+   its allocated size must be at least len*cnt+1 bytes,
+   and its contents are modified during execution but restored on return.
+   Argument rstr is an R string vector with length cnt.
+ */
+static SEXP
+R_nc_char_strsxp (char *carr, size_t len, size_t cnt, SEXP rstr)
+{
+  size_t ii;
+  char nextchar, *thisstr, *nextstr;
+  if (len > INT_MAX) {
+    RERROR (RNC_ESTRLEN);
+  }
+  for (ii=0, thisstr=carr; ii<cnt; ii++, thisstr+=len) {
+    /* Rows of character array may not be null-terminated, so set
+       first character of next row to null before passing each row to R. */
+    nextstr = thisstr + len;
+    nextchar = *nextstr;
+    *nextstr = '\0';
+    SET_STRING_ELT (rstr, ii, mkChar(thisstr));
+    *nextstr = nextchar;
+  }
+  return R_NilValue;
+}
+
+
+/* Convert a char ragged array to R strings.
+   Argument cstr is assumed to contain cnt pointers to null-terminated strings.
+   Argument rstr is an R string vector with length cnt.
+ */
+static SEXP
+R_nc_str_strsxp (char **cstr, size_t cnt, SEXP rstr)
+{
+  size_t ii, nchar;
+  for (ii=0; ii<cnt; ii++) {
+    nchar = strlen (cstr[ii]);
+    if (nchar > INT_MAX) {
+      RERROR (RNC_ESTRLEN);
+    } else if (nchar > 0) {
+      SET_STRING_ELT (rstr, ii, mkChar (cstr[ii]));
+    }
+  }
+  return R_NilValue;
+}
+
+
+/* Convert an int64 array to R strings.
+   Argument cint64 contains cnt values of type long long.
+   Argument rstr is an R string vector with length cnt.
+ */
+static SEXP
+R_nc_int64_strsxp (long long *cint64, size_t cnt, SEXP rstr)
+{
+  size_t ii;
+  char chartmp[24];
+  for (ii=0; ii<cnt; ii++) {
+    if (sprintf (chartmp, "%lli", cint64[ii]) > 0) {
+      SET_STRING_ELT (rstr, ii, mkChar (chartmp));
+    }
+  }
+  return R_NilValue;
+}
+
+
+/* Convert a uint64 array to R strings.
+   Argument cuint64 contains cnt values of type unsigned long long.
+   Argument rstr is an R string vector with length cnt.
+ */
+static SEXP
+R_nc_uint64_strsxp (unsigned long long *cuint64, size_t cnt, SEXP rstr)
+{
+  size_t ii;
+  char chartmp[24];
+  for (ii=0; ii<cnt; ii++) {
+    if (sprintf (chartmp, "%llu", cuint64[ii]) > 0) {
+      SET_STRING_ELT (rstr, ii, mkChar (chartmp));
+    }
+  }
+  return R_NilValue;
+}
+
+
+/* Convert R strings to char array.
+   Argument rstr is an R string vector with length cnt.
+   Argument carr  provides space for at least len*cnt bytes.
+   Strings are copied from rstr to carr,
+   trimming or padding each string with null characters to length len.
+ */
+static SEXP
+R_nc_strsxp_char (SEXP rstr, size_t len, size_t cnt, char *carr)
+{
+  size_t ii;
+  char *thisstr;
+  for (ii=0, thisstr=carr; ii<cnt; ii++, thisstr+=len) {
+    strncpy(thisstr, CHAR( STRING_ELT (rstr, ii)), len);
+  }
+  return R_NilValue;
+}
+
+
+/* Convert R strings to char ragged array.
+   Argument rstr is an R string vector with length cnt.
+   Argument cstr provides space for cnt pointers,
+   which will be set to the address of each R string on return.
+ */
+static SEXP
+R_nc_strsxp_str (SEXP rstr, size_t cnt, const char **cstr)
+{
+  size_t ii;
+  for (ii=0; ii<cnt; ii++) {
+    cstr[ii] = CHAR( STRING_ELT (rstr, ii));
+  }
+  return R_NilValue;
+}
+
+
+/* Convert R strings to int64 array.
+   Argument rstr is an R string vector with length cnt.
+   Argument cint64 contains cnt values of type long long on return.
+ */
+static SEXP
+R_nc_strsxp_int64 (SEXP rstr, size_t cnt, long long *cint64)
+{
+  size_t ii;
+  const char *charptr;
+  char *endptr;
+  errno = 0;
+  for (ii=0; ii<cnt; ii++) {
+    charptr = CHAR (STRING_ELT (rstr, ii));
+    cint64[ii] = strtoll (charptr, &endptr, 10);
+    if (endptr == charptr || *endptr != '\0' || errno != 0) {
+      RERROR ("Could not convert R string to NC_INT64\n");
+    }
+  }
+  return R_NilValue;
+}
+
+
+/* Convert R strings to uint64 array.
+   Argument rstr is an R string vector with length cnt.
+   Argument cuint64 contains cnt values of type unsigned long long on return.
+ */
+static SEXP
+R_nc_strsxp_uint64 (SEXP rstr, size_t cnt, unsigned long long *cuint64)
+{
+  size_t ii;
+  const char *charptr;
+  char *endptr;
+  errno = 0;
+  for (ii=0; ii<cnt; ii++) {
+    charptr = CHAR (STRING_ELT (rstr, ii));
+    cuint64[ii] = strtoull (charptr, &endptr, 10);
+    if (endptr == charptr || *endptr != '\0' || errno != 0) {
+      RERROR ("Could not convert R string to NC_UINT64\n");
+    }
+  }
+  return R_NilValue;
+}
+
+
 /*=============================================================================*\
  *  NetCDF library functions						       *
 \*=============================================================================*/
@@ -646,6 +806,7 @@ R_nc_delete_att (SEXP nc, SEXP var, SEXP att)
  *  Private functions used by R_nc_get_att()                                   *
 \*-----------------------------------------------------------------------------*/
 
+
 /* Read NC_CHAR attribute as R raw */
 static SEXP
 R_nc_get_att_raw (int ncid, int varid, const char *attname, size_t cnt)
@@ -666,13 +827,10 @@ R_nc_get_att_char (int ncid, int varid, const char *attname, size_t cnt)
   SEXP result;
   char *charbuf;
   result = R_nc_protect (allocVector (STRSXP, 1));
-  if (cnt > INT_MAX) {
-    RERROR (RNC_ESTRLEN);
-  } else if (cnt > 0) {
+  if (cnt > 0) {
     charbuf = R_alloc (cnt + 1, sizeof (char));
     R_nc_check (nc_get_att_text (ncid, varid, attname, charbuf));
-    charbuf[cnt] = '\0';
-    SET_STRING_ELT (result, 0, mkChar (charbuf));
+    R_nc_char_strsxp (charbuf, cnt, 1, result);
   }
   return result;
 }
@@ -683,19 +841,11 @@ R_nc_get_att_string (int ncid, int varid, const char *attname, size_t cnt)
 {
   SEXP result;
   char **strbuf;
-  size_t ii, nchar;
   result = R_nc_protect (allocVector (STRSXP, cnt));
   if (cnt > 0) {
     strbuf = (void *) R_alloc (cnt, sizeof(char *));
     R_nc_check (nc_get_att_string (ncid, varid, attname, strbuf));
-    for (ii=0; ii<cnt; ii++) {
-      nchar = strlen (strbuf[ii]);
-      if (nchar > INT_MAX) {
-        RERROR (RNC_ESTRLEN);
-      } else if (nchar > 0) {
-        SET_STRING_ELT (result, ii, mkChar (strbuf[ii]));
-      }
-    }
+    R_nc_str_strsxp (strbuf, cnt, result);
     R_nc_check (nc_free_string (cnt, strbuf));
   }
   return result;
@@ -719,17 +869,11 @@ R_nc_get_att_int64 (int ncid, int varid, const char *attname, size_t cnt)
 {
   SEXP result;
   long long *int64buf;
-  size_t ii;
-  char chartmp[INT64CHAR];
   result = R_nc_protect (allocVector (STRSXP, cnt));
   if (cnt > 0) {
     int64buf = (void *) R_alloc (cnt, sizeof (long long));
     R_nc_check (nc_get_att_longlong (ncid, varid, attname, int64buf));
-    for (ii=0; ii<cnt; ii++) {
-      if (sprintf (chartmp, "%lli", int64buf[ii]) > 0) {
-	SET_STRING_ELT (result, ii, mkChar (chartmp));
-      }
-    }
+    R_nc_int64_strsxp (int64buf, cnt, result);
   }
   return result;
 }
@@ -740,17 +884,11 @@ R_nc_get_att_uint64 (int ncid, int varid, const char *attname, size_t cnt)
 {
   SEXP result;
   unsigned long long *uint64buf;
-  size_t ii;
-  char chartmp[INT64CHAR];
   result = R_nc_protect (allocVector (STRSXP, cnt));
   if (cnt > 0) {
     uint64buf = (void *) R_alloc (cnt, sizeof (unsigned long long));
     R_nc_check (nc_get_att_ulonglong (ncid, varid, attname, uint64buf));
-    for (ii=0; ii<cnt; ii++) {
-      if (sprintf (chartmp, "%llu", uint64buf[ii]) > 0) {
-	SET_STRING_ELT (result, ii, mkChar (chartmp));
-      }
-    }
+    R_nc_uint64_strsxp (uint64buf, cnt, result);
   }
   return result;
 }
@@ -911,10 +1049,9 @@ SEXP
 R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
 {
   int ncid, varid;
-  size_t cnt, ii;
+  size_t cnt;
   nc_type xtype;
-  const char *attname, *charbuf, **strbuf, *charptr;
-  char *endptr;
+  const char *attname, *charbuf, **strbuf;
   long long *int64buf;
   unsigned long long *uint64buf;
 
@@ -955,9 +1092,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
     if (isString (data)) {
       cnt = xlength (data);
       strbuf = (void *) R_alloc (cnt, sizeof(char *));
-      for (ii=0; ii<cnt; ii++) {
-	strbuf[ii] = CHAR( STRING_ELT (data, ii));
-      }
+      R_nc_strsxp_str (data, cnt, strbuf);
       R_nc_check (nc_put_att_string (ncid, varid, attname, cnt, strbuf));
     } else {
       RERROR (RNC_EDATATYPE);
@@ -967,14 +1102,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
     if (xtype == NC_INT64 && isString (data)) {
       cnt = xlength (data);
       int64buf = (void *) R_alloc (cnt, sizeof (long long));
-      errno = 0;
-      for (ii=0; ii<cnt; ii++) {
-	charptr = CHAR (STRING_ELT (data, ii));
-	int64buf[ii] = strtoll (charptr, &endptr, 10);
-	if (endptr == charptr || *endptr != '\0' || errno != 0) {
-	  RERROR ("Could not convert R string to NC_INT64\n");
-	}
-      }
+      R_nc_strsxp_int64 (data, cnt, int64buf);
       R_nc_check (nc_put_att_longlong (ncid, varid, attname,
                                        xtype, cnt, int64buf));
       break;
@@ -983,14 +1111,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
     if (xtype == NC_UINT64 && isString (data)) {
       cnt = xlength (data);
       uint64buf = (void *) R_alloc (cnt, sizeof (unsigned long long));
-      errno = 0;
-      for (ii=0; ii<cnt; ii++) {
-	charptr = CHAR (STRING_ELT (data, ii));
-	uint64buf[ii] = strtoull (charptr, &endptr, 10);
-	if (endptr == charptr || *endptr != '\0' || errno != 0) {
-	  RERROR ("Could not convert R string to NC_UINT64\n");
-	}
-      }
+      R_nc_strsxp_uint64 (data, cnt, uint64buf);
       R_nc_check (nc_put_att_ulonglong (ncid, varid, attname,
                                         xtype, cnt, uint64buf));
       break;
@@ -1454,7 +1575,7 @@ R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount) {
     }
     result = R_nc_protect (allocArray (type, rdim));
   } else {
-    /* NetCDF scalar has no dimensions */
+    /* R scalar or vector with no dimensions */
     result = R_nc_protect (allocVector (type, 1));
   }
   return result;
@@ -1480,14 +1601,11 @@ R_nc_get_var_char (int ncid, int varid, int ndims,
                   const size_t *cstart, const size_t *ccount)
 {
   SEXP result;
-  size_t strcnt, strlen, ii;
-  char *charbuf, nextchar, *thisstr, *nextstr;
-  /* Omit fastest-varying dimension from R character array */
+  size_t strcnt, strlen;
+  char *charbuf;
   if (ndims > 0) {
+    /* Omit fastest-varying dimension from R character array */
     strlen = ccount[ndims-1];
-    if (strlen > INT_MAX) {
-      RERROR (RNC_ESTRLEN);
-    }
   } else {
     /* Scalar character */
     strlen = 1;
@@ -1497,15 +1615,7 @@ R_nc_get_var_char (int ncid, int varid, int ndims,
   if (strcnt > 0) {
     charbuf = R_alloc (strcnt*strlen+1, sizeof (char));
     R_nc_check (nc_get_vara_text (ncid, varid, cstart, ccount, charbuf));
-    for (ii=0, thisstr=charbuf; ii<strcnt; ii++, thisstr+=strlen) {
-      /* Rows of character array may not be null-terminated, so set
-	 first character of next row to null before passing each row to R. */
-      nextstr = thisstr + strlen;
-      nextchar = *nextstr;
-      *nextstr = '\0';
-      SET_STRING_ELT (result, ii, mkChar(thisstr));
-      *nextstr = nextchar;
-    }
+    R_nc_char_strsxp (charbuf, strlen, strcnt, result);
   }
   return result;
 }
@@ -1516,21 +1626,14 @@ R_nc_get_var_string (int ncid, int varid, int ndims,
                      const size_t *cstart, const size_t *ccount)
 {
   SEXP result;
-  size_t strcnt, ii, nchar;
+  size_t strcnt;
   char **strbuf;
   result = R_nc_allocArray (STRSXP, ndims, ccount);
   strcnt = xlength (result);
   if (strcnt > 0) {
     strbuf = (void *) R_alloc (strcnt, sizeof(char *));
     R_nc_check (nc_get_vara_string (ncid, varid, cstart, ccount, strbuf));
-    for (ii=0; ii<strcnt; ii++) {
-      nchar = strlen (strbuf[ii]);
-      if (nchar > INT_MAX) {
-        RERROR (RNC_ESTRLEN);
-      } else if (nchar > 0) {
-        SET_STRING_ELT (result, ii, mkChar (strbuf[ii]));
-      }
-    }
+    R_nc_str_strsxp (strbuf, strcnt, result);
     R_nc_check (nc_free_string (strcnt, strbuf));
   }
   return result;
@@ -1556,19 +1659,14 @@ R_nc_get_var_int64 (int ncid, int varid, int ndims,
                     const size_t *cstart, const size_t *ccount)
 {
   SEXP result;
-  size_t arrlen, ii;
+  size_t arrlen;
   long long *int64buf;
-  char chartmp[INT64CHAR];
   result = R_nc_allocArray (STRSXP, ndims, ccount);
   arrlen = xlength (result);
   if (arrlen > 0) {
     int64buf = (void *) R_alloc (arrlen, sizeof (long long));
     R_nc_check (nc_get_vara_longlong (ncid, varid, cstart, ccount, int64buf));
-    for (ii=0; ii<arrlen; ii++) {
-      if (sprintf (chartmp, "%lli", int64buf[ii]) > 0) {
-	SET_STRING_ELT (result, ii, mkChar (chartmp));
-      }
-    }
+    R_nc_int64_strsxp (int64buf, arrlen, result);
   }
   return result;
 }
@@ -1579,19 +1677,14 @@ R_nc_get_var_uint64 (int ncid, int varid, int ndims,
                      const size_t *cstart, const size_t *ccount)
 {
   SEXP result;
-  size_t arrlen, ii;
+  size_t arrlen;
   unsigned long long *uint64buf;
-  char chartmp[INT64CHAR];
   result = R_nc_allocArray (STRSXP, ndims, ccount);
   arrlen = xlength (result);
   if (arrlen > 0) {
     uint64buf = (void *) R_alloc (arrlen, sizeof (unsigned long long));
     R_nc_check (nc_get_vara_ulonglong (ncid, varid, cstart, ccount, uint64buf));
-    for (ii=0; ii<arrlen; ii++) {
-      if (sprintf (chartmp, "%llu", uint64buf[ii]) > 0) {
-	SET_STRING_ELT (result, ii, mkChar (chartmp));
-      }
-    }
+    R_nc_uint64_strsxp (uint64buf, arrlen, result);
   }
   return result;
 }
@@ -1763,11 +1856,10 @@ SEXP
 R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
 {
   int ncid, varid, ndims;
-  size_t ii, *cstart, *ccount, arrlen, strcnt, strlen;
+  size_t *cstart, *ccount, arrlen, strcnt, strlen;
   nc_type xtype;
   char *charbuf;
-  const char **strbuf, *charptr;
-  char *endptr;
+  const char **strbuf;
   long long *int64buf;
   unsigned long long *uint64buf;
 
@@ -1815,11 +1907,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
       }
       if (xlength (data) >= strcnt) {
         charbuf = R_alloc (strcnt*strlen, sizeof (char));
-        for (ii=0; ii<strcnt; ii++) {
-          /* Copy strings from R to buffer,
-             trimming or padding with '\0' to length strlen */
-	  strncpy(&charbuf[ii*strlen], CHAR( STRING_ELT (data, ii)), strlen);
-        }
+        R_nc_strsxp_char (data, strlen, strcnt, charbuf);
         R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount, charbuf));
       } else {
         RERROR (RNC_EDATALEN);
@@ -1832,9 +1920,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
     if (isString (data)) {
       if (xlength (data) >= arrlen) {
 	strbuf = (void *) R_alloc (arrlen, sizeof(char *));
-	for (ii=0; ii<arrlen; ii++) {
-	  strbuf[ii] = CHAR( STRING_ELT (data, ii));
-	}
+        R_nc_strsxp_str (data, arrlen, strbuf);
 	R_nc_check (nc_put_vara_string (ncid, varid, cstart, ccount, strbuf));
       } else {
         RERROR (RNC_EDATALEN);
@@ -1847,14 +1933,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
     if (xtype == NC_INT64 && isString (data)) {
       if (xlength (data) >= arrlen) {
         int64buf = (void *) R_alloc (arrlen, sizeof (long long));
-        errno = 0;
-        for (ii=0; ii<arrlen; ii++) {
-          charptr = CHAR (STRING_ELT (data, ii));
-          int64buf[ii] = strtoll (charptr, &endptr, 10);
-          if (endptr == charptr || *endptr != '\0' || errno != 0) {
-            RERROR ("Could not convert R string to NC_INT64\n");
-          }
-        }
+        R_nc_strsxp_int64 (data, arrlen, int64buf);
         R_nc_check (nc_put_vara_longlong (ncid, varid, cstart, ccount, int64buf));
         break;
       } else {
@@ -1865,14 +1944,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
     if (xtype == NC_UINT64 && isString (data)) {
       if (xlength (data) >= arrlen) {
         uint64buf = (void *) R_alloc (arrlen, sizeof (unsigned long long));
-        errno = 0;
-        for (ii=0; ii<arrlen; ii++) {
-          charptr = CHAR (STRING_ELT (data, ii));
-          uint64buf[ii] = strtoull (charptr, &endptr, 10);
-          if (endptr == charptr || *endptr != '\0' || errno != 0) {
-            RERROR ("Could not convert R string to NC_UINT64\n");
-          }
-        }
+        R_nc_strsxp_uint64 (data, arrlen, uint64buf);
         R_nc_check (nc_put_vara_ulonglong (ncid, varid, cstart, ccount, uint64buf));
         break;
       } else {
