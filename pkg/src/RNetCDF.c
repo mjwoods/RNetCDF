@@ -1068,14 +1068,11 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
   /*-- Write attribute to file ------------------------------------------------*/
   switch (TYPEOF (data)) {
   case RAWSXP:
-    switch (xtype) {
-    case NC_CHAR:
+    if (xtype == NC_CHAR) {
       charbuf = (char *) RAW (data);
       cnt = xlength (data);
       R_nc_check (nc_put_att_text (ncid, varid, attname, cnt, charbuf));
-      break;
-    default:
-      RERROR (RNC_EDATATYPE);
+      RRETURN (R_NilValue);
     }
     break;
   case STRSXP:
@@ -1085,75 +1082,58 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
       charbuf = CHAR (STRING_ELT (data, 0));
       cnt = strlen (charbuf);
       R_nc_check (nc_put_att_text (ncid, varid, attname, cnt, charbuf));
-      break;
+      RRETURN (R_NilValue);
     case NC_STRING:
       cnt = xlength (data);
       strbuf = (void *) R_alloc (cnt, sizeof(char *));
       R_nc_strsxp_str (data, cnt, strbuf);
       R_nc_check (nc_put_att_string (ncid, varid, attname, cnt, strbuf));
-      break;
+      RRETURN (R_NilValue);
     case NC_INT64:
       cnt = xlength (data);
       int64buf = (void *) R_alloc (cnt, sizeof (long long));
       R_nc_strsxp_int64 (data, cnt, int64buf);
       R_nc_check (nc_put_att_longlong (ncid, varid, attname,
                                        xtype, cnt, int64buf));
-      break;
+      RRETURN (R_NilValue);
     case NC_UINT64:
       cnt = xlength (data);
       uint64buf = (void *) R_alloc (cnt, sizeof (unsigned long long));
       R_nc_strsxp_uint64 (data, cnt, uint64buf);
       R_nc_check (nc_put_att_ulonglong (ncid, varid, attname,
                                         xtype, cnt, uint64buf));
-      break;
-    default:
-      RERROR (RNC_EDATATYPE);
+      RRETURN (R_NilValue);
     }
     break;
-  case INTSXP:
-  case LGLSXP:
-    switch (xtype) {
-    case NC_BYTE:
-    case NC_UBYTE:
-    case NC_SHORT:
-    case NC_USHORT:
-    case NC_INT:
-    case NC_UINT:
-    case NC_FLOAT:
-    case NC_DOUBLE:
-    case NC_INT64:
-    case NC_UINT64:
-      cnt = xlength (data);
-      R_nc_check (nc_put_att_int (ncid, varid, attname, xtype, cnt, INTEGER (data)));
-      break;
-    default:
-      RERROR (RNC_EDATATYPE);
-    }
-    break;
-  case REALSXP:
-    switch (xtype) {
-    case NC_BYTE:
-    case NC_UBYTE:
-    case NC_SHORT:
-    case NC_USHORT:
-    case NC_INT:
-    case NC_UINT:
-    case NC_FLOAT:
-    case NC_DOUBLE:
-    case NC_INT64:
-    case NC_UINT64:
-      cnt = xlength (data);
-      R_nc_check (nc_put_att_double (ncid, varid, attname, xtype, cnt, REAL (data)));
-      break;
-    default:
-      RERROR (RNC_EDATATYPE);
-    }
-    break;
-  default:
-    RERROR (RNC_EDATATYPE);
   }
 
-  RRETURN(R_NilValue);
+  switch (xtype) {
+  case NC_BYTE:
+  case NC_UBYTE:
+  case NC_SHORT:
+  case NC_USHORT:
+  case NC_INT:
+  case NC_UINT:
+  case NC_FLOAT:
+  case NC_DOUBLE:
+  case NC_INT64:
+  case NC_UINT64:
+    switch (TYPEOF (data)) {
+    case INTSXP:
+    case LGLSXP:
+      cnt = xlength (data);
+      R_nc_check (nc_put_att_int (ncid, varid, attname, xtype, cnt, INTEGER (data)));
+      RRETURN (R_NilValue);
+    case REALSXP:
+      cnt = xlength (data);
+      R_nc_check (nc_put_att_double (ncid, varid, attname, xtype, cnt, REAL (data)));
+      RRETURN (R_NilValue);
+    }
+    break;
+  }
+
+  /* If this point is reached, input and external types were not compatible */
+  RERROR (RNC_EDATATYPE);
 }
 
 
@@ -1890,23 +1870,23 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
   /*-- Determine type of external data ----------------------------------------*/
   R_nc_check (nc_inq_vartype ( ncid, varid, &xtype));
 
+  /*-- Ensure that data array contains enough elements ------------------------*/
+  if (TYPEOF (data) != STRSXP || xtype != NC_CHAR) {
+    if (xlength (data) < arrlen) {
+      RERROR (RNC_EDATALEN);
+    }
+  } /* else check separately as a special case below */
+
   /*-- Enter data mode (if necessary) -----------------------------------------*/
   R_nc_check (R_nc_enddef (ncid));
 
   /*-- Write variable to file -------------------------------------------------*/
   switch (TYPEOF (data)) {
   case RAWSXP:
-    switch (xtype) {
-    case NC_CHAR:
-      if (xlength (data) >= arrlen) {
-        R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount,
+    if (xtype == NC_CHAR) {
+      R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount,
                                     (char *) RAW (data)));
-      } else {
-        RERROR (RNC_EDATALEN);
-      }
-      break;
-    default:
-      RERROR (RNC_EDATATYPE);
+      RRETURN (R_NilValue);
     }
     break;
   case STRSXP:
@@ -1921,89 +1901,57 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
         strlen = 1;
         strcnt = 1;
       }
-      if (xlength (data) >= strcnt) {
-        charbuf = R_alloc (strcnt*strlen, sizeof (char));
-        R_nc_strsxp_char (data, strlen, strcnt, charbuf);
-        R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount, charbuf));
-      } else {
+      if (xlength (data) < strcnt) {
         RERROR (RNC_EDATALEN);
       }
-      break;
+      charbuf = R_alloc (strcnt*strlen, sizeof (char));
+      R_nc_strsxp_char (data, strlen, strcnt, charbuf);
+      R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount, charbuf));
+      RRETURN (R_NilValue);
     case NC_STRING:
-      if (xlength (data) >= arrlen) {
-	strbuf = (void *) R_alloc (arrlen, sizeof(char *));
-        R_nc_strsxp_str (data, arrlen, strbuf);
-	R_nc_check (nc_put_vara_string (ncid, varid, cstart, ccount, strbuf));
-      } else {
-        RERROR (RNC_EDATALEN);
-      }
-      break;
+      strbuf = (void *) R_alloc (arrlen, sizeof(char *));
+      R_nc_strsxp_str (data, arrlen, strbuf);
+      R_nc_check (nc_put_vara_string (ncid, varid, cstart, ccount, strbuf));
+      RRETURN (R_NilValue);
     case NC_INT64:
-      if (xlength (data) >= arrlen) {
-        int64buf = (void *) R_alloc (arrlen, sizeof (long long));
-        R_nc_strsxp_int64 (data, arrlen, int64buf);
-        R_nc_check (nc_put_vara_longlong (ncid, varid, cstart, ccount, int64buf));
-        break;
-      } else {
-        RERROR (RNC_EDATALEN);
-      }
-      break;
+      int64buf = (void *) R_alloc (arrlen, sizeof (long long));
+      R_nc_strsxp_int64 (data, arrlen, int64buf);
+      R_nc_check (nc_put_vara_longlong (ncid, varid, cstart, ccount, int64buf));
+      RRETURN (R_NilValue);
     case NC_UINT64:
-      if (xlength (data) >= arrlen) {
         uint64buf = (void *) R_alloc (arrlen, sizeof (unsigned long long));
         R_nc_strsxp_uint64 (data, arrlen, uint64buf);
         R_nc_check (nc_put_vara_ulonglong (ncid, varid, cstart, ccount, uint64buf));
-        break;
-      } else {
-        RERROR (RNC_EDATALEN);
-      }
-      break;
-    default:
-      RERROR (RNC_EDATATYPE);
+        RRETURN (R_NilValue);
     }
     break;
-  case INTSXP:
-  case LGLSXP:
-    switch (xtype) {
-    case NC_BYTE:
-    case NC_UBYTE:
-    case NC_SHORT:
-    case NC_USHORT:
-    case NC_INT:
-    case NC_UINT:
-    case NC_FLOAT:
-    case NC_DOUBLE:
-    case NC_INT64:
-    case NC_UINT64:
-      R_nc_check (nc_put_vara_int (ncid, varid, cstart, ccount, INTEGER (data)));
-      break;
-    default:
-      RERROR (RNC_EDATATYPE);
-    }
-    break;
-  case REALSXP:
-    switch (xtype) {
-    case NC_BYTE:
-    case NC_UBYTE:
-    case NC_SHORT:
-    case NC_USHORT:
-    case NC_INT:
-    case NC_UINT:
-    case NC_FLOAT:
-    case NC_DOUBLE:
-    case NC_INT64:
-    case NC_UINT64:
-      R_nc_check (nc_put_vara_double (ncid, varid, cstart, ccount, REAL (data)));
-      break;
-    default:
-      RERROR (RNC_EDATATYPE);
-    }
-    break;
-  default:
-    RERROR (RNC_EDATATYPE);
   }
 
-  RRETURN(R_NilValue);
+  switch (xtype) {
+  case NC_BYTE:
+  case NC_UBYTE:
+  case NC_SHORT:
+  case NC_USHORT:
+  case NC_INT:
+  case NC_UINT:
+  case NC_FLOAT:
+  case NC_DOUBLE:
+  case NC_INT64:
+  case NC_UINT64:
+    switch (TYPEOF (data)) {
+    case INTSXP:
+    case LGLSXP:
+      R_nc_check (nc_put_vara_int (ncid, varid, cstart, ccount, INTEGER (data)));
+      RRETURN (R_NilValue);
+    case REALSXP:
+      R_nc_check (nc_put_vara_double (ncid, varid, cstart, ccount, REAL (data)));
+      RRETURN (R_NilValue);
+    }
+    break;
+  }
+
+  /* If this point is reached, input and external types were not compatible */
+  RERROR (RNC_EDATATYPE);
 }
 
 
