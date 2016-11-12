@@ -40,7 +40,7 @@ Awkwardness arises mainly from one thing: NetCDF data are written with the last 
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("foo.nc")
+nc <- create.nc("var.put.nc")
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -64,13 +64,8 @@ dim(mytemperature) <- c(5,2)
 ##  Put the data with indicated start/count
 var.put.nc(nc, "time", mytime, 1, length(mytime))
 var.put.nc(nc, "temperature", mytemperature, c(1,1), c(5,2))
-var.put.nc(nc, "name", myname, c(1,1), c(32,5))
-
-sync.nc(nc)
 
 ##  Put the data with default start/count
-var.put.nc(nc, "time", mytime)
-var.put.nc(nc, "temperature", mytemperature)
 var.put.nc(nc, "name", myname)
 
 close.nc(nc)

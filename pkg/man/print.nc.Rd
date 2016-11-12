@@ -24,7 +24,7 @@ The output of this function is almost identical with a \code{"ncdump -h"} call. 
 
 \examples{
 ##  Create a new NetCDF dataset
-nc <- create.nc("foo.nc", format="netcdf4")
+nc <- create.nc("print.nc", format="netcdf4")
 
 ## Create a group (just because we can!):
 grp <- grp.def.nc(nc, "data")

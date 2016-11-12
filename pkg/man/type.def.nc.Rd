@@ -38,7 +38,7 @@ The components of types in \code{class} "compound" and "enum" must be specified 
 
 \examples{
 ##  Create a new NetCDF4 dataset and define types
-nc <- create.nc("type.nc", format="netcdf4")
+nc <- create.nc("type.def.nc", format="netcdf4")
 
 # Tests commented out until type.insert.nc is implemented,
 # otherwise file creation fails:

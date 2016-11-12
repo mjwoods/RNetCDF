@@ -22,7 +22,7 @@
 
 \examples{
 ##  Create a new NetCDF dataset and define a group
-nc <- create.nc("foo.nc", format="netcdf4")
+nc <- create.nc("grp.rename.nc", format="netcdf4")
 
 grp <- grp.def.nc(nc, "oldgroup")
 

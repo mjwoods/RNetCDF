@@ -47,7 +47,7 @@ Awkwardness arises mainly from one thing: NetCDF data are written with the last 
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("foo.nc")
+nc <- create.nc("var.get.nc")
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -70,8 +70,6 @@ myname        <- c("alfa", "bravo", "charlie", "delta", "echo")
 var.put.nc(nc, "time", mytime, 1, length(mytime))
 var.put.nc(nc, "temperature", mytemperature, c(1,1), c(5,2))
 var.put.nc(nc, "name", myname, c(1,1), c(32,5))
-
-sync.nc(nc)
 
 ##  Get the data (or a subset)
 var.get.nc(nc, 0)
