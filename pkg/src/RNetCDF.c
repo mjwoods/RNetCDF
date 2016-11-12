@@ -2194,6 +2194,74 @@ R_nc_rename_grp (SEXP nc, SEXP grpname)
 }
 
 
+/*-----------------------------------------------------------------------------*\
+ *  R_nc_def_type()                                                            *
+\*-----------------------------------------------------------------------------*/
+
+SEXP
+R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP basetype, SEXP size)
+{
+  int ncid, typeid;
+  char mode;
+  const char *typenamep;
+  nc_type xtype;
+  size_t xsize;
+  SEXP result;
+
+  /*-- Decode arguments -------------------------------------------------------*/
+  ncid = asInteger (nc);
+
+  typenamep = CHAR (STRING_ELT (typename, 0));
+
+  if (R_nc_strcmp (class, "compound")) {
+    mode = 'c';
+  } else if (R_nc_strcmp (class, "enum")) {
+    mode = 'e';
+  } else if (R_nc_strcmp (class, "opaque")) {
+    mode = 'o';
+  } else if (R_nc_strcmp (class, "vlen")) {
+    mode = 'v';
+  } else {
+    mode = '\0';
+  }
+
+  if (mode == 'e' || mode == 'v') {
+    R_nc_check (R_nc_str2type (ncid, CHAR (STRING_ELT (basetype, 0)), &xtype));
+  } else {
+    if (isInteger (size)) {
+      xsize = asInteger (size);
+    } else {
+      xsize = asReal (size);
+    }
+  }
+
+  /*-- Enter define mode ------------------------------------------------------*/
+  R_nc_check( R_nc_redef (ncid));
+
+  /*-- Create the type --------------------------------------------------------*/
+  switch (mode) {
+  case 'c':
+    R_nc_check (nc_def_compound (ncid, xsize, typenamep, &typeid));
+    break;
+  case 'e':
+    R_nc_check (nc_def_enum (ncid, xtype, typenamep, &typeid));
+    break;
+  case 'o':
+    R_nc_check (nc_def_opaque (ncid, xsize, typenamep, &typeid));
+    break;
+  case 'v':
+    R_nc_check (nc_def_vlen (ncid, typenamep, xtype, &typeid));
+    break;
+  default:
+    RERROR ("Unknown class for type definition");
+  }
+
+  result = R_nc_protect (ScalarInteger (typeid));
+  RRETURN(result);
+}
+
+
+
 /*=============================================================================*\
  *  Udunits library functions						       *
 \*=============================================================================*/

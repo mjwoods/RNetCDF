@@ -767,6 +767,29 @@ read.nc <- function(ncfile, recursive = FALSE, ...) {
   return(retlist)
 }
 
+
+#-------------------------------------------------------------------------------
+# type.def.nc()
+#-------------------------------------------------------------------------------
+
+type.def.nc <- function(ncfile, typename, class, basetype=NULL, size=NULL) {
+  # Check arguments
+  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(is.character(typename))
+  stopifnot(is.character(class))
+  if (class == "compound" || class == "opaque") {
+    stopifnot(is.numeric(size))
+  } else if (class == "enum" || class == "vlen") {
+    stopifnot(is.character(basetype) || is.numeric(basetype))
+  } else {
+    stop("Unknown class for type definition", call.=FALSE)
+  }
+
+  id <- .Call("R_nc_def_type", ncfile, typename, class, basetype, size)
+  return(invisible(id))
+}
+
+
 # ===============================================================================
 # Udunits library functions
 # ===============================================================================
