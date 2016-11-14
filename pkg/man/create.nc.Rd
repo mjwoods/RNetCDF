@@ -12,7 +12,7 @@
 \arguments{
   \item{filename}{Filename for the NetCDF dataset to be created.}
   \item{clobber}{The creation mode. If \code{TRUE} (default), any existing dataset with the same filename will be overwritten. Otherwise set to \code{FALSE}.}
-  \item{share}{The buffer scheme. If \code{FALSE} (default), dataset access is buffered and cached for performance. However, if one or more processes may be reading while another process is writing the dataset, set to \code{FALSE}.}
+  \item{share}{The buffer scheme. If \code{FALSE} (default), dataset access is buffered and cached for performance. However, if one or more processes may be reading while another process is writing the dataset, set to \code{TRUE}.}
   \item{prefill}{The prefill mode. If \code{TRUE} (default), newly defined variables are initialised with fill values when they are first accessed. This allows unwritten array elements to be detected when reading, but it also implies duplicate writes if all elements are subsequently written with user-specified data. Enhanced write performance can be obtained by setting \code{prefill=FALSE}.}
   \item{format}{The file format. One of "classic", "offset64", "netcdf4" or "classic4". See below for details.}
   \item{large}{(Deprecated) \code{large=TRUE} is equivalent to \code{format="offset64"}.}
