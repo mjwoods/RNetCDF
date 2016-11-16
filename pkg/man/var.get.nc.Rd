@@ -73,6 +73,8 @@ var.put.nc(nc, "name", myname, c(1,1), c(32,5))
 
 ##  Get the data (or a subset)
 var.get.nc(nc, 0)
+var.get.nc(nc, "time", 1, 1)
+var.get.nc(nc, "time", 1, NA)
 var.get.nc(nc, "temperature")
 var.get.nc(nc, "temperature", c(NA,2), c(NA,1))
 var.get.nc(nc, "name")
