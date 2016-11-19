@@ -13,7 +13,7 @@
   \item{variable}{ID or name of the variable.}
   \item{data}{The (multidimensional) array containing the data to write.}
   \item{start}{A vector of indices indicating where to start writing the passed values (beginning at 1). The length of this vector must equal the number of dimensions the variable has. Order is leftmost varying fastest (as shown by \code{\link[RNetCDF]{print.nc}}; opposite to the CDL conventions). If set to \code{NA}, writing starts for each dimension at position 1.}
-  \item{count}{A vector of integers indicating the count of values to write along each dimension. Order is leftmost varying fastest (as got from \code{\link[RNetCDF]{print.nc}}; opposite to the CDL conventions). The length of this vector must equal the number of dimensions the variable has. If set to \code{NA}, the dimesions are taken from \code{data}.}
+  \item{count}{A vector of integers indicating the count of values to write along each dimension. Order is leftmost varying fastest (as got from \code{\link[RNetCDF]{print.nc}}; opposite to the CDL conventions). The length of this vector must equal the number of dimensions the variable has. If set to \code{NA}, the dimensions are taken from \code{data}.}
   \item{na.mode}{Set the mode for handling missing values (\code{NA}) in numeric variables: 0=accept \code{_FillValue} or \code{missing_value} attribute, 1=accept only \code{_FillValue} attribute, 2=accept only \code{missing_value} attribute.}
   \item{pack}{Numeric variables are packed if \code{pack=TRUE} and the attributes \code{add_offset} and \code{scale_factor} are defined. Default is \code{FALSE}.}
 }
