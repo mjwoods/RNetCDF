@@ -532,8 +532,8 @@ var.inq.nc <- function(ncfile, variable) {
 # var.put.nc()
 #-------------------------------------------------------------------------------
 
-var.put.nc <- function(ncfile, variable, data, start = NA, count = NA, na.mode = 0, 
-  pack = FALSE) {
+var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
+  na.mode = 0, pack = FALSE) {
   #-- Check args -------------------------------------------------------------
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(variable) || is.numeric(variable))
@@ -543,7 +543,38 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA, na.mode =
   stopifnot(is.logical(pack))
   
   stopifnot(isTRUE(na.mode %in% c(0, 1, 2)))
-  
+
+  # If start or count contain any missing values, use dimensions of data.
+  # The C interface drops elements of start/count past the defined dimensions.
+  defstart <- any(is.na(start))
+  defcount <- any(is.na(count))
+  if (defstart || defcount) {
+    isncchar <- (is.character(data) &&
+                 var.inq.nc(ncfile, variable)$type == "NC_CHAR")
+  }
+
+  if (defstart) {
+    start <- rep(1,max(1,length(dim(data))))
+    if (isncchar) {
+      # Prepend an extra dimension for characters in each R string.
+      start <- c(1, start)
+    }
+  }
+
+  if (defcount) {
+    count <- dim(data)
+    if (is.null(count)) {
+      count <- length(data)
+    }
+    if (isncchar) {
+      # Prepend an extra dimension for characters in each R string.
+      # Let C interface determine length of the netcdf dimension,
+      # padding or truncating strings as needed to fill the dimension
+      # from the specified start index to its end.
+      count <- c(NA, count)
+    }
+  }
+
   #-- Pack variables if requested (missing values are preserved) -------------
   if (pack && is.numeric(data)) {
     offset <- try(att.get.nc(ncfile, variable, "add_offset"), silent = TRUE)
