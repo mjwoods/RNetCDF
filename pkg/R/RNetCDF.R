@@ -544,35 +544,14 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
   
   stopifnot(isTRUE(na.mode %in% c(0, 1, 2)))
 
-  # If start or count contain any missing values, use dimensions of data.
-  # The C interface drops elements of start/count past the defined dimensions.
-  defstart <- any(is.na(start))
-  defcount <- any(is.na(count))
-  if (defstart || defcount) {
-    isncchar <- (is.character(data) &&
-                 var.inq.nc(ncfile, variable)$type == "NC_CHAR")
+  # If start or count contain any missing values,
+  # use values derived from dimensions of data by passing NULL to C interface.
+  # Note that C interface drops elements of start/count past the defined dimensions.
+  if (anyNA(start)) {
+    start <- NULL
   }
-
-  if (defstart) {
-    start <- rep(1,max(1,length(dim(data))))
-    if (isncchar) {
-      # Prepend an extra dimension for characters in each R string.
-      start <- c(1, start)
-    }
-  }
-
-  if (defcount) {
-    count <- dim(data)
-    if (is.null(count)) {
-      count <- length(data)
-    }
-    if (isncchar) {
-      # Prepend an extra dimension for characters in each R string.
-      # Let C interface determine length of the netcdf dimension,
-      # padding or truncating strings as needed to fill the dimension
-      # from the specified start index to its end.
-      count <- c(NA, count)
-    }
+  if (anyNA(count)) {
+    count <- NULL
   }
 
   #-- Pack variables if requested (missing values are preserved) -------------

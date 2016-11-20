@@ -445,46 +445,47 @@ R_nc_check(int status)
 }
 
 
-/* Copy R vector rv to C vector cv, converting type to size_t and reversing order.
-   The length of cv is specified by nc.
+/* Copy the leading nr elements of R vector rv to C vector cv,
+   converting type to size_t and reversing from Fortran to C storage order.
    Elements beyond the length of rv and non-finite values are stored as fillval.
  */
 static void
-R_nc_size_r2c(SEXP rv, size_t nc, size_t fillval, size_t *cv)
+R_nc_size_r2c(SEXP rv, size_t nr, size_t fillval, size_t *cv)
 {
   double *realp;
   int *intp;
-  size_t nr, ii;
+  size_t nc, ii;
 
-  nr = xlength (rv);
-  nr = (nr < nc) ? nr : nc;
+  /* Number of elements to copy must not exceed length of rv */
+  nc = xlength (rv);
+  nc = (nr < nc) ? nr : nc;
 
   /* Copy elements */
   if (isReal (rv)) {
     realp = REAL (rv);
-    for ( ii=0; ii<nr; ii++ ) {
+    for ( ii=0; ii<nc; ii++ ) {
       if (R_FINITE (realp[ii])) {
-        cv[nc-1-ii] = realp[ii];
+        cv[nr-1-ii] = realp[ii];
       } else {
-        cv[nc-1-ii] = fillval;
+        cv[nr-1-ii] = fillval;
       }
     }
   } else if (isInteger (rv)) {
     intp = INTEGER (rv);
-    for ( ii=0; ii<nr; ii++ ) {
+    for ( ii=0; ii<nc; ii++ ) {
       if (intp[ii] == NA_INTEGER) {
-        cv[nc-1-ii] = fillval;
+        cv[nr-1-ii] = fillval;
       } else {
-        cv[nc-1-ii] = intp[ii];
+        cv[nr-1-ii] = intp[ii];
       }
     }
   } else {
-    nr = 0;
-  }    
+    nc = 0;
+  }
 
-  /* Fill remaining elements */
-  for ( ii=nr; ii<nc; ii++ ) {
-    cv[nc-1-ii] = fillval;
+  /* Fill any remaining elements beyond length of rv */
+  for ( ii=nc; ii<nr; ii++ ) {
+    cv[nr-1-ii] = fillval;
   }
 
 }
@@ -497,14 +498,16 @@ R_nc_size_r2c(SEXP rv, size_t nc, size_t fillval, size_t *cv)
    Result is a netcdf status value.
  */
 static int
-R_nc_slice (SEXP start, SEXP count, int ncid, int varid,
+R_nc_slice (SEXP data, SEXP start, SEXP count, int ncid, int varid,
             int *ndims, size_t **cstart, size_t **ccount)
 {
-  int ii, status, *dimids;
+  int ii, status, *dimids, nr;
+  nc_type xtype;
   size_t clen;
+  SEXP datadim;
 
-  /* Get dimension identifiers of the variable */
-  status = nc_inq_var (ncid, varid, NULL, NULL, ndims, NULL, NULL);
+  /* Get type and dimension identifiers of the variable */
+  status = nc_inq_var (ncid, varid, NULL, &xtype, ndims, NULL, NULL);
   if (status != NC_NOERR) {
     return(status);
   }
@@ -515,28 +518,61 @@ R_nc_slice (SEXP start, SEXP count, int ncid, int varid,
   }
 
   dimids = (void *) R_alloc (*ndims, sizeof (int));
-  *cstart = (void *) R_alloc (*ndims, sizeof (int));
-  *ccount = (void *) R_alloc (*ndims, sizeof (int));
 
   status = nc_inq_vardimid (ncid, varid, dimids);
   if (status != NC_NOERR) {
     return(status);
   }
 
-  /* Store start in C dimension order as size_t,
-     converting missing values to 1 */
-  R_nc_size_r2c(start, *ndims, 1, *cstart);
-
-  /* Convert Fortran indices (1-based) to C (0-based) */
+  /* Copy start indices from start to cstart,
+     converting Fortran indices (1-based) to C (0-based)
+     and reversing dimension order from Fortran to C.
+     Default value for any missing dimension is 0,
+     including the special case of start being NULL.
+   */
+  *cstart = (void *) R_alloc (*ndims, sizeof (size_t));
+  R_nc_size_r2c (start, *ndims, 1, *cstart);
   for (ii=0; ii<*ndims; ii++) {
     (*cstart)[ii] -= 1;
   }
-  
-  /* Store count in C dimension order as size_t,
-     handling missing values so that corresponding dimensions are
+ 
+  /* Copy edge lengths from count to ccount,
+     reversing dimension order from Fortran to C.
+     In the special case of count being NULL,
+     use dimensions of data and set any slower dimensions to 1,
+     appending the fastest dimension for NC_CHAR variables if needed.
+     Default for missing dimensions is to calculate edge length
+     from start index to defined dimension length.
+   */
+  *ccount = (void *) R_alloc (*ndims, sizeof (size_t));
+  for (ii=0; ii<*ndims; ii++) {
+    (*ccount)[ii] = NA_SIZE;
+  }
+
+  if (isNull (count)) {
+    if (!isNull (data)) {
+      if (xtype == NC_CHAR) {
+        nr = *ndims-1;
+      } else {
+        nr = *ndims;
+      }
+      datadim = getAttrib (data, R_DimSymbol);
+      if (!isNull (datadim)) {
+        R_nc_size_r2c (datadim, nr, 1, *ccount);
+      } else {
+        for (ii=0; ii<nr-1; ii++) {
+          (*ccount)[ii] = 1;
+        }
+        (*ccount)[nr-1] = xlength (data);
+      }
+    }
+  } else {
+    R_nc_size_r2c (count, *ndims, NA_SIZE, *ccount);
+  }
+
+  /* Convert NA_SIZE in ccount so that corresponding dimensions are
      read/written from specified start index to the highest index.
    */
-  R_nc_size_r2c(count, *ndims, NA_SIZE, *ccount);
   for ( ii=0; ii<*ndims; ii++ ) {
     if ((*ccount)[ii] == NA_SIZE) {
       status = nc_inq_dimlen (ncid, dimids[ii], &clen);
@@ -1719,7 +1755,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   R_nc_check (R_nc_var_id (var, ncid, &varid));
 
   /*-- Handle NA values in start & count and reverse dimension order ----------*/
-  R_nc_check ( R_nc_slice (start, count, ncid, varid,
+  R_nc_check ( R_nc_slice (R_NilValue, start, count, ncid, varid,
                            &ndims, &cstart, &ccount));
 
   /*-- Determine type of external data ----------------------------------------*/
@@ -1857,7 +1893,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
   R_nc_check (R_nc_var_id (var, ncid, &varid));
 
   /*-- Handle NA values in start & count and reverse dimension order ----------*/
-  R_nc_check ( R_nc_slice (start, count, ncid, varid,
+  R_nc_check ( R_nc_slice (data, start, count, ncid, varid,
                            &ndims, &cstart, &ccount));
 
   /*-- Find total number of elements in data array ----------------------------*/
