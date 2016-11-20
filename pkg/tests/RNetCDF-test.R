@@ -84,7 +84,8 @@ tally <- NULL
 for (format in c("classic","offset64","classic4","netcdf4")) {
   cat("Test",format,"file format ...\n")
 
-  nc <- create.nc("foo.nc",format=format)
+  ncfile <- paste("test_", format, ".nc", sep="")
+  nc <- create.nc(ncfile, format=format)
 
   nstation <- 5
   ntime <- 2
