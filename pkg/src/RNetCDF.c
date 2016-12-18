@@ -89,6 +89,8 @@
 
 #define NA_SIZE ((size_t) -1)
 
+#define RNC_CHARSXP_MAXLEN 2147483647
+
 #define RRETURN(object) { R_nc_unprotect (); return (object); }
 
 #define RERROR(msg) { R_nc_error (msg); return R_NilValue; }
@@ -97,8 +99,7 @@ static int R_nc_protect_count = 0;
 
 static const char RNC_EDATALEN[]="Not enough data", \
   RNC_EDATATYPE[]="Incompatible data for external type", \
-  RNC_ETYPEDROP[]="Unsupported external type", \
-  RNC_ESTRLEN[]="R string length cannot exceed range of type int";
+  RNC_ETYPEDROP[]="Unsupported external type";
 
 /*=============================================================================*\
  *  R house-keeping functions
@@ -139,60 +140,58 @@ R_nc_error(const char *msg)
 
 
 /* Convert R strings to char array.
-   Argument rstr is an R string vector with length cnt.
-   Argument carr  provides space for at least len*cnt bytes.
+   Argument rstr is an R string vector with cnt indices from imin.
+   Argument carr provides space for at least cnt*strlen bytes.
    Strings are copied from rstr to carr,
-   trimming or padding each string with null characters to length len.
+   trimming or padding each string with null characters to length strlen.
  */
 static SEXP
-R_nc_strsxp_char (SEXP rstr, size_t len, size_t cnt, char *carr)
+R_nc_strsxp_char (SEXP rstr, char *carr, R_xlen_t imin, R_xlen_t cnt,
+                  size_t strlen)
 {
-  size_t ii;
+  R_xlen_t ii;
   char *thisstr;
-  for (ii=0, thisstr=carr; ii<cnt; ii++, thisstr+=len) {
-    strncpy(thisstr, CHAR( STRING_ELT (rstr, ii)), len);
+  for (ii=imin, thisstr=carr; ii<(imin+cnt); ii++, thisstr+=strlen) {
+    strncpy(thisstr, CHAR( STRING_ELT (rstr, ii)), strlen);
   }
   return R_NilValue;
 }
 
-
 /* Convert a char array to R strings.
-   Argument carr is assumed to contain cnt strings of length len,
+   Argument carr is assumed to contain cnt strings of maximum length len,
    its allocated size must be at least len*cnt+1 bytes,
    and its contents are modified during execution but restored on return.
-   Argument rstr is an R string vector with length cnt.
+   Argument rstr is an R string vector with length cnt from index imin.
  */
 static SEXP
-R_nc_char_strsxp (char *carr, size_t len, size_t cnt, SEXP rstr)
+R_nc_char_strsxp (char *carr, SEXP rstr,
+                  R_xlen_t len, R_xlen_t imin, R_xlen_t cnt)
 {
-  size_t ii;
-  char nextchar, *thisstr, *nextstr;
-  if (len > INT_MAX) {
-    RERROR (RNC_ESTRLEN);
-  }
-  for (ii=0, thisstr=carr; ii<cnt; ii++, thisstr+=len) {
-    /* Rows of character array may not be null-terminated, so set
-       first character of next row to null before passing each row to R. */
-    nextstr = thisstr + len;
-    nextchar = *nextstr;
-    *nextstr = '\0';
+  R_xlen_t ii, rlen;
+  char *thisstr, *endstr, endchar;
+  rlen = (len <= RNC_CHARSXP_MAXLEN) ? len : RNC_CHARSXP_MAXLEN;
+  for (ii=imin, thisstr=carr; ii<(imin+cnt); ii++, thisstr+=len) {
+    /* Temporarily null-terminate each string before passing to R */
+    endstr = thisstr + rlen;
+    endchar = *endstr;
+    *endstr = '\0';
     SET_STRING_ELT (rstr, ii, mkChar(thisstr));
-    *nextstr = nextchar;
+    *endstr = endchar;
   }
   return R_NilValue;
 }
 
 
 /* Convert R strings to char ragged array.
-   Argument rstr is an R string vector with length cnt.
-   Argument cstr provides space for cnt pointers,
+   Argument rstr is an R string vector with cnt indices from imin.
+   Argument cstr provides space for at least cnt pointers,
    which will be set to the address of each R string on return.
  */
 static SEXP
-R_nc_strsxp_str (SEXP rstr, size_t cnt, const char **cstr)
+R_nc_strsxp_str (SEXP rstr, const char **cstr, R_xlen_t imin, R_xlen_t cnt)
 {
-  size_t ii;
-  for (ii=0; ii<cnt; ii++) {
+  R_xlen_t ii;
+  for (ii=imin; ii<(imin+cnt); ii++) {
     cstr[ii] = CHAR( STRING_ELT (rstr, ii));
   }
   return R_NilValue;
@@ -201,16 +200,22 @@ R_nc_strsxp_str (SEXP rstr, size_t cnt, const char **cstr)
 
 /* Convert a char ragged array to R strings.
    Argument cstr is assumed to contain cnt pointers to null-terminated strings.
-   Argument rstr is an R string vector with length cnt.
+   Argument rstr is an R string vector with length cnt from index imin.
  */
 static SEXP
-R_nc_str_strsxp (char **cstr, size_t cnt, SEXP rstr)
+R_nc_str_strsxp (char **cstr, SEXP rstr, R_xlen_t imin, R_xlen_t cnt)
 {
-  size_t ii, nchar;
-  for (ii=0; ii<cnt; ii++) {
+  R_xlen_t ii, nchar;
+  char *endstr, endchar;
+  for (ii=imin; ii<(imin+cnt); ii++) {
     nchar = strlen (cstr[ii]);
-    if (nchar > INT_MAX) {
-      RERROR (RNC_ESTRLEN);
+    if (nchar > RNC_CHARSXP_MAXLEN) {
+      /* Temporarily truncate excessively long strings before passing to R */
+      endstr = cstr[ii]+RNC_CHARSXP_MAXLEN+1;
+      endchar = *endstr;
+      *endstr = '\0';
+      SET_STRING_ELT (rstr, ii, mkChar (cstr[ii]));
+      *endstr = endchar;
     } else if (nchar > 0) {
       SET_STRING_ELT (rstr, ii, mkChar (cstr[ii]));
     }
@@ -885,7 +890,7 @@ R_nc_get_att_char (int ncid, int varid, const char *attname, size_t cnt)
   if (cnt > 0) {
     charbuf = R_alloc (cnt + 1, sizeof (char));
     R_nc_check (nc_get_att_text (ncid, varid, attname, charbuf));
-    R_nc_char_strsxp (charbuf, cnt, 1, result);
+    R_nc_char_strsxp (charbuf, result, cnt, 0, 1);
   }
   return result;
 }
@@ -900,7 +905,7 @@ R_nc_get_att_string (int ncid, int varid, const char *attname, size_t cnt)
   if (cnt > 0) {
     strbuf = (void *) R_alloc (cnt, sizeof(char *));
     R_nc_check (nc_get_att_string (ncid, varid, attname, strbuf));
-    R_nc_str_strsxp (strbuf, cnt, result);
+    R_nc_str_strsxp (strbuf, result, 0, cnt);
     R_nc_check (nc_free_string (cnt, strbuf));
   }
   return result;
@@ -1141,7 +1146,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
     case NC_STRING:
       cnt = xlength (data);
       strbuf = (void *) R_alloc (cnt, sizeof(char *));
-      R_nc_strsxp_str (data, cnt, strbuf);
+      R_nc_strsxp_str (data, strbuf, 0, cnt);
       R_nc_check (nc_put_att_string (ncid, varid, attname, cnt, strbuf));
       RRETURN (R_NilValue);
     case NC_INT64:
@@ -1665,7 +1670,7 @@ R_nc_get_var_char (int ncid, int varid, int ndims,
   if (strcnt > 0) {
     charbuf = R_alloc (strcnt*strlen+1, sizeof (char));
     R_nc_check (nc_get_vara_text (ncid, varid, cstart, ccount, charbuf));
-    R_nc_char_strsxp (charbuf, strlen, strcnt, result);
+    R_nc_char_strsxp (charbuf, result, strlen, 0, strcnt);
   }
   return result;
 }
@@ -1683,7 +1688,7 @@ R_nc_get_var_string (int ncid, int varid, int ndims,
   if (strcnt > 0) {
     strbuf = (void *) R_alloc (strcnt, sizeof(char *));
     R_nc_check (nc_get_vara_string (ncid, varid, cstart, ccount, strbuf));
-    R_nc_str_strsxp (strbuf, strcnt, result);
+    R_nc_str_strsxp (strbuf, result, 0, strcnt);
     R_nc_check (nc_free_string (strcnt, strbuf));
   }
   return result;
@@ -1960,12 +1965,12 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
         RERROR (RNC_EDATALEN);
       }
       charbuf = R_alloc (strcnt*strlen, sizeof (char));
-      R_nc_strsxp_char (data, strlen, strcnt, charbuf);
+      R_nc_strsxp_char (data, charbuf, 0, strcnt, strlen);
       R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount, charbuf));
       RRETURN (R_NilValue);
     case NC_STRING:
       strbuf = (void *) R_alloc (arrlen, sizeof(char *));
-      R_nc_strsxp_str (data, arrlen, strbuf);
+      R_nc_strsxp_str (data, strbuf, 0, arrlen);
       R_nc_check (nc_put_vara_string (ncid, varid, cstart, ccount, strbuf));
       RRETURN (R_NilValue);
     case NC_INT64:
