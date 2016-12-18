@@ -225,21 +225,30 @@ R_nc_str_strsxp (char **cstr, SEXP rstr, R_xlen_t imin, R_xlen_t cnt)
 
 
 /* Convert R strings to int64 array.
-   Argument rstr is an R string vector with length cnt.
+   Argument rstr is an R string vector with cnt indices from imin.
    Argument cint64 contains cnt values of type long long on return.
+   Any element of cint64 that cannot be converted from rstr is set to *fill,
+   or NC_FILL_INT64 if fill is NULL.
  */
 static SEXP
-R_nc_strsxp_int64 (SEXP rstr, size_t cnt, long long *cint64)
+R_nc_strsxp_int64 (SEXP rstr, long long *cint64,
+                   R_xlen_t imin, R_xlen_t cnt, long long *fill)
 {
-  size_t ii;
+  R_xlen_t ii;
   const char *charptr;
   char *endptr;
+  long long fillval;
+  if (fill == NULL) {
+    fillval = NC_FILL_INT64;
+  } else {
+    fillval = *fill;
+  }
   errno = 0;
-  for (ii=0; ii<cnt; ii++) {
+  for (ii=imin; ii<(imin+cnt); ii++) {
     charptr = CHAR (STRING_ELT (rstr, ii));
     cint64[ii] = strtoll (charptr, &endptr, 10);
     if (endptr == charptr || *endptr != '\0' || errno != 0) {
-      RERROR ("Could not convert R string to NC_INT64\n");
+      cint64[ii] = fillval;
     }
   }
   return R_NilValue;
@@ -248,16 +257,28 @@ R_nc_strsxp_int64 (SEXP rstr, size_t cnt, long long *cint64)
 
 /* Convert an int64 array to R strings.
    Argument cint64 contains cnt values of type long long.
-   Argument rstr is an R string vector with length cnt.
+   Argument rstr is an R string vector with length cnt from index imin.
+   Any element of cint64 with value *fill (or NC_FILL_INT64 if fill is NULL)
+   will be converted to the string "NA".
  */
 static SEXP
-R_nc_int64_strsxp (long long *cint64, size_t cnt, SEXP rstr)
+R_nc_int64_strsxp (long long *cint64, SEXP rstr,
+                   R_xlen_t imin, R_xlen_t cnt, long long *fill)
 {
-  size_t ii;
+  R_xlen_t ii;
   char chartmp[24];
-  for (ii=0; ii<cnt; ii++) {
-    if (sprintf (chartmp, "%lli", cint64[ii]) > 0) {
+  long long fillval;
+  if (fill == NULL) {
+    fillval = NC_FILL_INT64;
+  } else {
+    fillval = *fill;
+  }
+  for (ii=imin; ii<(imin+cnt); ii++) {
+    if ((cint64[ii] != fillval) &&
+        (sprintf (chartmp, "%lli", cint64[ii]) > 0)) {
       SET_STRING_ELT (rstr, ii, mkChar (chartmp));
+    } else {
+      SET_STRING_ELT (rstr, ii, NA_STRING);
     }
   }
   return R_NilValue;
@@ -265,21 +286,30 @@ R_nc_int64_strsxp (long long *cint64, size_t cnt, SEXP rstr)
 
 
 /* Convert R strings to uint64 array.
-   Argument rstr is an R string vector with length cnt.
+   Argument rstr is an R string vector with cnt indices from imin.
    Argument cuint64 contains cnt values of type unsigned long long on return.
+   Any element of cuint64 that cannot be converted from rstr is set to *fill,
+   or NC_FILL_UINT64 if fill is NULL.
  */
 static SEXP
-R_nc_strsxp_uint64 (SEXP rstr, size_t cnt, unsigned long long *cuint64)
+R_nc_strsxp_uint64 (SEXP rstr, unsigned long long *cuint64,
+                    R_xlen_t imin, R_xlen_t cnt, unsigned long long *fill)
 {
-  size_t ii;
+  R_xlen_t ii;
   const char *charptr;
   char *endptr;
+  unsigned long long fillval;
   errno = 0;
-  for (ii=0; ii<cnt; ii++) {
+  if (fill == NULL) {
+    fillval = NC_FILL_UINT64;
+  } else {
+    fillval = *fill;
+  }
+  for (ii=imin; ii<(imin+cnt); ii++) {
     charptr = CHAR (STRING_ELT (rstr, ii));
     cuint64[ii] = strtoull (charptr, &endptr, 10);
     if (endptr == charptr || *endptr != '\0' || errno != 0) {
-      RERROR ("Could not convert R string to NC_UINT64\n");
+      cuint64[ii] = fillval;
     }
   }
   return R_NilValue;
@@ -289,15 +319,27 @@ R_nc_strsxp_uint64 (SEXP rstr, size_t cnt, unsigned long long *cuint64)
 /* Convert a uint64 array to R strings.
    Argument cuint64 contains cnt values of type unsigned long long.
    Argument rstr is an R string vector with length cnt.
+   Any element of cuint64 with value *fill (or NC_FILL_UINT64 if fill is NULL)
+   will be converted to the string "NA".
  */
 static SEXP
-R_nc_uint64_strsxp (unsigned long long *cuint64, size_t cnt, SEXP rstr)
+R_nc_uint64_strsxp (unsigned long long *cuint64, SEXP rstr,
+                    R_xlen_t imin, R_xlen_t cnt, unsigned long long *fill)
 {
   size_t ii;
   char chartmp[24];
-  for (ii=0; ii<cnt; ii++) {
-    if (sprintf (chartmp, "%llu", cuint64[ii]) > 0) {
+  unsigned long long fillval;
+  if (fill == NULL) {
+    fillval = NC_FILL_UINT64;
+  } else {
+    fillval = *fill;
+  }
+  for (ii=imin; ii<(imin+cnt); ii++) {
+    if ((cuint64[ii] != fillval) &&
+        (sprintf (chartmp, "%llu", cuint64[ii]) > 0)) {
       SET_STRING_ELT (rstr, ii, mkChar (chartmp));
+    } else {
+      SET_STRING_ELT (rstr, ii, NA_STRING);
     }
   }
   return R_NilValue;
@@ -933,7 +975,7 @@ R_nc_get_att_int64 (int ncid, int varid, const char *attname, size_t cnt)
   if (cnt > 0) {
     int64buf = (void *) R_alloc (cnt, sizeof (long long));
     R_nc_check (nc_get_att_longlong (ncid, varid, attname, int64buf));
-    R_nc_int64_strsxp (int64buf, cnt, result);
+    R_nc_int64_strsxp (int64buf, result, 0, cnt, NULL);
   }
   return result;
 }
@@ -948,7 +990,7 @@ R_nc_get_att_uint64 (int ncid, int varid, const char *attname, size_t cnt)
   if (cnt > 0) {
     uint64buf = (void *) R_alloc (cnt, sizeof (unsigned long long));
     R_nc_check (nc_get_att_ulonglong (ncid, varid, attname, uint64buf));
-    R_nc_uint64_strsxp (uint64buf, cnt, result);
+    R_nc_uint64_strsxp (uint64buf, result, 0, cnt, NULL);
   }
   return result;
 }
@@ -1152,14 +1194,14 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
     case NC_INT64:
       cnt = xlength (data);
       int64buf = (void *) R_alloc (cnt, sizeof (long long));
-      R_nc_strsxp_int64 (data, cnt, int64buf);
+      R_nc_strsxp_int64 (data, int64buf, 0, cnt, NULL);
       R_nc_check (nc_put_att_longlong (ncid, varid, attname,
                                        xtype, cnt, int64buf));
       RRETURN (R_NilValue);
     case NC_UINT64:
       cnt = xlength (data);
       uint64buf = (void *) R_alloc (cnt, sizeof (unsigned long long));
-      R_nc_strsxp_uint64 (data, cnt, uint64buf);
+      R_nc_strsxp_uint64 (data, uint64buf, 0, cnt, NULL);
       R_nc_check (nc_put_att_ulonglong (ncid, varid, attname,
                                         xtype, cnt, uint64buf));
       RRETURN (R_NilValue);
@@ -1721,7 +1763,7 @@ R_nc_get_var_int64 (int ncid, int varid, int ndims,
   if (arrlen > 0) {
     int64buf = (void *) R_alloc (arrlen, sizeof (long long));
     R_nc_check (nc_get_vara_longlong (ncid, varid, cstart, ccount, int64buf));
-    R_nc_int64_strsxp (int64buf, arrlen, result);
+    R_nc_int64_strsxp (int64buf, result, 0, arrlen, NULL);
   }
   return result;
 }
@@ -1739,7 +1781,7 @@ R_nc_get_var_uint64 (int ncid, int varid, int ndims,
   if (arrlen > 0) {
     uint64buf = (void *) R_alloc (arrlen, sizeof (unsigned long long));
     R_nc_check (nc_get_vara_ulonglong (ncid, varid, cstart, ccount, uint64buf));
-    R_nc_uint64_strsxp (uint64buf, arrlen, result);
+    R_nc_uint64_strsxp (uint64buf, result, 0, arrlen, NULL);
   }
   return result;
 }
@@ -1975,12 +2017,12 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
       RRETURN (R_NilValue);
     case NC_INT64:
       int64buf = (void *) R_alloc (arrlen, sizeof (long long));
-      R_nc_strsxp_int64 (data, arrlen, int64buf);
+      R_nc_strsxp_int64 (data, int64buf, 0, arrlen, NULL);
       R_nc_check (nc_put_vara_longlong (ncid, varid, cstart, ccount, int64buf));
       RRETURN (R_NilValue);
     case NC_UINT64:
         uint64buf = (void *) R_alloc (arrlen, sizeof (unsigned long long));
-        R_nc_strsxp_uint64 (data, arrlen, uint64buf);
+        R_nc_strsxp_uint64 (data, uint64buf, 0, arrlen, NULL);
         R_nc_check (nc_put_vara_ulonglong (ncid, varid, cstart, ccount, uint64buf));
         RRETURN (R_NilValue);
     }
