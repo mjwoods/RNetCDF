@@ -798,8 +798,31 @@ type.def.nc <- function(ncfile, typename, class, basetype=NULL, size=NULL) {
     stop("Unknown class for type definition", call.=FALSE)
   }
 
-  id <- .Call("R_nc_def_type", ncfile, typename, class, basetype, size)
+  id <- .Call("R_nc_def_type", ncfile, typename, class, basetype, size,
+              PACKAGE="RNetCDF")
   return(invisible(id))
+}
+
+
+#-------------------------------------------------------------------------------
+# type.insert.nc()
+#-------------------------------------------------------------------------------
+
+type.insert.nc <- function(ncfile, type, name, value=NULL,
+  offset=NULL, subtype=NULL, dimsizes=NULL) {
+  # Check arguments
+  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(is.numeric(type) || is.character(type))
+  stopifnot(is.character(name))
+  stopifnot(is.null(value) || is.numeric(value))
+  stopifnot(is.null(offset) || is.numeric(offset))
+  stopifnot(is.null(subtype) || is.numeric(subtype) || is.character(subtype))
+  stopifnot(is.null(dimsizes) || is.numeric(dimsizes))
+
+  .Call("R_nc_insert_type", ncfile, type, name, value,
+         offset, subtype, dimsizes, PACKAGE="RNetCDF")
+
+  return(invisible(NULL))
 }
 
 

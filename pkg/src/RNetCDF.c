@@ -2691,6 +2691,94 @@ R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP basetype, SEXP size)
 }
 
 
+/*-----------------------------------------------------------------------------*\
+ *  R_nc_insert_type()                                                         *
+\*-----------------------------------------------------------------------------*/
+
+SEXP
+R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
+  SEXP offset, SEXP subtype, SEXP dimsizes)
+{
+  int ncid, ndims;
+  nc_type typeid, xtype;
+  const char *fldname;
+  int class, *csizes;
+  size_t coffset;
+  /* Temporary for single item of the largest netcdf external numeric type */
+  long long tmpval;
+
+  /*-- Decode arguments -------------------------------------------------------*/
+  ncid = asInteger (nc);
+
+  if (isString (type)) {
+    R_nc_check (R_nc_str2type (ncid, CHAR (STRING_ELT (type, 0)), &typeid));
+  } else {
+    typeid = asInteger (type);
+  }
+
+  fldname = CHAR (STRING_ELT (name, 0));
+
+  R_nc_check (nc_inq_user_type (ncid, typeid, NULL, NULL, &xtype, NULL, &class));
+
+  if (class == NC_ENUM) {
+    if (!isNull (value)) {
+      R_nc_r2c (value, &tmpval, 1, xtype, NULL);
+    } else {
+      RERROR ("No value given for enumerated type");
+    }
+  } else if (class == NC_COMPOUND) {
+    if (!isNull (offset) && !isNull (subtype)) {
+
+      if (isInteger (offset)) {
+        coffset = asInteger (offset);
+      } else {
+        /* offset could be larger than integer */
+        coffset = asReal (offset);
+      }
+
+      if (isString (subtype)) {
+        R_nc_check (R_nc_str2type (ncid, CHAR (STRING_ELT (subtype, 0)),
+                                   &xtype));
+      } else {
+        xtype = asInteger (subtype);
+      }
+
+      if (isNull (dimsizes)) {
+        ndims = 0;
+      } else {
+        ndims = length (dimsizes);
+        if (ndims > 0) {
+          csizes = (void *) R_alloc (ndims, sizeof (int));
+          R_nc_dim_r2c_int(dimsizes, ndims, -1, csizes);
+        } else {
+          csizes = NULL;
+        }
+      }
+    } else {
+      RERROR ("No offset or subtype given for compound type");
+    }
+  } else {
+    RERROR ("Expected enumerated or compound type");
+  }
+
+  /*-- Enter define mode ------------------------------------------------------*/
+  R_nc_check( R_nc_redef (ncid));
+
+  /*-- Insert the member or field ---------------------------------------------*/
+  if (class == NC_ENUM) {
+    R_nc_check (nc_insert_enum (ncid, typeid, fldname, &tmpval));
+  } else {
+    if (ndims > 0) {
+      R_nc_check (nc_insert_array_compound (ncid, typeid, fldname,
+                    coffset, xtype, ndims, csizes));
+    } else {
+      R_nc_check (nc_insert_compound (ncid, typeid, fldname, coffset, xtype));
+    }
+  }
+
+  RRETURN(R_NilValue);
+}
+
 
 /*=============================================================================*\
  *  Public functions called by R for udunits interface

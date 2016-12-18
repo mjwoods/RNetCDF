@@ -40,13 +40,10 @@ The components of types in \code{class} "compound" and "enum" must be specified 
 ##  Create a new NetCDF4 dataset and define types
 nc <- create.nc("type.def.nc", format="netcdf4")
 
-# Tests commented out until type.insert.nc is implemented,
-# otherwise file creation fails:
-#type.def.nc(nc, "struct", "compound", size=32)
-#type.def.nc(nc, "factor", "enum", basetype="NC_INT")
-
 type.def.nc(nc, "blob", "opaque", size=128)
 type.def.nc(nc, "vector", "vlen", basetype="NC_FLOAT")
+
+# Examples of compound and enum types are shown in help for type.insert.nc
 
 close.nc(nc)
 }
