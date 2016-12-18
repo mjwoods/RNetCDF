@@ -101,10 +101,10 @@ static const char RNC_EDATALEN[]="Not enough data", \
   RNC_ESTRLEN[]="R string length cannot exceed range of type int";
 
 /*=============================================================================*\
- *  Reusable internal functions
+ *  R house-keeping functions
 \*=============================================================================*/
 
-/* Protect and unprotect objects from garbage collection by R */
+/* Protect an object from garbage collection by R */
 static SEXP
 R_nc_protect (SEXP obj)
 {
@@ -113,6 +113,8 @@ R_nc_protect (SEXP obj)
   return obj;
 }
 
+
+/* Unprotect all objects from garbage collection by R */
 static void
 R_nc_unprotect (void) {
   if (R_nc_protect_count > 0) {
@@ -120,6 +122,198 @@ R_nc_unprotect (void) {
     R_nc_protect_count = 0;
   }
 }
+
+
+/* Raise an error in R */
+static void
+R_nc_error(const char *msg)
+{
+  R_nc_unprotect ();
+  error ("%s", msg);
+}
+
+
+/*=============================================================================*\
+ *  String conversions and other operations.
+\*=============================================================================*/
+
+
+/* Convert R strings to char array.
+   Argument rstr is an R string vector with length cnt.
+   Argument carr  provides space for at least len*cnt bytes.
+   Strings are copied from rstr to carr,
+   trimming or padding each string with null characters to length len.
+ */
+static SEXP
+R_nc_strsxp_char (SEXP rstr, size_t len, size_t cnt, char *carr)
+{
+  size_t ii;
+  char *thisstr;
+  for (ii=0, thisstr=carr; ii<cnt; ii++, thisstr+=len) {
+    strncpy(thisstr, CHAR( STRING_ELT (rstr, ii)), len);
+  }
+  return R_NilValue;
+}
+
+
+/* Convert a char array to R strings.
+   Argument carr is assumed to contain cnt strings of length len,
+   its allocated size must be at least len*cnt+1 bytes,
+   and its contents are modified during execution but restored on return.
+   Argument rstr is an R string vector with length cnt.
+ */
+static SEXP
+R_nc_char_strsxp (char *carr, size_t len, size_t cnt, SEXP rstr)
+{
+  size_t ii;
+  char nextchar, *thisstr, *nextstr;
+  if (len > INT_MAX) {
+    RERROR (RNC_ESTRLEN);
+  }
+  for (ii=0, thisstr=carr; ii<cnt; ii++, thisstr+=len) {
+    /* Rows of character array may not be null-terminated, so set
+       first character of next row to null before passing each row to R. */
+    nextstr = thisstr + len;
+    nextchar = *nextstr;
+    *nextstr = '\0';
+    SET_STRING_ELT (rstr, ii, mkChar(thisstr));
+    *nextstr = nextchar;
+  }
+  return R_NilValue;
+}
+
+
+/* Convert R strings to char ragged array.
+   Argument rstr is an R string vector with length cnt.
+   Argument cstr provides space for cnt pointers,
+   which will be set to the address of each R string on return.
+ */
+static SEXP
+R_nc_strsxp_str (SEXP rstr, size_t cnt, const char **cstr)
+{
+  size_t ii;
+  for (ii=0; ii<cnt; ii++) {
+    cstr[ii] = CHAR( STRING_ELT (rstr, ii));
+  }
+  return R_NilValue;
+}
+
+
+/* Convert a char ragged array to R strings.
+   Argument cstr is assumed to contain cnt pointers to null-terminated strings.
+   Argument rstr is an R string vector with length cnt.
+ */
+static SEXP
+R_nc_str_strsxp (char **cstr, size_t cnt, SEXP rstr)
+{
+  size_t ii, nchar;
+  for (ii=0; ii<cnt; ii++) {
+    nchar = strlen (cstr[ii]);
+    if (nchar > INT_MAX) {
+      RERROR (RNC_ESTRLEN);
+    } else if (nchar > 0) {
+      SET_STRING_ELT (rstr, ii, mkChar (cstr[ii]));
+    }
+  }
+  return R_NilValue;
+}
+
+
+/* Convert R strings to int64 array.
+   Argument rstr is an R string vector with length cnt.
+   Argument cint64 contains cnt values of type long long on return.
+ */
+static SEXP
+R_nc_strsxp_int64 (SEXP rstr, size_t cnt, long long *cint64)
+{
+  size_t ii;
+  const char *charptr;
+  char *endptr;
+  errno = 0;
+  for (ii=0; ii<cnt; ii++) {
+    charptr = CHAR (STRING_ELT (rstr, ii));
+    cint64[ii] = strtoll (charptr, &endptr, 10);
+    if (endptr == charptr || *endptr != '\0' || errno != 0) {
+      RERROR ("Could not convert R string to NC_INT64\n");
+    }
+  }
+  return R_NilValue;
+}
+
+
+/* Convert an int64 array to R strings.
+   Argument cint64 contains cnt values of type long long.
+   Argument rstr is an R string vector with length cnt.
+ */
+static SEXP
+R_nc_int64_strsxp (long long *cint64, size_t cnt, SEXP rstr)
+{
+  size_t ii;
+  char chartmp[24];
+  for (ii=0; ii<cnt; ii++) {
+    if (sprintf (chartmp, "%lli", cint64[ii]) > 0) {
+      SET_STRING_ELT (rstr, ii, mkChar (chartmp));
+    }
+  }
+  return R_NilValue;
+}
+
+
+/* Convert R strings to uint64 array.
+   Argument rstr is an R string vector with length cnt.
+   Argument cuint64 contains cnt values of type unsigned long long on return.
+ */
+static SEXP
+R_nc_strsxp_uint64 (SEXP rstr, size_t cnt, unsigned long long *cuint64)
+{
+  size_t ii;
+  const char *charptr;
+  char *endptr;
+  errno = 0;
+  for (ii=0; ii<cnt; ii++) {
+    charptr = CHAR (STRING_ELT (rstr, ii));
+    cuint64[ii] = strtoull (charptr, &endptr, 10);
+    if (endptr == charptr || *endptr != '\0' || errno != 0) {
+      RERROR ("Could not convert R string to NC_UINT64\n");
+    }
+  }
+  return R_NilValue;
+}
+
+
+/* Convert a uint64 array to R strings.
+   Argument cuint64 contains cnt values of type unsigned long long.
+   Argument rstr is an R string vector with length cnt.
+ */
+static SEXP
+R_nc_uint64_strsxp (unsigned long long *cuint64, size_t cnt, SEXP rstr)
+{
+  size_t ii;
+  char chartmp[24];
+  for (ii=0; ii<cnt; ii++) {
+    if (sprintf (chartmp, "%llu", cuint64[ii]) > 0) {
+      SET_STRING_ELT (rstr, ii, mkChar (chartmp));
+    }
+  }
+  return R_NilValue;
+}
+
+
+/* Determine if a C string matches the first element of an R variable.
+   Result is a logical value. */
+static int
+R_nc_strcmp (SEXP var, const char *str)
+{
+  return (isString(var) &&
+          xlength(var) >= 1 &&
+          strcmp(CHAR (STRING_ELT (var, 0)), str) == 0);
+}
+
+
+/*=============================================================================*\
+ *  Private functions for netcdf interface
+\*=============================================================================*/
+
 
 /* Enter netcdf define mode if possible.
    Returns netcdf error code if an unhandled error occurs.
@@ -298,39 +492,6 @@ R_nc_str2type (int ncid, const char *str, nc_type * xtype)
 }
 
 
-/* Convert udunits error code to a string */
-static const char *
-R_nc_uterror (int errcode)
-{
-  switch (errcode) {
-  case UT_EOF:
-    return "end-of-file encountered (udunits)";
-  case UT_ENOFILE:
-    return "no units-file (udunits)";
-  case UT_ESYNTAX:
-    return "syntax error (udunits)";
-  case UT_EUNKNOWN:
-    return "unknown specification (udunits)";
-  case UT_EIO:
-    return "I/O error (udunits)";
-  case UT_EINVALID:
-    return "invalid unit-structure (udunits)";
-  case UT_ENOINIT:
-    return "package not initialized (udunits)";
-  case UT_ECONVERT:
-    return "two units are not convertable (udunits)";
-  case UT_EALLOC:
-    return "memory allocation failure (udunits)";
-  case UT_ENOROOM:
-    return "insufficient room supplied (udunits)";
-  case UT_ENOTTIME:
-    return "not a unit of time (udunits)";
-  default:
-    return "unknown error (udunits)";
-  }
-}
-
-
 /* Convert netcdf file format code to string label.
  */
 static const char *
@@ -413,25 +574,6 @@ R_nc_var_id (SEXP var, int ncid, int *varid)
   }
 }
 
-
-/* Determine if a C string matches the first element of an R variable.
-   Result is a logical value. */
-static int
-R_nc_strcmp (SEXP var, const char *str)
-{
-  return (isString(var) &&
-          xlength(var) >= 1 &&
-          strcmp(CHAR (STRING_ELT (var, 0)), str) == 0);
-}
-
-
-/* Raise an error in R */
-static void
-R_nc_error(const char *msg)
-{
-  R_nc_unprotect ();
-  error ("%s", msg);
-}
 
 /* If status is a netcdf error, raise an R error with a suitable message,
    otherwise return to caller. */
@@ -603,169 +745,46 @@ R_nc_length (int ndims, const size_t *count)
 }
 
 
-/* Convert a char array to R strings.
-   Argument carr is assumed to contain cnt strings of length len,
-   its allocated size must be at least len*cnt+1 bytes,
-   and its contents are modified during execution but restored on return.
-   Argument rstr is an R string vector with length cnt.
- */
-static SEXP
-R_nc_char_strsxp (char *carr, size_t len, size_t cnt, SEXP rstr)
+/*=============================================================================*\
+ *  Private functions for UDUNITS interface
+\*=============================================================================*/
+
+
+/* Convert udunits error code to a string */
+static const char *
+R_nc_uterror (int errcode)
 {
-  size_t ii;
-  char nextchar, *thisstr, *nextstr;
-  if (len > INT_MAX) {
-    RERROR (RNC_ESTRLEN);
+  switch (errcode) {
+  case UT_EOF:
+    return "end-of-file encountered (udunits)";
+  case UT_ENOFILE:
+    return "no units-file (udunits)";
+  case UT_ESYNTAX:
+    return "syntax error (udunits)";
+  case UT_EUNKNOWN:
+    return "unknown specification (udunits)";
+  case UT_EIO:
+    return "I/O error (udunits)";
+  case UT_EINVALID:
+    return "invalid unit-structure (udunits)";
+  case UT_ENOINIT:
+    return "package not initialized (udunits)";
+  case UT_ECONVERT:
+    return "two units are not convertable (udunits)";
+  case UT_EALLOC:
+    return "memory allocation failure (udunits)";
+  case UT_ENOROOM:
+    return "insufficient room supplied (udunits)";
+  case UT_ENOTTIME:
+    return "not a unit of time (udunits)";
+  default:
+    return "unknown error (udunits)";
   }
-  for (ii=0, thisstr=carr; ii<cnt; ii++, thisstr+=len) {
-    /* Rows of character array may not be null-terminated, so set
-       first character of next row to null before passing each row to R. */
-    nextstr = thisstr + len;
-    nextchar = *nextstr;
-    *nextstr = '\0';
-    SET_STRING_ELT (rstr, ii, mkChar(thisstr));
-    *nextstr = nextchar;
-  }
-  return R_NilValue;
-}
-
-
-/* Convert a char ragged array to R strings.
-   Argument cstr is assumed to contain cnt pointers to null-terminated strings.
-   Argument rstr is an R string vector with length cnt.
- */
-static SEXP
-R_nc_str_strsxp (char **cstr, size_t cnt, SEXP rstr)
-{
-  size_t ii, nchar;
-  for (ii=0; ii<cnt; ii++) {
-    nchar = strlen (cstr[ii]);
-    if (nchar > INT_MAX) {
-      RERROR (RNC_ESTRLEN);
-    } else if (nchar > 0) {
-      SET_STRING_ELT (rstr, ii, mkChar (cstr[ii]));
-    }
-  }
-  return R_NilValue;
-}
-
-
-/* Convert an int64 array to R strings.
-   Argument cint64 contains cnt values of type long long.
-   Argument rstr is an R string vector with length cnt.
- */
-static SEXP
-R_nc_int64_strsxp (long long *cint64, size_t cnt, SEXP rstr)
-{
-  size_t ii;
-  char chartmp[24];
-  for (ii=0; ii<cnt; ii++) {
-    if (sprintf (chartmp, "%lli", cint64[ii]) > 0) {
-      SET_STRING_ELT (rstr, ii, mkChar (chartmp));
-    }
-  }
-  return R_NilValue;
-}
-
-
-/* Convert a uint64 array to R strings.
-   Argument cuint64 contains cnt values of type unsigned long long.
-   Argument rstr is an R string vector with length cnt.
- */
-static SEXP
-R_nc_uint64_strsxp (unsigned long long *cuint64, size_t cnt, SEXP rstr)
-{
-  size_t ii;
-  char chartmp[24];
-  for (ii=0; ii<cnt; ii++) {
-    if (sprintf (chartmp, "%llu", cuint64[ii]) > 0) {
-      SET_STRING_ELT (rstr, ii, mkChar (chartmp));
-    }
-  }
-  return R_NilValue;
-}
-
-
-/* Convert R strings to char array.
-   Argument rstr is an R string vector with length cnt.
-   Argument carr  provides space for at least len*cnt bytes.
-   Strings are copied from rstr to carr,
-   trimming or padding each string with null characters to length len.
- */
-static SEXP
-R_nc_strsxp_char (SEXP rstr, size_t len, size_t cnt, char *carr)
-{
-  size_t ii;
-  char *thisstr;
-  for (ii=0, thisstr=carr; ii<cnt; ii++, thisstr+=len) {
-    strncpy(thisstr, CHAR( STRING_ELT (rstr, ii)), len);
-  }
-  return R_NilValue;
-}
-
-
-/* Convert R strings to char ragged array.
-   Argument rstr is an R string vector with length cnt.
-   Argument cstr provides space for cnt pointers,
-   which will be set to the address of each R string on return.
- */
-static SEXP
-R_nc_strsxp_str (SEXP rstr, size_t cnt, const char **cstr)
-{
-  size_t ii;
-  for (ii=0; ii<cnt; ii++) {
-    cstr[ii] = CHAR( STRING_ELT (rstr, ii));
-  }
-  return R_NilValue;
-}
-
-
-/* Convert R strings to int64 array.
-   Argument rstr is an R string vector with length cnt.
-   Argument cint64 contains cnt values of type long long on return.
- */
-static SEXP
-R_nc_strsxp_int64 (SEXP rstr, size_t cnt, long long *cint64)
-{
-  size_t ii;
-  const char *charptr;
-  char *endptr;
-  errno = 0;
-  for (ii=0; ii<cnt; ii++) {
-    charptr = CHAR (STRING_ELT (rstr, ii));
-    cint64[ii] = strtoll (charptr, &endptr, 10);
-    if (endptr == charptr || *endptr != '\0' || errno != 0) {
-      RERROR ("Could not convert R string to NC_INT64\n");
-    }
-  }
-  return R_NilValue;
-}
-
-
-/* Convert R strings to uint64 array.
-   Argument rstr is an R string vector with length cnt.
-   Argument cuint64 contains cnt values of type unsigned long long on return.
- */
-static SEXP
-R_nc_strsxp_uint64 (SEXP rstr, size_t cnt, unsigned long long *cuint64)
-{
-  size_t ii;
-  const char *charptr;
-  char *endptr;
-  errno = 0;
-  for (ii=0; ii<cnt; ii++) {
-    charptr = CHAR (STRING_ELT (rstr, ii));
-    cuint64[ii] = strtoull (charptr, &endptr, 10);
-    if (endptr == charptr || *endptr != '\0' || errno != 0) {
-      RERROR ("Could not convert R string to NC_UINT64\n");
-    }
-  }
-  return R_NilValue;
 }
 
 
 /*=============================================================================*\
- *  NetCDF library functions						       *
+ *  Public functions called by R for netcdf interface
 \*=============================================================================*/
 
 /*-----------------------------------------------------------------------------*\
@@ -2299,7 +2318,7 @@ R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP basetype, SEXP size)
 
 
 /*=============================================================================*\
- *  Udunits library functions						       *
+ *  Public functions called by R for udunits interface
 \*=============================================================================*/
 
 /*-----------------------------------------------------------------------------*\
