@@ -2631,10 +2631,10 @@ R_nc_rename_grp (SEXP nc, SEXP grpname)
 SEXP
 R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP basetype, SEXP size)
 {
-  int ncid, typeid;
+  int ncid;
   char mode;
   const char *typenamep;
-  nc_type xtype;
+  nc_type typeid, xtype;
   size_t xsize;
   SEXP result;
 
