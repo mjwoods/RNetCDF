@@ -670,6 +670,27 @@ R_nc_c2r (void *cv, SEXP rv, size_t cnt, nc_type xtype, void *fill)
 }
 
 
+/* Reverse a vector in-place.
+   Example: R_nc_rev_int (cv, cnt);
+ */
+#define R_NC_REVERSE(FUN, TYPE) \
+static void \
+FUN (TYPE *data, size_t cnt) \
+{ \
+  size_t ii, jj; \
+  TYPE tmp; \
+  for (ii=0, jj=cnt-1; ii<jj; ii++, jj--) { \
+    tmp = data[ii]; \
+    data[ii] = data[jj]; \
+    data[jj] = tmp; \
+  } \
+}
+
+R_NC_REVERSE(R_nc_rev_int, int);
+R_NC_REVERSE(R_nc_rev_size, size_t);
+/* Define R_nc_rev for other types as needed */
+
+
 /*=============================================================================*\
  *  Private functions for netcdf interface
 \*=============================================================================*/
@@ -948,49 +969,43 @@ R_nc_check(int status)
 
 
 /* Copy the leading nr elements of R vector rv to C vector cv,
-   converting type to size_t and reversing from Fortran to C storage order.
+   converting type to int and reversing from Fortran to C storage order.
    Elements beyond the length of rv and non-finite values are stored as fillval.
  */
-static void
-R_nc_size_r2c(SEXP rv, size_t nr, size_t fillval, size_t *cv)
-{
-  double *realp;
-  int *intp;
-  size_t nc, ii;
-
-  /* Number of elements to copy must not exceed length of rv */
-  nc = xlength (rv);
-  nc = (nr < nc) ? nr : nc;
-
-  /* Copy elements */
-  if (isReal (rv)) {
-    realp = REAL (rv);
-    for ( ii=0; ii<nc; ii++ ) {
-      if (R_FINITE (realp[ii])) {
-        cv[nr-1-ii] = realp[ii];
-      } else {
-        cv[nr-1-ii] = fillval;
-      }
-    }
-  } else if (isInteger (rv)) {
-    intp = INTEGER (rv);
-    for ( ii=0; ii<nc; ii++ ) {
-      if (intp[ii] == NA_INTEGER) {
-        cv[nr-1-ii] = fillval;
-      } else {
-        cv[nr-1-ii] = intp[ii];
-      }
-    }
-  } else {
-    nc = 0;
-  }
-
-  /* Fill any remaining elements beyond length of rv */
-  for ( ii=nc; ii<nr; ii++ ) {
-    cv[nr-1-ii] = fillval;
-  }
-
+#define R_NC_DIM_R2C(FUN, TYPENAME, TYPE) \
+static void \
+FUN (SEXP rv, size_t nr, TYPE fillval, TYPE *cv) \
+{ \
+  double *realp; \
+  int *intp; \
+  size_t nc, ii; \
+\
+  /* Number of elements to copy must not exceed length of rv */ \
+  nc = xlength (rv); \
+  nc = (nr < nc) ? nr : nc; \
+\
+  /* Copy elements */ \
+  if (isReal (rv)) { \
+    realp = REAL (rv); \
+    R_nc_r2c_dbl_##TYPENAME (realp, cv, nc, &fillval); \
+  } else if (isInteger (rv)) { \
+    intp = INTEGER (rv); \
+    R_nc_r2c_int_##TYPENAME (intp, cv, nc, &fillval); \
+  } else { \
+    nc = 0; \
+  } \
+\
+  /* Fill any remaining elements beyond length of rv */ \
+  for ( ii=nc; ii<nr; ii++ ) { \
+    cv[ii] = fillval; \
+  } \
+\
+  /* Reverse from Fortran to C order */ \
+  R_nc_rev_##TYPENAME (cv, nr); \
 }
+
+R_NC_DIM_R2C (R_nc_dim_r2c_int, int, int);
+R_NC_DIM_R2C (R_nc_dim_r2c_size, size, size_t);
 
 
 /* Handle NA values in user-specified variable slices.
@@ -1033,7 +1048,7 @@ R_nc_slice (SEXP data, SEXP start, SEXP count, int ncid, int varid,
      including the special case of start being NULL.
    */
   *cstart = (void *) R_alloc (*ndims, sizeof (size_t));
-  R_nc_size_r2c (start, *ndims, 1, *cstart);
+  R_nc_dim_r2c_size (start, *ndims, 1, *cstart);
   for (ii=0; ii<*ndims; ii++) {
     (*cstart)[ii] -= 1;
   }
@@ -1060,7 +1075,7 @@ R_nc_slice (SEXP data, SEXP start, SEXP count, int ncid, int varid,
       }
       datadim = getAttrib (data, R_DimSymbol);
       if (!isNull (datadim)) {
-        R_nc_size_r2c (datadim, nr, 1, *ccount);
+        R_nc_dim_r2c_size (datadim, nr, 1, *ccount);
       } else {
         for (ii=0; ii<nr-1; ii++) {
           (*ccount)[ii] = 1;
@@ -1069,7 +1084,7 @@ R_nc_slice (SEXP data, SEXP start, SEXP count, int ncid, int varid,
       }
     }
   } else {
-    R_nc_size_r2c (count, *ndims, NA_SIZE, *ccount);
+    R_nc_dim_r2c_size (count, *ndims, NA_SIZE, *ccount);
   }
 
   /* Convert NA_SIZE in ccount so that corresponding dimensions are
