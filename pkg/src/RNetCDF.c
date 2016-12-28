@@ -77,9 +77,9 @@
 #include <netcdf.h>
 
 #ifdef HAVE_UDUNITS2_UDUNITS_H
-#include <udunits2/udunits.h>
+# include <udunits2/udunits.h>
 #else
-#include <udunits.h>
+# include <udunits.h>
 #endif
 
 #include <R.h>
@@ -89,13 +89,27 @@
  *  Local macros, constants and variables
 \*=============================================================================*/
 
-#define NA_SIZE ((size_t) -1)
+#define NA_SIZE SIZE_MAX
 
 #define RNC_CHARSXP_MAXLEN 2147483647
 
 #define RRETURN(object) { R_nc_unprotect (); return (object); }
 
 #define RERROR(msg) { R_nc_error (msg); return R_NilValue; }
+
+#ifdef __WIN32__
+# define RNC_FMT_LL "%I64d"
+#else
+# define RNC_FMT_LL "%lld"
+#endif
+
+#ifdef __WIN32__
+# define RNC_FMT_ULL "%I64u"
+#else
+# define RNC_FMT_ULL "%llu"
+#endif
+
+#define RNC_DBL_DIG 24
 
 static int R_nc_protect_count = 0;
 
@@ -274,7 +288,7 @@ FUN (ITYPE *in, SEXP rstr, R_xlen_t imin, R_xlen_t cnt, \
 { \
   R_xlen_t ii, jj; \
   ITYPE minval, maxval; \
-  char chartmp[24]; \
+  char chartmp[RNC_DBL_DIG]; \
   if (min == NULL) { \
     minval = MINVAL; \
   } else { \
@@ -295,13 +309,8 @@ FUN (ITYPE *in, SEXP rstr, R_xlen_t imin, R_xlen_t cnt, \
   } \
 }
 
-#ifdef __WIN32__
-R_NC_C2R_NUM_STR(R_nc_int64_strsxp, long long, "%I64d", LLONG_MIN, LLONG_MAX);
-R_NC_C2R_NUM_STR(R_nc_uint64_strsxp, unsigned long long, "%I64u", 0, ULLONG_MAX);
-#else
-R_NC_C2R_NUM_STR(R_nc_int64_strsxp, long long, "%lli", LLONG_MIN, LLONG_MAX);
-R_NC_C2R_NUM_STR(R_nc_uint64_strsxp, unsigned long long, "%llu", 0, ULLONG_MAX);
-#endif
+R_NC_C2R_NUM_STR(R_nc_int64_strsxp, long long, RNC_FMT_LL, LLONG_MIN, LLONG_MAX);
+R_NC_C2R_NUM_STR(R_nc_uint64_strsxp, unsigned long long, RNC_FMT_ULL, 0, ULLONG_MAX);
 
 /* Determine if a C string matches the first element of an R variable.
    Result is a logical value. */
@@ -390,7 +399,7 @@ R_NC_R2C_NUM(R_nc_r2c_int_ll, int, long long, \
 R_NC_R2C_NUM(R_nc_r2c_int_ull, int, unsigned long long, \
   R_NC_R2C_NAINT, NC_FILL_UINT64, 0, ULLONG_MAX);
 R_NC_R2C_NUM(R_nc_r2c_int_size, int, size_t, \
-  R_NC_R2C_NAINT, SIZE_MAX, 0, SIZE_MAX);
+  R_NC_R2C_NAINT, NA_SIZE, 0, SIZE_MAX);
 R_NC_R2C_NUM(R_nc_r2c_int_float, int, float, \
   R_NC_R2C_NAINT, NC_FILL_FLOAT, -FLT_MAX, FLT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_int_dbl, int, double, \
@@ -413,7 +422,7 @@ R_NC_R2C_NUM(R_nc_r2c_dbl_ll, double, long long, \
 R_NC_R2C_NUM(R_nc_r2c_dbl_ull, double, unsigned long long, \
   R_NC_R2C_NAREAL, NC_FILL_UINT64, 0, ULLONG_MAX);
 R_NC_R2C_NUM(R_nc_r2c_dbl_size, double, size_t, \
-  R_NC_R2C_NAREAL, SIZE_MAX, 0, SIZE_MAX);
+  R_NC_R2C_NAREAL, NA_SIZE, 0, SIZE_MAX);
 R_NC_R2C_NUM(R_nc_r2c_dbl_float, double, float, \
   R_NC_R2C_NAREAL, NC_FILL_FLOAT, -FLT_MAX, FLT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_dbl_dbl, double, double, \
