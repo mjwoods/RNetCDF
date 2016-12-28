@@ -101,7 +101,6 @@ static int R_nc_protect_count = 0;
 
 static const char RNC_EDATALEN[]="Not enough data", \
   RNC_EDATATYPE[]="Incompatible data for external type", \
-  RNC_ERANGE[]="Value out of range for type conversion", \
   RNC_ETYPEDROP[]="Unsupported external type";
 
 /*=============================================================================*\
@@ -2273,7 +2272,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
 SEXP
 R_nc_inq_var (SEXP nc, SEXP var)
 {
-  int ii, ncid, varid, ndims, natts, *cdimids, *rdimids;
+  int ii, ncid, varid, ndims, natts, *cdimids=NULL, *rdimids;
   const char *vartype;
   char varname[NC_MAX_NAME + 1];
   nc_type xtype;
@@ -2658,10 +2657,10 @@ R_nc_inq_unlimids (SEXP nc)
 SEXP
 R_nc_rename_grp (SEXP nc, SEXP grpname)
 {
+#if defined HAVE_DECL_NC_RENAME_GRP && HAVE_DECL_NC_RENAME_GRP
   int ncid;
   const char *cgrpname;
 
-#if defined HAVE_DECL_NC_RENAME_GRP && HAVE_DECL_NC_RENAME_GRP
   ncid = asInteger (nc);
   cgrpname = CHAR (STRING_ELT (grpname, 0));
 
@@ -2689,8 +2688,8 @@ R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP basetype, SEXP size)
   int ncid;
   char mode;
   const char *typenamep;
-  nc_type typeid, xtype;
-  size_t xsize;
+  nc_type typeid=0, xtype=0;
+  size_t xsize=0;
   SEXP result;
 
   /*-- Decode arguments -------------------------------------------------------*/
@@ -2710,14 +2709,21 @@ R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP basetype, SEXP size)
     mode = '\0';
   }
 
-  if (mode == 'e' || mode == 'v') {
+  switch (mode) {
+  case 'e':
+  case 'v':
     R_nc_check (R_nc_str2type (ncid, CHAR (STRING_ELT (basetype, 0)), &xtype));
-  } else {
+    break;
+  case 'c':
+  case 'o':
     if (isInteger (size)) {
       xsize = asInteger (size);
     } else {
       xsize = asReal (size);
     }
+    break;
+  default:
+    RERROR ("Unknown class for type definition");
   }
 
   /*-- Enter define mode ------------------------------------------------------*/
@@ -2737,8 +2743,6 @@ R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP basetype, SEXP size)
   case 'v':
     R_nc_check (nc_def_vlen (ncid, typenamep, xtype, &typeid));
     break;
-  default:
-    RERROR ("Unknown class for type definition");
   }
 
   result = R_nc_protect (ScalarInteger (typeid));
@@ -2754,11 +2758,11 @@ SEXP
 R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
   SEXP offset, SEXP subtype, SEXP dimsizes)
 {
-  int ncid, ndims;
+  int ncid, ndims=0;
   nc_type typeid, xtype;
   const char *fldname;
-  int class, *csizes;
-  size_t coffset;
+  int class, *csizes=NULL;
+  size_t coffset=0;
   /* Temporary for single item of the largest netcdf external numeric type */
   long long tmpval;
 
@@ -2805,8 +2809,6 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
         if (ndims > 0) {
           csizes = (void *) R_alloc (ndims, sizeof (int));
           R_nc_dim_r2c_int(dimsizes, ndims, -1, csizes);
-        } else {
-          csizes = NULL;
         }
       }
     } else {
@@ -2822,7 +2824,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
   /*-- Insert the member or field ---------------------------------------------*/
   if (class == NC_ENUM) {
     R_nc_check (nc_insert_enum (ncid, typeid, fldname, &tmpval));
-  } else {
+  } else if (class == NC_COMPOUND) {
     if (ndims > 0) {
       R_nc_check (nc_insert_array_compound (ncid, typeid, fldname,
                     coffset, xtype, ndims, csizes));
