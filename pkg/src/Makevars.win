@@ -1,5 +1,5 @@
 # Makevars.win can be tested by uploading package to win-builder.r-project.org
 
-PKG_CPPFLAGS = -DHAVE_LIBUDUNITS2 -DHAVE_DECL_RENAME_GRP=1
+PKG_CPPFLAGS = -DHAVE_LIBUDUNITS2 -DHAVE_DECL_NC_RENAME_GRP=1
 PKG_LIBS = -lnetcdf4 -ludunits2 -lexpat \
   -L${LIB_HDF5}/lib${R_ARCH} -lhdf5_hl -lhdf5 -lz
