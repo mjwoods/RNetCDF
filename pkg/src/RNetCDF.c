@@ -2010,7 +2010,7 @@ R_nc_sync (SEXP nc)
 SEXP
 R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
 {
-  int ncid, ii, *dimids, ndims, varid;
+  int ncid, ii, jj, *dimids, ndims, varid;
   nc_type xtype;
   const char *varnamep;
   SEXP result;
@@ -2025,9 +2025,9 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
   ndims = length(dims);
   dimids = (void *) R_alloc (ndims, sizeof(int));
 
-  for (ii=0; ii<ndims; ii++) {
+  for (ii=0, jj=ndims-1; ii<ndims; ii++, jj--) {
     /* Handle dimension names and convert from R to C storage order */
-    R_nc_check (R_nc_dim_id (dims, ncid, &dimids[ndims-1-ii], ii));
+    R_nc_check (R_nc_dim_id (dims, ncid, &dimids[jj], ii));
   }
 
   /*-- Enter define mode ------------------------------------------------------*/
