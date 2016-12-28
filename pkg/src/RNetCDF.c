@@ -162,10 +162,10 @@ R_nc_error(const char *msg)
    trimming or padding each string with null characters to length strlen.
  */
 static void
-R_nc_strsxp_char (SEXP rstr, char *carr, R_xlen_t imin, R_xlen_t cnt,
+R_nc_strsxp_char (SEXP rstr, char *carr, size_t imin, size_t cnt,
                   size_t strlen)
 {
-  R_xlen_t ii;
+  size_t ii;
   char *thisstr;
   for (ii=imin, thisstr=carr; ii<(imin+cnt); ii++, thisstr+=strlen) {
     strncpy(thisstr, CHAR( STRING_ELT (rstr, ii)), strlen);
@@ -180,10 +180,11 @@ R_nc_strsxp_char (SEXP rstr, char *carr, R_xlen_t imin, R_xlen_t cnt,
  */
 static void
 R_nc_char_strsxp (char *carr, SEXP rstr,
-                  R_xlen_t len, R_xlen_t imin, R_xlen_t cnt)
+                  size_t len, size_t imin, size_t cnt)
 {
-  R_xlen_t ii, rlen;
+  size_t ii;
   char *thisstr, *endstr, endchar;
+  size_t rlen;
   rlen = (len <= RNC_CHARSXP_MAXLEN) ? len : RNC_CHARSXP_MAXLEN;
   for (ii=imin, thisstr=carr; ii<(imin+cnt); ii++, thisstr+=len) {
     /* Temporarily null-terminate each string before passing to R */
@@ -202,9 +203,9 @@ R_nc_char_strsxp (char *carr, SEXP rstr,
    which will be set to the address of each R string on return.
  */
 static void
-R_nc_strsxp_str (SEXP rstr, const char **cstr, R_xlen_t imin, R_xlen_t cnt)
+R_nc_strsxp_str (SEXP rstr, const char **cstr, size_t imin, size_t cnt)
 {
-  R_xlen_t ii, jj;
+  size_t ii, jj;
   for (ii=0, jj=imin; ii<cnt; ii++, jj++) {
     cstr[ii] = CHAR( STRING_ELT (rstr, jj));
   }
@@ -216,9 +217,9 @@ R_nc_strsxp_str (SEXP rstr, const char **cstr, R_xlen_t imin, R_xlen_t cnt)
    Argument rstr is an R string vector with length cnt from index imin.
  */
 static void
-R_nc_str_strsxp (char **cstr, SEXP rstr, R_xlen_t imin, R_xlen_t cnt)
+R_nc_str_strsxp (char **cstr, SEXP rstr, size_t imin, size_t cnt)
 {
-  R_xlen_t ii, jj;
+  size_t ii, jj;
   size_t nchar;
   char *endstr, endchar;
   for (ii=0, jj=imin; ii<cnt; ii++, jj++) {
@@ -248,9 +249,9 @@ R_nc_str_strsxp (char **cstr, SEXP rstr, R_xlen_t imin, R_xlen_t cnt)
  */
 #define R_NC_R2C_STR_NUM(FUN, OTYPE, STRTONUM, FILLVAL) \
 static void \
-FUN (SEXP rstr, OTYPE *out, R_xlen_t imin, R_xlen_t cnt, OTYPE *fill) \
+FUN (SEXP rstr, OTYPE *out, size_t imin, size_t cnt, OTYPE *fill) \
 { \
-  R_xlen_t ii, jj; \
+  size_t ii, jj; \
   const char *charptr; \
   char *endptr; \
   OTYPE fillval; \
@@ -283,10 +284,10 @@ R_NC_R2C_STR_NUM(R_nc_strsxp_uint64, unsigned long long, strtoull, NC_FILL_UINT6
  */
 #define R_NC_C2R_NUM_STR(FUN, ITYPE, STRFMT, MINVAL, MAXVAL) \
 static void \
-FUN (ITYPE *in, SEXP rstr, R_xlen_t imin, R_xlen_t cnt, \
+FUN (ITYPE *in, SEXP rstr, size_t imin, size_t cnt, \
      ITYPE *min, ITYPE *max) \
 { \
-  R_xlen_t ii, jj; \
+  size_t ii, jj; \
   ITYPE minval, maxval; \
   char chartmp[RNC_DBL_DIG]; \
   if (min == NULL) { \
@@ -2281,7 +2282,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
 SEXP
 R_nc_inq_var (SEXP nc, SEXP var)
 {
-  int ii, ncid, varid, ndims, natts, *dimids;
+  int ncid, varid, ndims, natts, *dimids;
   const char *vartype;
   char varname[NC_MAX_NAME + 1];
   nc_type xtype;
