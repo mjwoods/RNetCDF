@@ -2281,11 +2281,11 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
 SEXP
 R_nc_inq_var (SEXP nc, SEXP var)
 {
-  int ii, ncid, varid, ndims, natts, *cdimids=NULL, *rdimids;
+  int ii, ncid, varid, ndims, natts, *dimids;
   const char *vartype;
   char varname[NC_MAX_NAME + 1];
   nc_type xtype;
-  SEXP result;
+  SEXP result, rdimids;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -2296,8 +2296,14 @@ R_nc_inq_var (SEXP nc, SEXP var)
   R_nc_check (nc_inq_var (ncid, varid, varname, &xtype, &ndims, NULL, &natts));
 
   if (ndims > 0) {
-    cdimids = (void *) R_alloc (ndims, sizeof (int));
-    R_nc_check (nc_inq_vardimid (ncid, varid, cdimids));
+    rdimids = R_nc_protect (allocVector (INTSXP, ndims));
+    dimids = INTEGER (rdimids);
+    R_nc_check (nc_inq_vardimid (ncid, varid, dimids));
+    /* Return dimension ids in reverse (Fortran) order */
+    R_nc_rev_int (dimids, ndims);
+  } else {
+    /* Return single NA for scalars */
+    rdimids = R_nc_protect (ScalarInteger (NA_INTEGER));
   }
 
   /*-- Convert nc_type to char ------------------------------------------------*/
@@ -2309,20 +2315,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
   SET_VECTOR_ELT (result, 1, mkString (varname));
   SET_VECTOR_ELT (result, 2, mkString (vartype));
   SET_VECTOR_ELT (result, 3, ScalarInteger (ndims));
-
-  if (ndims > 0) {
-    /* Return vector of dimension ids in R order */
-    SET_VECTOR_ELT (result, 4, allocVector (INTSXP, ndims));
-    rdimids = INTEGER (VECTOR_ELT (result, 4));
-    for (ii=0; ii<ndims; ii++) {
-      rdimids[ii] = cdimids[ndims-1-ii];
-    }
-  } else {
-    /* Return single NA for scalars */
-    SET_VECTOR_ELT (result, 4, allocVector (INTSXP, 1));
-    INTEGER (VECTOR_ELT (result, 4))[0] = NA_INTEGER;
-  }
-
+  SET_VECTOR_ELT (result, 4, rdimids);
   SET_VECTOR_ELT (result, 5, ScalarInteger (natts));
 
   RRETURN(result);
