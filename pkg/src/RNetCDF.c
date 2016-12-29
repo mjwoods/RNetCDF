@@ -111,6 +111,19 @@
 
 #define RNC_DBL_DIG 24
 
+/* Conversion from 64-bit integers to double may round upwards,
+   so that the double cannot be converted back to the original type.
+   The following limits can be safely converted both ways.
+ */
+static const double LLONG_MAX_DBL = \
+  ((double) LLONG_MAX) * (1.0 - DBL_EPSILON);
+static const double LLONG_MIN_DBL = \
+  ((double) LLONG_MIN) * (1.0 - DBL_EPSILON);
+static const double ULLONG_MAX_DBL = \
+  ((double) ULLONG_MAX) * (1.0 - DBL_EPSILON);
+static const double SIZE_MAX_DBL = \
+  ((double) SIZE_MAX) * (1.0 - DBL_EPSILON);
+
 static int R_nc_protect_count = 0;
 
 static const char RNC_EDATALEN[]="Not enough data", \
@@ -332,6 +345,7 @@ R_nc_strcmp (SEXP var, const char *str)
    Values that are missing or outside the range of the output type are 
    replaced by *fill, or if fill is NULL, by the default netcdf fill value.
    Packing is performed if either argument scale or add is not NULL.
+   Range checks and packing are performed in double precision.
    Example: R_nc_r2c_int_short (rv, cv, cnt, &fill, &scale, &add);
  */
 #define R_NC_R2C_NAINT(value) (value==NA_INTEGER)
@@ -365,7 +379,7 @@ FUN (const ITYPE *in, OTYPE *out, size_t cnt, \
 	out[ii] = fillval; \
       } else { \
         pack = round ((in[ii] - offset) * factor); \
-        if (pack < MINVAL || pack > MAXVAL) { \
+        if (pack < (double) MINVAL || pack > (double) MAXVAL) { \
 	  out[ii] = fillval; \
         } else { \
           out[ii] = pack; \
@@ -374,10 +388,15 @@ FUN (const ITYPE *in, OTYPE *out, size_t cnt, \
     } \
   } else { \
     for (ii=0; ii<cnt; ii++) { \
-      if (NATEST(in[ii]) || in[ii] < MINVAL || in[ii] > MAXVAL) { \
-       out[ii] = fillval; \
+      if (NATEST(in[ii])) { \
+        out[ii] = fillval; \
       } else { \
-       out[ii] = in[ii]; \
+        pack = in[ii]; \
+        if (pack < (double) MINVAL || pack > (double) MAXVAL) { \
+	  out[ii] = fillval; \
+        } else { \
+          out[ii] = in[ii]; \
+        } \
       } \
     } \
   } \
@@ -396,11 +415,11 @@ R_NC_R2C_NUM(R_nc_r2c_int_int, int, int, \
 R_NC_R2C_NUM(R_nc_r2c_int_uint, int, unsigned int, \
   R_NC_R2C_NAINT, NC_FILL_UINT, 0, UINT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_int_ll, int, long long, \
-  R_NC_R2C_NAINT, NC_FILL_INT64, LLONG_MIN, LLONG_MAX);
+  R_NC_R2C_NAINT, NC_FILL_INT64, LLONG_MIN_DBL, LLONG_MAX_DBL);
 R_NC_R2C_NUM(R_nc_r2c_int_ull, int, unsigned long long, \
-  R_NC_R2C_NAINT, NC_FILL_UINT64, 0, ULLONG_MAX);
+  R_NC_R2C_NAINT, NC_FILL_UINT64, 0, ULLONG_MAX_DBL);
 R_NC_R2C_NUM(R_nc_r2c_int_size, int, size_t, \
-  R_NC_R2C_NAINT, NA_SIZE, 0, SIZE_MAX);
+  R_NC_R2C_NAINT, NA_SIZE, 0, SIZE_MAX_DBL);
 R_NC_R2C_NUM(R_nc_r2c_int_float, int, float, \
   R_NC_R2C_NAINT, NC_FILL_FLOAT, -FLT_MAX, FLT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_int_dbl, int, double, \
@@ -419,11 +438,11 @@ R_NC_R2C_NUM(R_nc_r2c_dbl_int, double, int, \
 R_NC_R2C_NUM(R_nc_r2c_dbl_uint, double, unsigned int, \
   R_NC_R2C_NAREAL, NC_FILL_UINT, 0, UINT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_dbl_ll, double, long long, \
-  R_NC_R2C_NAREAL, NC_FILL_INT64, LLONG_MIN, LLONG_MAX);
+  R_NC_R2C_NAREAL, NC_FILL_INT64, LLONG_MIN_DBL, LLONG_MAX_DBL);
 R_NC_R2C_NUM(R_nc_r2c_dbl_ull, double, unsigned long long, \
-  R_NC_R2C_NAREAL, NC_FILL_UINT64, 0, ULLONG_MAX);
+  R_NC_R2C_NAREAL, NC_FILL_UINT64, 0, ULLONG_MAX_DBL);
 R_NC_R2C_NUM(R_nc_r2c_dbl_size, double, size_t, \
-  R_NC_R2C_NAREAL, NA_SIZE, 0, SIZE_MAX);
+  R_NC_R2C_NAREAL, NA_SIZE, 0, SIZE_MAX_DBL);
 R_NC_R2C_NUM(R_nc_r2c_dbl_float, double, float, \
   R_NC_R2C_NAREAL, NC_FILL_FLOAT, -FLT_MAX, FLT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_dbl_dbl, double, double, \
@@ -530,23 +549,22 @@ R_nc_r2c (SEXP rv, void *cv, size_t imin, size_t cnt, nc_type xtype,
 }
 
 
-/* Convert a C vector of numeric values to an R type.
+/* Convert a C vector of numeric values to R double precision.
    Argument in contains cnt values of type ITYPE.
-   Argument out is an R vector with length cnt.
-   Any element of in outside the range minval to maxval is set to NA,
+   Argument out is an R double precision vector with length cnt.
+   Any element of in outside the range *min to *max is converted to NA_REAL,
    with default ranges provided by IMINVAL and IMAXVAL.
-   Unpacking is performed if either argument scale or add is not NULL,
-   and any value outside the range OMINVAL to OMAXVAL is set to NA.
+   Unpacking is performed if either argument scale or add is not NULL.
    Example: R_nc_c2r_short_int (cv, rv, cnt, &min, &max, &scale, &add);
  */
-#define R_NC_C2R_NUM(FUN, ITYPE, OTYPE, IMINVAL, IMAXVAL, OMINVAL, OMAXVAL, MISSVAL) \
+#define R_NC_C2R_NUM(FUN, ITYPE, IMINVAL, IMAXVAL) \
 static void \
-FUN (ITYPE *in, OTYPE *out, size_t cnt, \
+FUN (ITYPE *in, double *out, size_t cnt, \
      ITYPE *min, ITYPE *max, double *scale, double *add) \
 { \
   size_t ii; \
   ITYPE minval, maxval; \
-  double factor, offset, unpack; \
+  double factor, offset; \
   if (min == NULL) { \
     minval = IMINVAL; \
   } else { \
@@ -570,20 +588,15 @@ FUN (ITYPE *in, OTYPE *out, size_t cnt, \
     } \
     for (ii=0; ii<cnt; ii++) { \
       if (in[ii] < minval || in[ii] > maxval) { \
-	out[ii] = MISSVAL; \
+	out[ii] = NA_REAL; \
       } else { \
-        unpack = in[ii] * factor + offset; \
-        if (unpack < OMINVAL || unpack > OMAXVAL) { \
-	  out[ii] = MISSVAL; \
-        } else { \
-          out[ii] = unpack; \
-        } \
+        out[ii] = in[ii] * factor + offset; \
       } \
     } \
   } else { \
     for (ii=0; ii<cnt; ii++) { \
       if (in[ii] < minval || in[ii] > maxval) { \
-	out[ii] = MISSVAL; \
+	out[ii] = NA_REAL; \
       } else { \
 	out[ii] = in[ii]; \
       } \
@@ -591,28 +604,20 @@ FUN (ITYPE *in, OTYPE *out, size_t cnt, \
   } \
 }
 
-R_NC_C2R_NUM(R_nc_c2r_schar_int, signed char, int, \
-  SCHAR_MIN, SCHAR_MAX, INT_MIN, INT_MAX, NA_INTEGER);
-R_NC_C2R_NUM(R_nc_c2r_uchar_int, unsigned char, int, \
-  0, UCHAR_MAX, INT_MIN, INT_MAX, NA_INTEGER);
-R_NC_C2R_NUM(R_nc_c2r_short_int, short, int, \
-  SHRT_MIN, SHRT_MAX, INT_MIN, INT_MAX, NA_INTEGER);
-R_NC_C2R_NUM(R_nc_c2r_ushort_int, unsigned short, int, \
-  0, USHRT_MAX, INT_MIN, INT_MAX, NA_INTEGER);
-R_NC_C2R_NUM(R_nc_c2r_int_int, int, int, \
-  INT_MIN, INT_MAX, INT_MIN, INT_MAX, NA_INTEGER);
-
-R_NC_C2R_NUM(R_nc_c2r_uint_dbl, unsigned int, double, \
-  0, UINT_MAX, -DBL_MAX, DBL_MAX, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_float_dbl, float, double, \
-  -FLT_MAX, FLT_MAX, -DBL_MAX, DBL_MAX, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_dbl_dbl, double, double, \
-  -DBL_MAX, DBL_MAX, -DBL_MAX, DBL_MAX, NA_REAL);
+R_NC_C2R_NUM(R_nc_c2r_schar_dbl, signed char, SCHAR_MIN, SCHAR_MAX);
+R_NC_C2R_NUM(R_nc_c2r_uchar_dbl, unsigned char, 0, UCHAR_MAX);
+R_NC_C2R_NUM(R_nc_c2r_short_dbl, short, SHRT_MIN, SHRT_MAX);
+R_NC_C2R_NUM(R_nc_c2r_ushort_dbl, unsigned short, 0, USHRT_MAX);
+R_NC_C2R_NUM(R_nc_c2r_int_dbl, int, INT_MIN, INT_MAX);
+R_NC_C2R_NUM(R_nc_c2r_uint_dbl, unsigned int, 0, UINT_MAX);
+R_NC_C2R_NUM(R_nc_c2r_float_dbl, float, -FLT_MAX, FLT_MAX);
+R_NC_C2R_NUM(R_nc_c2r_dbl_dbl, double, -DBL_MAX, DBL_MAX);
 
 
 /* Convert a vector of netcdf external type to R numeric values.
    The output R vector is allocated inside the function,
-   using the smallest R type that covers the range of xtype.
+   using double precision for all numeric types except NC_INT64 & NC_UINT64,
+   which are converted to R strings to avoid loss of precision.
    Any input element outside the range minval to maxval is set to NA;
    limits of the output type are used if an actual argument is NULL.
    Unpacking is performed if either argument scale or add is not NULL.
@@ -622,7 +627,6 @@ static void
 R_nc_c2r (void *cv, SEXP rv, size_t imin, size_t cnt, nc_type xtype,
           void *min, void *max, double *scale, double *add)
 {
-  int *intp;
   double *realp;
 
   /* Allocate an R vector of the smallest type that can hold xtype */
@@ -632,8 +636,6 @@ R_nc_c2r (void *cv, SEXP rv, size_t imin, size_t cnt, nc_type xtype,
     case NC_SHORT:
     case NC_USHORT:
     case NC_INT:
-      rv = R_nc_protect (allocVector (INTSXP, cnt));
-      break;
     case NC_UINT:
     case NC_FLOAT:
     case NC_DOUBLE:
@@ -647,30 +649,24 @@ R_nc_c2r (void *cv, SEXP rv, size_t imin, size_t cnt, nc_type xtype,
       R_nc_error (RNC_ETYPEDROP);
   }
 
-  if (isInteger(rv)) {
-    intp = &(INTEGER(rv)[imin]);
-    switch (xtype) {
-    case NC_BYTE:
-      R_nc_c2r_schar_int (cv, intp, cnt, min, max, scale, add);
-      break;
-    case NC_UBYTE:
-      R_nc_c2r_uchar_int (cv, intp, cnt, min, max, scale, add);
-      break;
-    case NC_SHORT:
-      R_nc_c2r_short_int (cv, intp, cnt, min, max, scale, add);
-      break;
-    case NC_USHORT:
-      R_nc_c2r_ushort_int (cv, intp, cnt, min, max, scale, add);
-      break;
-    case NC_INT:
-      R_nc_c2r_int_int (cv, intp, cnt, min, max, scale, add);
-      break;
-    default:
-      R_nc_error (RNC_ETYPEDROP);
-    }
-  } else if (isReal(rv)) {
+  if (isReal(rv)) {
     realp = &(REAL(rv)[imin]);
     switch (xtype) {
+    case NC_BYTE:
+      R_nc_c2r_schar_dbl (cv, realp, cnt, min, max, scale, add);
+      break;
+    case NC_UBYTE:
+      R_nc_c2r_uchar_dbl (cv, realp, cnt, min, max, scale, add);
+      break;
+    case NC_SHORT:
+      R_nc_c2r_short_dbl (cv, realp, cnt, min, max, scale, add);
+      break;
+    case NC_USHORT:
+      R_nc_c2r_ushort_dbl (cv, realp, cnt, min, max, scale, add);
+      break;
+    case NC_INT:
+      R_nc_c2r_int_dbl (cv, realp, cnt, min, max, scale, add);
+      break;
     case NC_UINT:
       R_nc_c2r_uint_dbl (cv, realp, cnt, min, max, scale, add);
       break;
