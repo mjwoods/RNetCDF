@@ -352,7 +352,7 @@ R_nc_strcmp (SEXP var, const char *str)
 #define R_NC_R2C_NAREAL(value) (!R_FINITE(value))
 #define R_NC_R2C_NUM(FUN, ITYPE, OTYPE, NATEST, FILLVAL, MINVAL, MAXVAL) \
 static void \
-FUN (const ITYPE *in, OTYPE *out, size_t cnt, \
+FUN (const ITYPE* restrict in, OTYPE* restrict out, size_t cnt, \
      OTYPE *fill, double *scale, double *add) \
 { \
   size_t ii; \
@@ -559,7 +559,7 @@ R_nc_r2c (SEXP rv, void *cv, size_t imin, size_t cnt, nc_type xtype,
  */
 #define R_NC_C2R_NUM(FUN, ITYPE, IMINVAL, IMAXVAL) \
 static void \
-FUN (ITYPE *in, double *out, size_t cnt, \
+FUN (ITYPE* restrict in, double* restrict out, size_t cnt, \
      ITYPE *min, ITYPE *max, double *scale, double *add) \
 { \
   size_t ii; \

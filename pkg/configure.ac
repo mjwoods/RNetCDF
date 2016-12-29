@@ -18,6 +18,9 @@ CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 CPPFLAGS="$CPPFLAGS $R_CPPFLAGS"
 
+# Define a suitable value for the "restrict" keyword:
+AC_C_RESTRICT()
+
 #-------------------------------------------------------------------------------#
 #  Find NetCDF library and header files                                         #
 #-------------------------------------------------------------------------------#
