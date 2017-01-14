@@ -174,6 +174,7 @@ R_nc_error(const char *msg)
    Argument carr provides space for at least cnt*strlen bytes.
    Strings are copied from rstr to carr,
    trimming or padding each string with null characters to length strlen.
+   Missing strings are converted to "NA".
  */
 static void
 R_nc_strsxp_char (SEXP rstr, char *carr, size_t imin, size_t cnt,
@@ -191,6 +192,7 @@ R_nc_strsxp_char (SEXP rstr, char *carr, size_t imin, size_t cnt,
    its allocated size must be at least len*cnt+1 bytes,
    and its contents are modified during execution but restored on return.
    Argument rstr is an R string vector with length cnt from index imin.
+   "NA" strings are not currently treated as missing.
  */
 static void
 R_nc_char_strsxp (char *carr, SEXP rstr,
@@ -215,6 +217,7 @@ R_nc_char_strsxp (char *carr, SEXP rstr,
    Argument rstr is an R string vector with cnt indices from imin.
    Argument cstr provides space for at least cnt pointers,
    which will be set to the address of each R string on return.
+   Missing strings are converted to "NA".
  */
 static void
 R_nc_strsxp_str (SEXP rstr, const char **cstr, size_t imin, size_t cnt)
@@ -229,6 +232,7 @@ R_nc_strsxp_str (SEXP rstr, const char **cstr, size_t imin, size_t cnt)
 /* Convert a char ragged array to R strings.
    Argument cstr is assumed to contain cnt pointers to null-terminated strings.
    Argument rstr is an R string vector with length cnt from index imin.
+   "NA" strings are not currently treated as missing.
  */
 static void
 R_nc_str_strsxp (char **cstr, SEXP rstr, size_t imin, size_t cnt)
