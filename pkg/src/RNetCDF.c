@@ -260,8 +260,8 @@ R_nc_str_strsxp (char **cstr, SEXP rstr, size_t imin, size_t cnt)
    Argument rstr is an R string vector with cnt indices from imin.
    Argument out contains cnt values of type OTYPE on return.
    The string conversion function is STRTONUM (strtol, strtoul, etc.).
-   Any element of out that cannot be converted from rstr is set to *fill,
-   or FILLVAL if fill is NULL.
+   Any missing values in rstr are converted to *fill (FILLVAL if fill is NULL).
+   An error is raised in R if any element of rstr cannot be converted.
    Packing is not currently supported (why pack into 64-bit integers?).
    Example: R_nc_strsxp_int64 (rstr, cv, imin, cnt, &fill);
  */
@@ -272,6 +272,7 @@ FUN (SEXP rstr, OTYPE *out, size_t imin, size_t cnt, OTYPE *fill) \
   size_t ii, jj; \
   const char *charptr; \
   char *endptr; \
+  SEXP charsxp; \
   OTYPE fillval; \
   if (fill == NULL) { \
     fillval = FILLVAL; \
@@ -279,11 +280,16 @@ FUN (SEXP rstr, OTYPE *out, size_t imin, size_t cnt, OTYPE *fill) \
     fillval = *fill; \
   } \
   for (ii=0, jj=imin; ii<cnt; ii++, jj++) { \
-    charptr = CHAR (STRING_ELT (rstr, jj)); \
-    errno = 0; \
-    out[ii] = STRTONUM (charptr, &endptr, 10); \
-    if (endptr == charptr || *endptr != '\0' || errno != 0) { \
+    charsxp = STRING_ELT (rstr, jj); \
+    if (charsxp == NA_STRING) { \
       out[ii] = fillval; \
+    } else { \
+      charptr = CHAR (charsxp); \
+      errno = 0; \
+      out[ii] = STRTONUM (charptr, &endptr, 10); \
+      if (endptr == charptr || *endptr != '\0' || errno != 0) { \
+        R_nc_error (nc_strerror (NC_ERANGE)); \
+      } \
     } \
   } \
 }
