@@ -547,10 +547,10 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
   # If start or count contain any missing values,
   # use values derived from dimensions of data by passing NULL to C interface.
   # Note that C interface drops elements of start/count past the defined dimensions.
-  if (anyNA(start)) {
+  if (any(is.na(start))) {
     start <- NULL
   }
-  if (anyNA(count)) {
+  if (any(is.na(count))) {
     count <- NULL
   }
 
