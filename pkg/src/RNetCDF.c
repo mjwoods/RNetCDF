@@ -474,6 +474,12 @@ FUN (const ITYPE* restrict in, OTYPE* restrict out, size_t cnt, \
   } \
 }
 
+R_NC_C2R_NUM(R_nc_c2r_schar_int, signed char, int, NA_INTEGER);
+R_NC_C2R_NUM(R_nc_c2r_uchar_int, unsigned char, int, NA_INTEGER);
+R_NC_C2R_NUM(R_nc_c2r_short_int, short, int, NA_INTEGER);
+R_NC_C2R_NUM(R_nc_c2r_ushort_int, unsigned short, int, NA_INTEGER);
+R_NC_C2R_NUM(R_nc_c2r_int_int, int, int, NA_INTEGER);
+
 R_NC_C2R_NUM(R_nc_c2r_schar_dbl, signed char, double, NA_REAL);
 R_NC_C2R_NUM(R_nc_c2r_uchar_dbl, unsigned char, double, NA_REAL);
 R_NC_C2R_NUM(R_nc_c2r_short_dbl, short, double, NA_REAL);
@@ -482,6 +488,8 @@ R_NC_C2R_NUM(R_nc_c2r_int_dbl, int, double, NA_REAL);
 R_NC_C2R_NUM(R_nc_c2r_uint_dbl, unsigned int, double, NA_REAL);
 R_NC_C2R_NUM(R_nc_c2r_float_dbl, float, double, NA_REAL);
 R_NC_C2R_NUM(R_nc_c2r_dbl_dbl, double, double, NA_REAL);
+R_NC_C2R_NUM(R_nc_c2r_int64_dbl, long long, double, NA_REAL);
+R_NC_C2R_NUM(R_nc_c2r_uint64_dbl, unsigned long long, double, NA_REAL);
 
 
 /* Convert an R vector to a netcdf external type.
@@ -599,84 +607,105 @@ R_nc_r2c (SEXP rv, void **cv, size_t imin, size_t cnt, nc_type xtype,
 }
 
 
-/* Convert a vector of netcdf external type to R numeric values.
-   The output R vector is allocated inside the function,
-   using double precision for all numeric types except NC_INT64 & NC_UINT64,
-   which are converted to R strings to avoid loss of precision.
-   Any input element outside the range minval to maxval is set to NA;
-   limits of the output type are used if an actual argument is NULL.
-   Unpacking is performed if either argument scale or add is not NULL.
-   Example: R_nc_c2r (cv, rv, imin, cnt, xtype, &min, &max, &scale, &add);
+/* Convert a vector of netcdf external type to R.
+   Argument cv is assumed to contain cnt values of the external type.
+   Argument rv is an R vector that is unallocated on entry;
+     on exit, rv contains converted data.
+   If fitnum is true (non-zero), the rv is the smallest compatible R type,
+     otherwise rv is double precision.
+   Elements are set to missing if they are NaN,
+     equal to the fill value or outside the valid range (if not NULL).
+   Unpacking is performed if either scale or add are not NULL.
+   Example: R_nc_c2r (cv, rv, imin, cnt, xtype, 1,
+                      &fill, &min, &max, &scale, &add);
  */
 static void
-R_nc_c2r (void *cv, SEXP rv, size_t imin, size_t cnt, nc_type xtype,
+R_nc_c2r (void *cv, SEXP rv, size_t imin, size_t cnt, nc_type xtype, int fitnum,
           void *fill, void *min, void *max, double *scale, double *add)
 {
+  int *intp;
   double *realp;
 
-  /* Allocate an R vector of the smallest type that can hold xtype */
+  /* Allocate an R vector, get pointer to start of data */
   switch (xtype) {
     case NC_BYTE:
     case NC_UBYTE:
     case NC_SHORT:
     case NC_USHORT:
     case NC_INT:
+      if (fitnum == TRUE) {
+        rv = R_nc_protect (allocVector (INTSXP, cnt));
+        intp = &(INTEGER(rv)[imin]);
+        break;
+      }
+    case NC_INT64:
+    case NC_UINT64:
+      if (fitnum == TRUE) {
+        rv = R_nc_protect (allocVector (STRSXP, cnt));
+        break;
+      }
     case NC_UINT:
     case NC_FLOAT:
     case NC_DOUBLE:
       rv = R_nc_protect (allocVector (REALSXP, cnt));
-      break;
-    case NC_INT64:
-    case NC_UINT64:
-      rv = R_nc_protect (allocVector (STRSXP, cnt));
+      realp = &(REAL(rv)[imin]);
       break;
     default:
       R_nc_error (RNC_ETYPEDROP);
   }
 
-  if (isReal(rv)) {
-    realp = &(REAL(rv)[imin]);
-    switch (xtype) {
+  /* Type conversions */
+  switch (xtype) {
     case NC_BYTE:
-      R_nc_c2r_schar_dbl (cv, realp, cnt, fill, min, max, scale, add);
-      break;
+      if (fitnum == TRUE) {
+        return R_nc_c2r_schar_int (cv, intp, cnt, fill, min, max, scale, add);
+      } else {
+        return R_nc_c2r_schar_dbl (cv, realp, cnt, fill, min, max, scale, add);
+      }
     case NC_UBYTE:
-      R_nc_c2r_uchar_dbl (cv, realp, cnt, fill, min, max, scale, add);
-      break;
+      if (fitnum == TRUE) {
+        return R_nc_c2r_uchar_int (cv, intp, cnt, fill, min, max, scale, add);
+      } else {
+        return R_nc_c2r_uchar_dbl (cv, realp, cnt, fill, min, max, scale, add);
+      }
     case NC_SHORT:
-      R_nc_c2r_short_dbl (cv, realp, cnt, fill, min, max, scale, add);
-      break;
+      if (fitnum == TRUE) {
+        return R_nc_c2r_short_int (cv, intp, cnt, fill, min, max, scale, add);
+      } else {
+        return R_nc_c2r_short_dbl (cv, realp, cnt, fill, min, max, scale, add);
+      }
     case NC_USHORT:
-      R_nc_c2r_ushort_dbl (cv, realp, cnt, fill, min, max, scale, add);
-      break;
+      if (fitnum == TRUE) {
+        return R_nc_c2r_ushort_int (cv, intp, cnt, fill, min, max, scale, add);
+      } else {
+        return R_nc_c2r_ushort_dbl (cv, realp, cnt, fill, min, max, scale, add);
+      }
     case NC_INT:
-      R_nc_c2r_int_dbl (cv, realp, cnt, fill, min, max, scale, add);
-      break;
+      if (fitnum == TRUE) {
+        return R_nc_c2r_int_int (cv, intp, cnt, fill, min, max, scale, add);
+      } else {
+        return R_nc_c2r_int_dbl (cv, realp, cnt, fill, min, max, scale, add);
+      }
     case NC_UINT:
-      R_nc_c2r_uint_dbl (cv, realp, cnt, fill, min, max, scale, add);
-      break;
+      return R_nc_c2r_uint_dbl (cv, realp, cnt, fill, min, max, scale, add);
     case NC_FLOAT:
-      R_nc_c2r_float_dbl (cv, realp, cnt, fill, min, max, scale, add);
-      break;
+      return R_nc_c2r_float_dbl (cv, realp, cnt, fill, min, max, scale, add);
     case NC_DOUBLE:
-      R_nc_c2r_dbl_dbl (cv, realp, cnt, fill, min, max, scale, add);
-      break;
-    default:
-      R_nc_error (RNC_ETYPEDROP);
-    }
-  } else if (isString(rv)) {
-    switch (xtype) {
+      return R_nc_c2r_dbl_dbl (cv, realp, cnt, fill, min, max, scale, add);
     case NC_INT64:
-      R_nc_int64_strsxp (cv, rv, imin, cnt, fill, min, max);
-      break;
+      if (fitnum == TRUE) {
+        return R_nc_int64_strsxp (cv, rv, imin, cnt, fill, min, max);
+      } else {
+        return R_nc_c2r_int64_dbl (cv, realp, cnt, fill, min, max, scale, add);
+      }
     case NC_UINT64:
-      R_nc_uint64_strsxp (cv, rv, imin, cnt, fill, min, max);
-      break;
+      if (fitnum == TRUE) {
+        return R_nc_uint64_strsxp (cv, rv, imin, cnt, fill, min, max);
+      } else {
+        return R_nc_c2r_uint64_dbl (cv, realp, cnt, fill, min, max, scale, add);
+      }
     default:
       R_nc_error (RNC_ETYPEDROP);
-    }
-  } else {
-    R_nc_error (RNC_EDATATYPE);
   }
 }
 
