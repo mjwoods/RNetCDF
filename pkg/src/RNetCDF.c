@@ -964,7 +964,7 @@ R_nc_check(int status)
 
 
 /* Copy the leading nr elements of R vector rv to C vector cv,
-   converting type to int and reversing from Fortran to C storage order.
+   converting type to TYPE and reversing from Fortran to C storage order.
    Elements beyond the length of rv and non-finite values are stored as fillval.
  */
 #define R_NC_DIM_R2C(FUN, TYPENAME, TYPE) \
