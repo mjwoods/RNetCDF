@@ -337,115 +337,102 @@ R_nc_strcmp (SEXP var, const char *str)
 
 
 /*=============================================================================*\
- *  Numeric conversion functions.
+ *  Numeric type conversions
 \*=============================================================================*/
 
-/* Convert a vector of R numeric values to another type.
-   Values that are missing or outside the range of the output type are 
-   replaced by *fill, or if fill is NULL, by the default netcdf fill value.
-   Packing is performed if either argument scale or add is not NULL.
-   Range checks and packing are performed in double precision.
-   Example: R_nc_r2c_int_short (rv, cv, cnt, &fill, &scale, &add);
+#define R_NC_ISNA_INT(value) (value==NA_INTEGER)
+#define R_NC_ISNA_REAL(value) (ISNAN(value))
+#define R_NC_RANGE_MIN(VAL,LIM,TYPE) ((TYPE) LIM <= (TYPE) VAL)
+#define R_NC_RANGE_MAX(VAL,LIM,TYPE) ((TYPE) VAL <= (TYPE) LIM)
+#define R_NC_RANGE_NONE(VAL,LIM,TYPE) (1)
+
+/* Convert an R vector to a C numeric type.
+   An error is raised for out-of-range values.
+   Missing and NaN values are replaced by a fill value.
+   Packing is performed if either scale or add are not NULL.
+   Example: R_nc_r2c_int_short (rv, cv, cnt, fill, &scale, &add);
+   Note: Rely on compiler to generate optimised loops with and without packing.
  */
-#define R_NC_R2C_NAINT(value) (value==NA_INTEGER)
-#define R_NC_R2C_NAREAL(value) (!R_FINITE(value))
-#define R_NC_R2C_NUM(FUN, ITYPE, OTYPE, NATEST, FILLVAL, MINVAL, MAXVAL) \
+#define R_NC_R2C_NUM(FUN, ITYPE, OTYPE, NATEST, MINTEST, MINVAL, MAXTEST, MAXVAL) \
 static void \
 FUN (const ITYPE* restrict in, OTYPE* restrict out, size_t cnt, \
-     OTYPE *fill, double *scale, double *add) \
+     OTYPE fill, double *scale, double *add) \
 { \
-  size_t ii; \
-  OTYPE fillval; \
-  double factor, offset, pack; \
-  if (fill == NULL) { \
-    fillval = FILLVAL; \
+  size_t ii, erange=0; \
+  double factor, offset; \
+  if (scale) { \
+    factor = *scale; \
   } else { \
-    fillval = *fill; \
+    factor = 1.0; \
   } \
-  if (scale || add) { \
-    if (scale) { \
-      factor = 1.0/(*scale); \
-    } else { \
-      factor = 1.0; \
-    } \
-    if (add) { \
-      offset = *add; \
-    } else { \
-      offset = 0.0; \
-    } \
-    for (ii=0; ii<cnt; ii++) { \
-      if (NATEST(in[ii])) { \
-	out[ii] = fillval; \
-      } else { \
-        pack = round ((in[ii] - offset) * factor); \
-        if (pack < (double) MINVAL || pack > (double) MAXVAL) { \
-	  out[ii] = fillval; \
-        } else { \
-          out[ii] = pack; \
-        } \
-      } \
-    } \
+  if (add) { \
+    offset = *add; \
   } else { \
-    for (ii=0; ii<cnt; ii++) { \
-      if (NATEST(in[ii])) { \
-        out[ii] = fillval; \
+    offset = 0.0; \
+  } \
+  for (ii=0; ii<cnt; ii++) { \
+    if (NATEST(in[ii])) { \
+      out[ii] = fill; \
+    } else if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
+      if (scale || add) { \
+	out[ii] = round((in[ii] - offset) / factor); \
       } else { \
-        pack = in[ii]; \
-        if (pack < (double) MINVAL || pack > (double) MAXVAL) { \
-	  out[ii] = fillval; \
-        } else { \
-          out[ii] = in[ii]; \
-        } \
+	out[ii] = in[ii]; \
       } \
+    } else { \
+      erange = 1; \
     } \
+  } \
+  if ( erange ) { \
+    R_nc_error (nc_strerror (NC_ERANGE)); \
   } \
 }
 
 R_NC_R2C_NUM(R_nc_r2c_int_schar, int, signed char, \
-  R_NC_R2C_NAINT, NC_FILL_BYTE, SCHAR_MIN, SCHAR_MAX);
+  R_NC_ISNA_INT, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX);
 R_NC_R2C_NUM(R_nc_r2c_int_uchar, int, unsigned char, \
-  R_NC_R2C_NAINT, NC_FILL_UBYTE, 0, UCHAR_MAX);
+  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX);
 R_NC_R2C_NUM(R_nc_r2c_int_short, int, short, \
-  R_NC_R2C_NAINT, NC_FILL_SHORT, SHRT_MIN, SHRT_MAX);
+  R_NC_ISNA_INT, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_int_ushort, int, unsigned short, \
-  R_NC_R2C_NAINT, NC_FILL_USHORT, 0, USHRT_MAX);
+  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_int_int, int, int, \
-  R_NC_R2C_NAINT, NC_FILL_INT, INT_MIN, INT_MAX);
+  R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 R_NC_R2C_NUM(R_nc_r2c_int_uint, int, unsigned int, \
-  R_NC_R2C_NAINT, NC_FILL_UINT, 0, UINT_MAX);
+  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_NONE, );
 R_NC_R2C_NUM(R_nc_r2c_int_ll, int, long long, \
-  R_NC_R2C_NAINT, NC_FILL_INT64, LLONG_MIN_DBL, LLONG_MAX_DBL);
+  R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 R_NC_R2C_NUM(R_nc_r2c_int_ull, int, unsigned long long, \
-  R_NC_R2C_NAINT, NC_FILL_UINT64, 0, ULLONG_MAX_DBL);
+  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_NONE, );
 R_NC_R2C_NUM(R_nc_r2c_int_size, int, size_t, \
-  R_NC_R2C_NAINT, NA_SIZE, 0, SIZE_MAX_DBL);
+  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_NONE, );
 R_NC_R2C_NUM(R_nc_r2c_int_float, int, float, \
-  R_NC_R2C_NAINT, NC_FILL_FLOAT, -FLT_MAX, FLT_MAX);
+  R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 R_NC_R2C_NUM(R_nc_r2c_int_dbl, int, double, \
-  R_NC_R2C_NAINT, NC_FILL_DOUBLE, -DBL_MAX, DBL_MAX);
+  R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 
 R_NC_R2C_NUM(R_nc_r2c_dbl_schar, double, signed char, \
-  R_NC_R2C_NAREAL, NC_FILL_BYTE, SCHAR_MIN, SCHAR_MAX);
+  R_NC_ISNA_REAL, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX);
 R_NC_R2C_NUM(R_nc_r2c_dbl_uchar, double, unsigned char, \
-  R_NC_R2C_NAREAL, NC_FILL_UBYTE, 0, UCHAR_MAX);
+  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX);
 R_NC_R2C_NUM(R_nc_r2c_dbl_short, double, short, \
-  R_NC_R2C_NAREAL, NC_FILL_SHORT, SHRT_MIN, SHRT_MAX);
+  R_NC_ISNA_REAL, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_dbl_ushort, double, unsigned short, \
-  R_NC_R2C_NAREAL, NC_FILL_USHORT, 0, USHRT_MAX);
+  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_dbl_int, double, int, \
-  R_NC_R2C_NAREAL, NC_FILL_INT, INT_MIN, INT_MAX);
+  R_NC_ISNA_REAL, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_dbl_uint, double, unsigned int, \
-  R_NC_R2C_NAREAL, NC_FILL_UINT, 0, UINT_MAX);
+  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_dbl_ll, double, long long, \
-  R_NC_R2C_NAREAL, NC_FILL_INT64, LLONG_MIN_DBL, LLONG_MAX_DBL);
+  R_NC_ISNA_REAL, R_NC_RANGE_MIN, LLONG_MIN_DBL, R_NC_RANGE_MAX, LLONG_MAX_DBL);
 R_NC_R2C_NUM(R_nc_r2c_dbl_ull, double, unsigned long long, \
-  R_NC_R2C_NAREAL, NC_FILL_UINT64, 0, ULLONG_MAX_DBL);
+  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, ULLONG_MAX_DBL);
 R_NC_R2C_NUM(R_nc_r2c_dbl_size, double, size_t, \
-  R_NC_R2C_NAREAL, NA_SIZE, 0, SIZE_MAX_DBL);
+  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX_DBL);
 R_NC_R2C_NUM(R_nc_r2c_dbl_float, double, float, \
-  R_NC_R2C_NAREAL, NC_FILL_FLOAT, -FLT_MAX, FLT_MAX);
+  R_NC_ISNA_REAL, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_dbl_dbl, double, double, \
-  R_NC_R2C_NAREAL, NC_FILL_DOUBLE, -DBL_MAX, DBL_MAX);
+  R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 
 
 /* Convert a vector of R numeric values to a netcdf external type.
@@ -464,34 +451,34 @@ R_nc_r2c (SEXP rv, void *cv, size_t imin, size_t cnt, nc_type xtype,
     intp = &(INTEGER(rv)[imin]);
     switch (xtype) {
     case NC_BYTE:
-      R_nc_r2c_int_schar (intp, cv, cnt, fill, scale, add);
+      R_nc_r2c_int_schar (intp, cv, cnt, *(signed char *) fill, scale, add);
       break;
     case NC_UBYTE:
-      R_nc_r2c_int_uchar (intp, cv, cnt, fill, scale, add);
+      R_nc_r2c_int_uchar (intp, cv, cnt, *(unsigned char *) fill, scale, add);
       break;
     case NC_SHORT:
-      R_nc_r2c_int_short (intp, cv, cnt, fill, scale, add);
+      R_nc_r2c_int_short (intp, cv, cnt, *(short *) fill, scale, add);
       break;
     case NC_USHORT:
-      R_nc_r2c_int_ushort (intp, cv, cnt, fill, scale, add);
+      R_nc_r2c_int_ushort (intp, cv, cnt, *(unsigned short *) fill, scale, add);
       break;
     case NC_INT:
-      R_nc_r2c_int_int (intp, cv, cnt, fill, scale, add);
+      R_nc_r2c_int_int (intp, cv, cnt, *(int *) fill, scale, add);
       break;
     case NC_UINT:
-      R_nc_r2c_int_uint (intp, cv, cnt, fill, scale, add);
+      R_nc_r2c_int_uint (intp, cv, cnt, *(unsigned int *) fill, scale, add);
       break;
     case NC_INT64:
-      R_nc_r2c_int_ll (intp, cv, cnt, fill, scale, add);
+      R_nc_r2c_int_ll (intp, cv, cnt, *(long long *) fill, scale, add);
       break;
     case NC_UINT64:
-      R_nc_r2c_int_ull (intp, cv, cnt, fill, scale, add);
+      R_nc_r2c_int_ull (intp, cv, cnt, *(unsigned long long *) fill, scale, add);
       break;
     case NC_FLOAT:
-      R_nc_r2c_int_float (intp, cv, cnt, fill, scale, add);
+      R_nc_r2c_int_float (intp, cv, cnt, *(float *) fill, scale, add);
       break;
     case NC_DOUBLE:
-      R_nc_r2c_int_dbl (intp, cv, cnt, fill, scale, add);
+      R_nc_r2c_int_dbl (intp, cv, cnt, *(double *) fill, scale, add);
       break;
     default:
       R_nc_error (RNC_ETYPEDROP);
@@ -500,34 +487,34 @@ R_nc_r2c (SEXP rv, void *cv, size_t imin, size_t cnt, nc_type xtype,
     realp = &(REAL(rv)[imin]);
     switch (xtype) {
     case NC_BYTE:
-      R_nc_r2c_dbl_schar (realp, cv, cnt, fill, scale, add);
+      R_nc_r2c_dbl_schar (realp, cv, cnt, *(signed char *) fill, scale, add);
       break;
     case NC_UBYTE:
-      R_nc_r2c_dbl_uchar (realp, cv, cnt, fill, scale, add);
+      R_nc_r2c_dbl_uchar (realp, cv, cnt, *(unsigned char *) fill, scale, add);
       break;
     case NC_SHORT:
-      R_nc_r2c_dbl_short (realp, cv, cnt, fill, scale, add);
+      R_nc_r2c_dbl_short (realp, cv, cnt, *(short *) fill, scale, add);
       break;
     case NC_USHORT:
-      R_nc_r2c_dbl_ushort (realp, cv, cnt, fill, scale, add);
+      R_nc_r2c_dbl_ushort (realp, cv, cnt, *(unsigned short *) fill, scale, add);
       break;
     case NC_INT:
-      R_nc_r2c_dbl_int (realp, cv, cnt, fill, scale, add);
+      R_nc_r2c_dbl_int (realp, cv, cnt, *(int *) fill, scale, add);
       break;
     case NC_UINT:
-      R_nc_r2c_dbl_uint (realp, cv, cnt, fill, scale, add);
+      R_nc_r2c_dbl_uint (realp, cv, cnt, *(unsigned int *) fill, scale, add);
       break;
     case NC_INT64:
-      R_nc_r2c_dbl_ll (realp, cv, cnt, fill, scale, add);
+      R_nc_r2c_dbl_ll (realp, cv, cnt, *(long long *) fill, scale, add);
       break;
     case NC_UINT64:
-      R_nc_r2c_dbl_ull (realp, cv, cnt, fill, scale, add);
+      R_nc_r2c_dbl_ull (realp, cv, cnt, *(unsigned long long *) fill, scale, add);
       break;
     case NC_FLOAT:
-      R_nc_r2c_dbl_float (realp, cv, cnt, fill, scale, add);
+      R_nc_r2c_dbl_float (realp, cv, cnt, *(float *) fill, scale, add);
       break;
     case NC_DOUBLE:
-      R_nc_r2c_dbl_dbl (realp, cv, cnt, fill, scale, add);
+      R_nc_r2c_dbl_dbl (realp, cv, cnt, *(double *) fill, scale, add);
       break;
     default:
       R_nc_error (RNC_ETYPEDROP);
@@ -967,10 +954,10 @@ FUN (SEXP rv, size_t nr, TYPE fillval, TYPE *cv) \
   /* Copy elements */ \
   if (isReal (rv)) { \
     realp = REAL (rv); \
-    R_nc_r2c_dbl_##TYPENAME (realp, cv, nc, &fillval, NULL, NULL); \
+    R_nc_r2c_dbl_##TYPENAME (realp, cv, nc, fillval, NULL, NULL); \
   } else if (isInteger (rv)) { \
     intp = INTEGER (rv); \
-    R_nc_r2c_int_##TYPENAME (intp, cv, nc, &fillval, NULL, NULL); \
+    R_nc_r2c_int_##TYPENAME (intp, cv, nc, fillval, NULL, NULL); \
   } else { \
     nc = 0; \
   } \
