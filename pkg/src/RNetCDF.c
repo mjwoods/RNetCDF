@@ -2861,7 +2861,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
   const char *fldname;
   int class, *csizes=NULL;
   size_t coffset=0;
-  void *tmpval;
+  void *tmpval=NULL;
 
   /*-- Decode arguments -------------------------------------------------------*/
   ncid = asInteger (nc);
