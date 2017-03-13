@@ -295,32 +295,25 @@ R_NC_R2C_STR_NUM(R_nc_strsxp_uint64, unsigned long long, strtoull);
 /* Convert C array of 64-bit integers to R strings.
    Argument in contains cnt values of type ITYPE.
    Argument rstr is an R string vector with length cnt from index imin.
-   Any element of in outside the range minval to maxval is set to NA_STRING,
-   with default ranges provided by MINVAL and MAXVAL.
+   Elements are set to NA_STRING if they are NaN,
+     equal to the fill value or outside the valid range (if not NULL).
    Unpacking is not currently supported (why pack into 64-bit integers?)
-   Example: R_nc_int64_strsxp (cv, rstr, imin, cnt, &min, &max);
+   Example: R_nc_int64_strsxp (cv, rstr, imin, cnt, &fill, &min, &max);
  */
-#define R_NC_C2R_NUM_STR(FUN, ITYPE, STRFMT, MINVAL, MAXVAL) \
+#define R_NC_C2R_NUM_STR(FUN, ITYPE, STRFMT) \
 static void \
 FUN (ITYPE *in, SEXP rstr, size_t imin, size_t cnt, \
-     ITYPE *min, ITYPE *max) \
+     ITYPE *fill, ITYPE *min, ITYPE *max) \
 { \
   size_t ii, jj; \
-  ITYPE minval, maxval; \
   char chartmp[RNC_DBL_DIG]; \
-  if (min == NULL) { \
-    minval = MINVAL; \
-  } else { \
-    minval = *min; \
-  } \
-  if (max == NULL) { \
-    maxval = MAXVAL; \
-  } else { \
-    maxval = *max; \
-  } \
   for (ii=0, jj=imin; ii<cnt; ii++, jj++) { \
-    if ((in[ii] >= minval) && (in[ii] <= maxval) && \
-        (sprintf (chartmp, STRFMT, in[ii]) > 0)) { \
+    if ((in[ii] != in[ii]) || \
+        (fill && *fill == in[ii]) || \
+        (min && *min > in[ii]) || \
+        (max && *max < in[ii])) { \
+      SET_STRING_ELT (rstr, jj, NA_STRING); \
+    } else if (sprintf (chartmp, STRFMT, in[ii]) > 0) { \
       SET_STRING_ELT (rstr, jj, mkChar (chartmp)); \
     } else { \
       SET_STRING_ELT (rstr, jj, NA_STRING); \
@@ -328,8 +321,9 @@ FUN (ITYPE *in, SEXP rstr, size_t imin, size_t cnt, \
   } \
 }
 
-R_NC_C2R_NUM_STR(R_nc_int64_strsxp, long long, RNC_FMT_LL, LLONG_MIN, LLONG_MAX);
-R_NC_C2R_NUM_STR(R_nc_uint64_strsxp, unsigned long long, RNC_FMT_ULL, 0, ULLONG_MAX);
+R_NC_C2R_NUM_STR(R_nc_int64_strsxp, long long, RNC_FMT_LL);
+R_NC_C2R_NUM_STR(R_nc_uint64_strsxp, unsigned long long, RNC_FMT_ULL);
+
 
 /* Determine if a C string matches the first element of an R variable.
    Result is a logical value. */
@@ -687,10 +681,10 @@ R_nc_c2r (void *cv, SEXP rv, size_t imin, size_t cnt, nc_type xtype,
   } else if (isString(rv)) {
     switch (xtype) {
     case NC_INT64:
-      R_nc_int64_strsxp (cv, rv, imin, cnt, min, max);
+      R_nc_int64_strsxp (cv, rv, imin, cnt, NULL, min, max);
       break;
     case NC_UINT64:
-      R_nc_uint64_strsxp (cv, rv, imin, cnt, min, max);
+      R_nc_uint64_strsxp (cv, rv, imin, cnt, NULL, min, max);
       break;
     default:
       R_nc_error (RNC_ETYPEDROP);
@@ -1289,7 +1283,7 @@ R_nc_get_att_int64 (int ncid, int varid, const char *attname, size_t cnt)
   if (cnt > 0) {
     int64buf = (void *) R_alloc (cnt, sizeof (long long));
     R_nc_check (nc_get_att_longlong (ncid, varid, attname, int64buf));
-    R_nc_int64_strsxp (int64buf, result, 0, cnt, NULL, NULL);
+    R_nc_int64_strsxp (int64buf, result, 0, cnt, NULL, NULL, NULL);
   }
   return result;
 }
@@ -1304,7 +1298,7 @@ R_nc_get_att_uint64 (int ncid, int varid, const char *attname, size_t cnt)
   if (cnt > 0) {
     uint64buf = (void *) R_alloc (cnt, sizeof (unsigned long long));
     R_nc_check (nc_get_att_ulonglong (ncid, varid, attname, uint64buf));
-    R_nc_uint64_strsxp (uint64buf, result, 0, cnt, NULL, NULL);
+    R_nc_uint64_strsxp (uint64buf, result, 0, cnt, NULL, NULL, NULL);
   }
   return result;
 }
@@ -2076,7 +2070,7 @@ R_nc_get_var_int64 (int ncid, int varid, int ndims,
   if (arrlen > 0) {
     int64buf = (void *) R_alloc (arrlen, sizeof (long long));
     R_nc_check (nc_get_vara_longlong (ncid, varid, cstart, ccount, int64buf));
-    R_nc_int64_strsxp (int64buf, result, 0, arrlen, NULL, NULL);
+    R_nc_int64_strsxp (int64buf, result, 0, arrlen, NULL, NULL, NULL);
   }
   return result;
 }
@@ -2094,7 +2088,7 @@ R_nc_get_var_uint64 (int ncid, int varid, int ndims,
   if (arrlen > 0) {
     uint64buf = (void *) R_alloc (arrlen, sizeof (unsigned long long));
     R_nc_check (nc_get_vara_ulonglong (ncid, varid, cstart, ccount, uint64buf));
-    R_nc_uint64_strsxp (uint64buf, result, 0, arrlen, NULL, NULL);
+    R_nc_uint64_strsxp (uint64buf, result, 0, arrlen, NULL, NULL, NULL);
   }
   return result;
 }
