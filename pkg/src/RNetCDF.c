@@ -1968,6 +1968,190 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
  *  Private functions used by R_nc_get_var()                                   *
  *-----------------------------------------------------------------------------*/
 
+/* Find attributes related to missing values for a netcdf variable.
+   On exit, relevant parameters are returned via double pointers to
+     fill, min and max, which are either NULL or allocated by R_alloc.
+   Argument mode specifies the attributes used for missing values:
+     0 - _FillValue, or missing_value
+     1 - _FillValue only
+     2 - missing_value only
+     3 - none
+     4 - valid range determined as described at
+         http://www.unidata.ucar.edu/software/netcdf/docs/attribute_conventions.html:
+         valid_min & valid_max, or valid_range, or _FillValue, or default.
+   Example: R_nc_miss_att (ncid, varid, mode, &xtype, &fill, &min, &max);
+  */
+static void
+R_nc_miss_att (int ncid, int varid, int mode,
+               nc_type *xtype, void **fill, void **min, void **max)
+{
+  size_t cnt, size;
+  nc_type atype;
+  void *range, *tmpfill;
+  *fill = NULL;
+  *min = NULL;
+  *max = NULL;
+  R_nc_check (nc_inq_vartype (ncid, varid, xtype));
+  R_nc_check (nc_inq_type (ncid, *xtype, NULL, &size));
+  if ((mode == 0 || mode == 1) &&
+      nc_inq_att (ncid, varid, "_FillValue", &atype, &cnt) == NC_NOERR &&
+      cnt == 1 &&
+      atype == *xtype) {
+    *fill = R_alloc (1, size);
+    R_nc_check (nc_get_att (ncid, varid, "_FillValue", *fill));
+    return;
+  } else if ((mode == 0 || mode == 2) &&
+      nc_inq_att (ncid, varid, "missing_value", &atype, &cnt) == NC_NOERR &&
+      cnt == 1 &&
+      atype == *xtype) {
+    *fill = R_alloc (1, size);
+    R_nc_check (nc_get_att (ncid, varid, "missing_value", *fill));
+    return;
+  } else if (mode == 4) {
+    if (nc_inq_att (ncid, varid, "valid_min", &atype, &cnt) == NC_NOERR &&
+        cnt == 1 &&
+        atype == *xtype) {
+      *min = R_alloc (1, size);
+      R_nc_check (nc_get_att (ncid, varid, "valid_min", *min));
+    }
+    if (nc_inq_att (ncid, varid, "valid_max", &atype, &cnt) == NC_NOERR &&
+        cnt == 1 &&
+        atype == *xtype) {
+      *max = R_alloc (1, size);
+      R_nc_check (nc_get_att (ncid, varid, "valid_max", *max));
+    }
+    if (*min || *max) {
+      return;
+    }
+    if (nc_inq_att (ncid, varid, "valid_range", &atype, &cnt) == NC_NOERR &&
+        cnt == 2 &&
+        atype == *xtype) {
+      range = R_alloc (2, size);
+      *min = R_alloc (1, size);
+      *max = R_alloc (1, size);
+      R_nc_check (nc_get_att (ncid, varid, "valid_range", range));
+      memcpy(*min, range, size);
+      memcpy(*max, range + size, size);
+      return;
+    }
+    /* Derive valid range from fill value */
+    tmpfill = R_alloc (1, size);
+    if (nc_inq_att (ncid, varid, "_FillValue", &atype, &cnt) == NC_NOERR &&
+        cnt == 1 &&
+        atype == *xtype) {
+      R_nc_check (nc_get_att (ncid, varid, "_FillValue", tmpfill));
+    } else {
+      /* According to the netcdf attribute conventions:
+         "If the data type is byte and _FillValue is not explicitly defined,
+          then the valid range should include all possible values."
+       */
+      switch (*xtype) {
+	case NC_SHORT:
+	  *(short *) tmpfill = NC_FILL_SHORT;
+	  break;
+	case NC_USHORT:
+	  *(unsigned short *) tmpfill = NC_FILL_USHORT;
+	  break;
+	case NC_INT:
+	  *(int *) tmpfill = NC_FILL_INT;
+	  break;
+	case NC_UINT:
+	  *(unsigned int *) tmpfill = NC_FILL_UINT;
+	  break;
+	case NC_FLOAT:
+	  *(float *) tmpfill = NC_FILL_FLOAT;
+	  break;
+	case NC_DOUBLE:
+	  *(double *) tmpfill = NC_FILL_DOUBLE;
+	  break;
+	case NC_INT64:
+	  *(long long *) tmpfill = NC_FILL_INT64;
+	  break;
+	case NC_UINT64:
+	  *(unsigned long long *) tmpfill = NC_FILL_UINT64;
+	  break;
+        default:
+          return;
+      }
+    }
+#define FILL2RANGE_REAL(TYPE, EPS) { \
+  if (*(TYPE *) tmpfill > (TYPE) 0) { \
+    *max = R_alloc (1, size); \
+    **(TYPE **) max = *(TYPE *) tmpfill * ((TYPE) 1 - (TYPE) 2 * (TYPE) EPS); \
+  } else { \
+    *min = R_alloc (1, size); \
+    **(TYPE **) min = *(TYPE *) tmpfill * ((TYPE) 1 + (TYPE) 2 * (TYPE) EPS); \
+  } \
+}
+#define FILL2RANGE_INT(TYPE) { \
+  if (*(TYPE *) tmpfill > (TYPE) 0) { \
+    *max = R_alloc (1, size); \
+    **(TYPE **) max = *(TYPE *) tmpfill - (TYPE) 1; \
+  } else { \
+    *min = R_alloc (1, size); \
+    **(TYPE **) min = *(TYPE *) tmpfill + (TYPE) 1; \
+  } \
+}
+    switch (*xtype) {
+      case NC_BYTE:
+        FILL2RANGE_INT(signed char);
+        break;
+      case NC_UBYTE:
+        FILL2RANGE_INT(unsigned char);
+        break;
+      case NC_SHORT:
+        FILL2RANGE_INT(short);
+	break;
+      case NC_USHORT:
+        FILL2RANGE_INT(unsigned short);
+	break;
+      case NC_INT:
+        FILL2RANGE_INT(int);
+	break;
+      case NC_UINT:
+        FILL2RANGE_INT(unsigned int);
+	break;
+      case NC_INT64:
+        FILL2RANGE_INT(long long);
+	break;
+      case NC_UINT64:
+        FILL2RANGE_INT(unsigned long long);
+	break;
+      case NC_FLOAT:
+        FILL2RANGE_REAL(float, FLT_EPSILON);
+	break;
+      case NC_DOUBLE:
+        FILL2RANGE_REAL(double, DBL_EPSILON);
+	break;
+      default:
+        return;
+    }
+  }
+}
+
+
+/* Find packing attributes for a given netcdf variable.
+   On entry, pointers for results are passed from caller.
+   On exit, either values are set or pointers are NULLed.
+   Example: R_nc_pack_att (ncid, varid, scalep, addp);
+  */
+static void
+R_nc_pack_att (int ncid, int varid, double **scale, double **add)
+{
+  size_t cnt;
+  if (nc_inq_attlen (ncid, varid, "scale_factor", &cnt) != NC_NOERR ||
+        cnt != 1 ||
+        nc_get_att_double (ncid, varid, "scale_factor", *scale) != NC_NOERR ) {
+    *scale = NULL;
+  }
+  if (nc_inq_attlen (ncid, varid, "add_offset", &cnt) != NC_NOERR ||
+    cnt != 1 ||
+    nc_get_att_double (ncid, varid, "add_offset", *add) != NC_NOERR ) {
+    *add = NULL;
+  }
+}
+
+
 /* Allocate array with dimensions specified in C order */
 static SEXP
 R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount) {
