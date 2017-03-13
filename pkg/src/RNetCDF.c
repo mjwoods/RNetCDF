@@ -763,51 +763,6 @@ R_nc_enddef (int ncid)
 }
 
 
-/* Convert netcdf type code to string label.
- */
-static const char *
-R_nc_type2str (int ncid, nc_type xtype)
-{
-  char *str;
-
-  switch (xtype) {
-  case NC_BYTE:
-    return "NC_BYTE";
-  case NC_UBYTE:
-    return "NC_UBYTE";
-  case NC_CHAR:
-    return "NC_CHAR";
-  case NC_SHORT:
-    return "NC_SHORT";
-  case NC_USHORT:
-    return "NC_USHORT";
-  case NC_INT:
-    return "NC_INT";
-  case NC_UINT:
-    return "NC_UINT";
-  case NC_INT64:
-    return "NC_INT64";
-  case NC_UINT64:
-    return "NC_UINT64";
-  case NC_FLOAT:
-    return "NC_FLOAT";
-  case NC_DOUBLE:
-    return "NC_DOUBLE";
-  case NC_STRING:
-    return "NC_STRING";
-  default:
-    /* Try to get name of a user defined type */
-    str = R_alloc (NC_MAX_NAME + 1, sizeof (char));
-    if (nc_inq_user_type (ncid, xtype, str, NULL, NULL, NULL, NULL) ==
-        NC_NOERR) {
-      return str;
-    } else {
-      return "UNKNOWN";
-    };
-  }
-}
-
-
 /* Convert netcdf string label to type code.
    Return NC_NOERR if ok, netcdf error code otherwise.
  */
@@ -906,40 +861,6 @@ R_nc_str2type (int ncid, const char *str, nc_type * xtype)
     return nc_inq_typeid (ncid, str, xtype);
   } else {
     return NC_NOERR;
-  }
-}
-
-
-/* Return length in bytes of a single item of a netcdf type (or 0 if unknown) */
-static size_t
-R_nc_type2size (int ncid, nc_type xtype)
-{
-  size_t size;
-  switch (xtype) {
-  case NC_BYTE:
-  case NC_UBYTE:
-  case NC_CHAR:
-    return 1;
-  case NC_SHORT:
-  case NC_USHORT:
-    return 2;
-  case NC_INT:
-  case NC_UINT:
-  case NC_FLOAT:
-    return 4;
-  case NC_INT64:
-  case NC_UINT64:
-  case NC_DOUBLE:
-    return 8;
-  case NC_STRING:
-    return sizeof(char *);
-  default:
-    /* Try to get size of a user defined type */
-    if (nc_inq_user_type (ncid, xtype, NULL, &size, NULL, NULL, NULL) !=
-        NC_NOERR) {
-      size = 0;
-    }
-    return size;
   }
 }
 
@@ -1498,8 +1419,7 @@ SEXP
 R_nc_inq_att (SEXP nc, SEXP var, SEXP att)
 {
   int ncid, varid, attid;
-  char attname[NC_MAX_NAME+1];
-  const char *atttype;
+  char attname[NC_MAX_NAME+1], atttype[NC_MAX_NAME+1];
   nc_type type;
   size_t cnt;
   SEXP result;
@@ -1521,7 +1441,7 @@ R_nc_inq_att (SEXP nc, SEXP var, SEXP att)
   R_nc_check (nc_inq_att (ncid, varid, attname, &type, &cnt));
 
   /*-- Convert nc_type to char ------------------------------------------------*/
-  atttype = R_nc_type2str (ncid, type);
+  R_nc_check (nc_inq_type (ncid, type, atttype, NULL));  
 
   /*-- Returning the list -----------------------------------------------------*/
   result = R_nc_protect (allocVector (VECSXP, 4));
@@ -2290,8 +2210,7 @@ SEXP
 R_nc_inq_var (SEXP nc, SEXP var)
 {
   int ncid, varid, ndims, natts, *dimids;
-  const char *vartype;
-  char varname[NC_MAX_NAME + 1];
+  char varname[NC_MAX_NAME + 1], vartype[NC_MAX_NAME+1];
   nc_type xtype;
   SEXP result, rdimids;
 
@@ -2315,7 +2234,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
   }
 
   /*-- Convert nc_type to char ------------------------------------------------*/
-  vartype = R_nc_type2str (ncid, xtype);
+  R_nc_check (nc_inq_type (ncid, xtype, vartype, NULL));
 
   /*-- Construct the output list ----------------------------------------------*/
   result = R_nc_protect (allocVector (VECSXP, 6));
