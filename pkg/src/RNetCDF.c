@@ -2233,20 +2233,6 @@ R_nc_get_var_string (int ncid, int varid, int ndims,
   return result;
 }
 
-/* Read numeric variable as R integer array */
-static SEXP
-R_nc_get_var_int (int ncid, int varid, int ndims,
-                  const size_t *cstart, const size_t *ccount)
-{
-  SEXP result;
-  result = R_nc_allocArray (INTSXP, ndims, ccount);
-  if (xlength (result) > 0) {
-    R_nc_check (nc_get_vara_int (ncid, varid, cstart, ccount,
-                                 INTEGER (result)));
-  }
-  return result;
-}
-
 /* Read NC_INT64 variable as R character array */
 static SEXP
 R_nc_get_var_int64 (int ncid, int varid, int ndims,
@@ -2279,6 +2265,20 @@ R_nc_get_var_uint64 (int ncid, int varid, int ndims,
     uint64buf = (void *) R_alloc (arrlen, sizeof (unsigned long long));
     R_nc_check (nc_get_vara_ulonglong (ncid, varid, cstart, ccount, uint64buf));
     R_nc_uint64_strsxp (uint64buf, result, 0, arrlen, NULL, NULL, NULL);
+  }
+  return result;
+}
+
+/* Read numeric variable as R integer array */
+static SEXP
+R_nc_get_var_int (int ncid, int varid, int ndims,
+                  const size_t *cstart, const size_t *ccount)
+{
+  SEXP result;
+  result = R_nc_allocArray (INTSXP, ndims, ccount);
+  if (xlength (result) > 0) {
+    R_nc_check (nc_get_vara_int (ncid, varid, cstart, ccount,
+                                 INTEGER (result)));
   }
   return result;
 }
@@ -2329,54 +2329,45 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
 
   /*-- Allocate memory and read variable from file ----------------------------*/
   switch (xtype) {
-  case NC_CHAR:
-    if (asLogical (rawchar) == TRUE) {
-      result = R_nc_get_var_raw (ncid, varid, ndims, cstart, ccount);
-    } else {
-      result = R_nc_get_var_char (ncid, varid, ndims, cstart, ccount);
-    }
-    break;
-  case NC_STRING:
-    result = R_nc_get_var_string (ncid, varid, ndims, cstart, ccount);
-    break;
-  case NC_BYTE:
-  case NC_UBYTE:
-  case NC_SHORT:
-  case NC_USHORT:
-  case NC_INT:
-  case NC_UINT:
-  case NC_FLOAT:
-  case NC_DOUBLE:
-  case NC_INT64:
-  case NC_UINT64:
-    if (asLogical (fitnum) == TRUE) {
-      switch (xtype) {
-      case NC_BYTE:
-      case NC_UBYTE:
-      case NC_SHORT:
-      case NC_USHORT:
-      case NC_INT:
+    case NC_CHAR:
+      if (asLogical (rawchar) == TRUE) {
+	result = R_nc_get_var_raw (ncid, varid, ndims, cstart, ccount);
+      } else {
+	result = R_nc_get_var_char (ncid, varid, ndims, cstart, ccount);
+      }
+      break;
+    case NC_STRING:
+      result = R_nc_get_var_string (ncid, varid, ndims, cstart, ccount);
+      break;
+    case NC_BYTE:
+    case NC_UBYTE:
+    case NC_SHORT:
+    case NC_USHORT:
+    case NC_INT:
+      if (asLogical (fitnum) == TRUE) {
 	result = R_nc_get_var_int (ncid, varid, ndims, cstart, ccount);
 	break;
-      case NC_INT64:
+      }
+    case NC_INT64:
+      if (asLogical (fitnum) == TRUE) {
 	result = R_nc_get_var_int64 (ncid, varid, ndims, cstart, ccount);
 	break;
-      case NC_UINT64:
+      }
+    case NC_UINT64:
+      if (asLogical (fitnum) == TRUE) {
 	result = R_nc_get_var_uint64 (ncid, varid, ndims, cstart, ccount);
 	break;
       }
-    }
-    if (result == R_NilValue) {
+    case NC_UINT:
+    case NC_FLOAT:
+    case NC_DOUBLE:
       result = R_nc_get_var_double (ncid, varid, ndims, cstart, ccount);
-    }
-    break;
+      break;
+    default:
+      RERROR (RNC_ETYPEDROP);
   }
 
-  if (result == R_NilValue) {
-    RERROR (RNC_ETYPEDROP);
-  } else {
-    RRETURN (result);
-  }
+  RRETURN (result);
 }
 
 
