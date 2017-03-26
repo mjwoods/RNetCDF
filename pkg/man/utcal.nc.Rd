@@ -29,6 +29,38 @@ The UDUNITS package uses a mixed Gregorian/Julian calendar system. Dates prior t
 utcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(0:5))
 utcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(0:5), type="s")
 utcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(0:5), type="c")
+
+## Create netcdf file with a time coordinate variable.
+nt <- 24
+time_posixct <- seq(ISOdatetime(1900,1,1,0,0,0,tz="UTC"), by="hour", len=nt)
+
+time_unit <- "hours since 1900-01-01 00:00:00 +00:00"
+time_coord <- utinvcal.nc(time_unit, time_posixct)
+
+nc <- create.nc("utcal.nc")
+
+att.put.nc(nc, "NC_GLOBAL", "Conventions", "NC_CHAR", "CF-1.6")
+# Other recommended attributes are defined at http://cfconventions.org
+
+dim.def.nc(nc, "time", nt)
+var.def.nc(nc, "time", "NC_INT", "time")
+att.put.nc(nc, "time", "units", "NC_CHAR", time_unit) 
+
+var.put.nc(nc, "time", time_coord)
+
+close.nc(nc)
+
+## Read time coordinate from netcdf file:
+nc <- open.nc("utcal.nc")
+
+time_coord2 <- var.get.nc(nc, "time")
+time_unit2 <- att.get.nc(nc, "time", "units")
+
+close.nc(nc)
+
+time_posixct2 <- utcal.nc(time_unit2, time_coord2, "c")
+
+stopifnot(all.equal(time_posixct, time_posixct2))
 }
 
 \keyword{utilities}
