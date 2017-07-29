@@ -28,11 +28,11 @@
 
 \examples{
 ##  Create a void NetCDF dataset
-nc <- create.nc("foo.nc")
+nc <- create.nc("open.nc")
 close.nc(nc)
 
 ##  Open the NetCDF dataset for writing
-nc <- open.nc("foo.nc", write=TRUE)
+nc <- open.nc("open.nc", write=TRUE)
 close.nc(nc)
 }
 
