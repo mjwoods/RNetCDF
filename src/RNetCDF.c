@@ -2,14 +2,14 @@
  *									       *
  *  Name:       RNetCDF.c						       *
  *									       *
- *  Version:    1.8-2							       *
+ *  Version:    1.9-1                                                          *
  *									       *
  *  Purpose:    NetCDF interface for R.					       *
  *									       *
- *  Author:     Pavel Michna (michna@giub.unibe.ch)			       *
- *              Milton Woods (m.woods@bom.gov.au)                              *
+ *  Author:     Pavel Michna (michna@users.r-forge.r-project.org)	       *
+ *              Milton Woods (mwoods@users.r-forge.r-project.org)              *
  *									       *
- *  Copyright:  (C) 2004-2014 Pavel Michna                                     *
+ *  Copyright:  (C) 2004-2017 Pavel Michna                                     *
  *									       *
  *=============================================================================*
  *									       *
@@ -58,6 +58,7 @@
  *                      to fix memory errors reported by valgrind.             *
  *                      Allow udunits2 headers to be in udunits2 directory.    *
  *  mw       26/01/16   Fix memory leak from abnormal exit of calendar funcs.  *
+ *  mw       16/07/17   Minimise use of nc_enddef to read data from opendap.   *
  *									       *
 \*=============================================================================*/
 
@@ -79,6 +80,22 @@
 
 #include <R.h>
 #include <Rinternals.h>
+
+
+/*=============================================================================*\
+ *  Macros								       *
+\*=============================================================================*/
+
+/* Execute a netcdf function, changing to netcdf data mode if necessary.
+ * Function return value is stored in parameter status. */
+#define NC_DATAMODE(status, ncid, cmd) \
+  status = cmd; \
+  if (status == NC_EINDEFINE) { \
+    status = nc_enddef(ncid); \
+    if (status == NC_NOERR) { \
+      status = cmd; \
+    } \
+  }
 
 
 /*=============================================================================*\
@@ -1058,7 +1075,7 @@ SEXP R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
 
 SEXP R_nc_sync (SEXP ncid)
 {
-    int  status;
+    int  status, incid;
     SEXP retlist, retlistnames;
 
     /*-- Create output object and initialize return values --------------------*/
@@ -1075,19 +1092,12 @@ SEXP R_nc_sync (SEXP ncid)
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
     SET_VECTOR_ELT (retlist, 1, mkString(""));
 
-    /*-- Enter data mode (if necessary) ---------------------------------------*/
-    status = nc_enddef(INTEGER(ncid)[0]);
-    if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-        REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	return(retlist);
-    }
-
     /*-- Sync the file --------------------------------------------------------*/
-    status = nc_sync(INTEGER(ncid)[0]);
-    if(status != NC_NOERR)
+    incid = INTEGER(ncid)[0];
+    NC_DATAMODE(status, incid, nc_sync(incid));
+    if(status != NC_NOERR) {
 	SET_VECTOR_ELT(retlist, 1, mkString(nc_strerror(status)));
+    }
 
     /*-- Returning the list ---------------------------------------------------*/
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;
@@ -1188,7 +1198,7 @@ SEXP R_nc_def_var (SEXP ncid, SEXP varname, SEXP type, SEXP ndims, SEXP dimids)
 SEXP R_nc_get_vara_double (SEXP ncid, SEXP varid, SEXP start, 
                            SEXP count, SEXP ndims)
 {
-    int    i, status;
+    int    i, status, incid;
     size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS], varsize;
     SEXP   retlist, retlistnames;
 
@@ -1216,20 +1226,13 @@ SEXP R_nc_get_vara_double (SEXP ncid, SEXP varid, SEXP start,
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
     SET_VECTOR_ELT (retlist, 1, mkString(""));
 
-    /*-- Enter data mode (if necessary) ---------------------------------------*/
-    status = nc_enddef(INTEGER(ncid)[0]);
-    if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-        REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	return(retlist);
-    }
-
     /*-- Read variable from file ----------------------------------------------*/
     if (varsize > 0) {
       /* Some netcdf versions cannot handle zero-sized arrays */
-      status = nc_get_vara_double(INTEGER(ncid)[0], INTEGER(varid)[0],
-        s_start, s_count, REAL(VECTOR_ELT(retlist, 2)));
+      incid = INTEGER(ncid)[0];
+      NC_DATAMODE(status, incid, \
+        nc_get_vara_double(incid, INTEGER(varid)[0], \
+        s_start, s_count, REAL(VECTOR_ELT(retlist, 2))));
     } else {
       status = NC_NOERR;
     }
@@ -1251,7 +1254,7 @@ SEXP R_nc_get_vara_double (SEXP ncid, SEXP varid, SEXP start,
 SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start, 
                          SEXP count, SEXP ndims, SEXP rawchar)
 {
-    int    i, status;
+    int    i, status, incid;
     char   *data, *tx_str;
     size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS];
     size_t tx_len, tx_num, varsize;
@@ -1296,15 +1299,6 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
     SET_VECTOR_ELT (retlist, 1, mkString(""));
 
-    /*-- Enter data mode (if necessary) ---------------------------------------*/
-    status = nc_enddef(INTEGER(ncid)[0]);
-    if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-        REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	return(retlist);
-    }
-
     /*-- Read variable from file ----------------------------------------------*/
     if (INTEGER(rawchar)[0] > 0) {
       data = (char *) RAW(VECTOR_ELT(retlist, 2));
@@ -1314,8 +1308,10 @@ SEXP R_nc_get_vara_text (SEXP ncid, SEXP varid, SEXP start,
 
     if (varsize > 0) {
       /* Some netcdf versions cannot handle zero-sized arrays */
-      status = nc_get_vara_text(INTEGER(ncid)[0], INTEGER(varid)[0],
-        s_start, s_count, data);
+      incid = INTEGER(ncid)[0];
+      NC_DATAMODE(status, incid, \
+        nc_get_vara_text(incid, INTEGER(varid)[0], \
+        s_start, s_count, data));
     } else {
       status = NC_NOERR;
     }
@@ -1468,7 +1464,7 @@ SEXP R_nc_inq_var (SEXP ncid, SEXP varid, SEXP varname, SEXP nameflag)
 SEXP R_nc_put_vara_double (SEXP ncid, SEXP varid, SEXP start, 
                            SEXP count, SEXP ndims, SEXP data)
 {
-    int    i, status;
+    int    i, status, incid;
     size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS], varsize;
     SEXP   retlist, retlistnames;
 
@@ -1494,20 +1490,13 @@ SEXP R_nc_put_vara_double (SEXP ncid, SEXP varid, SEXP start,
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
     SET_VECTOR_ELT (retlist, 1, mkString(""));
 
-    /*-- Enter data mode (if necessary) ---------------------------------------*/
-    status = nc_enddef(INTEGER(ncid)[0]);
-    if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-        REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	return(retlist);
-    }
-
     /*-- Put the var ----------------------------------------------------------*/
     if (varsize > 0) {
       /* Some netcdf versions cannot handle zero-sized arrays */
-      status = nc_put_vara_double(INTEGER(ncid)[0], INTEGER(varid)[0],
-        s_start, s_count, REAL(data));
+      incid = INTEGER(ncid)[0];
+      NC_DATAMODE(status, incid, \
+        nc_put_vara_double(incid, INTEGER(varid)[0], \
+        s_start, s_count, REAL(data)));
     } else {
       status = NC_NOERR;
     }
@@ -1529,7 +1518,7 @@ SEXP R_nc_put_vara_double (SEXP ncid, SEXP varid, SEXP start,
 SEXP R_nc_put_vara_text (SEXP ncid, SEXP varid, SEXP start, 
                          SEXP count, SEXP ndims, SEXP rawchar, SEXP data)
 {
-    int    i, status;
+    int    i, status, incid;
     char   *ncdata;
     size_t s_start[MAX_NC_DIMS], s_count[MAX_NC_DIMS];
     size_t tx_len, tx_num, varsize;
@@ -1567,15 +1556,6 @@ SEXP R_nc_put_vara_text (SEXP ncid, SEXP varid, SEXP start,
     REAL(VECTOR_ELT(retlist, 0))[0] = (double)status;	 
     SET_VECTOR_ELT (retlist, 1, mkString(""));
 
-    /*-- Enter data mode (if necessary) ---------------------------------------*/
-    status = nc_enddef(INTEGER(ncid)[0]);
-    if((status != NC_NOERR) && (status != NC_ENOTINDEFINE)) {
-        SET_VECTOR_ELT (retlist, 1, mkString(nc_strerror(status)));
-        REAL(VECTOR_ELT(retlist, 0))[0] = status;
-	UNPROTECT(2);
-	return(retlist);
-    }
-
     /*-- Prepare output array -------------------------------------------------*/
     if (INTEGER(rawchar)[0] > 0) {
       ncdata = (char *) RAW(data);
@@ -1589,8 +1569,10 @@ SEXP R_nc_put_vara_text (SEXP ncid, SEXP varid, SEXP start,
     /*-- Write variable to file -----------------------------------------------*/
     if (varsize > 0) {
       /* Some netcdf versions cannot handle zero-sized arrays */
-      status = nc_put_vara_text(INTEGER(ncid)[0], INTEGER(varid)[0],
-	  s_start, s_count, ncdata);
+      incid = INTEGER(ncid)[0];
+      NC_DATAMODE(status, incid, \
+        nc_put_vara_text(incid, INTEGER(varid)[0], \
+	  s_start, s_count, ncdata));
     } else {
       status = NC_NOERR;
     }
