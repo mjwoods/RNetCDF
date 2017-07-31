@@ -1,0 +1,9 @@
+language: r
+cache: packages
+r:
+  - release
+addons:
+  apt:
+    packages:
+      - libnetcdf-dev
+      - libudunits2-dev
