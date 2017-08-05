@@ -756,14 +756,14 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions)
 #  var.get.nc()                                                                 #
 #-------------------------------------------------------------------------------#
 
-var.get.nc <- function(ncfile, variable, start=NULL, count=NULL, na.mode=0,
+var.get.nc <- function(ncfile, variable, start=NA, count=NA, na.mode=0,
                        collapse=TRUE, unpack=FALSE, rawchar=FALSE)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(class(ncfile) == "NetCDF")
     stopifnot(is.character(variable) || is.numeric(variable))
-    stopifnot(is.numeric(start) || is.logical(start) || is.null(start))
-    stopifnot(is.numeric(count) || is.logical(count) || is.null(count))
+    stopifnot(is.numeric(start) || is.logical(start))
+    stopifnot(is.numeric(count) || is.logical(count))
     stopifnot(is.logical(collapse))
     stopifnot(is.logical(unpack))
     stopifnot(is.logical(rawchar))
@@ -781,24 +781,22 @@ var.get.nc <- function(ncfile, variable, start=NULL, count=NULL, na.mode=0,
     #-- Get the varid as integer if necessary ----------------------------------#
     ifelse(is.character(variable), varid <- varinfo$id, varid <- variable)
 
-    # Truncate or extend start & count to length ndims
-    # and replace NULL or NA as described in the man page:
-    if (is.null(start)) {
-      start <- rep(1,ndims)
-    } else if (length(start) < ndims) {
-      start <- c(start, rep(1, ndims-length(start)))
+    # Truncate start & count to length ndims
+    # and replace NA as described in the man page:
+    if (isTRUE(is.na(start))) {
+      start <- rep(1, ndims)
     } else if (length(start) > ndims) {
       start <- start[seq_len(ndims)]
     }
+    stopifnot(length(start) == ndims)
     start[is.na(start)] <- 1
 
-    if (is.null(count)) {
-      count <- rep(NA,ndims)
-    } else if (length(count) < ndims) {
-      count <- c(count, rep(1, ndims-length(count)))
+    if (isTRUE(is.na(count))) {
+      count <- rep(NA, ndims)
     } else if (length(count) > ndims) {
       count <- count[seq_len(ndims)]
     }
+    stopifnot(length(count) == ndims)
     for (idim in seq_len(ndims)) {
       if (is.na(count[idim])) {
 	diminfo <- dim.inq.nc(ncfile, varinfo$dimids[idim])
@@ -961,15 +959,15 @@ var.inq.nc <- function(ncfile, variable)
 #  var.put.nc()                                                                 #
 #-------------------------------------------------------------------------------#
 
-var.put.nc <- function(ncfile, variable, data, start=NULL, count=NULL, na.mode=0,
+var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0,
                        pack=FALSE)
 {
     #-- Check args -------------------------------------------------------------#
     stopifnot(class(ncfile) == "NetCDF")
     stopifnot(is.character(variable) || is.numeric(variable))
     stopifnot(is.numeric(data) || is.character(data) || is.raw(data) || is.logical(data))
-    stopifnot(is.numeric(start) || is.logical(start) || is.null(start))
-    stopifnot(is.numeric(count) || is.logical(count) || is.null(count))
+    stopifnot(is.numeric(start) || is.logical(start))
+    stopifnot(is.numeric(count) || is.logical(count))
     stopifnot(is.logical(pack))
 
     stopifnot(isTRUE(na.mode %in% c(0,1,2))) 
@@ -997,35 +995,32 @@ var.put.nc <- function(ncfile, variable, data, start=NULL, count=NULL, na.mode=0
 	    mode(data) <- "numeric"
     }
 
-    # Truncate or extend start & count to length ndims
-    # and replace NULL or NA as described in the man page:
-    if (is.null(start)) {
-      start <- rep(1,ndims)
-    } else if (length(start) < ndims) {
-      start <- c(start, rep(1, ndims-length(start)))
+    # Truncate start & count to length ndims
+    # and replace NA as described in the man page:
+    if (isTRUE(is.na(start))) {
+      start <- rep(1, ndims)
     } else if (length(start) > ndims) {
       start <- start[seq_len(ndims)]
     }
+    stopifnot(length(start) == ndims)
     start[is.na(start)] <- 1
 
-    if (is.null(count)) {
+    if (isTRUE(is.na(count))) {
       if (!is.null(dim(data))) {
         count <- dim(data)
-      } else if (ndims > 0) {
-        count <- length(data)
-      } else {
+      } else if (ndims==0 && length(data)==1) {
         count <- integer(0)
+      } else {
+        count <- length(data)
       }
       if (is.character(data) && ndims > 0) {
         strlen <- dim.inq.nc(ncfile, varinfo$dimids[1])$length
         count <- c(strlen, count)
-      }      
-    }
-    if (length(count) < ndims) {
-      count <- c(count, rep(1, ndims-length(count)))
+      }    
     } else if (length(count) > ndims) {
       count <- count[seq_len(ndims)]
     }
+    stopifnot(length(count) == ndims)
     for (idim in seq_len(ndims)) {
       if (is.na(count[idim])) {
 	diminfo <- dim.inq.nc(ncfile, varinfo$dimids[idim])
