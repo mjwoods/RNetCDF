@@ -6,14 +6,14 @@
 
 \description{Read the contents of a NetCDF variable.}
 
-\usage{var.get.nc(ncfile, variable, start=NULL, count=NULL,
+\usage{var.get.nc(ncfile, variable, start=NA, count=NA,
         na.mode=0, collapse=TRUE, unpack=FALSE, rawchar=FALSE)}
 
 \arguments{
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{variable}{ID or name of the NetCDF variable.}
-  \item{start}{A vector of indices specifying the element where reading starts along each dimension of \code{variable}. Indices are numbered from 1 onwards, and the order of dimensions is shown by \code{\link[RNetCDF]{print.nc}} (array elements are stored sequentially with leftmost indices varying fastest). Any \code{NA} values in \code{start} are set to 1. If necessary, \code{start} is truncated or extended with ones to the rank of \code{variable}. By default, all dimensions of \code{variable} are read from the first element onwards.}
-  \item{count}{A vector of integers specifying the number of values to read along each dimension of \code{variable}. The order of dimensions is the same as for \code{start}. If necessary, \code{count} is truncated or extended with ones to the rank of \code{variable}. \code{NA} values indicate that the corresponding dimension of \code{variable} should be read from \code{start} to end. By default, all dimensions of \code{variable} are read from \code{start} to end.}
+  \item{start}{A vector of indices specifying the element where reading starts along each dimension of \code{variable}. Indices are numbered from 1 onwards, and the order of dimensions is shown by \code{\link[RNetCDF]{print.nc}} (array elements are stored sequentially with leftmost indices varying fastest). By default (\code{start=NA}), all dimensions of \code{variable} are read from the first element onwards. Otherwise, \code{start} must be a vector whose length is not less than the number of dimensions in \code{variable} (excess elements are ignored). Any \code{NA} values in vector \code{start} are set to 1.}
+  \item{count}{A vector of integers specifying the number of values to read along each dimension of \code{variable}. The order of dimensions is the same as for \code{start}. By default (\code{count=NA}), all dimensions of \code{variable} are read from \code{start} to end. Otherwise, \code{count} must be a vector whose length is not less than the number of dimensions in \code{variable} (excess elements are ignored). Any \code{NA} value in vector \code{count} indicates that the corresponding dimension should be read from the \code{start} index to the end of the dimension.}
   \item{na.mode}{Set the mode for handling missing values (\code{NA}) in numeric variables: 0=accept \code{_FillValue} or \code{missing_value} attribute, 1=accept only \code{_FillValue} attribute, 2=accept only \code{missing_value} attribute, 3=no missing value conversion.}
   \item{collapse}{\code{TRUE} if degenerated dimensions (length=1) should be omitted.}
   \item{unpack}{Packed variables are unpacked if \code{unpack=TRUE} and the attributes \code{add_offset} and \code{scale_factor} are defined. Default is \code{FALSE}.}
@@ -32,7 +32,7 @@ The argument \code{collapse} allows to keep degenerated dimensions (if set to \c
 
 Awkwardness arises mainly from one thing: NetCDF data are written with the last dimension varying fastest, whereas R works opposite. Thus, the order of the dimensions according to the CDL conventions (e.g., time, latitude, longitude) is reversed in the R array (e.g., longitude, latitude, time).}
 
-\value{A multidimensional array with a data type that depends on the NetCDF variable. For NetCDF variables of type \code{NC_CHAR}, the R type is either \code{character} or \code{raw}, as specified by argument \code{rawchar}. All other NetCDF variables are returned to R as type \code{numeric} (double precision).
+\value{An array with dimensions determined by \code{count} and a data type that depends on the type of \code{variable}. For NetCDF variables of type \code{NC_CHAR}, the R type is either \code{character} or \code{raw}, as specified by argument \code{rawchar}. All other NetCDF variables are returned to R as type \code{numeric} (double precision).
 
 The dimension order in the R array is reversed relative to the order reported by NetCDF commands such as \code{ncdump}, because NetCDF arrays are stored in row-major (C) order whereas R arrays are stored in column-major (Fortran) order.
 
