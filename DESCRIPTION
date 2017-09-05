@@ -1,6 +1,6 @@
 Package: RNetCDF
 Version: 1.9-1
-Date: 2017-07-29
+Date: 2017-09-15
 Title: Interface to NetCDF Datasets
 Author: Pavel Michna, with contributions from Milton Woods
 Maintainer: Milton Woods <miltonjwoods@gmail.com>
