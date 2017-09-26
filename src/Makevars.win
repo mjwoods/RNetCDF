@@ -1,5 +1,19 @@
-# Makevars.win can be tested by uploading package to win-builder.r-project.org
+VERSION=4.4.1.1
+PKG_CPPFLAGS = -I../windows/netcdf-${VERSION}/include \
+	-DHAVE_LIBUDUNITS2 -DHAVE_DECL_NC_RENAME_GRP=1
 
-PKG_CPPFLAGS = -DHAVE_LIBUDUNITS2
-PKG_LIBS = -L${LIB_HDF5}/lib${R_ARCH} -lnetcdf4 -ludunits2 -lexpat -lhdf5_hl -lhdf5 -lz
+PKG_LIBS = -L../windows/netcdf-${VERSION}/lib${R_ARCH} \
+	-lnetcdf -lhdf5_hl -lhdf5 -ludunits2 -lexpat -lszip -lz
 
+all: clean winlibs
+
+winlibs:
+	"${R_HOME}/bin${R_ARCH_BIN}/Rscript.exe" "../tools/winlibs.R" ${VERSION}
+	mkdir -p ../inst
+	rm -Rf ../inst/share
+	cp -r ../windows/netcdf-${VERSION}/share ../inst/
+
+clean:
+	rm -Rf $(SHLIB) $(OBJECTS)
+
+.PHONY: all winlibs clean
