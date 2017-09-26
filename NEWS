@@ -1,3 +1,12 @@
+Version 1.9-1, 2017-09-05
+  * Allow multiple NA values in count argument of var.get.nc/var.put.nc,
+    so that corresponding dimensions are read/written to their defined length.
+  * Fix support for OPeNDAP (if enabled by the netcdf library)
+  * Build Windows packages with netcdf4 library
+    - Enable OPeNDAP in Win64
+    - Disable OPeNDAP in Win32, because it causes RNetCDF to crash
+    - Thanks to Jeroen Ooms for giving us https://github.com/rwinlib/netcdf!
+
 Version 1.8-2, 2016-02-21
   * Add support for POSIXct timestamps to utcal.nc and utinvcal.nc.
   * Use nc-config by default in configure to find netcdf build settings.
