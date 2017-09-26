@@ -113,10 +113,10 @@ myint0        <- 12345
 mychar0       <- "?"
 
 ##  Put the data
-var.put.nc(nc, "time", mytime, 1, length(mytime))
-var.put.nc(nc, "temperature", mytemperature, c(1,1), c(nstation,ntime))
+var.put.nc(nc, "time", mytime)
+var.put.nc(nc, "temperature", mytemperature, c(NA,1), c(NA,ntime))
 var.put.nc(nc, "packvar", mypackvar, pack=TRUE)
-var.put.nc(nc, "name", myname, c(1,1), c(nstring,nstation))
+var.put.nc(nc, "name", myname, c(1,1), c(nstring,NA))
 var.put.nc(nc, "qcflag", charToRaw(myqcflag))
 var.put.nc(nc, "int0", myint0)
 var.put.nc(nc, "char0", mychar0)
