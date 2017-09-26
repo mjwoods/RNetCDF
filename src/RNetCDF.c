@@ -6,8 +6,8 @@
  *									       *
  *  Purpose:    NetCDF interface for R.					       *
  *									       *
- *  Author:     Pavel Michna (michna@users.r-forge.r-project.org)	       *
- *              Milton Woods (mwoods@users.r-forge.r-project.org)              *
+ *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)	                       *
+ *              Milton Woods (miltonjwoods@gmail.com)                          *
  *									       *
  *  Copyright:  (C) 2004-2017 Pavel Michna                                     *
  *									       *

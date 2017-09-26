@@ -6,8 +6,8 @@
 #                                                                               #
 #  Purpose:    Test functions to the NetCDF interface for R.                    #
 #                                                                               #
-#  Author:     Pavel Michna (michna@giub.unibe.ch)                              #
-#              Milton Woods (m.woods@bom.gov.au)                                #
+#  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)                          #
+#              Milton Woods (miltonjwoods@gmail.com)                            #
 #                                                                               #
 #  Copyright:  (C) 2010-2014 Pavel Michna                                       #
 #                                                                               #
