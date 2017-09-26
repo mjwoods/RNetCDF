@@ -28,7 +28,7 @@ Packed variables can optionally be returned in an unpacked state (see \code{\lin
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("foo.nc")
+nc <- create.nc("read.nc")
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)

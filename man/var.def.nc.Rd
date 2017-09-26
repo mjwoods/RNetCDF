@@ -29,7 +29,7 @@ Attributes may be associated with a variable to specify such properties as units
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("foo.nc")
+nc <- create.nc("var.def.nc")
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
