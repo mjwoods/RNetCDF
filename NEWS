@@ -6,6 +6,7 @@ Version 1.9-1, 2017-09-05
     - Enable OPeNDAP in Win64
     - Disable OPeNDAP in Win32, because it causes RNetCDF to crash
     - Thanks to Jeroen Ooms for giving us https://github.com/rwinlib/netcdf!
+  * Register C routines for efficient access by R
 
 Version 1.8-2, 2016-02-21
   * Add support for POSIXct timestamps to utcal.nc and utinvcal.nc.

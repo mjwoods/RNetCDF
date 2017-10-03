@@ -51,6 +51,7 @@
 #  mw       24/01/16   Support conversion of timestamps to/from POSIXct         #
 #  mw       29/07/17   Replace NA in count of var.get.nc and var.put.nc so that #
 #                      corresponding dimensions are read/written to end         #
+#  mw       03/10/17   Use registered entry points for .Call functions          #
 #										#
 #===============================================================================#
 
@@ -114,15 +115,14 @@ att.copy.nc <- function(ncfile.in, variable.in, attribute, ncfile.out,
         return(invisible(NULL))
     
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_copy_att",
+    nc <- .Call(R_nc_copy_att,
                 as.integer(ncfile.in),
 		as.integer(varid.in),
 		as.integer(globflag.in),
 		as.character(attname),
                 as.integer(ncfile.out),
 		as.integer(varid.out),
-		as.integer(globflag.out),
-		PACKAGE="RNetCDF")
+		as.integer(globflag.out))
 		
     if(nc$status != 0)
         stop(nc$errmsg, call.=FALSE)
@@ -167,12 +167,11 @@ att.delete.nc <- function(ncfile, variable, attribute)
         return(invisible(NULL))
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_delete_att",
+    nc <- .Call(R_nc_delete_att,
                 as.integer(ncfile),
 		as.integer(varid),
 		as.integer(globflag),
-		as.character(attname),
-		PACKAGE="RNetCDF")
+		as.character(attname))
     
     if(nc$status != 0)
         stop(nc$errmsg, call.=FALSE)
@@ -218,13 +217,12 @@ att.get.nc <- function(ncfile, variable, attribute)
     ifelse(attinfo$type == "NC_CHAR", numflag <- 0, numflag <- 1);
     
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_get_att",
+    nc <- .Call(R_nc_get_att,
 	        as.integer(ncfile),
 		as.integer(varid),
 		as.character(attname),
 		as.integer(numflag),
-		as.integer(globflag),
-		PACKAGE="RNetCDF")
+		as.integer(globflag))
     
     #-- Return object if no error ----------------------------------------------#
     if(nc$status == 0) {
@@ -271,14 +269,13 @@ att.inq.nc <- function(ncfile, variable, attribute)
         return(invisible(NULL))
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_inq_att",
+    nc <- .Call(R_nc_inq_att,
         	as.integer(ncfile),
 		as.integer(varid),
 		as.character(attname),
 		as.integer(attid),
 		as.integer(nameflag),
-		as.integer(globflag),
-		PACKAGE="RNetCDF")
+		as.integer(globflag))
 
     #-- Return object if no error ----------------------------------------------#
     if(nc$status == 0) {
@@ -324,7 +321,7 @@ att.put.nc <- function(ncfile, variable, name, type, value)
     ifelse(is.numeric(value), numflag <- 1, numflag <- 0)
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_put_att",
+    nc <- .Call(R_nc_put_att,
 	        as.integer(ncfile),
 		as.integer(varid),
 		as.character(name),
@@ -332,8 +329,7 @@ att.put.nc <- function(ncfile, variable, name, type, value)
 		as.integer(length(value)),
 		as.integer(numflag),
 		as.integer(globflag),
-		value,
-		PACKAGE="RNetCDF")
+		value)
     
     if(nc$status != 0)
         stop(nc$errmsg, call.=FALSE)
@@ -379,13 +375,12 @@ att.rename.nc <- function(ncfile, variable, attribute, newname)
         return(invisible(NULL))
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_rename_att",
+    nc <- .Call(R_nc_rename_att,
                 as.integer(ncfile),
 		as.integer(varid),
 		as.integer(globflag),
 		as.character(attname),
-                as.character(newname),
-		PACKAGE="RNetCDF")
+                as.character(newname))
     
     if(nc$status != 0)
         stop(nc$errmsg, call.=FALSE)
@@ -402,9 +397,8 @@ close.nc <- function(con, ...)
     stopifnot(class(con) == "NetCDF") 
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_close",
-                as.integer(con),
-		PACKAGE="RNetCDF")
+    nc <- .Call(R_nc_close,
+                as.integer(con))
 
     if(nc$status != 0)
         stop(nc$errmsg, call.=FALSE)
@@ -425,13 +419,12 @@ create.nc <- function(filename, clobber=TRUE, large=FALSE, share=FALSE,
     iprefill <- ifelse(prefill == TRUE, 1, 0)
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_create",
+    nc <- .Call(R_nc_create,
 		as.character(filename),
 		as.integer(iclobber),
                 as.integer(ilarge),
                 as.integer(ishare),
-                as.integer(iprefill),
-		PACKAGE="RNetCDF")
+                as.integer(iprefill))
 	     
     #-- Return object if no error ----------------------------------------------#
     if(nc$status == 0) {
@@ -460,12 +453,11 @@ dim.def.nc <- function(ncfile, dimname, dimlength=1, unlim=FALSE)
     ncdimlength <- ifelse(unlim  == TRUE, 0, dimlength)
     
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_def_dim",
+    nc <- .Call(R_nc_def_dim,
 		as.integer(ncfile),
 		as.character(dimname),
 		as.integer(ncdimlength),
-		as.integer(unlimflag),
-		PACKAGE="RNetCDF")
+		as.integer(unlimflag))
 
     if(nc$status != 0)
         stop(nc$errmsg, call.=FALSE)
@@ -490,12 +482,11 @@ dim.inq.nc <- function(ncfile, dimension)
     ifelse(is.character(dimension), dimname <- dimension, dimid <- dimension)
     
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_inq_dim",
+    nc <- .Call(R_nc_inq_dim,
         	as.integer(ncfile),
 		as.integer(dimid),
 		as.character(dimname),
-		as.integer(nameflag),
-		PACKAGE="RNetCDF")
+		as.integer(nameflag))
     
     #-- Return object if no error ----------------------------------------------#
     if(nc$status == 0) {
@@ -529,13 +520,12 @@ dim.rename.nc <- function(ncfile, dimension, newname)
     ifelse(is.character(dimension), dimname <- dimension, dimid <- dimension)
     
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_rename_dim",
+    nc <- .Call(R_nc_rename_dim,
         	as.integer(ncfile),
 		as.integer(dimid),
 		as.character(dimname),
 		as.integer(nameflag),
-		as.character(newname),
-		PACKAGE="RNetCDF")
+		as.character(newname))
 
     if(nc$status != 0)
         stop(nc$errmsg, call.=FALSE)
@@ -552,9 +542,8 @@ file.inq.nc <- function(ncfile)
     stopifnot(class(ncfile) == "NetCDF") 
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_inq_file",
-                as.integer(ncfile),
-		PACKAGE="RNetCDF")
+    nc <- .Call(R_nc_inq_file,
+                as.integer(ncfile))
 
     #-- Return object if no error ----------------------------------------------#
     if(nc$status == 0) {
@@ -588,12 +577,11 @@ open.nc <- function(con, write=FALSE, share=FALSE, prefill=TRUE, ...)
     iprefill <- ifelse(prefill == TRUE, 1, 0)
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_open",
+    nc <- .Call(R_nc_open,
 		as.character(con),
 		as.integer(iwrite),
 		as.integer(ishare),
-		as.integer(iprefill),
-		PACKAGE="RNetCDF")
+		as.integer(iprefill))
 	     
     #-- Return object if no error ----------------------------------------------#
     if(nc$status == 0) {
@@ -690,9 +678,8 @@ sync.nc <- function(ncfile)
     stopifnot(class(ncfile) == "NetCDF")
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_sync",
-                as.integer(ncfile),
-		PACKAGE="RNetCDF")
+    nc <- .Call(R_nc_sync,
+                as.integer(ncfile))
 		
     if(nc$status != 0)
         stop(nc$errmsg, call.=FALSE)
@@ -739,13 +726,12 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions)
     }
     
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_def_var",
+    nc <- .Call(R_nc_def_var,
         	as.integer(ncfile),
 		as.character(varname),
 		as.character(vartype),
 		as.integer(ndims),
-		as.integer(dimids),
-		PACKAGE="RNetCDF")
+		as.integer(dimids))
 		
     if(nc$status != 0)
         stop(nc$errmsg, call.=FALSE)
@@ -810,22 +796,20 @@ var.get.nc <- function(ncfile, variable, start=NA, count=NA, na.mode=0,
 
     #-- C function calls -------------------------------------------------------#
     if(varinfo$type == "NC_CHAR") {
-        nc <- .Call("R_nc_get_vara_text",
+        nc <- .Call(R_nc_get_vara_text,
         	    as.integer(ncfile),
 		    as.integer(varid),
 		    as.integer(c.start),
 		    as.integer(c.count),
 		    as.integer(ndims),
-                    as.integer(rawchar),
-		    PACKAGE="RNetCDF")
+                    as.integer(rawchar))
     } else {
-	nc <- .Call("R_nc_get_vara_double",
+	nc <- .Call(R_nc_get_vara_double,
         	    as.integer(ncfile),
 		    as.integer(varid),
 		    as.integer(c.start),
 		    as.integer(c.count),
-		    as.integer(ndims),
-		    PACKAGE="RNetCDF")
+		    as.integer(ndims))
     }
 
     #-- Adjust data ------------------------------------------------------------#
@@ -932,12 +916,11 @@ var.inq.nc <- function(ncfile, variable)
     ifelse(is.character(variable), varname <- variable, varid <- variable)
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_inq_var",
+    nc <- .Call(R_nc_inq_var,
         	as.integer(ncfile),
 		as.integer(varid),
 		as.character(varname),
-		as.integer(nameflag),
-		PACKAGE="RNetCDF")
+		as.integer(nameflag))
 
     #-- Return object if no error ----------------------------------------------#
     if(nc$status == 0) {
@@ -1138,25 +1121,23 @@ var.put.nc <- function(ncfile, variable, data, start=NA, count=NA, na.mode=0,
         if (!is.double(data)) {
           data <- as.double(data)
         }
-	nc <- .Call("R_nc_put_vara_double",
+	nc <- .Call(R_nc_put_vara_double,
         	    as.integer(ncfile),
 		    as.integer(varid),
 		    as.integer(c.start),
 		    as.integer(c.count),
 		    as.integer(ndims),
-		    data,
-		    PACKAGE="RNetCDF")
+		    data)
     } else {
         stopifnot(is.character(data) || is.raw(data))
-        nc <- .Call("R_nc_put_vara_text",
+        nc <- .Call(R_nc_put_vara_text,
         	    as.integer(ncfile),
 		    as.integer(varid),
 		    as.integer(c.start),
 		    as.integer(c.count),
 		    as.integer(ndims),
                     as.integer(is.raw(data)),
-		    data,
-		    PACKAGE="RNetCDF")
+		    data)
     }
 
     if(nc$status != 0)
@@ -1183,13 +1164,12 @@ var.rename.nc <- function(ncfile, variable, newname)
     ifelse(is.character(variable), varname <- variable, varid <- variable)
 
     #-- C function call --------------------------------------------------------#
-    nc <- .Call("R_nc_rename_var",
+    nc <- .Call(R_nc_rename_var,
         	as.integer(ncfile),
 		as.integer(varid),
 		as.character(varname),
 		as.integer(nameflag),
-		as.character(newname),
-		PACKAGE="RNetCDF")
+		as.character(newname))
 
     if(nc$status != 0)
         stop(nc$errmsg, call.=FALSE)
@@ -1242,11 +1222,10 @@ utcal.nc <- function(unitstring, value, type="n")
     count <- length(value)
    
     #-- C function call to udunits calendar function -----------------------#
-    ut <- .Call("R_ut_calendar", 
+    ut <- .Call(R_ut_calendar, 
 	        as.character(unitstring), 
 		as.integer(count),
-		as.double(value),
-		PACKAGE="RNetCDF")
+		as.double(value))
 
     #-- Return object if no error ------------------------------------------#
     if(ut$status == 0) {
@@ -1278,9 +1257,8 @@ utcal.nc <- function(unitstring, value, type="n")
 
 utinit.nc <- function(path="")
 {
-    ut <- .Call("R_ut_init", 
-                as.character(path),
-		PACKAGE="RNetCDF")
+    ut <- .Call(R_ut_init, 
+                as.character(path))
 		
     if(ut$status != 0)
         stop(ut$errmsg, call.=FALSE)
@@ -1322,11 +1300,10 @@ utinvcal.nc <- function(unitstring, value)
 	stop("ncol(value) not 6", call.=FALSE)
     
     #-- C function call --------------------------------------------------------#
-    ut <- .Call("R_ut_inv_calendar", 
+    ut <- .Call(R_ut_inv_calendar, 
 		as.character(unitstring), 
 		as.integer(count),
-		as.double(value),
-		PACKAGE="RNetCDF")
+		as.double(value))
 
     #-- Return object if no error ----------------------------------------------#
     if(ut$status == 0) {
