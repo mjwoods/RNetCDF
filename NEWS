@@ -1,4 +1,4 @@
-Version 1.9-1, 2017-09-05
+Version 1.9-1, 2017-10-04
   * Allow multiple NA values in count argument of var.get.nc/var.put.nc,
     so that corresponding dimensions are read/written to their defined length.
   * Fix support for OPeNDAP (if enabled by the netcdf library)
