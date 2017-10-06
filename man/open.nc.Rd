@@ -11,7 +11,7 @@
 }
 
 \arguments{
-  \item{con}{Filename of the NetCDF dataset to be opened.}
+  \item{con}{Filename of the NetCDF dataset to be opened. If the underlying NetCDF library supports OPeNDAP, \code{con} may be an OPeNDAP URL.}
   \item{write}{If \code{FALSE} (default), the dataset will be opened read-only. If \code{TRUE}, the dataset will be opened read-write.}
   \item{share}{The buffer scheme. If \code{FALSE} (default), dataset access is buffered and cached for performance. However, if one or more processes may be reading while another process is writing the dataset, set to \code{TRUE}.}
   \item{prefill}{The prefill mode. If \code{TRUE} (default), newly defined variables are initialised with fill values when they are first accessed. This allows unwritten array elements to be detected when reading, but it also implies duplicate writes if all elements are subsequently written with user-specified data. Enhanced write performance can be obtained by setting \code{prefill=FALSE}.}
