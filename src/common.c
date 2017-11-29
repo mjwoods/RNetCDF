@@ -239,12 +239,8 @@ R_nc_redef (int ncid)
 int
 R_nc_enddef (int ncid)
 {
-  int status;
-  status = nc_enddef(ncid);
-  if (status == NC_ENOTINDEFINE) {
-    status = NC_NOERR;
-  }
-  return status;
+  nc_enddef(ncid);
+  return NC_NOERR;
 }
 
 

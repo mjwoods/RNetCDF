@@ -92,7 +92,8 @@ R_nc_redef (int ncid);
 
 
 /* Enter netcdf data mode if possible.
-   Returns netcdf error code if an unhandled error occurs.
+   Errors are ignored to avoid false alarms with some datasets (e.g. OPeNDAP),
+   but we assume that subsequent function calls are checked for errors.
  */
 int
 R_nc_enddef (int ncid);
