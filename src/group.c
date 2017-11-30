@@ -6,8 +6,8 @@
  *									       *
  *  Purpose:    NetCDF group functions for RNetCDF.			       *
  *									       *
- *  Author:     Pavel Michna (michna@giub.unibe.ch)			       *
- *              Milton Woods (m.woods@bom.gov.au)                              *
+ *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)			       *
+ *              Milton Woods (miltonjwoods@gmail.com)                              *
  *									       *
  *  Copyright:  (C) 2004-2017 Pavel Michna                                     *
  *									       *
