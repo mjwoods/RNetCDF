@@ -3,7 +3,17 @@ Version 2.0-1, 2016-05-??
   * Support creation of files in netcdf4 (hdf5) format.
   * Add functions for netcdf4 groups.
 
-Version 1.8-1, 2016-02-11
+Version 1.9-1, 2017-10-04
+  * Allow multiple NA values in count argument of var.get.nc/var.put.nc,
+    so that corresponding dimensions are read/written to their defined length.
+  * Fix support for OPeNDAP (if enabled by the netcdf library)
+  * Build Windows packages with netcdf4 library
+    - Enable OPeNDAP in Win64
+    - Disable OPeNDAP in Win32, because it causes RNetCDF to crash
+    - Thanks to Jeroen Ooms for giving us https://github.com/rwinlib/netcdf!
+  * Register C routines for efficient access by R
+
+Version 1.8-2, 2016-02-21
   * Add support for POSIXct timestamps to utcal.nc and utinvcal.nc.
   * Use nc-config by default in configure to find netcdf build settings.
   * Allow customisation of configure by variables CPPFLAGS, LDFLAGS and LIBS,
