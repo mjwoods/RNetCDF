@@ -78,6 +78,14 @@ R_nc_dim_id (SEXP dim, int ncid, int *dimid, int idx);
 int
 R_nc_var_id (SEXP var, int ncid, int *varid);
 
+/* Convert netcdf type code to string label.
+   Return NC_NOERR if ok, netcdf error code otherwise.
+   The string buffer is assumed to have length NC_MAX_NAME or more.
+ */
+int
+R_nc_type2str (int ncid, nc_type xtype, char *str);
+
+
 /* Convert netcdf string label to type code.
    Return NC_NOERR if ok, netcdf error code otherwise.
  */

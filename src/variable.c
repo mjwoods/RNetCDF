@@ -674,7 +674,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
   }
 
   /*-- Convert nc_type to char ------------------------------------------------*/
-  R_nc_check (nc_inq_type (ncid, xtype, vartype, NULL));
+  R_nc_check (R_nc_type2str (ncid, xtype, vartype));
 
   /*-- Construct the output list ----------------------------------------------*/
   result = R_nc_protect (allocVector (VECSXP, 6));

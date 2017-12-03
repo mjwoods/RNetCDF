@@ -353,7 +353,7 @@ R_nc_inq_att (SEXP nc, SEXP var, SEXP att)
   R_nc_check (nc_inq_att (ncid, varid, attname, &type, &cnt));
 
   /*-- Convert nc_type to char ------------------------------------------------*/
-  R_nc_check (nc_inq_type (ncid, type, atttype, NULL));  
+  R_nc_check (R_nc_type2str (ncid, type, atttype));
 
   /*-- Returning the list -----------------------------------------------------*/
   result = R_nc_protect (allocVector (VECSXP, 4));

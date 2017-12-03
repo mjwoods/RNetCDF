@@ -33,6 +33,8 @@
  * $Header$
 \*=============================================================================*/
 
+#include <string.h>
+
 #include <R.h>
 #include <Rinternals.h>
 
@@ -122,6 +124,57 @@ R_nc_var_id (SEXP var, int ncid, int *varid)
   } else {
     return NC_EINVAL;
   }
+}
+
+
+int
+R_nc_type2str (int ncid, nc_type xtype, char *typename)
+{
+  char *str;
+  switch (xtype) {
+  case NC_BYTE:
+    str = "NC_BYTE";
+    break;
+  case NC_UBYTE:
+    str = "NC_UBYTE";
+    break;
+  case NC_CHAR:
+    str = "NC_CHAR";
+    break;
+  case NC_SHORT:
+    str = "NC_SHORT";
+    break;
+  case NC_USHORT:
+    str = "NC_USHORT";
+    break;
+  case NC_INT:
+    str = "NC_INT";
+    break;
+  case NC_UINT:
+    str = "NC_UINT";
+    break;
+  case NC_INT64:
+    str = "NC_INT64";
+    break;
+  case NC_UINT64:
+    str = "NC_UINT64";
+    break;
+  case NC_FLOAT:
+    str = "NC_FLOAT";
+    break;
+  case NC_DOUBLE:
+    str = "NC_DOUBLE";
+    break;
+  case NC_STRING:
+    str = "NC_STRING";
+    break;
+  default:
+    /* Try to get name of a user defined type */
+    return nc_inq_user_type (ncid, xtype, typename, NULL, NULL, NULL, NULL);
+  }
+  /* Copy name to output string buffer */
+  strcpy (typename, str);
+  return NC_NOERR;
 }
 
 
