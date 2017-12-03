@@ -51,6 +51,8 @@
 #  mw       24/01/16   Support conversion of timestamps to/from POSIXct         
 #  mw       24/02/16   Support creation of files in netcdf4 (hdf5) format       
 #  mw       21/05/16   Add functions for netcdf4 groups                         
+#  mw       29/07/17   Replace NA in count of var.get.nc and var.put.nc so that
+#                      corresponding dimensions are read/written to end
 #										
 #===============================================================================
 
@@ -458,7 +460,32 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 0,
   stopifnot(is.logical(fitnum))
   
   stopifnot(isTRUE(na.mode %in% c(0, 1, 2, 3)))
-  
+
+  # Truncate start & count and replace NA as described in the man page:
+  varinfo <- var.inq.nc(ncfile, variable)
+  ndims <- varinfo$ndims
+
+  if (isTRUE(is.na(start))) {
+    start <- rep(1, ndims)
+  } else if (length(start) > ndims) {
+    start <- start[seq_len(ndims)]
+  }
+  stopifnot(length(start) == ndims)
+  start[is.na(start)] <- 1
+
+  if (isTRUE(is.na(count))) {
+    count <- rep(NA, ndims)
+  } else if (length(count) > ndims) {
+    count <- count[seq_len(ndims)]
+  }
+  stopifnot(length(count) == ndims)
+  for (idim in seq_len(ndims)) {
+    if (is.na(count[idim])) {
+      diminfo <- dim.inq.nc(ncfile, varinfo$dimids[idim])
+      count[idim] <- ( diminfo$length - start[idim] + 1 )
+    }
+  }
+
   #-- C function call --------------------------------------------------------
   nc <- .Call("R_nc_get_var", ncfile, variable, start, count, rawchar, fitnum,
               PACKAGE="RNetCDF") 
@@ -544,14 +571,84 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
   
   stopifnot(isTRUE(na.mode %in% c(0, 1, 2)))
 
-  # If start or count contain any missing values,
-  # use values derived from dimensions of data by passing NULL to C interface.
-  # Note that C interface drops elements of start/count past the defined dimensions.
-  if (any(is.na(start))) {
-    start <- NULL
+  # Determine type and dimensions of variable:
+  varinfo <- var.inq.nc(ncfile, variable)
+  ndims <- varinfo$ndims
+  str2char <- is.character(data) && varinfo$type == "NC_CHAR"
+
+  # Truncate start & count and replace NA as described in the man page:
+  if (isTRUE(is.na(start))) {
+    start <- rep(1, ndims)
+  } else if (length(start) > ndims) {
+    start <- start[seq_len(ndims)]
   }
-  if (any(is.na(count))) {
-    count <- NULL
+  stopifnot(length(start) == ndims)
+  start[is.na(start)] <- 1
+
+  if (isTRUE(is.na(count))) {
+    if (!is.null(dim(data))) {
+      count <- dim(data)
+    } else if (ndims==0 && length(data)==1) {
+      count <- integer(0)
+    } else {
+      count <- length(data)
+    }
+    if (str2char && ndims > 0) {
+      strlen <- dim.inq.nc(ncfile, varinfo$dimids[1])$length
+      count <- c(strlen, count)
+    }    
+  } else if (length(count) > ndims) {
+    count <- count[seq_len(ndims)]
+  }
+  stopifnot(length(count) == ndims)
+  for (idim in seq_len(ndims)) {
+    if (is.na(count[idim])) {
+      diminfo <- dim.inq.nc(ncfile, varinfo$dimids[idim])
+      count[idim] <- ( diminfo$length - start[idim] + 1 )
+    }
+  }
+
+  #-- Check that length of data is sufficient --------------------------------#
+  if (str2char && ndims > 0) {
+    numelem <- prod(count[-1])
+  } else {
+    numelem <- prod(count) # Returns 1 if ndims==0 (scalar variable)
+  }
+  if (length(data) < numelem) {
+    stop(paste("Not enough data elements (found ",length(data),
+	   ", need ",numelem,")", sep=""), call.=FALSE)
+  }
+
+  #-- Warn if strings will be truncated --------------------------------------#
+  if (str2char) {
+    if (ndims > 0) {
+      strlen <- count[1]
+    } else {
+      strlen <- 1
+    }
+    if (max(nchar(data,type="bytes")) > strlen) {
+      warning(paste("Strings truncated to length",strlen), call.=FALSE)
+    }
+  }
+
+  #-- Warn if array data is not conformable with count -----------------------#
+  if (!is.null(dim(data))) {
+    if (str2char && ndims > 0) {
+      count_drop <- count[-1]
+    } else {
+      count_drop <- count
+    }
+    count_drop <- count_drop[count_drop!=1]
+
+    dim_drop <- dim(data)
+    dim_drop <- dim_drop[dim_drop!=1]
+
+    if ((length(count_drop) != length(dim_drop)) || 
+	any(count_drop != dim_drop)) {
+      warning(paste("Data coerced from dimensions (",
+		paste(dim(data),collapse=","), ") to dimensions (",
+		paste(count,collapse=","), ")", sep=""), call.=FALSE)
+    }
   }
 
   #-- Pack variables if requested (missing values are preserved) -------------

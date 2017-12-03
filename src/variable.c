@@ -57,102 +57,6 @@
 #include "variable.h"
 
 
-/* Handle NA values in user-specified variable slices.
-   Store slice ranges in cstart and ccount vectors with C dimension order.
-   The number of dimensions is returned in ndims,
-   and both C vectors are allocated (via R_alloc) to length ndims.
-   Result is a netcdf status value.
- */
-static int
-R_nc_slice (SEXP data, SEXP start, SEXP count, int ncid, int varid,
-            int *ndims, size_t **cstart, size_t **ccount)
-{
-  int ii, status, *dimids, nr;
-  nc_type xtype;
-  size_t clen;
-  SEXP datadim;
-
-  /* Get type and dimension identifiers of the variable */
-  status = nc_inq_var (ncid, varid, NULL, &xtype, ndims, NULL, NULL);
-  if (status != NC_NOERR) {
-    return(status);
-  }
-
-  if (*ndims <= 0) {
-    /* Shortcut for scalar variables */
-    return NC_NOERR;
-  }
-
-  dimids = (void *) R_alloc (*ndims, sizeof (int));
-
-  status = nc_inq_vardimid (ncid, varid, dimids);
-  if (status != NC_NOERR) {
-    return(status);
-  }
-
-  /* Copy start indices from start to cstart,
-     converting Fortran indices (1-based) to C (0-based)
-     and reversing dimension order from Fortran to C.
-     Default value for any missing dimension is 0,
-     including the special case of start being NULL.
-   */
-  *cstart = (void *) R_alloc (*ndims, sizeof (size_t));
-  R_nc_dim_r2c_size (start, *ndims, 1, *cstart);
-  for (ii=0; ii<*ndims; ii++) {
-    (*cstart)[ii] -= 1;
-  }
- 
-  /* Copy edge lengths from count to ccount,
-     reversing dimension order from Fortran to C.
-     In the special case of count being NULL,
-     use dimensions of data and set any slower dimensions to 1,
-     appending the fastest dimension for NC_CHAR variables if needed.
-     Default for missing dimensions is to calculate edge length
-     from start index to defined dimension length.
-   */
-  *ccount = (void *) R_alloc (*ndims, sizeof (size_t));
-  for (ii=0; ii<*ndims; ii++) {
-    (*ccount)[ii] = NA_SIZE;
-  }
-
-  if (isNull (count)) {
-    if (!isNull (data)) {
-      if (xtype == NC_CHAR) {
-        nr = *ndims-1;
-      } else {
-        nr = *ndims;
-      }
-      datadim = getAttrib (data, R_DimSymbol);
-      if (!isNull (datadim)) {
-        R_nc_dim_r2c_size (datadim, nr, 1, *ccount);
-      } else {
-        for (ii=0; ii<nr-1; ii++) {
-          (*ccount)[ii] = 1;
-        }
-        (*ccount)[nr-1] = xlength (data);
-      }
-    }
-  } else {
-    R_nc_dim_r2c_size (count, *ndims, NA_SIZE, *ccount);
-  }
-
-  /* Convert NA_SIZE in ccount so that corresponding dimensions are
-     read/written from specified start index to the highest index.
-   */
-  for ( ii=0; ii<*ndims; ii++ ) {
-    if ((*ccount)[ii] == NA_SIZE) {
-      status = nc_inq_dimlen (ncid, dimids[ii], &clen);
-      if (status != NC_NOERR) {
-        return(status);
-      }
-      (*ccount)[ii] = clen - (*cstart)[ii];
-    }
-  }
-
-  return(NC_NOERR);
-}
-
-
 /* Find total number of elements in an array from dimension lengths.
    Result is 1 for a scalar or product of dimensions for an array. */
 static size_t
@@ -578,8 +482,8 @@ SEXP
 R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
               SEXP rawchar, SEXP fitnum)
 {
-  int ncid, varid, ndims;
-  size_t *cstart, *ccount;
+  int ncid, varid, ndims, ii;
+  size_t *cstart=NULL, *ccount=NULL;
   nc_type xtype;
   SEXP result=R_NilValue;
 
@@ -588,12 +492,19 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
 
   R_nc_check (R_nc_var_id (var, ncid, &varid));
 
-  /*-- Handle NA values in start & count and reverse dimension order ----------*/
-  R_nc_check ( R_nc_slice (R_NilValue, start, count, ncid, varid,
-                           &ndims, &cstart, &ccount));
+  /*-- Get type and rank of the variable --------------------------------------*/
+  R_nc_check (nc_inq_var (ncid, varid, NULL, &xtype, &ndims, NULL, NULL));
 
-  /*-- Determine type of external data ----------------------------------------*/
-  R_nc_check (nc_inq_vartype ( ncid, varid, &xtype));
+  /*-- Convert start and count from R to C indices ----------------------------*/
+  if (ndims > 0) {
+    cstart = (void *) R_alloc (ndims, sizeof (size_t));
+    ccount = (void *) R_alloc (ndims, sizeof (size_t));
+    R_nc_dim_r2c_size (start, ndims, 0, cstart);
+    R_nc_dim_r2c_size (count, ndims, 0, ccount);
+    for (ii=0; ii<ndims; ii++) {
+      cstart[ii] -= 1;
+    }
+  }
 
   /*-- Enter data mode (if necessary) -----------------------------------------*/
   R_nc_check (R_nc_enddef (ncid));
@@ -696,8 +607,8 @@ R_nc_inq_var (SEXP nc, SEXP var)
 SEXP
 R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
 {
-  int ncid, varid, ndims;
-  size_t *cstart, *ccount, arrlen, strcnt, strlen;
+  int ncid, varid, ndims, ii;
+  size_t *cstart=NULL, *ccount=NULL, arrlen, strcnt, strlen;
   nc_type xtype;
   char *charbuf;
   const char **strbuf;
@@ -708,9 +619,19 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
 
   R_nc_check (R_nc_var_id (var, ncid, &varid));
 
-  /*-- Handle NA values in start & count and reverse dimension order ----------*/
-  R_nc_check ( R_nc_slice (data, start, count, ncid, varid,
-                           &ndims, &cstart, &ccount));
+  /*-- Get type and rank of the variable --------------------------------------*/
+  R_nc_check (nc_inq_var (ncid, varid, NULL, &xtype, &ndims, NULL, NULL));
+
+  /*-- Convert start and count from R to C indices ----------------------------*/
+  if (ndims > 0) {
+    cstart = (void *) R_alloc (ndims, sizeof (size_t));
+    ccount = (void *) R_alloc (ndims, sizeof (size_t));
+    R_nc_dim_r2c_size (start, ndims, 0, cstart);
+    R_nc_dim_r2c_size (count, ndims, 0, ccount);
+    for (ii=0; ii<ndims; ii++) {
+      cstart[ii] -= 1;
+    }
+  }
 
   /*-- Find total number of elements in data array ----------------------------*/
   arrlen = R_nc_length (ndims, ccount);
@@ -718,9 +639,6 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
     /* Nothing to write, so return immediately */
     RRETURN(R_NilValue);
   }
-
-  /*-- Determine type of external data ----------------------------------------*/
-  R_nc_check (nc_inq_vartype ( ncid, varid, &xtype));
 
   /*-- Ensure that data array contains enough elements ------------------------*/
   if (TYPEOF (data) != STRSXP || xtype != NC_CHAR) {
