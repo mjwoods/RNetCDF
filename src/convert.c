@@ -597,6 +597,7 @@ FUN (TYPE *data, size_t cnt) \
 { \
   size_t ii, jj; \
   TYPE tmp; \
+  if (cnt<=0) return; \
   for (ii=0, jj=cnt-1; ii<jj; ii++, jj--) { \
     tmp = data[ii]; \
     data[ii] = data[jj]; \
