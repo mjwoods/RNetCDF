@@ -54,7 +54,7 @@
 
 #include "common.h"
 #include "convert.h"
-#include "variable.h"
+#include "RNetCDF.h"
 
 
 /* Find total number of elements in an array from dimension lengths.

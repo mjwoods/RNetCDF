@@ -53,7 +53,7 @@
 #endif
 
 #include "common.h"
-#include "dataset.h"
+#include "RNetCDF.h"
 
 
 /* Convert netcdf file format code to string label.

@@ -57,7 +57,7 @@
 #include <Rinternals.h>
 
 #include "common.h"
-#include "udunits.h"
+#include "RNetCDF.h"
 
 
 /* Convert udunits error code to a string */

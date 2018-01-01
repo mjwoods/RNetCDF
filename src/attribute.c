@@ -54,7 +54,7 @@
 
 #include "common.h"
 #include "convert.h"
-#include "attribute.h"
+#include "RNetCDF.h"
 
 
 /* Convert attribute identifier from R string or number to a C string.

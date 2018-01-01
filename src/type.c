@@ -54,7 +54,7 @@
 
 #include "common.h"
 #include "convert.h"
-#include "type.h"
+#include "RNetCDF.h"
 
 
 /*-----------------------------------------------------------------------------*\

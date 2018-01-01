@@ -53,7 +53,7 @@
 #endif
 
 #include "common.h"
-#include "dimension.h"
+#include "RNetCDF.h"
 
 
 /*-----------------------------------------------------------------------------*\
