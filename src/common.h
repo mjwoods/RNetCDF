@@ -4,7 +4,7 @@
  *
  *  Version:    2.0-1
  *
- *  Purpose:    Error handling for RNetCDF
+ *  Purpose:    Common definitions for RNetCDF functions
  *
  *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
  *              Milton Woods (miltonjwoods@gmail.com)
@@ -33,8 +33,8 @@
  * $Header$
 \*=============================================================================*/
 
-#ifndef RNC_ERROR_H_INCLUDED
-#define RNC_ERROR_H_INCLUDED
+#ifndef RNC_COMMON_H_INCLUDED
+#define RNC_COMMON_H_INCLUDED
 
 #define RRETURN(object) { R_nc_unprotect (); return (object); }
 
@@ -106,4 +106,4 @@ R_nc_redef (int ncid);
 int
 R_nc_enddef (int ncid);
 
-#endif /* RNC_ERROR_H_INCLUDED */
+#endif /* RNC_COMMON_H_INCLUDED */

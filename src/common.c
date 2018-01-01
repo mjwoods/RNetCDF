@@ -1,10 +1,10 @@
 /*=============================================================================*\
  *
- *  Name:       convert.c
+ *  Name:       common.c
  *
  *  Version:    2.0-1
  *
- *  Purpose:    Error handling for RNetCDF
+ *  Purpose:    Common definitions for RNetCDF functions
  *
  *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
  *              Milton Woods (miltonjwoods@gmail.com)
