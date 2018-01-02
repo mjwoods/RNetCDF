@@ -1,36 +1,36 @@
 /*=============================================================================*\
- *									       *
- *  Name:       attribute.c						       *
- *									       *
- *  Version:    2.0-1							       *
- *									       *
- *  Purpose:    NetCDF attribute functions for RNetCDF              	       *
- *									       *
- *  Author:     Pavel Michna (michna@giub.unibe.ch)			       *
- *              Milton Woods (m.woods@bom.gov.au)                              *
- *									       *
- *  Copyright:  (C) 2004-2017 Pavel Michna                                     *
- *									       *
+ *
+ *  Name:       attribute.c
+ *
+ *  Version:    2.0-1
+ *
+ *  Purpose:    NetCDF attribute functions for RNetCDF
+ *
+ *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
+ *              Milton Woods (miltonjwoods@gmail.com)
+ *
+ *  Copyright:  (C) 2004-2017 Pavel Michna, Milton Woods
+ *
  *=============================================================================*
- *									       *
- *  This program is free software; you can redistribute it and/or modify       *
- *  it under the terms of the GNU General Public License as published by       *
- *  the Free Software Foundation; either version 2 of the License, or	       *
- *  (at your option) any later version. 				       *
- *									       *
- *  This program is distributed in the hope that it will be useful,	       *
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of	       *
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the	       *
- *  GNU General Public License for more details.			       *
- *									       *
- *  You should have received a copy of the GNU General Public License	       *
- *  along with this program; if not, write to the Free Software 	       *
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA  *
- *									       *
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  *=============================================================================*
- *  Implementation and Revisions					       *
+ *  Implementation and Revisions
  *-----------------------------------------------------------------------------*
- * $Header$ *
+ * $Header$
 \*=============================================================================*/
 
 
@@ -54,7 +54,7 @@
 
 #include "common.h"
 #include "convert.h"
-#include "attribute.h"
+#include "RNetCDF.h"
 
 
 /* Convert attribute identifier from R string or number to a C string.
@@ -76,7 +76,7 @@ R_nc_att_name (SEXP att, int ncid, int varid, char *attname)
 
 
 /*-----------------------------------------------------------------------------*\
- *  R_nc_copy_att()                                                            *
+ *  R_nc_copy_att()
 \*-----------------------------------------------------------------------------*/
 
 SEXP
@@ -115,7 +115,7 @@ R_nc_copy_att (SEXP nc_in, SEXP var_in, SEXP att, SEXP nc_out, SEXP var_out)
 
 
 /*-----------------------------------------------------------------------------*\
- *  R_nc_delete_att()                                                          *
+ *  R_nc_delete_att()
 \*-----------------------------------------------------------------------------*/
 
 SEXP
@@ -146,7 +146,7 @@ R_nc_delete_att (SEXP nc, SEXP var, SEXP att)
 
 
 /*-----------------------------------------------------------------------------*\
- *  Private functions used by R_nc_get_att()                                   *
+ *  Private functions used by R_nc_get_att()
 \*-----------------------------------------------------------------------------*/
 
 
@@ -250,7 +250,7 @@ R_nc_get_att_double (int ncid, int varid, const char *attname, size_t cnt)
 
 
 /*-----------------------------------------------------------------------------*\
- *  R_nc_get_att()                                                             *
+ *  R_nc_get_att()
 \*-----------------------------------------------------------------------------*/
 
 SEXP
@@ -324,7 +324,7 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
 
 
 /*-----------------------------------------------------------------------------*\
- *  R_nc_inq_att()                                                             *
+ *  R_nc_inq_att()
 \*-----------------------------------------------------------------------------*/
 
 SEXP
@@ -353,7 +353,7 @@ R_nc_inq_att (SEXP nc, SEXP var, SEXP att)
   R_nc_check (nc_inq_att (ncid, varid, attname, &type, &cnt));
 
   /*-- Convert nc_type to char ------------------------------------------------*/
-  R_nc_check (nc_inq_type (ncid, type, atttype, NULL));  
+  R_nc_check (R_nc_type2str (ncid, type, atttype));
 
   /*-- Returning the list -----------------------------------------------------*/
   result = R_nc_protect (allocVector (VECSXP, 4));
@@ -368,7 +368,7 @@ R_nc_inq_att (SEXP nc, SEXP var, SEXP att)
 
 
 /*-----------------------------------------------------------------------------*\
- *  R_nc_put_att()                                                             *
+ *  R_nc_put_att()
 \*-----------------------------------------------------------------------------*/
 
 SEXP
@@ -474,7 +474,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
 
 
 /*-----------------------------------------------------------------------------*\
- *  R_nc_rename_att()                                                          *
+ *  R_nc_rename_att()
 \*-----------------------------------------------------------------------------*/
 
 SEXP

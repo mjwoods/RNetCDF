@@ -1,2 +1,2 @@
-useDynLib(RNetCDF)
-exportPattern("^[^\\.].*\\.nc|^NC_.*")
+useDynLib(RNetCDF, .registration = TRUE)
+exportPattern("^[^\\.].*\\.nc$")

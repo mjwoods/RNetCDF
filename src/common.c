@@ -1,37 +1,39 @@
 /*=============================================================================*\
- *									       *
- *  Name:       convert.c						       *
- *									       *
- *  Version:    2.0-1							       *
- *									       *
- *  Purpose:    Error handling for RNetCDF                                     *
- *									       *
- *  Author:     Pavel Michna (michna@giub.unibe.ch)			       *
- *              Milton Woods (m.woods@bom.gov.au)                              *
- *									       *
- *  Copyright:  (C) 2004-2017 Pavel Michna, Milton Woods                       *
- *									       *
+ *
+ *  Name:       common.c
+ *
+ *  Version:    2.0-1
+ *
+ *  Purpose:    Common definitions for RNetCDF functions
+ *
+ *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
+ *              Milton Woods (miltonjwoods@gmail.com)
+ *
+ *  Copyright:  (C) 2004-2017 Pavel Michna, Milton Woods
+ *
  *=============================================================================*
- *									       *
- *  This program is free software; you can redistribute it and/or modify       *
- *  it under the terms of the GNU General Public License as published by       *
- *  the Free Software Foundation; either version 2 of the License, or	       *
- *  (at your option) any later version. 				       *
- *									       *
- *  This program is distributed in the hope that it will be useful,	       *
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of	       *
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the	       *
- *  GNU General Public License for more details.			       *
- *									       *
- *  You should have received a copy of the GNU General Public License	       *
- *  along with this program; if not, write to the Free Software 	       *
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA  *
- *									       *
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  *=============================================================================*
- *  Implementation and Revisions					       *
+ *  Implementation and Revisions
  *-----------------------------------------------------------------------------*
- * $Header$ *
+ * $Header$
 \*=============================================================================*/
+
+#include <string.h>
 
 #include <R.h>
 #include <Rinternals.h>
@@ -122,6 +124,57 @@ R_nc_var_id (SEXP var, int ncid, int *varid)
   } else {
     return NC_EINVAL;
   }
+}
+
+
+int
+R_nc_type2str (int ncid, nc_type xtype, char *typename)
+{
+  char *str;
+  switch (xtype) {
+  case NC_BYTE:
+    str = "NC_BYTE";
+    break;
+  case NC_UBYTE:
+    str = "NC_UBYTE";
+    break;
+  case NC_CHAR:
+    str = "NC_CHAR";
+    break;
+  case NC_SHORT:
+    str = "NC_SHORT";
+    break;
+  case NC_USHORT:
+    str = "NC_USHORT";
+    break;
+  case NC_INT:
+    str = "NC_INT";
+    break;
+  case NC_UINT:
+    str = "NC_UINT";
+    break;
+  case NC_INT64:
+    str = "NC_INT64";
+    break;
+  case NC_UINT64:
+    str = "NC_UINT64";
+    break;
+  case NC_FLOAT:
+    str = "NC_FLOAT";
+    break;
+  case NC_DOUBLE:
+    str = "NC_DOUBLE";
+    break;
+  case NC_STRING:
+    str = "NC_STRING";
+    break;
+  default:
+    /* Try to get name of a user defined type */
+    return nc_inq_user_type (ncid, xtype, typename, NULL, NULL, NULL, NULL);
+  }
+  /* Copy name to output string buffer */
+  strcpy (typename, str);
+  return NC_NOERR;
 }
 
 
@@ -239,12 +292,8 @@ R_nc_redef (int ncid)
 int
 R_nc_enddef (int ncid)
 {
-  int status;
-  status = nc_enddef(ncid);
-  if (status == NC_ENOTINDEFINE) {
-    status = NC_NOERR;
-  }
-  return status;
+  nc_enddef(ncid);
+  return NC_NOERR;
 }
 
 

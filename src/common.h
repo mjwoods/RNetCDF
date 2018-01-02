@@ -1,40 +1,40 @@
 /*=============================================================================*\
- *									       *
- *  Name:       common.h 						       *
- *									       *
- *  Version:    2.0-1							       *
- *									       *
- *  Purpose:    Error handling for RNetCDF                                     *
- *									       *
- *  Author:     Pavel Michna (michna@giub.unibe.ch)			       *
- *              Milton Woods (m.woods@bom.gov.au)                              *
- *									       *
- *  Copyright:  (C) 2004-2017 Pavel Michna, Milton Woods                       *
- *									       *
+ *
+ *  Name:       common.h
+ *
+ *  Version:    2.0-1
+ *
+ *  Purpose:    Common definitions for RNetCDF functions
+ *
+ *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
+ *              Milton Woods (miltonjwoods@gmail.com)
+ *
+ *  Copyright:  (C) 2004-2017 Pavel Michna, Milton Woods
+ *
  *=============================================================================*
- *									       *
- *  This program is free software; you can redistribute it and/or modify       *
- *  it under the terms of the GNU General Public License as published by       *
- *  the Free Software Foundation; either version 2 of the License, or	       *
- *  (at your option) any later version. 				       *
- *									       *
- *  This program is distributed in the hope that it will be useful,	       *
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of	       *
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the	       *
- *  GNU General Public License for more details.			       *
- *									       *
- *  You should have received a copy of the GNU General Public License	       *
- *  along with this program; if not, write to the Free Software 	       *
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA  *
- *									       *
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  *=============================================================================*
- *  Implementation and Revisions					       *
+ *  Implementation and Revisions
  *-----------------------------------------------------------------------------*
- * $Header$ *
+ * $Header$
 \*=============================================================================*/
 
-#ifndef RNC_ERROR_H_INCLUDED
-#define RNC_ERROR_H_INCLUDED
+#ifndef RNC_COMMON_H_INCLUDED
+#define RNC_COMMON_H_INCLUDED
 
 #define RRETURN(object) { R_nc_unprotect (); return (object); }
 
@@ -78,6 +78,14 @@ R_nc_dim_id (SEXP dim, int ncid, int *dimid, int idx);
 int
 R_nc_var_id (SEXP var, int ncid, int *varid);
 
+/* Convert netcdf type code to string label.
+   Return NC_NOERR if ok, netcdf error code otherwise.
+   The string buffer is assumed to have length NC_MAX_NAME or more.
+ */
+int
+R_nc_type2str (int ncid, nc_type xtype, char *str);
+
+
 /* Convert netcdf string label to type code.
    Return NC_NOERR if ok, netcdf error code otherwise.
  */
@@ -92,9 +100,10 @@ R_nc_redef (int ncid);
 
 
 /* Enter netcdf data mode if possible.
-   Returns netcdf error code if an unhandled error occurs.
+   Errors are ignored to avoid false alarms with some datasets (e.g. OPeNDAP),
+   but we assume that subsequent function calls are checked for errors.
  */
 int
 R_nc_enddef (int ncid);
 
-#endif /* RNC_ERROR_H_INCLUDED */
+#endif /* RNC_COMMON_H_INCLUDED */

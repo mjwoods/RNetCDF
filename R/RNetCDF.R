@@ -6,10 +6,10 @@
 #										
 #  Purpose:    NetCDF interface for R.						
 #										
-#  Author:     Pavel Michna (michna@giub.unibe.ch)				
-#              Milton Woods (m.woods@bom.gov.au)                                
+#  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)				
+#              Milton Woods (miltonjwoods@gmail.com)                                
 #										
-#  Copyright:  (C) 2004-2016 Pavel Michna					
+#  Copyright:  (C) 2004-2017 Pavel Michna, Milton Woods
 #										
 #===============================================================================
 #										
@@ -51,6 +51,9 @@
 #  mw       24/01/16   Support conversion of timestamps to/from POSIXct         
 #  mw       24/02/16   Support creation of files in netcdf4 (hdf5) format       
 #  mw       21/05/16   Add functions for netcdf4 groups                         
+#  mw       29/07/17   Replace NA in count of var.get.nc and var.put.nc so that
+#                      corresponding dimensions are read/written to end
+#  mw       03/10/17   Use registered entry points for .Call functions
 #										
 #===============================================================================
 
@@ -72,8 +75,8 @@ att.copy.nc <- function(ncfile.in, variable.in, attribute, ncfile.out, variable.
   stopifnot(is.character(variable.out) || is.numeric(variable.out))
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_copy_att", ncfile.in, variable.in, attribute,
-              ncfile.out, variable.out, PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_copy_att, ncfile.in, variable.in, attribute,
+              ncfile.out, variable.out)
   
   return(invisible(NULL))
 }
@@ -90,7 +93,7 @@ att.delete.nc <- function(ncfile, variable, attribute) {
   stopifnot(is.character(attribute) || is.numeric(attribute))
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_delete_att", ncfile, variable, attribute, PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_delete_att, ncfile, variable, attribute)
   
   return(invisible(NULL))
 }
@@ -110,8 +113,7 @@ att.get.nc <- function(ncfile, variable, attribute,
   stopifnot(is.logical(fitnum))
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_get_att", ncfile, variable, attribute, rawchar, fitnum,
-              PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_get_att, ncfile, variable, attribute, rawchar, fitnum)
 
   return(nc)
 }
@@ -128,7 +130,7 @@ att.inq.nc <- function(ncfile, variable, attribute) {
   stopifnot(is.character(attribute) || is.numeric(attribute))
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_inq_att", ncfile, variable, attribute, PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_inq_att, ncfile, variable, attribute)
   
   names(nc) <- c("id", "name", "type", "length")
   return(nc)
@@ -149,8 +151,7 @@ att.put.nc <- function(ncfile, variable, name, type, value) {
             is.raw(value) || is.logical(value))
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_put_att", ncfile, variable, name, type, value,
-              PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_put_att, ncfile, variable, name, type, value)
   
   return(invisible(NULL))
 }
@@ -168,8 +169,7 @@ att.rename.nc <- function(ncfile, variable, attribute, newname) {
   stopifnot(is.character(newname))
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_rename_att", ncfile, variable, attribute, newname,
-              PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_rename_att, ncfile, variable, attribute, newname)
   
   return(invisible(NULL))
 }
@@ -184,7 +184,7 @@ close.nc <- function(con, ...) {
   stopifnot(class(con) == "NetCDF")
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_close", attr(con, "handle_ptr"), PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_close, attr(con, "handle_ptr"))
   
   return(invisible(NULL))
 }
@@ -205,8 +205,7 @@ create.nc <- function(filename, clobber = TRUE, share = FALSE, prefill = TRUE,
   stopifnot(is.logical(large))
 
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_create", filename, clobber, share, prefill, format,
-              PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_create, filename, clobber, share, prefill, format)
   
   attr(nc, "class") <- "NetCDF"
   return(invisible(nc))
@@ -225,8 +224,7 @@ dim.def.nc <- function(ncfile, dimname, dimlength = 1, unlim = FALSE) {
   stopifnot(is.logical(unlim))
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_def_dim", ncfile, dimname, dimlength, unlim,
-              PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_def_dim, ncfile, dimname, dimlength, unlim)
   
   return(invisible(nc))
 }
@@ -242,7 +240,7 @@ dim.inq.nc <- function(ncfile, dimension) {
   stopifnot(is.character(dimension) || is.numeric(dimension))
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_inq_dim", ncfile, dimension, PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_inq_dim, ncfile, dimension)
   
   #-- Return object ----------------------------------------------------------
   names(nc) <- c("id", "name", "length", "unlim")
@@ -261,7 +259,7 @@ dim.rename.nc <- function(ncfile, dimension, newname) {
   stopifnot(is.character(newname))
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_rename_dim", ncfile, dimension, newname, PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_rename_dim, ncfile, dimension, newname)
   
   return(invisible(NULL))
 }
@@ -276,7 +274,7 @@ file.inq.nc <- function(ncfile) {
   stopifnot(class(ncfile) == "NetCDF")
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_inq_file", ncfile, PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_inq_file, ncfile)
   
   names(nc) <- c("ndims", "nvars", "ngatts", "unlimdimid", "format")
   
@@ -296,7 +294,7 @@ open.nc <- function(con, write = FALSE, share = FALSE, prefill = TRUE, ...) {
   stopifnot(is.logical(prefill))
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_open", con, write, share, prefill, PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_open, con, write, share, prefill)
   
   attr(nc, "class") <- "NetCDF"
   return(invisible(nc))
@@ -412,7 +410,7 @@ sync.nc <- function(ncfile) {
   stopifnot(class(ncfile) == "NetCDF")
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_sync", ncfile, PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_sync, ncfile)
   
   return(invisible(NULL))
 }
@@ -435,8 +433,7 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions) {
   stopifnot(is.character(dimensions) || is.numeric(dimensions))
 
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_def_var", ncfile, varname, vartype, dimensions,
-              PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_def_var, ncfile, varname, vartype, dimensions)
   
   return(invisible(nc))
 }
@@ -458,10 +455,34 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 0,
   stopifnot(is.logical(fitnum))
   
   stopifnot(isTRUE(na.mode %in% c(0, 1, 2, 3)))
-  
+
+  # Truncate start & count and replace NA as described in the man page:
+  varinfo <- var.inq.nc(ncfile, variable)
+  ndims <- varinfo$ndims
+
+  if (isTRUE(is.na(start))) {
+    start <- rep(1, ndims)
+  } else if (length(start) > ndims) {
+    start <- start[seq_len(ndims)]
+  }
+  stopifnot(length(start) == ndims)
+  start[is.na(start)] <- 1
+
+  if (isTRUE(is.na(count))) {
+    count <- rep(NA, ndims)
+  } else if (length(count) > ndims) {
+    count <- count[seq_len(ndims)]
+  }
+  stopifnot(length(count) == ndims)
+  for (idim in seq_len(ndims)) {
+    if (is.na(count[idim])) {
+      diminfo <- dim.inq.nc(ncfile, varinfo$dimids[idim])
+      count[idim] <- ( diminfo$length - start[idim] + 1 )
+    }
+  }
+
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_get_var", ncfile, variable, start, count, rawchar, fitnum,
-              PACKAGE="RNetCDF") 
+  nc <- .Call(R_nc_get_var, ncfile, variable, start, count, rawchar, fitnum)
   
   #-- Convert missing value to NA if defined in NetCDF file --------------
   if (na.mode < 3 && is.numeric(nc)) {
@@ -520,7 +541,7 @@ var.inq.nc <- function(ncfile, variable) {
   stopifnot(is.character(variable) || is.numeric(variable))
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_inq_var", ncfile, variable, PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_inq_var, ncfile, variable)
   
   names(nc) <- c("id", "name", "type", "ndims", "dimids", "natts")
   
@@ -544,14 +565,84 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
   
   stopifnot(isTRUE(na.mode %in% c(0, 1, 2)))
 
-  # If start or count contain any missing values,
-  # use values derived from dimensions of data by passing NULL to C interface.
-  # Note that C interface drops elements of start/count past the defined dimensions.
-  if (any(is.na(start))) {
-    start <- NULL
+  # Determine type and dimensions of variable:
+  varinfo <- var.inq.nc(ncfile, variable)
+  ndims <- varinfo$ndims
+  str2char <- is.character(data) && varinfo$type == "NC_CHAR"
+
+  # Truncate start & count and replace NA as described in the man page:
+  if (isTRUE(is.na(start))) {
+    start <- rep(1, ndims)
+  } else if (length(start) > ndims) {
+    start <- start[seq_len(ndims)]
   }
-  if (any(is.na(count))) {
-    count <- NULL
+  stopifnot(length(start) == ndims)
+  start[is.na(start)] <- 1
+
+  if (isTRUE(is.na(count))) {
+    if (!is.null(dim(data))) {
+      count <- dim(data)
+    } else if (ndims==0 && length(data)==1) {
+      count <- integer(0)
+    } else {
+      count <- length(data)
+    }
+    if (str2char && ndims > 0) {
+      strlen <- dim.inq.nc(ncfile, varinfo$dimids[1])$length
+      count <- c(strlen, count)
+    }    
+  } else if (length(count) > ndims) {
+    count <- count[seq_len(ndims)]
+  }
+  stopifnot(length(count) == ndims)
+  for (idim in seq_len(ndims)) {
+    if (is.na(count[idim])) {
+      diminfo <- dim.inq.nc(ncfile, varinfo$dimids[idim])
+      count[idim] <- ( diminfo$length - start[idim] + 1 )
+    }
+  }
+
+  #-- Check that length of data is sufficient --------------------------------#
+  if (str2char && ndims > 0) {
+    numelem <- prod(count[-1])
+  } else {
+    numelem <- prod(count) # Returns 1 if ndims==0 (scalar variable)
+  }
+  if (length(data) < numelem) {
+    stop(paste("Not enough data elements (found ",length(data),
+	   ", need ",numelem,")", sep=""), call.=FALSE)
+  }
+
+  #-- Warn if strings will be truncated --------------------------------------#
+  if (str2char) {
+    if (ndims > 0) {
+      strlen <- count[1]
+    } else {
+      strlen <- 1
+    }
+    if (max(nchar(data,type="bytes")) > strlen) {
+      warning(paste("Strings truncated to length",strlen), call.=FALSE)
+    }
+  }
+
+  #-- Warn if array data is not conformable with count -----------------------#
+  if (!is.null(dim(data))) {
+    if (str2char && ndims > 0) {
+      count_drop <- count[-1]
+    } else {
+      count_drop <- count
+    }
+    count_drop <- count_drop[count_drop!=1]
+
+    dim_drop <- dim(data)
+    dim_drop <- dim_drop[dim_drop!=1]
+
+    if ((length(count_drop) != length(dim_drop)) || 
+	any(count_drop != dim_drop)) {
+      warning(paste("Data coerced from dimensions (",
+		paste(dim(data),collapse=","), ") to dimensions (",
+		paste(count,collapse=","), ")", sep=""), call.=FALSE)
+    }
   }
 
   #-- Pack variables if requested (missing values are preserved) -------------
@@ -591,8 +682,7 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
   }
  
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_put_var", ncfile, variable, start, count, data,
-              PACKAGE="RNetCDF") 
+  nc <- .Call(R_nc_put_var, ncfile, variable, start, count, data)
  
   return(invisible(NULL))
 }
@@ -609,7 +699,7 @@ var.rename.nc <- function(ncfile, variable, newname) {
   stopifnot(is.character(newname))
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call("R_nc_rename_var", ncfile, variable, newname, PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_rename_var, ncfile, variable, newname)
   
   return(invisible(NULL))
 }
@@ -625,7 +715,7 @@ grp.def.nc <- function(ncid, grpname) {
   stopifnot(is.character(grpname))
   
   # C function call:
-  nc <- .Call("R_nc_def_grp", ncid, grpname, PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_def_grp, ncid, grpname)
   
   # Return object:
   attributes(nc) <- attributes(ncid)
@@ -644,7 +734,7 @@ grp.find <- function(ncid, grpname, full = isTRUE(grepl("/", grpname))) {
   stopifnot(is.logical(full))
   
   # C function call:
-  nc <- .Call("R_nc_inq_grp_ncid", ncid, grpname, full, PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_inq_grp_ncid, ncid, grpname, full)
   
   # Return object:
   attributes(nc) <- attributes(ncid)
@@ -672,16 +762,14 @@ grp.inq.nc <- function(ncid, grpname = NULL, ancestors = TRUE) {
   out$self <- ncid
   
   # Get parent of group (NULL if none):
-  pgrp <- try(.Call("R_nc_inq_grp_parent", ncid, PACKAGE="RNetCDF"),
-              silent = TRUE)
+  pgrp <- try(.Call(R_nc_inq_grp_parent, ncid), silent = TRUE)
   if (!inherits(pgrp, "try-error")) {
     attributes(pgrp) <- attributes(ncid)
     out$parent <- pgrp
   }
   
   # Get sub-groups of group (empty list if none):
-  grpids <- try(.Call("R_nc_inq_grps", ncid, PACKAGE="RNetCDF"),
-                silent = TRUE)
+  grpids <- try(.Call(R_nc_inq_grps, ncid), silent = TRUE)
   if (inherits(grpids, "try-error")) {
     out$grps <- list()
   } else {
@@ -692,25 +780,25 @@ grp.inq.nc <- function(ncid, grpname = NULL, ancestors = TRUE) {
   }
   
   # Names of group:
-  out$name <- .Call("R_nc_inq_grpname", ncid, FALSE, PACKAGE="RNetCDF")
+  out$name <- .Call(R_nc_inq_grpname, ncid, FALSE)
   if (ancestors) {
-    out$fullname <- .Call("R_nc_inq_grpname", ncid, TRUE, PACKAGE="RNetCDF")
+    out$fullname <- .Call(R_nc_inq_grpname, ncid, TRUE)
   }
   
   # Dimensions visible in group (empty vector if none):
-  out$dimids <- .Call("R_nc_inq_dimids", ncid, ancestors, PACKAGE="RNetCDF")
+  out$dimids <- .Call(R_nc_inq_dimids, ncid, ancestors)
   
   # Unlimited dimensions visible in group (empty vector if none):
-  out$unlimids <- .Call("R_nc_inq_unlimids", ncid, PACKAGE="RNetCDF")
+  out$unlimids <- .Call(R_nc_inq_unlimids, ncid)
   
   # Variables in group (empty vector if none):
-  out$varids <- .Call("R_nc_inq_varids", ncid, PACKAGE="RNetCDF")
+  out$varids <- .Call(R_nc_inq_varids, ncid)
   
   # Types in group (empty vector if none):
-  out$typeids <- .Call("R_nc_inq_typeids", ncid, PACKAGE="RNetCDF")
+  out$typeids <- .Call(R_nc_inq_typeids, ncid)
   
   # Number of group attributes:
-  out$ngatts <- .Call("R_nc_inq_natts", ncid, PACKAGE="RNetCDF")
+  out$ngatts <- .Call(R_nc_inq_natts, ncid)
   
   return(out)
 }
@@ -732,7 +820,7 @@ grp.rename.nc <- function(ncid, newname, oldname = NULL) {
   }
   
   # C function call:
-  nc <- .Call("R_nc_rename_grp", ncid, newname, PACKAGE="RNetCDF")
+  nc <- .Call(R_nc_rename_grp, ncid, newname)
   
   return(invisible(NULL))
 }
@@ -798,8 +886,7 @@ type.def.nc <- function(ncfile, typename, class, basetype=NULL, size=NULL) {
     stop("Unknown class for type definition", call.=FALSE)
   }
 
-  id <- .Call("R_nc_def_type", ncfile, typename, class, basetype, size,
-              PACKAGE="RNetCDF")
+  id <- .Call(R_nc_def_type, ncfile, typename, class, basetype, size)
   return(invisible(id))
 }
 
@@ -819,8 +906,8 @@ type.insert.nc <- function(ncfile, type, name, value=NULL,
   stopifnot(is.null(subtype) || is.numeric(subtype) || is.character(subtype))
   stopifnot(is.null(dimsizes) || is.numeric(dimsizes))
 
-  .Call("R_nc_insert_type", ncfile, type, name, value,
-         offset, subtype, dimsizes, PACKAGE="RNetCDF")
+  .Call(R_nc_insert_type, ncfile, type, name, value,
+         offset, subtype, dimsizes)
 
   return(invisible(NULL))
 }
@@ -841,7 +928,7 @@ utcal.nc <- function(unitstring, value, type = "n") {
   stopifnot(type == "n" || type == "s" || type == "c")
   
   #-- C function call to udunits calendar function -----------------------
-  ut <- .Call("R_nc_calendar", unitstring, value, PACKAGE="RNetCDF")
+  ut <- .Call(R_nc_calendar, unitstring, value)
   
   #-- Return object if no error ------------------------------------------
   if (type == "n") {
@@ -867,7 +954,7 @@ utcal.nc <- function(unitstring, value, type = "n") {
 #-------------------------------------------------------------------------------
 
 utinit.nc <- function(path = "") {
-  ut <- .Call("R_nc_utinit", as.character(path), PACKAGE="RNetCDF")
+  ut <- .Call(R_nc_utinit, as.character(path))
   
   return(invisible(NULL))
 }
@@ -895,7 +982,7 @@ utinvcal.nc <- function(unitstring, value) {
   stopifnot(is.numeric(value))
   
   #-- C function call --------------------------------------------------------
-  ut <- .Call("R_nc_inv_calendar", unitstring, value, PACKAGE="RNetCDF") 
+  ut <- .Call(R_nc_inv_calendar, unitstring, value)
   return(ut)
 }
 

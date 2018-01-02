@@ -1,60 +1,60 @@
 #===============================================================================#
-#                                                                               #
-#  Name:       RNetCDF-test.R                                                   #
-#                                                                               #
-#  Version:    2.0-1                                                            #
-#                                                                               #
-#  Purpose:    Test functions to the NetCDF interface for R.                    #
-#                                                                               #
-#  Author:     Pavel Michna (michna@giub.unibe.ch)                              #
-#              Milton Woods (m.woods@bom.gov.au)                                #
-#                                                                               #
-#  Copyright:  (C) 2010-2016 Pavel Michna                                       #
-#                                                                               #
+#
+#  Name:       RNetCDF-test.R
+#
+#  Version:    2.0-1
+#
+#  Purpose:    Test functions to the NetCDF interface for R.
+#
+#  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
+#              Milton Woods (miltonjwoods@gmail.com)
+#
+#  Copyright:  (C) 2010-2017 Pavel Michna, Milton Woods
+#
 #===============================================================================#
-#                                                                               #
-#  This program is free software; you can redistribute it and/or modify         #
-#  it under the terms of the GNU General Public License as published by         #
-#  the Free Software Foundation; either version 2 of the License, or            #
-#  (at your option) any later version.                                          #
-#                                                                               #
-#  This program is distributed in the hope that it will be useful,              #
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of               #
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the                #
-#  GNU General Public License for more details.                                 #
-#                                                                               #
-#  You should have received a copy of the GNU General Public License            #
-#  along with this program; if not, write to the Free Software                  #
-#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA    #
-#                                                                               #
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
 #===============================================================================#
-#  Implementation and Revisions                                                 #
+#  Implementation and Revisions
 #-------------------------------------------------------------------------------#
-#  Author   Date       Description                                              #
-#  ------   ----       -----------                                              #
-#  pm       29/12/10   First implementation                                     #
-#  mw       18/07/12   Test packed variables                                    #
-#  mw       02/09/14   Test 1D character arrays and character scalars           #
-#  mw       05/09/14   Test reading/writing NC_CHAR as raw bytes                #
-#  mw       26/01/16   Test utcal.nc and utinvcal.nc with POSIXct type          #
-#  mw       13/02/16   Test file operations in all supported on-disk formats    #
-#                                                                               #
+#  Author   Date       Description
+#  ------   ----       -----------
+#  pm       29/12/10   First implementation
+#  mw       18/07/12   Test packed variables
+#  mw       02/09/14   Test 1D character arrays and character scalars
+#  mw       05/09/14   Test reading/writing NC_CHAR as raw bytes
+#  mw       26/01/16   Test utcal.nc and utinvcal.nc with POSIXct type
+#  mw       13/02/16   Test file operations in all supported on-disk formats
+#
 #===============================================================================#
 
 
 #===============================================================================#
-#  Load library                                                                 #
+#  Load library
 #===============================================================================#
 
 library(RNetCDF)
 
 
 #===============================================================================#
-#  Run tests                                                                    #
+#  Run tests
 #===============================================================================#
 
 #-------------------------------------------------------------------------------#
-#  NetCDF library functions                                                     #
+#  NetCDF library functions
 #-------------------------------------------------------------------------------#
 
 #--Initialize ------------------------------------------------------------------#
@@ -350,7 +350,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 }
 
 #-------------------------------------------------------------------------------#
-#  UDUNITS calendar functions                                                   #
+#  UDUNITS calendar functions
 #-------------------------------------------------------------------------------#
 
 cat("utcal.nc - numeric values ...")
@@ -398,7 +398,7 @@ y <- utinvcal.nc("hours since 1900-01-01 00:00:00 +01:00",
 tally <- testfun(x,y,tally)
 
 #-------------------------------------------------------------------------------#
-#  Overall summary                                                              #
+#  Overall summary
 #-------------------------------------------------------------------------------#
 cat("Summary:", tally["pass"], "pass /", tally["fail"], "fail. ")
 
@@ -411,6 +411,6 @@ if (tally["fail"]==0) {
 #===============================================================================#
 
 #===============================================================================#
-#  SCRATCH									#
+#  SCRATCH
 #===============================================================================#
 

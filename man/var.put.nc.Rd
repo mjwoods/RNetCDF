@@ -2,7 +2,7 @@
 
 \alias{var.put.nc}
 
-\title{Put Data Into a NetCDF Variable}
+\title{Write Data to a NetCDF Variable}
 
 \description{Write the contents of a NetCDF variable.}
 
@@ -10,17 +10,17 @@
 
 \arguments{
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
-  \item{variable}{ID or name of the variable.}
-  \item{data}{The (multidimensional) array containing the data to write.}
-  \item{start}{A vector of indices indicating where to start writing the passed values (beginning at 1). The length of this vector must equal the number of dimensions the variable has. Order is leftmost varying fastest (as shown by \code{\link[RNetCDF]{print.nc}}; opposite to the CDL conventions). If set to \code{NA}, writing starts for each dimension at position 1.}
-  \item{count}{A vector of integers indicating the count of values to write along each dimension. Order is leftmost varying fastest (as got from \code{\link[RNetCDF]{print.nc}}; opposite to the CDL conventions). The length of this vector must equal the number of dimensions the variable has. If set to \code{NA}, the dimensions are taken from \code{data}, otherwise \code{data} is treated as an array with dimensions \code{count}.}
+  \item{variable}{ID or name of the NetCDF variable.}
+  \item{data}{An R vector or array of data to be written to the NetCDF variable. Values are taken from \code{data} in the order of R vector elements, so that leftmost indices vary fastest over an array.}
+  \item{start}{A vector of indices specifying the element where writing starts along each dimension of \code{variable}. Indices are numbered from 1 onwards, and the order of dimensions is shown by \code{\link[RNetCDF]{print.nc}} (array elements are stored sequentially with leftmost indices varying fastest). By default (\code{start=NA}), all dimensions of \code{variable} are written from the first element onwards. Otherwise, \code{start} must be a vector whose length is not less than the number of dimensions in \code{variable} (excess elements are ignored). Any \code{NA} values in vector \code{start} are set to 1.}
+  \item{count}{A vector of integers specifying the number of values to write along each dimension of \code{variable}. The order of dimensions is the same as for \code{start}. By default (\code{count=NA}), \code{count} is set to \code{dim(data)} for an array or \code{length(data)} for a vector. Otherwise, \code{count} must be a vector whose length is not less than the number of dimensions in \code{variable} (excess elements are ignored). Any \code{NA} value in vector \code{count} indicates that the corresponding dimension should be written from the \code{start} index to the end of the dimension. Note that an unlimited dimension initially has zero length, and the dimension is extended by setting the corresponding element of \code{count} greater than the current length.}
   \item{na.mode}{Set the mode for handling missing values (\code{NA}) in numeric variables: 0=accept \code{_FillValue} or \code{missing_value} attribute, 1=accept only \code{_FillValue} attribute, 2=accept only \code{missing_value} attribute.}
-  \item{pack}{Numeric variables are packed if \code{pack=TRUE} and the attributes \code{add_offset} and \code{scale_factor} are defined. Default is \code{FALSE}.}
+  \item{pack}{Variables are packed if \code{pack=TRUE} and the attributes \code{add_offset} and \code{scale_factor} are defined. Default is \code{FALSE}.}
 }
 
-\details{This function writes values to a NetCDF variable. Type conversion is performed by the NetCDF library, so that numeric values in R are automatically converted to the correct type of NetCDF variable.
+\details{This function writes values to a NetCDF variable. Data values in R are automatically converted to the correct type of NetCDF variable.
 
-Text represented by R type \code{character} can be written to NetCDF types \code{NC_CHAR} and \code{NC_STRING}, and R type \code{raw} can be written to NetCDF type \code{NC_CHAR}. The dimensions of R \code{raw} variables map directly to NetCDF dimensions, but \code{character} variables have an implied dimension corresponding to the string length. This implied dimension must be defined explicitly as the fastest-varying dimension of the \code{NC_CHAR} variable, and it must be included as the first element of arguments \code{start} and \code{count} taken by this function.
+Text represented by R type \code{character} can be written to NetCDF types \code{NC_CHAR} and \code{NC_STRING}, and R type \code{raw} can be written to NetCDF type \code{NC_CHAR}. When writing to \code{NC_CHAR} variables, \code{character} variables have an implied dimension corresponding to the string length. This implied dimension must be defined explicitly as the fastest-varying dimension of the \code{NC_CHAR} variable, and it must be included as the first element of arguments \code{start} and \code{count} taken by this function.
 
 Due to the lack of native support for 64-bit integers in R, NetCDF types \code{NC_INT64} and \code{NC_UINT64} require special attention. This function accepts the usual R \code{integer} (signed 32-bit) and \code{numeric} (double precision) types, but to represent integers larger than about 53-bits without truncation, \code{character} vectors are also supported.
 
@@ -28,7 +28,7 @@ Values of \code{NA} are supported in numeric variables if the variable's missing
 
 To reduce the storage space required by a NetCDF file, numeric variables can be "packed" into types of lower precision. The packing operation involves subtraction of attribute \code{add_offset} before division by attribute \code{scale_factor}. This packing operation is performed automatically for variables defined with the two attributes \code{add_offset} and \code{scale_factor} if argument \code{pack} is set to \code{TRUE}. If \code{pack} is \code{FALSE}, \code{data} values are assumed to be packed correctly and are written to the variable without alteration.
 
-Data in a NetCDF file is conceived as being a multi-dimensional array. The number and length of dimensions is determined when the variable is created. The \code{start} and \code{count} indices that this routine takes indicate where the writing starts along each dimension, and the count of values along each dimension to write. 
+Data in a NetCDF variable is represented as a multi-dimensional array. The number and length of dimensions is determined when the variable is created. The \code{start} and \code{count} arguments of this routine indicate where the writing starts and the number of values to write along each dimension.
 
 Awkwardness arises mainly from one thing: NetCDF data are written with the last dimension varying fastest, whereas R works opposite. Thus, the order of the dimensions according to the CDL conventions (e.g., time, latitude, longitude) is reversed in the R array (e.g., longitude, latitude, time).}
 
@@ -61,11 +61,15 @@ myname        <- c("alfa", "bravo", "charlie", "delta", "echo")
 
 dim(mytemperature) <- c(5,2)
 
-##  Put the data with indicated start/count
-var.put.nc(nc, "time", mytime, 1, length(mytime))
-var.put.nc(nc, "temperature", mytemperature, c(1,1), c(5,2))
+##  Put subsets of the data:
+var.put.nc(nc, "time", mytime, start=2, count=1)
+var.put.nc(nc, "temperature", mytemperature[3:4,2], start=c(3,2), count=c(2,1))
+var.put.nc(nc, "name", myname[3:4], start=c(NA,3), count=c(NA,2))
+sync.nc(nc)
 
-##  Put the data with default start/count
+##  Put all of the data:
+var.put.nc(nc, "time", mytime)
+var.put.nc(nc, "temperature", mytemperature)
 var.put.nc(nc, "name", myname)
 
 close.nc(nc)
