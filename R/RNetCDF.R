@@ -203,7 +203,8 @@ create.nc <- function(filename, clobber = TRUE, share = FALSE, prefill = TRUE,
   stopifnot(is.logical(prefill))
   stopifnot(is.character(format))
   stopifnot(is.logical(large))
-
+  stopifnot(nchar(filename) > 0L)
+  
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_create, filename, clobber, share, prefill, format)
   
@@ -292,6 +293,7 @@ open.nc <- function(con, write = FALSE, share = FALSE, prefill = TRUE, ...) {
   stopifnot(is.logical(write))
   stopifnot(is.logical(share))
   stopifnot(is.logical(prefill))
+  stopifnot(nchar(con) > 0L)
   
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_open, con, write, share, prefill)
