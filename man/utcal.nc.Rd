@@ -67,7 +67,7 @@ att.put.nc(nc, "NC_GLOBAL", "comment", "NC_CHAR",
 
 # Define time coordinate and attributes:
 dim.def.nc(nc, "time", nt)
-var.def.nc(nc, "time", "NC_INT", "time")
+var.def.nc(nc, "time", "NC_DOUBLE", "time")
 att.put.nc(nc, "time", "long_name", "NC_CHAR", "time")
 att.put.nc(nc, "time", "units", "NC_CHAR", time_unit)
 # Calendar is optional (gregorian is the default):
