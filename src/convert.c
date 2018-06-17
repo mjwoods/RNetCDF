@@ -89,6 +89,19 @@ static const double ULLONG_MAX_DBL = \
 static const double SIZE_MAX_DBL = \
   ((double) SIZE_MAX) * (1.0 - DBL_EPSILON);
 
+/* Definitions for integer64 as provided by bit64 package */
+int isInt64(SEXP rv) {
+  int status=-1, ii;
+  SEXP class;
+  class = getAttrib(rv, R_ClassSymbol);
+  if (isString(class)) {
+    for (ii=0; ii<length(class); ii++) {
+      status = strcmp(CHAR(STRING_ELT(class, ii)), "integer64");
+      if (status == 0) break;
+    }
+  }
+  return (status == 0);
+}
 
 /*=============================================================================*\
  *  String conversions and other operations.
