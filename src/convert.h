@@ -39,6 +39,11 @@
 
 #define NA_SIZE SIZE_MAX
 
+/* Definitions for integer64 as provided by bit64 package */
+#define NA_INTEGER64 LLONG_MIN
+int isInt64(SEXP rv);
+
+
 /* TODO: roll these into R_nc_r2c and R_nc_c2r */
 
 void

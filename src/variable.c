@@ -405,42 +405,19 @@ R_nc_get_var_string (int ncid, int varid, int ndims,
   return result;
 }
 
-/* Read NC_INT64 variable as R character array */
+/* Read NC_INT64 or NC_UINT64 variable as integer64 */
 static SEXP
 R_nc_get_var_int64 (int ncid, int varid, int ndims,
                     const size_t *cstart, const size_t *ccount)
 {
-  SEXP result=NULL;
-  size_t arrlen;
-  long long *int64buf;
-  arrlen = R_nc_length (ndims, ccount);
-  if (arrlen > 0) {
-    int64buf = (void *) R_alloc (arrlen, sizeof (long long));
-    R_nc_check (nc_get_vara (ncid, varid, cstart, ccount, int64buf));
-    result = R_nc_c2r (int64buf, 0, arrlen, NC_INT64, TRUE,
-              NULL, NULL, NULL, NULL, NULL);
-
+  SEXP result, class;
+  result = R_nc_allocArray (REALSXP, ndims, ccount);
+  class = R_nc_protect (allocVector(STRSXP, 1));
+  SET_STRING_ELT(class, 0, mkChar("integer64"));
+  classgets(result, class);
+  if (xlength (result) > 0) {
+    R_nc_check (nc_get_vara (ncid, varid, cstart, ccount, REAL (result)));
   }
-  R_nc_reshape (result, ndims, ccount);
-  return result;
-}
-
-/* Read NC_UINT64 variable as R character array */
-static SEXP
-R_nc_get_var_uint64 (int ncid, int varid, int ndims,
-                     const size_t *cstart, const size_t *ccount)
-{
-  SEXP result=NULL;
-  size_t arrlen;
-  unsigned long long *uint64buf;
-  arrlen = R_nc_length (ndims, ccount);
-  if (arrlen > 0) {
-    uint64buf = (void *) R_alloc (arrlen, sizeof (unsigned long long));
-    R_nc_check (nc_get_vara (ncid, varid, cstart, ccount, uint64buf));
-    result = R_nc_c2r (uint64buf, 0, arrlen, NC_UINT64, TRUE,
-              NULL, NULL, NULL, NULL, NULL);
-  }
-  R_nc_reshape (result, ndims, ccount);
   return result;
 }
 
@@ -531,13 +508,9 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
 	break;
       }
     case NC_INT64:
-      if (asLogical (fitnum) == TRUE) {
-	result = R_nc_get_var_int64 (ncid, varid, ndims, cstart, ccount);
-	break;
-      }
     case NC_UINT64:
       if (asLogical (fitnum) == TRUE) {
-	result = R_nc_get_var_uint64 (ncid, varid, ndims, cstart, ccount);
+	result = R_nc_get_var_int64 (ncid, varid, ndims, cstart, ccount);
 	break;
       }
     case NC_UINT:
@@ -683,20 +656,6 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
       R_nc_strsxp_str (data, strbuf, 0, arrlen);
       R_nc_check (nc_put_vara_string (ncid, varid, cstart, ccount, strbuf));
       RRETURN (R_NilValue);
-    case NC_INT64:
-      {  
-        long long fill = NC_FILL_INT64;
-        voidbuf = R_nc_r2c (data, NULL, 0, arrlen, NC_INT64, &fill, NULL, NULL);
-      }
-      R_nc_check (nc_put_vara (ncid, varid, cstart, ccount, voidbuf));
-      RRETURN (R_NilValue);
-    case NC_UINT64:
-      {
-        unsigned long long fill = NC_FILL_UINT64;
-        voidbuf = R_nc_r2c (data, NULL, 0, arrlen, NC_UINT64, &fill, NULL, NULL);
-      }
-      R_nc_check (nc_put_vara (ncid, varid, cstart, ccount, voidbuf));
-      RRETURN (R_NilValue);
     }
     break;
   }
@@ -718,7 +677,17 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
       R_nc_check (nc_put_vara_int (ncid, varid, cstart, ccount, INTEGER (data)));
       RRETURN (R_NilValue);
     case REALSXP:
-      R_nc_check (nc_put_vara_double (ncid, varid, cstart, ccount, REAL (data)));
+      if (isInt64 (data)) {
+        if (xtype == NC_UINT64) {
+          /* Preserve full range of unsigned long long */
+          R_nc_check (nc_put_vara_ulonglong (ncid, varid, cstart, ccount, REAL (data)));
+        } else {
+          /* R integer64 is usually signed */
+          R_nc_check (nc_put_vara_longlong (ncid, varid, cstart, ccount, REAL (data)));
+        }
+      } else {
+        R_nc_check (nc_put_vara_double (ncid, varid, cstart, ccount, REAL (data)));
+      }
       RRETURN (R_NilValue);
     }
     break;

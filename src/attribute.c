@@ -194,32 +194,17 @@ R_nc_get_att_string (int ncid, int varid, const char *attname, size_t cnt)
   return result;
 }
 
-/* Read NC_INT64 attribute as R strings */
+/* Read NC_INT64 or NC_UINT64 attribute as integer64 */
 static SEXP
 R_nc_get_att_int64 (int ncid, int varid, const char *attname, size_t cnt)
 {
-  SEXP result=NULL;
-  long long *int64buf;
+  SEXP result, class;
+  result = R_nc_protect (allocVector (REALSXP, cnt));
+  class = R_nc_protect (allocVector(STRSXP, 1));
+  SET_STRING_ELT(class, 0, mkChar("integer64"));
+  classgets(result, class);
   if (cnt > 0) {
-    int64buf = (void *) R_alloc (cnt, sizeof (long long));
-    R_nc_check (nc_get_att (ncid, varid, attname, int64buf));
-    result = R_nc_c2r (int64buf, 0, cnt, NC_INT64, TRUE,
-              NULL, NULL, NULL, NULL, NULL);
-  }
-  return result;
-}
-
-/* Read NC_UINT64 attribute as R strings */
-static SEXP
-R_nc_get_att_uint64 (int ncid, int varid, const char *attname, size_t cnt)
-{
-  SEXP result=NULL;
-  unsigned long long *uint64buf;
-  if (cnt > 0) {
-    uint64buf = (void *) R_alloc (cnt, sizeof (unsigned long long));
-    R_nc_check (nc_get_att (ncid, varid, attname, uint64buf));
-    result = R_nc_c2r (uint64buf, 0, cnt, NC_UINT64, TRUE,
-              NULL, NULL, NULL, NULL, NULL);
+    R_nc_check (nc_get_att (ncid, varid, attname, REAL (result)));
   }
   return result;
 }
@@ -301,13 +286,9 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
 	break;
       }
     case NC_INT64:
-      if (asLogical (fitnum) == TRUE) {
-	result = R_nc_get_att_int64 (ncid, varid, attname, cnt);
-	break;
-      }
     case NC_UINT64:
       if (asLogical (fitnum) == TRUE) {
-	result = R_nc_get_att_uint64 (ncid, varid, attname, cnt);
+	result = R_nc_get_att_int64 (ncid, varid, attname, cnt);
 	break;
       }
     case NC_UINT:
@@ -421,24 +402,6 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
       R_nc_strsxp_str (data, strbuf, 0, cnt);
       R_nc_check (nc_put_att_string (ncid, varid, attname, cnt, strbuf));
       RRETURN (R_NilValue);
-    case NC_INT64:
-      cnt = xlength (data);
-      {  
-        long long fill = NC_FILL_INT64;
-        voidbuf = R_nc_r2c (data, NULL, 0, cnt, NC_INT64, &fill, NULL, NULL);
-      }
-      R_nc_check (nc_put_att (ncid, varid, attname,
-                              xtype, cnt, voidbuf));
-      RRETURN (R_NilValue);
-    case NC_UINT64:
-      cnt = xlength (data);
-      {
-        unsigned long long fill = NC_FILL_UINT64;
-        voidbuf = R_nc_r2c (data, NULL, 0, cnt, NC_UINT64, &fill, NULL, NULL);
-      }
-      R_nc_check (nc_put_att (ncid, varid, attname,
-                              xtype, cnt, voidbuf));
-      RRETURN (R_NilValue);
     }
     break;
   }
@@ -462,7 +425,17 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
       RRETURN (R_NilValue);
     case REALSXP:
       cnt = xlength (data);
-      R_nc_check (nc_put_att_double (ncid, varid, attname, xtype, cnt, REAL (data)));
+      if (isInt64 (data)) {
+        if (xtype == NC_UINT64) {
+          /* Preserve full range of unsigned long long */
+          R_nc_check (nc_put_att_ulonglong (ncid, varid, attname, xtype, cnt, REAL (data)));
+        } else {
+          /* R integer64 is usually signed */
+          R_nc_check (nc_put_att_longlong (ncid, varid, attname, xtype, cnt, REAL (data)));
+        }
+      } else {
+        R_nc_check (nc_put_att_double (ncid, varid, attname, xtype, cnt, REAL (data)));
+      }
       RRETURN (R_NilValue);
     }
     break;
