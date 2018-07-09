@@ -915,6 +915,22 @@ type.insert.nc <- function(ncfile, type, name, value=NULL,
 }
 
 
+#-------------------------------------------------------------------------------
+# type.inq.nc()
+#-------------------------------------------------------------------------------
+
+type.inq.nc <- function(ncfile, type, fields=TRUE) {
+  # Check arguments:
+  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(is.numeric(type) || is.character(type))
+  stopifnot(is.logical(fields))
+  
+  result <- .Call(R_nc_inq_type, ncfile, type, fields)
+
+  return(result)
+}
+
+
 # ===============================================================================
 # Udunits library functions
 # ===============================================================================

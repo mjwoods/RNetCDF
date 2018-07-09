@@ -56,6 +56,10 @@
 #include "convert.h"
 #include "RNetCDF.h"
 
+#ifndef NC_MAX_ATOMIC_TYPE
+  #define NC_MAX_ATOMIC_TYPE NC_STRING
+#endif
+
 
 /*-----------------------------------------------------------------------------*\
  *  R_nc_def_type()
@@ -214,3 +218,161 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
   RRETURN(R_NilValue);
 }
 
+
+/*-----------------------------------------------------------------------------*\
+ *  R_nc_inq_type()
+\*-----------------------------------------------------------------------------*/
+
+SEXP
+R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
+{
+  int ncid, class, extend;
+  nc_type xtype, basetype, subtype;
+  char typename[NC_MAX_NAME + 1], basename[NC_MAX_NAME + 1];
+  char fieldname[NC_MAX_NAME + 1], subname[NC_MAX_NAME + 1];
+  size_t size, nfields, offset;
+  int ii, imax, ic, ndims;
+  char *cval;
+  SEXP result, resultnames;
+  SEXP fieldnames, values, offsets, subnames, dimsize, dimsizes;
+
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
+  R_nc_check (R_nc_type_id (type, ncid, &xtype));
+  extend = (asLogical (fields) == TRUE);
+
+  /*-- General properties -----------------------------------------------------*/
+  R_nc_check (nc_inq_type (ncid, xtype, NULL, &size));
+  R_nc_check (R_nc_type2str (ncid, xtype, typename));
+
+  if (xtype > NC_MAX_ATOMIC_TYPE) {
+  /*-- User-defined types -----------------------------------------------------*/
+
+    R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, &nfields, &class));
+
+    switch (class) {
+    case NC_COMPOUND:
+      if (extend) {
+	/* Read named vectors of offsets, typenames, list of array dimensions */
+	fieldnames = R_nc_protect (allocVector (STRSXP, nfields));
+	offsets = R_nc_protect (allocVector (REALSXP, nfields));
+	subnames = R_nc_protect (allocVector (STRSXP, nfields));
+	dimsizes = R_nc_protect (allocVector (VECSXP, nfields));
+
+	imax = nfields; // netcdf field index is int
+	for (ii=0; ii < imax; ii++) {
+	  R_nc_check (nc_inq_compound_field (ncid, xtype, ii, fieldname,
+		      &offset, &subtype, &ndims, NULL));
+	  SET_STRING_ELT (fieldnames, ii, mkChar (fieldname));
+	  REAL (offsets)[ii] = offset;
+	  R_nc_check (R_nc_type2str (ncid, subtype, subname));
+	  SET_STRING_ELT (subnames, ii, mkChar (subname));
+	  if (ndims > 0) {
+	    dimsize = R_nc_protect (allocVector (INTSXP, ndims));
+	    R_nc_check (nc_inq_compound_fielddim_sizes (
+			ncid, xtype, ii, INTEGER (dimsize)));
+	    SET_VECTOR_ELT (dimsizes, ii, dimsize);
+	  }
+	}
+
+        setAttrib (offsets, R_NamesSymbol, fieldnames);
+        setAttrib (subnames, R_NamesSymbol, fieldnames);
+        setAttrib (dimsizes, R_NamesSymbol, fieldnames);
+
+        result = R_nc_protect (allocVector (VECSXP, 7));
+        SET_VECTOR_ELT (result, 4, offsets);
+        SET_VECTOR_ELT (result, 5, subnames);
+        SET_VECTOR_ELT (result, 6, dimsizes);
+
+        resultnames = R_nc_protect (allocVector (STRSXP, 7));
+        SET_STRING_ELT (resultnames, 4, mkChar ("offset"));
+        SET_STRING_ELT (resultnames, 5, mkChar ("subtype"));
+        SET_STRING_ELT (resultnames, 6, mkChar ("dimsizes"));
+
+      } else {
+        result = R_nc_protect (allocVector (VECSXP, 4));
+        resultnames = R_nc_protect (allocVector (STRSXP, 4));
+      }
+
+      SET_VECTOR_ELT (result, 2, mkString ("compound"));
+
+      break;
+    case NC_ENUM:
+      R_nc_check (R_nc_type2str (ncid, basetype, basename));
+
+      if (extend) {
+	/* Read named vector of member values */
+	fieldnames = R_nc_protect (allocVector (STRSXP, nfields));
+	cval = R_alloc (nfields, size);
+
+	imax = nfields; // netcdf member index is int
+	ic = 0;
+	for (ii=0; ii < imax; ii++) {
+	  R_nc_check (nc_inq_enum_member (ncid, xtype, ii, fieldname, cval+ic));
+	  ic += size;
+	  SET_STRING_ELT (fieldnames, ii, mkChar (fieldname));
+	}
+	values = R_nc_c2r (cval, 0, nfields, basetype, 1, 
+			   NULL, NULL, NULL, NULL, NULL);
+	setAttrib (values, R_NamesSymbol, fieldnames);
+
+	result = R_nc_protect (allocVector (VECSXP, 6));
+	SET_VECTOR_ELT (result, 5, values);
+
+	resultnames = R_nc_protect (allocVector (STRSXP, 6));
+	SET_STRING_ELT (resultnames, 5, mkChar ("value"));
+
+      } else {
+	result = R_nc_protect (allocVector (VECSXP, 5));
+	resultnames = R_nc_protect (allocVector (STRSXP, 5));
+      }
+      SET_VECTOR_ELT (result, 2, mkString ("enum"));
+      SET_VECTOR_ELT (result, 4, mkString (basename));
+      SET_STRING_ELT (resultnames, 4, mkChar ("basetype"));
+
+      break;
+    case NC_OPAQUE:
+
+      result = R_nc_protect (allocVector (VECSXP, 4));
+      SET_VECTOR_ELT (result, 2, mkString ("opaque"));
+
+      resultnames = R_nc_protect (allocVector (STRSXP, 4));
+
+      break;
+    case NC_VLEN:
+      R_nc_check (R_nc_type2str (ncid, basetype, basename));
+
+      result = R_nc_protect (allocVector (VECSXP, 5));
+      SET_VECTOR_ELT (result, 2, mkString ("vlen"));
+      SET_VECTOR_ELT (result, 4, mkString (basename));
+
+      resultnames = R_nc_protect (allocVector (STRSXP, 5));
+      SET_STRING_ELT (resultnames, 4, mkChar ("basetype"));
+
+      break;
+    default:
+      R_nc_error ("Unknown class of user defined type");
+    }
+
+  } else {
+  /*-- Built-in types ---------------------------------------------------------*/
+
+      result = R_nc_protect (allocVector (VECSXP, 4));
+      SET_VECTOR_ELT (result, 2, mkString ("builtin"));
+
+      resultnames = R_nc_protect (allocVector (STRSXP, 4));
+  }
+
+  /*-- Common components of output list ----------------------------------------------*/
+  SET_VECTOR_ELT (result, 0, ScalarInteger (xtype));
+  SET_VECTOR_ELT (result, 1, mkString (typename));
+  SET_VECTOR_ELT (result, 3, ScalarReal (size));
+
+  SET_STRING_ELT (resultnames, 0, mkChar ("id"));
+  SET_STRING_ELT (resultnames, 1, mkChar ("name"));
+  SET_STRING_ELT (resultnames, 2, mkChar ("class"));
+  SET_STRING_ELT (resultnames, 3, mkChar ("size"));
+  setAttrib (result, R_NamesSymbol, resultnames);
+
+  RRETURN(result);
+}
