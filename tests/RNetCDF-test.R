@@ -110,7 +110,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
     id_vector <- type.def.nc(nc, "vector", "vlen", basetype="NC_FLOAT")
     inq_vector <- list(id=id_vector, name="vector", class="vlen",
-                       size=16, basetype="NC_FLOAT")
+                       size=NA, basetype="NC_FLOAT")
 
     id_factor <- type.def.nc(nc, "factor", "enum", basetype="NC_INT")
     type.insert.nc(nc, "factor", "peanut butter", value=101)
@@ -374,8 +374,9 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     y <- type.inq.nc(nc, id_blob)
     tally <- testfun(x,y,tally)
 
-    x <- inq_vector
-    y <- type.inq.nc(nc, id_vector)
+    # Reported size may depend on netcdf version and pointer size:
+    x <- inq_vector[-4]
+    y <- type.inq.nc(nc, id_vector)[-4]
     tally <- testfun(x,y,tally)
 
     x <- inq_factor
