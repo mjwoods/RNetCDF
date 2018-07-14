@@ -64,6 +64,7 @@ static const R_CallMethodDef callMethods[]  = {
   {"R_nc_rename_grp", (DL_FUNC) &R_nc_rename_grp, 2},
   {"R_nc_def_type", (DL_FUNC) &R_nc_def_type, 5},
   {"R_nc_insert_type", (DL_FUNC) &R_nc_insert_type, 7},
+  {"R_nc_inq_type", (DL_FUNC) &R_nc_inq_type, 3},
   {"R_nc_calendar", (DL_FUNC) &R_nc_calendar, 2},
   {"R_nc_utinit", (DL_FUNC) &R_nc_utinit, 1},
   {"R_nc_inv_calendar", (DL_FUNC) &R_nc_inv_calendar, 2},

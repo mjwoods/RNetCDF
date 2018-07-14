@@ -39,6 +39,7 @@
 #  mw       26/01/16   Test utcal.nc and utinvcal.nc with POSIXct type
 #  mw       13/02/16   Test file operations in all supported on-disk formats
 #  mw       17/06/18   Test bit64 operations
+#  mw       14/07/18   Test type definition and inquiry functions
 #
 #===============================================================================#
 
@@ -98,10 +99,34 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   dim.def.nc(nc, "max_string_length", nstring)
   dim.def.nc(nc, "empty", unlim=TRUE)
 
-  ## Define a group
   if (format == "netcdf4") {
+    ## Define a group
     ncroot <- nc
     nc <- grp.def.nc(nc, "testgrp")
+
+    ## Define a type of each class:
+    id_blob <- type.def.nc(nc, "blob", "opaque", size=128)
+    inq_blob <- list(id=id_blob, name="blob", class="opaque", size=128)
+
+    id_vector <- type.def.nc(nc, "vector", "vlen", basetype="NC_FLOAT")
+    inq_vector <- list(id=id_vector, name="vector", class="vlen",
+                       size=NA, basetype="NC_FLOAT")
+
+    id_factor <- type.def.nc(nc, "factor", "enum", basetype="NC_INT")
+    type.insert.nc(nc, "factor", "peanut butter", value=101)
+    type.insert.nc(nc, "factor", "jelly", value=102)
+    inq_factor <- list(id=id_factor, name="factor", class="enum",
+                       size=4, basetype="NC_INT",
+                       value=c("peanut butter"=101,"jelly"=102))
+
+    id_struct <- type.def.nc(nc, "struct", "compound", size=4+8+3*2)
+    type.insert.nc(nc, "struct", "siteid", offset=0, subtype="NC_INT")
+    type.insert.nc(nc, "struct", "height", offset=4, subtype="NC_DOUBLE")
+    type.insert.nc(nc, "struct", "colour", offset=12, subtype="NC_SHORT", dimsizes=c(3))
+    inq_struct <- list(id=id_struct, name="struct", class="compound", size=18,
+                       offset=c(siteid=0,height=4,colour=12),
+                       subtype=c(siteid="NC_INT",height="NC_DOUBLE",colour="NC_SHORT"),
+                       dimsizes=list("siteid"=NULL,"height"=NULL,"colour"=c(3)))
   }
 
   ##  Define variables
@@ -235,6 +260,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   } else {
     tally <- testfun(grpinfo$unlimids,3,tally)
   }
+  if (format == "netcdf4") {
+    cat("Inquire about user-defined types in file/group ...")
+    tally <- testfun(grpinfo$typeids,c(id_blob,id_vector,id_factor,id_struct),tally)
+  }
 
   cat("Read integer vector as double ... ")
   x <- mytime
@@ -339,6 +368,32 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
       y <- var.get.nc(nc, "stationid", fitnum=TRUE)
       tally <- testfun(x,y,tally)
     }
+
+    cat("Read details of user-defined types ...")
+    x <- inq_blob
+    y <- type.inq.nc(nc, id_blob)
+    tally <- testfun(x,y,tally)
+
+    # Reported size may depend on netcdf version and pointer size:
+    x <- inq_vector[-4]
+    y <- type.inq.nc(nc, id_vector)[-4]
+    tally <- testfun(x,y,tally)
+
+    x <- inq_factor
+    y <- type.inq.nc(nc, id_factor)
+    tally <- testfun(x,y,tally)
+
+    x <- inq_factor[1:5]
+    y <- type.inq.nc(nc, id_factor, fields=FALSE)
+    tally <- testfun(x,y,tally)
+
+    x <- inq_struct
+    y <- type.inq.nc(nc, id_struct)
+    tally <- testfun(x,y,tally)
+
+    x <- inq_struct[1:4]
+    y <- type.inq.nc(nc, id_struct, fields=FALSE)
+    tally <- testfun(x,y,tally)
   }
 
   cat("Read and unpack numeric array ... ")

@@ -680,10 +680,12 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
       if (isInt64 (data)) {
         if (xtype == NC_UINT64) {
           /* Preserve full range of unsigned long long */
-          R_nc_check (nc_put_vara_ulonglong (ncid, varid, cstart, ccount, REAL (data)));
+          R_nc_check (nc_put_vara_ulonglong (ncid, varid, cstart, ccount,
+                      (unsigned long long *) REAL (data)));
         } else {
           /* R integer64 is usually signed */
-          R_nc_check (nc_put_vara_longlong (ncid, varid, cstart, ccount, REAL (data)));
+          R_nc_check (nc_put_vara_longlong (ncid, varid, cstart, ccount,
+                      (long long *) REAL (data)));
         }
       } else {
         R_nc_check (nc_put_vara_double (ncid, varid, cstart, ccount, REAL (data)));

@@ -78,6 +78,12 @@ R_nc_dim_id (SEXP dim, int ncid, int *dimid, int idx);
 int
 R_nc_var_id (SEXP var, int ncid, int *varid);
 
+/* Convert type identifier from R string or number to an integer.
+   Result is a netcdf status value.
+ */
+int
+R_nc_type_id (SEXP type, int ncid, nc_type *xtype);
+
 /* Convert netcdf type code to string label.
    Return NC_NOERR if ok, netcdf error code otherwise.
    The string buffer is assumed to have length NC_MAX_NAME or more.

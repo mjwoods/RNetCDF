@@ -128,6 +128,20 @@ R_nc_var_id (SEXP var, int ncid, int *varid)
 
 
 int
+R_nc_type_id (SEXP type, int ncid, nc_type *xtype)
+{
+  if (isNumeric (type)) {
+    *xtype = asInteger (type);
+    return NC_NOERR;
+  } else if (isString (type)) {
+    return R_nc_str2type (ncid, CHAR (STRING_ELT (type, 0)), xtype);
+  } else {
+    return NC_EINVAL;
+  }
+}
+
+
+int
 R_nc_type2str (int ncid, nc_type xtype, char *typename)
 {
   char *str;
