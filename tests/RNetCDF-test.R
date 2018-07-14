@@ -141,6 +141,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   if (format == "netcdf4") {
     var.def.nc(nc, "namestr", "NC_STRING", c("station"))
+    var.def.nc(nc, "profile", "vector", c("station","time"))
     if (has_bit64) {
       var.def.nc(nc, "stationid", "NC_UINT64", c("station"))
     }
@@ -176,6 +177,16 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   myint0        <- 12345
   mychar0       <- "?"
 
+  if (format == "netcdf4") {
+    profiles      <- vector("list", nstation*ntime)
+    dim(profiles) <- c(nstation, ntime)
+    for (ii in seq_len(nstation)) {
+      for (jj in seq_len(ntime)) {
+	profiles[[ii,jj]] <- seq_len(ii+jj)*(ii+jj)
+      }
+    }
+  }
+
   ##  Put the data
   var.put.nc(nc, "time", mytime, 1, length(mytime))
   var.put.nc(nc, "temperature", mytemperature, c(1,1), c(nstation,ntime))
@@ -187,6 +198,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   if (format == "netcdf4") {
     var.put.nc(nc, "namestr", myname)
+    var.put.nc(nc, "profile", profiles)
     if (has_bit64) {
       myid <- as.integer64("1234567890123456789")+c(0,1,2,3,4)
       var.put.nc(nc, "stationid", myid)
@@ -238,7 +250,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   tally <- testfun(grpinfo$dimids,c(0:3),tally)
   if (format == "netcdf4") {
     cat("Inquire about variable ids in file/group ...")
-    tally <- testfun(grpinfo$varids,c(0:9),tally)
+    tally <- testfun(grpinfo$varids,c(0:10),tally)
   } else {
     cat("Inquire about variable ids in file/group ...")
     tally <- testfun(grpinfo$varids,c(0:7),tally)

@@ -36,6 +36,10 @@
 #ifndef RNC_COMMON_H_INCLUDED
 #define RNC_COMMON_H_INCLUDED
 
+#ifndef NC_MAX_ATOMIC_TYPE
+  #define NC_MAX_ATOMIC_TYPE NC_STRING
+#endif
+
 #define RRETURN(object) { R_nc_unprotect (); return (object); }
 
 #define RERROR(msg) { R_nc_error (msg); return R_NilValue; }

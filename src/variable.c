@@ -580,12 +580,13 @@ R_nc_inq_var (SEXP nc, SEXP var)
 SEXP
 R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
 {
-  int ncid, varid, ndims, ii;
-  size_t *cstart=NULL, *ccount=NULL, arrlen, strcnt, strlen;
-  nc_type xtype;
+  int ncid, varid, ndims, class, ii;
+  size_t *cstart=NULL, *ccount=NULL, arrlen, iarr, vlen, strcnt, strlen;
+  nc_type xtype, basetype;
   char *charbuf;
   const char **strbuf;
   void *voidbuf;
+  nc_vlen_t *vlenbuf;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -656,6 +657,22 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
       R_nc_strsxp_str (data, strbuf, 0, arrlen);
       R_nc_check (nc_put_vara_string (ncid, varid, cstart, ccount, strbuf));
       RRETURN (R_NilValue);
+    }
+    break;
+  case VECSXP:
+    if (xtype > NC_MAX_ATOMIC_TYPE) {
+      R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, NULL, &class));
+      if (class == NC_VLEN) {
+        vlenbuf = (void *) R_alloc (arrlen, sizeof(nc_vlen_t));
+        for (iarr=0; iarr < arrlen; iarr++) {
+          vlen = xlength(VECTOR_ELT(data, iarr));
+          vlenbuf[iarr].len = vlen;
+          vlenbuf[iarr].p = R_nc_r2c (VECTOR_ELT (data, iarr), NULL, 0, vlen, basetype,
+                                      NULL, NULL, NULL);
+        }
+        R_nc_check (nc_put_vara (ncid, varid, cstart, ccount, vlenbuf));
+        RRETURN (R_NilValue);
+      }
     }
     break;
   }
