@@ -177,58 +177,6 @@ R_nc_str_strsxp (char **cstr, size_t cnt)
 }
 
 
-#define R_NC_R2C_STR_NUM(FUN, OTYPE, STRTONUM) \
-static void \
-FUN (SEXP rstr, OTYPE *out, size_t imin, size_t cnt, OTYPE *fill) \
-{ \
-  size_t ii, jj; \
-  const char *charptr; \
-  char *endptr; \
-  SEXP charsxp; \
-  for (ii=0, jj=imin; ii<cnt; ii++, jj++) { \
-    charsxp = STRING_ELT (rstr, jj); \
-    if (fill && charsxp == NA_STRING) { \
-      out[ii] = *fill; \
-    } else { \
-      charptr = CHAR (charsxp); \
-      errno = 0; \
-      out[ii] = STRTONUM (charptr, &endptr, 10); \
-      if (endptr == charptr || *endptr != '\0' || errno != 0) { \
-        R_nc_error (nc_strerror (NC_ERANGE)); \
-      } \
-    } \
-  } \
-}
-
-R_NC_R2C_STR_NUM(R_nc_strsxp_int64, long long, strtoll);
-R_NC_R2C_STR_NUM(R_nc_strsxp_uint64, unsigned long long, strtoull);
-
-
-#define R_NC_C2R_NUM_STR(FUN, ITYPE, STRFMT) \
-static void \
-FUN (ITYPE *in, SEXP rstr, size_t imin, size_t cnt, \
-     ITYPE *fill, ITYPE *min, ITYPE *max) \
-{ \
-  size_t ii, jj; \
-  char chartmp[RNC_DBL_DIG]; \
-  for (ii=0, jj=imin; ii<cnt; ii++, jj++) { \
-    if ((in[ii] != in[ii]) || \
-        (fill && *fill == in[ii]) || \
-        (min && *min > in[ii]) || \
-        (max && *max < in[ii])) { \
-      SET_STRING_ELT (rstr, jj, NA_STRING); \
-    } else if (sprintf (chartmp, STRFMT, in[ii]) > 0) { \
-      SET_STRING_ELT (rstr, jj, mkChar (chartmp)); \
-    } else { \
-      SET_STRING_ELT (rstr, jj, NA_STRING); \
-    } \
-  } \
-}
-
-R_NC_C2R_NUM_STR(R_nc_int64_strsxp, long long, RNC_FMT_LL);
-R_NC_C2R_NUM_STR(R_nc_uint64_strsxp, unsigned long long, RNC_FMT_ULL);
-
-
 /*=============================================================================*\
  *  Numeric type conversions
 \*=============================================================================*/
