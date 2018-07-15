@@ -104,31 +104,32 @@ int isInt64(SEXP rv) {
 }
 
 /*=============================================================================*\
- *  String conversions and other operations.
+ *  String conversions.
 \*=============================================================================*/
 
 
-void
-R_nc_strsxp_char (SEXP rstr, char *carr, size_t imin, size_t cnt,
-                  size_t strlen)
+char *
+R_nc_strsxp_char (SEXP rstr, size_t cnt, size_t strlen)
 {
   size_t ii;
-  char *thisstr;
-  for (ii=imin, thisstr=carr; ii<(imin+cnt); ii++, thisstr+=strlen) {
+  char *carr, *thisstr;
+  carr = (char *) R_alloc(cnt*strlen, sizeof(char));
+  for (ii=0, thisstr=carr; ii<cnt; ii++, thisstr+=strlen) {
     strncpy(thisstr, CHAR( STRING_ELT (rstr, ii)), strlen);
   }
+  return carr;
 }
 
 
-void
-R_nc_char_strsxp (char *carr, SEXP rstr,
-                  size_t len, size_t imin, size_t cnt)
+SEXP
+R_nc_char_strsxp (char *carr, size_t clen, size_t cnt)
 {
-  size_t ii;
+  size_t ii, rlen;
   char *thisstr, *endstr, endchar;
-  size_t rlen;
-  rlen = (len <= RNC_CHARSXP_MAXLEN) ? len : RNC_CHARSXP_MAXLEN;
-  for (ii=imin, thisstr=carr; ii<(imin+cnt); ii++, thisstr+=len) {
+  SEXP rstr;
+  rlen = (clen <= RNC_CHARSXP_MAXLEN) ? clen : RNC_CHARSXP_MAXLEN;
+  rstr = R_nc_protect (allocVector (STRSXP, cnt));
+  for (ii=0, thisstr=carr; ii<cnt; ii++, thisstr+=clen) {
     /* Temporarily null-terminate each string before passing to R */
     endstr = thisstr + rlen;
     endchar = *endstr;
@@ -136,38 +137,43 @@ R_nc_char_strsxp (char *carr, SEXP rstr,
     SET_STRING_ELT (rstr, ii, mkChar(thisstr));
     *endstr = endchar;
   }
+  return rstr;
 }
 
 
-void
-R_nc_strsxp_str (SEXP rstr, const char **cstr, size_t imin, size_t cnt)
+const char **
+R_nc_strsxp_str (SEXP rstr, size_t cnt)
 {
-  size_t ii, jj;
-  for (ii=0, jj=imin; ii<cnt; ii++, jj++) {
-    cstr[ii] = CHAR( STRING_ELT (rstr, jj));
+  size_t ii;
+  cstr = (char **) R_alloc (cnt, sizeof(size_t));
+  for (ii=0; ii<cnt; ii++) {
+    cstr[ii] = CHAR( STRING_ELT (rstr, ii));
   }
+  return cstr;
 }
 
 
-void
-R_nc_str_strsxp (char **cstr, SEXP rstr, size_t imin, size_t cnt)
+SEXP
+R_nc_str_strsxp (char **cstr, size_t cnt)
 {
-  size_t ii, jj;
-  size_t nchar;
+  size_t ii, nchar;
   char *endstr, endchar;
-  for (ii=0, jj=imin; ii<cnt; ii++, jj++) {
+  SEXP rstr;
+  rstr = R_nc_protect (allocVector (STRSXP, cnt));
+  for (ii=0; ii<cnt; ii++) {
     nchar = strlen (cstr[ii]);
     if (nchar > RNC_CHARSXP_MAXLEN) {
       /* Temporarily truncate excessively long strings before passing to R */
       endstr = cstr[ii]+RNC_CHARSXP_MAXLEN+1;
       endchar = *endstr;
       *endstr = '\0';
-      SET_STRING_ELT (rstr, jj, mkChar (cstr[ii]));
+      SET_STRING_ELT (rstr, ii, mkChar (cstr[ii]));
       *endstr = endchar;
     } else if (nchar > 0) {
-      SET_STRING_ELT (rstr, jj, mkChar (cstr[ii]));
+      SET_STRING_ELT (rstr, ii, mkChar (cstr[ii]));
     }
   }
+  return rstr;
 }
 
 
