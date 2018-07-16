@@ -401,18 +401,6 @@ R_nc_r2c (SEXP rv, size_t imin, size_t cnt, nc_type xtype,
     default:
       R_nc_error (RNC_EDATATYPE);
     }
-  } else if (isString(rv)) {
-    /* Note that packing is not currently supported for string conversions */
-    switch (xtype) {
-    case NC_INT64:
-      R_nc_strsxp_int64 (rv, cv, imin, cnt, fill);
-      break;
-    case NC_UINT64:
-      R_nc_strsxp_uint64 (rv, cv, imin, cnt, fill);
-      break;
-    default:
-      R_nc_error (RNC_EDATATYPE);
-    }
   }
   return cv;
 }
@@ -440,10 +428,6 @@ R_nc_c2r (void *cv, size_t imin, size_t cnt, nc_type xtype, int fitnum,
       }
     case NC_INT64:
     case NC_UINT64:
-      if (fitnum == TRUE) {
-        rv = R_nc_protect (allocVector (STRSXP, cnt));
-        break;
-      }
     case NC_UINT:
     case NC_FLOAT:
     case NC_DOUBLE:
@@ -501,18 +485,10 @@ R_nc_c2r (void *cv, size_t imin, size_t cnt, nc_type xtype, int fitnum,
       R_nc_c2r_dbl_dbl (cv, realp, cnt, fill, min, max, scale, add);
       break;
     case NC_INT64:
-      if (fitnum == TRUE) {
-        R_nc_int64_strsxp (cv, rv, imin, cnt, fill, min, max);
-      } else {
-        R_nc_c2r_int64_dbl (cv, realp, cnt, fill, min, max, scale, add);
-      }
+      R_nc_c2r_int64_dbl (cv, realp, cnt, fill, min, max, scale, add);
       break;
     case NC_UINT64:
-      if (fitnum == TRUE) {
-        R_nc_uint64_strsxp (cv, rv, imin, cnt, fill, min, max);
-      } else {
-        R_nc_c2r_uint64_dbl (cv, realp, cnt, fill, min, max, scale, add);
-      }
+      R_nc_c2r_uint64_dbl (cv, realp, cnt, fill, min, max, scale, add);
       break;
     default:
       R_nc_error (RNC_ETYPEDROP);
