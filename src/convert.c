@@ -476,6 +476,10 @@ R_nc_c2r (void *cv, size_t cnt, nc_type xtype, int fitnum,
 }
 
 
+/*=============================================================================*\
+ *  Miscellaneous conversions
+\*=============================================================================*/
+
 /* Reverse a vector in-place.
    Example: R_nc_rev_int (cv, cnt);
  */
