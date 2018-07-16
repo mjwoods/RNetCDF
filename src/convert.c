@@ -187,14 +187,16 @@ R_nc_str_strsxp (char **cstr, size_t cnt)
 #define R_NC_RANGE_MAX(VAL,LIM,TYPE) ((TYPE) VAL <= (TYPE) LIM)
 #define R_NC_RANGE_NONE(VAL,LIM,TYPE) (1)
 
-#define R_NC_R2C_NUM(FUN, ITYPE, OTYPE, NATEST, MINTEST, MINVAL, MAXTEST, MAXVAL) \
+#define R_NC_R2C_NUM(FUN, ITYPE, IFUN, OTYPE, NATEST, MINTEST, MINVAL, MAXTEST, MAXVAL) \
 static OTYPE* \
-FUN (const ITYPE* restrict in, size_t cnt, \
+FUN (SEXP rv, size_t cnt, \
      OTYPE *fill, double *scale, double *add) \
 { \
   size_t ii, erange=0; \
   double factor, offset; \
+  const ITYPE* in; \
   OTYPE *out; \
+  in = (ITYPE *) IFUN (rv); \
   out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE)); \
   if (scale) { \
     factor = *scale; \
@@ -225,74 +227,74 @@ FUN (const ITYPE* restrict in, size_t cnt, \
   return out; \
 }
 
-R_NC_R2C_NUM(R_nc_r2c_int_schar, int, signed char, \
+R_NC_R2C_NUM(R_nc_r2c_int_schar, int, INTEGER, signed char, \
   R_NC_ISNA_INT, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int_uchar, int, unsigned char, \
+R_NC_R2C_NUM(R_nc_r2c_int_uchar, int, INTEGER, unsigned char, \
   R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int_short, int, short, \
+R_NC_R2C_NUM(R_nc_r2c_int_short, int, INTEGER, short, \
   R_NC_ISNA_INT, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int_ushort, int, unsigned short, \
+R_NC_R2C_NUM(R_nc_r2c_int_ushort, int, INTEGER, unsigned short, \
   R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int_int, int, int, \
+R_NC_R2C_NUM(R_nc_r2c_int_int, INTEGER, int, int, \
   R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
-R_NC_R2C_NUM(R_nc_r2c_int_uint, int, unsigned int, \
+R_NC_R2C_NUM(R_nc_r2c_int_uint, INTEGER, int, unsigned int, \
   R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_NONE, );
-R_NC_R2C_NUM(R_nc_r2c_int_ll, int, long long, \
+R_NC_R2C_NUM(R_nc_r2c_int_ll, int, INTEGER, long long, \
   R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
-R_NC_R2C_NUM(R_nc_r2c_int_ull, int, unsigned long long, \
+R_NC_R2C_NUM(R_nc_r2c_int_ull, int, INTEGER, unsigned long long, \
   R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_NONE, );
-R_NC_R2C_NUM(R_nc_r2c_int_size, int, size_t, \
+R_NC_R2C_NUM(R_nc_r2c_int_size, int, INTEGER, size_t, \
   R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_NONE, );
-R_NC_R2C_NUM(R_nc_r2c_int_float, int, float, \
+R_NC_R2C_NUM(R_nc_r2c_int_float, int, INTEGER, float, \
   R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
-R_NC_R2C_NUM(R_nc_r2c_int_dbl, int, double, \
+R_NC_R2C_NUM(R_nc_r2c_int_dbl, int, INTEGER, double, \
   R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 
-R_NC_R2C_NUM(R_nc_r2c_dbl_schar, double, signed char, \
+R_NC_R2C_NUM(R_nc_r2c_dbl_schar, double, REAL, signed char, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX);
-R_NC_R2C_NUM(R_nc_r2c_dbl_uchar, double, unsigned char, \
+R_NC_R2C_NUM(R_nc_r2c_dbl_uchar, double, REAL, unsigned char, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX);
-R_NC_R2C_NUM(R_nc_r2c_dbl_short, double, short, \
+R_NC_R2C_NUM(R_nc_r2c_dbl_short, double, REAL, short, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_dbl_ushort, double, unsigned short, \
+R_NC_R2C_NUM(R_nc_r2c_dbl_ushort, double, REAL, unsigned short, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_dbl_int, double, int, \
+R_NC_R2C_NUM(R_nc_r2c_dbl_int, double, REAL, int, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_dbl_uint, double, unsigned int, \
+R_NC_R2C_NUM(R_nc_r2c_dbl_uint, double, REAL, unsigned int, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_dbl_ll, double, long long, \
+R_NC_R2C_NUM(R_nc_r2c_dbl_ll, double, REAL, long long, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, LLONG_MIN_DBL, R_NC_RANGE_MAX, LLONG_MAX_DBL);
-R_NC_R2C_NUM(R_nc_r2c_dbl_ull, double, unsigned long long, \
+R_NC_R2C_NUM(R_nc_r2c_dbl_ull, double, REAL, unsigned long long, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, ULLONG_MAX_DBL);
-R_NC_R2C_NUM(R_nc_r2c_dbl_size, double, size_t, \
+R_NC_R2C_NUM(R_nc_r2c_dbl_size, double, REAL, size_t, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX_DBL);
-R_NC_R2C_NUM(R_nc_r2c_dbl_float, double, float, \
+R_NC_R2C_NUM(R_nc_r2c_dbl_float, double, REAL, float, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_dbl_dbl, double, double, \
+R_NC_R2C_NUM(R_nc_r2c_dbl_dbl, double, REAL, double, \
   R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 
-R_NC_R2C_NUM(R_nc_r2c_int64_schar, long long, signed char, \
+R_NC_R2C_NUM(R_nc_r2c_int64_schar, long long, REAL, signed char, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_uchar, long long, unsigned char, \
+R_NC_R2C_NUM(R_nc_r2c_int64_uchar, long long, REAL, unsigned char, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_short, long long, short, \
+R_NC_R2C_NUM(R_nc_r2c_int64_short, long long, REAL, short, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_ushort, long long, unsigned short, \
+R_NC_R2C_NUM(R_nc_r2c_int64_ushort, long long, REAL, unsigned short, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_int, long long, int, \
+R_NC_R2C_NUM(R_nc_r2c_int64_int, long long, REAL, int, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_uint, long long, unsigned int, \
+R_NC_R2C_NUM(R_nc_r2c_int64_uint, long long, REAL, unsigned int, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_ll, long long, long long, \
+R_NC_R2C_NUM(R_nc_r2c_int64_ll, long long, REAL, long long, \
   R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 /* Treat bit64 as unsigned when converting to unsigned long long */
-R_NC_R2C_NUM(R_nc_r2c_uint64_ull, unsigned long long, unsigned long long, \
+R_NC_R2C_NUM(R_nc_r2c_uint64_ull, unsigned long long, REAL, unsigned long long, \
   R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
-R_NC_R2C_NUM(R_nc_r2c_int64_size, long long, size_t, \
+R_NC_R2C_NUM(R_nc_r2c_int64_size, long long, REAL, size_t, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_float, long long, float, \
+R_NC_R2C_NUM(R_nc_r2c_int64_float, long long, REAL, float, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_dbl, long long, double, \
+R_NC_R2C_NUM(R_nc_r2c_int64_dbl, long long, REAL, double, \
   R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 
 
