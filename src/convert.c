@@ -356,78 +356,74 @@ void *
 R_nc_r2c (SEXP rv, size_t cnt, nc_type xtype,
           void *fill, double *scale, double *add)
 {
-  int *intp=NULL;
-  double *realp=NULL;
   void *cv=NULL;
 
   if (isInteger(rv)) {
-    intp = INTEGER (rv);
     switch (xtype) {
     case NC_BYTE:
-      cv = R_nc_r2c_int_schar (intp, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_schar (rv, cnt, fill, scale, add);
       break;
     case NC_UBYTE:
-      cv = R_nc_r2c_int_uchar (intp, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_uchar (rv, cnt, fill, scale, add);
       break;
     case NC_SHORT:
-      cv = R_nc_r2c_int_short (intp, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_short (rv, cnt, fill, scale, add);
       break;
     case NC_USHORT:
-      cv = R_nc_r2c_int_ushort (intp, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_ushort (rv, cnt, fill, scale, add);
       break;
     case NC_INT:
-      cv = R_nc_r2c_int_int (intp, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_int (rv, cnt, fill, scale, add);
       break;
     case NC_UINT:
-      cv = R_nc_r2c_int_uint (intp, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_uint (rv, cnt, fill, scale, add);
       break;
     case NC_INT64:
-      cv = R_nc_r2c_int_ll (intp, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_ll (rv, cnt, fill, scale, add);
       break;
     case NC_UINT64:
-      cv = R_nc_r2c_int_ull (intp, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_ull (rv, cnt, fill, scale, add);
       break;
     case NC_FLOAT:
-      cv = R_nc_r2c_int_float (intp, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_float (rv, cnt, fill, scale, add);
       break;
     case NC_DOUBLE:
-      cv = R_nc_r2c_int_dbl (intp, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_dbl (rv, cnt, fill, scale, add);
       break;
     default:
       R_nc_error (RNC_EDATATYPE);
     }
   } else if (isReal(rv)) {
-    realp = REAL (rv);
     switch (xtype) {
     case NC_BYTE:
-      cv = R_nc_r2c_dbl_schar (realp, cnt, fill, scale, add);
+      cv = R_nc_r2c_dbl_schar (rv, cnt, fill, scale, add);
       break;
     case NC_UBYTE:
-      cv = R_nc_r2c_dbl_uchar (realp, cnt, fill, scale, add);
+      cv = R_nc_r2c_dbl_uchar (rv, cnt, fill, scale, add);
       break;
     case NC_SHORT:
-      cv = R_nc_r2c_dbl_short (realp, cnt, fill, scale, add);
+      cv = R_nc_r2c_dbl_short (rv, cnt, fill, scale, add);
       break;
     case NC_USHORT:
-      cv = R_nc_r2c_dbl_ushort (realp, cnt, fill, scale, add);
+      cv = R_nc_r2c_dbl_ushort (rv, cnt, fill, scale, add);
       break;
     case NC_INT:
-      cv = R_nc_r2c_dbl_int (realp, cnt, fill, scale, add);
+      cv = R_nc_r2c_dbl_int (rv, cnt, fill, scale, add);
       break;
     case NC_UINT:
-      cv = R_nc_r2c_dbl_uint (realp, cnt, fill, scale, add);
+      cv = R_nc_r2c_dbl_uint (rv, cnt, fill, scale, add);
       break;
     case NC_INT64:
-      cv = R_nc_r2c_dbl_ll (realp, cnt, fill, scale, add);
+      cv = R_nc_r2c_dbl_ll (rv, cnt, fill, scale, add);
       break;
     case NC_UINT64:
-      cv = R_nc_r2c_dbl_ull (realp, cnt, fill, scale, add);
+      cv = R_nc_r2c_dbl_ull (rv, cnt, fill, scale, add);
       break;
     case NC_FLOAT:
-      cv = R_nc_r2c_dbl_float (realp, cnt, fill, scale, add);
+      cv = R_nc_r2c_dbl_float (rv, cnt, fill, scale, add);
       break;
     case NC_DOUBLE:
-      cv = R_nc_r2c_dbl_dbl (realp, cnt, fill, scale, add);
+      cv = R_nc_r2c_dbl_dbl (rv, cnt, fill, scale, add);
       break;
     default:
       R_nc_error (RNC_EDATATYPE);
