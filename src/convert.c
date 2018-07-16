@@ -327,15 +327,15 @@ R_NC_C2R_NUM(R_nc_c2r_uint64_dbl, unsigned long long, REALSXP, REAL, double, NA_
 
 
 void *
-R_nc_r2c (SEXP rv, size_t imin, size_t cnt, nc_type xtype,
+R_nc_r2c (SEXP rv, size_t cnt, nc_type xtype,
           void *fill, double *scale, double *add)
 {
   int *intp=NULL;
   double *realp=NULL;
-  void *cv;
+  void *cv=NULL;
 
   if (isInteger(rv)) {
-    intp = &(INTEGER(rv)[imin]);
+    intp = INTEGER (rv);
     switch (xtype) {
     case NC_BYTE:
       cv = R_nc_r2c_int_schar (intp, cnt, fill, scale, add);
@@ -371,7 +371,7 @@ R_nc_r2c (SEXP rv, size_t imin, size_t cnt, nc_type xtype,
       R_nc_error (RNC_EDATATYPE);
     }
   } else if (isReal(rv)) {
-    realp = &(REAL(rv)[imin]);
+    realp = REAL (rv);
     switch (xtype) {
     case NC_BYTE:
       cv = R_nc_r2c_dbl_schar (realp, cnt, fill, scale, add);
