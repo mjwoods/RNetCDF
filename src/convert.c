@@ -438,40 +438,43 @@ R_nc_c2r (void *cv, size_t cnt, nc_type xtype, int fitnum,
           void *fill, void *min, void *max, double *scale, double *add)
 {
   SEXP rv=NULL;
+  int asInt;
+
+  asInt = ((fitnum == TRUE) && (scale == NULL) && (add == NULL));
 
   /* Type conversions */
   switch (xtype) {
     case NC_BYTE:
-      if (fitnum == TRUE) {
-        rv = R_nc_c2r_schar_int (cv, cnt, fill, min, max, scale, add);
+      if (asInt) {
+        rv = R_nc_c2r_schar_int (cv, cnt, fill, min, max, NULL, NULL);
       } else {
         rv = R_nc_c2r_schar_dbl (cv, cnt, fill, min, max, scale, add);
       }
       break;
     case NC_UBYTE:
-      if (fitnum == TRUE) {
-        rv = R_nc_c2r_uchar_int (cv, cnt, fill, min, max, scale, add);
+      if (asInt) {
+        rv = R_nc_c2r_uchar_int (cv, cnt, fill, min, max, NULL, NULL);
       } else {
         rv = R_nc_c2r_uchar_dbl (cv, cnt, fill, min, max, scale, add);
       }
       break;
     case NC_SHORT:
-      if (fitnum == TRUE) {
-        rv = R_nc_c2r_short_int (cv, cnt, fill, min, max, scale, add);
+      if (asInt) {
+        rv = R_nc_c2r_short_int (cv, cnt, fill, min, max, NULL, NULL);
       } else {
         rv = R_nc_c2r_short_dbl (cv, cnt, fill, min, max, scale, add);
       }
       break;
     case NC_USHORT:
-      if (fitnum == TRUE) {
-        rv = R_nc_c2r_ushort_int (cv, cnt, fill, min, max, scale, add);
+      if (asInt) {
+        rv = R_nc_c2r_ushort_int (cv, cnt, fill, min, max, NULL, NULL);
       } else {
         rv = R_nc_c2r_ushort_dbl (cv, cnt, fill, min, max, scale, add);
       }
       break;
     case NC_INT:
-      if (fitnum == TRUE) {
-        rv = R_nc_c2r_int_int (cv, cnt, fill, min, max, scale, add);
+      if (asInt) {
+        rv = R_nc_c2r_int_int (cv, cnt, fill, min, max, NULL, NULL);
       } else {
         rv = R_nc_c2r_int_dbl (cv, cnt, fill, min, max, scale, add);
       }
