@@ -195,7 +195,7 @@ FUN (SEXP rv, size_t cnt, \
   size_t ii, erange=0; \
   double factor, offset; \
   const ITYPE* in; \
-  OTYPE *out; \
+  OTYPE restrict *out; \
   in = (ITYPE *) IFUN (rv); \
   out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE)); \
   if (scale) { \
@@ -219,6 +219,7 @@ FUN (SEXP rv, size_t cnt, \
       } \
     } else { \
       erange = 1; \
+      break; \
     } \
   } \
   if ( erange ) { \
@@ -306,7 +307,7 @@ FUN (const ITYPE* restrict in, size_t cnt, \
   size_t ii; \
   double factor, offset; \
   SEXP rv; \
-  OTYPE out; \
+  OTYPE restrict *out; \
   rv = R_nc_protect (allocVector (SEXPTYPE, cnt)); \
   out = OFUN (rv); \
   if (scale) { \
