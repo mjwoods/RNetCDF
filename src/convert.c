@@ -195,6 +195,7 @@ FUN (SEXP rv, size_t cnt, \
   size_t ii, erange=0; \
   double factor, offset; \
   const ITYPE* in; \
+  OTYPE fillval; \
   OTYPE restrict *out; \
   in = (ITYPE *) IFUN (rv); \
   out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE)); \
@@ -208,18 +209,52 @@ FUN (SEXP rv, size_t cnt, \
   } else { \
     offset = 0.0; \
   } \
-  for (ii=0; ii<cnt; ii++) { \
-    if (fill && NATEST(in[ii])) { \
-      out[ii] = *fill; \
-    } else if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
-      if (scale || add) { \
-	out[ii] = round((in[ii] - offset) / factor); \
-      } else { \
-	out[ii] = in[ii]; \
+  if (fill) { \
+    fillval = *fill; \
+  } \
+  if (fill) { \
+    if (scale || add) { \
+      for (ii=0; ii<cnt; ii++) { \
+	if (NATEST(in[ii])) { \
+	  out[ii] = fillval; \
+	} else if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
+	  out[ii] = round((in[ii] - offset) / factor); \
+	} else { \
+	  erange = 1; \
+	  break; \
+	} \
       } \
     } else { \
-      erange = 1; \
-      break; \
+      for (ii=0; ii<cnt; ii++) { \
+	if (NATEST(in[ii])) { \
+	  out[ii] = fillval; \
+	} else if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
+	  out[ii] = in[ii]; \
+	} else { \
+	  erange = 1; \
+	  break; \
+	} \
+      } \
+    } \
+  } else { \
+    if (scale || add) { \
+      for (ii=0; ii<cnt; ii++) { \
+	if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
+	  out[ii] = round((in[ii] - offset) / factor); \
+	} else { \
+	  erange = 1; \
+	  break; \
+	} \
+      } \
+    } else { \
+      for (ii=0; ii<cnt; ii++) { \
+	if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
+	  out[ii] = in[ii]; \
+	} else { \
+	  erange = 1; \
+	  break; \
+	} \
+      } \
     } \
   } \
   if ( erange ) { \
