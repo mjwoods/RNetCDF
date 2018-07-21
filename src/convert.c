@@ -109,11 +109,23 @@ int isInt64(SEXP rv) {
 
 
 char *
-R_nc_strsxp_char (SEXP rstr, size_t cnt, size_t strlen)
+R_nc_strsxp_char (SEXP rstr, int ndim, size_t *xdim)
 {
-  size_t ii;
+  size_t ii, strlen, cnt;
   char *carr, *thisstr;
-  carr = (char *) R_alloc(cnt*strlen, sizeof(char));
+  if (ndim > 0) {
+    /* Omit fastest-varying dimension from R character array */
+    strlen = xdim[ndim-1];
+    cnt = R_nc_length (ndim-1, xdim);
+  } else {
+    /* Scalar character */
+    strlen = 1;
+    cnt = 1;
+  }
+  if (xlength (rstr) < cnt) {
+    RERROR (RNC_EDATALEN);
+  }
+  carr = R_alloc (cnt*strlen, sizeof (char));
   for (ii=0, thisstr=carr; ii<cnt; ii++, thisstr+=strlen) {
     strncpy(thisstr, CHAR( STRING_ELT (rstr, ii)), strlen);
   }
@@ -122,13 +134,21 @@ R_nc_strsxp_char (SEXP rstr, size_t cnt, size_t strlen)
 
 
 SEXP
-R_nc_char_strsxp (char *carr, size_t clen, size_t cnt)
+R_nc_char_strsxp (char *carr, int ndim, size_t *xdim)
 {
-  size_t ii, rlen;
+  size_t ii, cnt, clen, rlen;
   char *thisstr, *endstr, endchar;
   SEXP rstr;
+  if (ndim > 0) {
+    /* Omit fastest-varying dimension from R character array */
+    clen = xdim[ndim-1];
+  } else {
+    /* Scalar character */
+    clen = 1;
+  }
   rlen = (clen <= RNC_CHARSXP_MAXLEN) ? clen : RNC_CHARSXP_MAXLEN;
-  rstr = R_nc_protect (allocVector (STRSXP, cnt));
+  rstr = R_nc_allocArray (STRSXP, ndim-1, xdim);
+  cnt = xlength (rstr);
   for (ii=0, thisstr=carr; ii<cnt; ii++, thisstr+=clen) {
     /* Temporarily null-terminate each string before passing to R */
     endstr = thisstr + rlen;
@@ -142,9 +162,10 @@ R_nc_char_strsxp (char *carr, size_t clen, size_t cnt)
 
 
 const char **
-R_nc_strsxp_str (SEXP rstr, size_t cnt)
+R_nc_strsxp_str (SEXP rstr, int ndim, size_t *xdim)
 {
-  size_t ii;
+  size_t ii, cnt;
+  cnt = R_nc_length (ndim, xdim);
   cstr = (char **) R_alloc (cnt, sizeof(size_t));
   for (ii=0; ii<cnt; ii++) {
     cstr[ii] = CHAR( STRING_ELT (rstr, ii));
@@ -154,12 +175,13 @@ R_nc_strsxp_str (SEXP rstr, size_t cnt)
 
 
 SEXP
-R_nc_str_strsxp (char **cstr, size_t cnt)
+R_nc_str_strsxp (char **cstr, int ndim, size_t *xdim)
 {
-  size_t ii, nchar;
+  size_t ii, nchar, cnt;
   char *endstr, endchar;
   SEXP rstr;
-  rstr = R_nc_protect (allocVector (STRSXP, cnt));
+  rstr = R_nc_allocArray (STRSXP, ndim, xdim);
+  cnt = xlength (rstr);
   for (ii=0; ii<cnt; ii++) {
     nchar = strlen (cstr[ii]);
     if (nchar > RNC_CHARSXP_MAXLEN) {
@@ -191,15 +213,20 @@ R_nc_str_strsxp (char **cstr, size_t cnt)
 
 #define R_NC_R2C_NUM(FUN, ITYPE, IFUN, OTYPE, NATEST, MINTEST, MINVAL, MAXTEST, MAXVAL) \
 static OTYPE* \
-FUN (SEXP rv, size_t cnt, \
+FUN (SEXP rv, int ndim, size_t *xdim, \
      OTYPE *fill, double *scale, double *add) \
 { \
-  size_t ii, erange=0; \
+  size_t ii, cnt; \
+  int erange=0; \
   double factor, offset; \
   const ITYPE* in; \
   OTYPE fillval; \
   OTYPE restrict *out; \
   in = (ITYPE *) IFUN (rv); \
+  cnt = R_nc_length (ndim, xsize); \
+  if (xlength (rv) < cnt) { \
+    RERROR (RNC_EDATALEN); \
+  } \
   out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE)); \
   if (scale) { \
     factor = *scale; \
@@ -262,6 +289,9 @@ FUN (SEXP rv, size_t cnt, \
   } \
   return out; \
 }
+
+R_NC_R2C_NUM(R_nc_r2c_raw_uchar, unsigned char, RAW, unsigned char, \
+  R_NC_ISNA_NONE, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 
 R_NC_R2C_NUM(R_nc_r2c_int_schar, int, INTEGER, signed char, \
   R_NC_ISNA_INT, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX);
@@ -336,15 +366,16 @@ R_NC_R2C_NUM(R_nc_r2c_bit64_dbl, long long, REAL, double, \
 
 #define R_NC_C2R_NUM(FUN, ITYPE, SEXPTYPE, OFUN, OTYPE, MISSVAL) \
 static SEXP \
-FUN (const ITYPE* restrict in, size_t cnt, \
+FUN (const ITYPE* restrict in, int ndim, size_t *xdim, \
      ITYPE *fill, double *scale, double *add) \
 { \
-  size_t ii; \
+  size_t ii, cnt; \
   double factor, offset; \
   SEXP rv; \
   ITYPE fillval; \
   OTYPE restrict *out; \
-  rv = R_nc_protect (allocVector (SEXPTYPE, cnt)); \
+  rv = R_nc_allocArray (SEXPTYPE, ndims, xdim); \
+  cnt = xlength (rv); \
   out = (OTYPE) OFUN (rv); \
   if (scale) { \
     factor = *scale; \
@@ -409,6 +440,8 @@ FUN (const ITYPE* restrict in, size_t cnt, \
   return rv; \
 }
 
+R_NC_C2R_NUM(R_nc_c2r_uchar_raw, char, RAWSXP, RAW, char, '\0');
+
 R_NC_C2R_NUM(R_nc_c2r_schar_int, signed char, INTSXP, INTEGER, int, NA_INTEGER);
 R_NC_C2R_NUM(R_nc_c2r_uchar_int, unsigned char, INTSXP, INTEGER, int, NA_INTEGER);
 R_NC_C2R_NUM(R_nc_c2r_short_int, short, INTSXP, INTEGER, int, NA_INTEGER);
@@ -444,123 +477,150 @@ R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, unsigned long long, REALSXP, REAL, unsigned 
 \*=============================================================================*/
 
 void *
-R_nc_r2c (SEXP rv, size_t cnt, int ncid, nc_type xtype,
+R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, size_t *xdim,
           void *fill, double *scale, double *add)
 {
   void *cv=NULL;
 
-  if (isInteger(rv)) {
+  switch (TYPEOF(rv)) {
+  case INTSXP:
     switch (xtype) {
     case NC_BYTE:
-      cv = R_nc_r2c_int_schar (rv, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_schar (rv, ndim, xdim, fill, scale, add);
       break;
     case NC_UBYTE:
-      cv = R_nc_r2c_int_uchar (rv, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_uchar (rv, ndim, xdim, fill, scale, add);
       break;
     case NC_SHORT:
-      cv = R_nc_r2c_int_short (rv, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_short (rv, ndim, xdim, fill, scale, add);
       break;
     case NC_USHORT:
-      cv = R_nc_r2c_int_ushort (rv, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_ushort (rv, ndim, xdim, fill, scale, add);
       break;
     case NC_INT:
-      cv = R_nc_r2c_int_int (rv, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_int (rv, ndim, xdim, fill, scale, add);
       break;
     case NC_UINT:
-      cv = R_nc_r2c_int_uint (rv, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_uint (rv, ndim, xdim, fill, scale, add);
       break;
     case NC_INT64:
-      cv = R_nc_r2c_int_ll (rv, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_ll (rv, ndim, xdim, fill, scale, add);
       break;
     case NC_UINT64:
-      cv = R_nc_r2c_int_ull (rv, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_ull (rv, ndim, xdim, fill, scale, add);
       break;
     case NC_FLOAT:
-      cv = R_nc_r2c_int_float (rv, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_float (rv, ndim, xdim, fill, scale, add);
       break;
     case NC_DOUBLE:
-      cv = R_nc_r2c_int_dbl (rv, cnt, fill, scale, add);
+      cv = R_nc_r2c_int_dbl (rv, ndim, xdim, fill, scale, add);
       break;
     default:
       R_nc_error (RNC_EDATATYPE);
     }
-  } else if (isInt64(rv)) {
+    break;
+  case REALSXP:  
+    if (isInt64(rv)) {
+      switch (xtype) {
+      case NC_BYTE:
+	cv = R_nc_r2c_bit64_schar (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_UBYTE:
+	cv = R_nc_r2c_bit64_uchar (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_SHORT:
+	cv = R_nc_r2c_bit64_short (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_USHORT:
+	cv = R_nc_r2c_bit64_ushort (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_INT:
+	cv = R_nc_r2c_bit64_int (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_UINT:
+	cv = R_nc_r2c_bit64_uint (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_INT64:
+	cv = R_nc_r2c_bit64_ll (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_UINT64:
+	cv = R_nc_r2c_bit64_ull (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_FLOAT:
+	cv = R_nc_r2c_bit64_float (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_DOUBLE:
+	cv = R_nc_r2c_bit64_dbl (rv, ndim, xdim, fill, scale, add);
+	break;
+      default:
+	R_nc_error (RNC_EDATATYPE);
+      }
+    } else {
+      switch (xtype) {
+      case NC_BYTE:
+	cv = R_nc_r2c_dbl_schar (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_UBYTE:
+	cv = R_nc_r2c_dbl_uchar (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_SHORT:
+	cv = R_nc_r2c_dbl_short (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_USHORT:
+	cv = R_nc_r2c_dbl_ushort (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_INT:
+	cv = R_nc_r2c_dbl_int (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_UINT:
+	cv = R_nc_r2c_dbl_uint (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_INT64:
+	cv = R_nc_r2c_dbl_ll (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_UINT64:
+	cv = R_nc_r2c_dbl_ull (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_FLOAT:
+	cv = R_nc_r2c_dbl_float (rv, ndim, xdim, fill, scale, add);
+	break;
+      case NC_DOUBLE:
+	cv = R_nc_r2c_dbl_dbl (rv, ndim, xdim, fill, scale, add);
+	break;
+      default:
+	R_nc_error (RNC_EDATATYPE);
+      }
+    }
+    break;
+  case STRSXP:
     switch (xtype) {
-    case NC_BYTE:
-      cv = R_nc_r2c_bit64_schar (rv, cnt, fill, scale, add);
+    case NC_CHAR:
+      cv = R_nc_strsxp_char (rv, ndim, xdim);
       break;
-    case NC_UBYTE:
-      cv = R_nc_r2c_bit64_uchar (rv, cnt, fill, scale, add);
-      break;
-    case NC_SHORT:
-      cv = R_nc_r2c_bit64_short (rv, cnt, fill, scale, add);
-      break;
-    case NC_USHORT:
-      cv = R_nc_r2c_bit64_ushort (rv, cnt, fill, scale, add);
-      break;
-    case NC_INT:
-      cv = R_nc_r2c_bit64_int (rv, cnt, fill, scale, add);
-      break;
-    case NC_UINT:
-      cv = R_nc_r2c_bit64_uint (rv, cnt, fill, scale, add);
-      break;
-    case NC_INT64:
-      cv = R_nc_r2c_bit64_ll (rv, cnt, fill, scale, add);
-      break;
-    case NC_UINT64:
-      cv = R_nc_r2c_bit64_ull (rv, cnt, fill, scale, add);
-      break;
-    case NC_FLOAT:
-      cv = R_nc_r2c_bit64_float (rv, cnt, fill, scale, add);
-      break;
-    case NC_DOUBLE:
-      cv = R_nc_r2c_bit64_dbl (rv, cnt, fill, scale, add);
+    case NC_STRING:
+      cv = R_nc_strsxp_str (rv, ndim, xdim);
       break;
     default:
       R_nc_error (RNC_EDATATYPE);
     }
-  } else if (isReal(rv)) {
-    switch (xtype) {
-    case NC_BYTE:
-      cv = R_nc_r2c_dbl_schar (rv, cnt, fill, scale, add);
-      break;
-    case NC_UBYTE:
-      cv = R_nc_r2c_dbl_uchar (rv, cnt, fill, scale, add);
-      break;
-    case NC_SHORT:
-      cv = R_nc_r2c_dbl_short (rv, cnt, fill, scale, add);
-      break;
-    case NC_USHORT:
-      cv = R_nc_r2c_dbl_ushort (rv, cnt, fill, scale, add);
-      break;
-    case NC_INT:
-      cv = R_nc_r2c_dbl_int (rv, cnt, fill, scale, add);
-      break;
-    case NC_UINT:
-      cv = R_nc_r2c_dbl_uint (rv, cnt, fill, scale, add);
-      break;
-    case NC_INT64:
-      cv = R_nc_r2c_dbl_ll (rv, cnt, fill, scale, add);
-      break;
-    case NC_UINT64:
-      cv = R_nc_r2c_dbl_ull (rv, cnt, fill, scale, add);
-      break;
-    case NC_FLOAT:
-      cv = R_nc_r2c_dbl_float (rv, cnt, fill, scale, add);
-      break;
-    case NC_DOUBLE:
-      cv = R_nc_r2c_dbl_dbl (rv, cnt, fill, scale, add);
-      break;
-    default:
+    break;
+  case RAWSXP:
+    if (xtype == NC_CHAR) {
+      cv = R_nc_r2c_raw_uchar (rv, ndim, xdim, NULL, NULL, NULL);
+    } else {
       R_nc_error (RNC_EDATATYPE);
     }
+    break;
+  default:
+    R_nc_error (RNC_EDATATYPE);
   }
   return cv;
 }
 
 
 SEXP
-R_nc_c2r (void *cv, size_t cnt, nc_type xtype, int fitnum,
+R_nc_c2r (void *cv, int ncid, nc_type xtype, int ndim, size_t *xdim,
+          int rawchar, int fitnum,
           void *fill, double *scale, double *add)
 {
   SEXP rv=NULL;
@@ -572,61 +632,71 @@ R_nc_c2r (void *cv, size_t cnt, nc_type xtype, int fitnum,
   switch (xtype) {
     case NC_BYTE:
       if (asInt) {
-        rv = R_nc_c2r_schar_int (cv, cnt, fill, NULL, NULL);
+        rv = R_nc_c2r_schar_int (cv, ndim, xdim, fill, NULL, NULL);
       } else {
-        rv = R_nc_c2r_schar_dbl (cv, cnt, fill, scale, add);
+        rv = R_nc_c2r_schar_dbl (cv, ndim, xdim, fill, scale, add);
       }
       break;
     case NC_UBYTE:
       if (asInt) {
-        rv = R_nc_c2r_uchar_int (cv, cnt, fill, NULL, NULL);
+        rv = R_nc_c2r_uchar_int (cv, ndim, xdim, fill, NULL, NULL);
       } else {
-        rv = R_nc_c2r_uchar_dbl (cv, cnt, fill, scale, add);
+        rv = R_nc_c2r_uchar_dbl (cv, ndim, xdim, fill, scale, add);
       }
       break;
     case NC_SHORT:
       if (asInt) {
-        rv = R_nc_c2r_short_int (cv, cnt, fill, NULL, NULL);
+        rv = R_nc_c2r_short_int (cv, ndim, xdim, fill, NULL, NULL);
       } else {
-        rv = R_nc_c2r_short_dbl (cv, cnt, fill, scale, add);
+        rv = R_nc_c2r_short_dbl (cv, ndim, xdim, fill, scale, add);
       }
       break;
     case NC_USHORT:
       if (asInt) {
-        rv = R_nc_c2r_ushort_int (cv, cnt, fill, NULL, NULL);
+        rv = R_nc_c2r_ushort_int (cv, ndim, xdim, fill, NULL, NULL);
       } else {
-        rv = R_nc_c2r_ushort_dbl (cv, cnt, fill, scale, add);
+        rv = R_nc_c2r_ushort_dbl (cv, ndim, xdim, fill, scale, add);
       }
       break;
     case NC_INT:
       if (asInt) {
-        rv = R_nc_c2r_int_int (cv, cnt, fill, NULL, NULL);
+        rv = R_nc_c2r_int_int (cv, ndim, xdim, fill, NULL, NULL);
       } else {
-        rv = R_nc_c2r_int_dbl (cv, cnt, fill, scale, add);
+        rv = R_nc_c2r_int_dbl (cv, ndim, xdim, fill, scale, add);
       }
       break;
     case NC_UINT:
-      rv = R_nc_c2r_uint_dbl (cv, cnt, fill, scale, add);
+      rv = R_nc_c2r_uint_dbl (cv, ndim, xdim, fill, scale, add);
       break;
     case NC_FLOAT:
-      rv = R_nc_c2r_float_dbl (cv, cnt, fill, scale, add);
+      rv = R_nc_c2r_float_dbl (cv, ndim, xdim, fill, scale, add);
       break;
     case NC_DOUBLE:
-      rv = R_nc_c2r_dbl_dbl (cv, cnt, fill, scale, add);
+      rv = R_nc_c2r_dbl_dbl (cv, ndim, xdim, fill, scale, add);
       break;
     case NC_INT64:
       if (asInt) {
-        rv = R_nc_c2r_int64_bit64 (cv, cnt, fill, NULL, NULL);
+        rv = R_nc_c2r_int64_bit64 (cv, ndim, xdim, fill, NULL, NULL);
       } else {
-        rv = R_nc_c2r_int64_dbl (cv, cnt, fill, scale, add);
+        rv = R_nc_c2r_int64_dbl (cv, ndim, xdim, fill, scale, add);
       }
       break;
     case NC_UINT64:
       if (asInt) {
-        rv = R_nc_c2r_uint64_bit64 (cv, cnt, fill, NULL, NULL);
+        rv = R_nc_c2r_uint64_bit64 (cv, ndim, xdim, fill, NULL, NULL);
       } else {
-        rv = R_nc_c2r_uint64_dbl (cv, cnt, fill, scale, add);
+        rv = R_nc_c2r_uint64_dbl (cv, ndim, xdim, fill, scale, add);
       }
+      break;
+    case NC_CHAR:
+      if (rawchar) {
+        rv = R_nc_c2r_char_raw (cv, ndim, xdim, NULL, NULL, NULL);
+      } else {
+        rv = R_nc_char_strsxp (cv, ndim, xdim);
+      }
+      break;
+    case NC_STRING:
+      rv = R_nc_str_strsxp (cv, ndim, xdim);
       break;
     default:
       R_nc_error (RNC_ETYPEDROP);
@@ -636,7 +706,7 @@ R_nc_c2r (void *cv, size_t cnt, nc_type xtype, int fitnum,
 
 
 /*=============================================================================*\
- *  Miscellaneous conversions
+ *  Dimension conversions
 \*=============================================================================*/
 
 /* Reverse a vector in-place.
