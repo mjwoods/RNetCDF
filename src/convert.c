@@ -439,8 +439,12 @@ R_NC_C2R_NUM(R_nc_c2r_int64_bit64, long long, REALSXP, REAL, long long, NA_INTEG
 R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, unsigned long long, REALSXP, REAL, unsigned long long, NA_INTEGER64);
 
 
+/*=============================================================================*\
+ *  Generic type conversions
+\*=============================================================================*/
+
 void *
-R_nc_r2c (SEXP rv, size_t cnt, nc_type xtype,
+R_nc_r2c (SEXP rv, size_t cnt, int ncid, nc_type xtype,
           void *fill, double *scale, double *add)
 {
   void *cv=NULL;
@@ -476,6 +480,41 @@ R_nc_r2c (SEXP rv, size_t cnt, nc_type xtype,
       break;
     case NC_DOUBLE:
       cv = R_nc_r2c_int_dbl (rv, cnt, fill, scale, add);
+      break;
+    default:
+      R_nc_error (RNC_EDATATYPE);
+    }
+  } else if (isInt64(rv)) {
+    switch (xtype) {
+    case NC_BYTE:
+      cv = R_nc_r2c_bit64_schar (rv, cnt, fill, scale, add);
+      break;
+    case NC_UBYTE:
+      cv = R_nc_r2c_bit64_uchar (rv, cnt, fill, scale, add);
+      break;
+    case NC_SHORT:
+      cv = R_nc_r2c_bit64_short (rv, cnt, fill, scale, add);
+      break;
+    case NC_USHORT:
+      cv = R_nc_r2c_bit64_ushort (rv, cnt, fill, scale, add);
+      break;
+    case NC_INT:
+      cv = R_nc_r2c_bit64_int (rv, cnt, fill, scale, add);
+      break;
+    case NC_UINT:
+      cv = R_nc_r2c_bit64_uint (rv, cnt, fill, scale, add);
+      break;
+    case NC_INT64:
+      cv = R_nc_r2c_bit64_ll (rv, cnt, fill, scale, add);
+      break;
+    case NC_UINT64:
+      cv = R_nc_r2c_bit64_ull (rv, cnt, fill, scale, add);
+      break;
+    case NC_FLOAT:
+      cv = R_nc_r2c_bit64_float (rv, cnt, fill, scale, add);
+      break;
+    case NC_DOUBLE:
+      cv = R_nc_r2c_bit64_dbl (rv, cnt, fill, scale, add);
       break;
     default:
       R_nc_error (RNC_EDATATYPE);
@@ -576,10 +615,18 @@ R_nc_c2r (void *cv, size_t cnt, nc_type xtype, int fitnum,
       rv = R_nc_c2r_dbl_dbl (cv, cnt, fill, min, max, scale, add);
       break;
     case NC_INT64:
-      rv = R_nc_c2r_int64_dbl (cv, cnt, fill, min, max, scale, add);
+      if (asInt) {
+        rv = R_nc_c2r_int64_bit64 (cv, cnt, fill, min, max, NULL, NULL);
+      } else {
+        rv = R_nc_c2r_int64_dbl (cv, cnt, fill, min, max, scale, add);
+      }
       break;
     case NC_UINT64:
-      rv = R_nc_c2r_uint64_dbl (cv, cnt, fill, min, max, scale, add);
+      if (asInt) {
+        rv = R_nc_c2r_uint64_bit64 (cv, cnt, fill, min, max, NULL, NULL);
+      } else {
+        rv = R_nc_c2r_uint64_dbl (cv, cnt, fill, min, max, scale, add);
+      }
       break;
     default:
       R_nc_error (RNC_ETYPEDROP);
