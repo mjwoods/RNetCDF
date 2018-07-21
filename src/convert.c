@@ -211,8 +211,6 @@ FUN (SEXP rv, size_t cnt, \
   } \
   if (fill) { \
     fillval = *fill; \
-  } \
-  if (fill) { \
     if (scale || add) { \
       for (ii=0; ii<cnt; ii++) { \
 	if (NATEST(in[ii])) { \
@@ -358,15 +356,52 @@ FUN (const ITYPE* restrict in, size_t cnt, \
   } \
   if (fill) { \
     fillval = *fill; \
-  } \
-  for (ii=0; ii<cnt; ii++) { \
-    if ((in[ii] != in[ii]) || \
-        (fill && fillval == in[ii])) \
-      out[ii] = MISSVAL; \
-    } else if (scale || add) { \
-      out[ii] = in[ii] * factor + offset; \
+    if (fillval != fillval) \
+      if (scale || add) { \
+	for (ii=0; ii<cnt; ii++) { \
+	  if (in[ii] != in[ii]) { \
+            out[ii] = MISSVAL; \
+          } else { \
+	    out[ii] = in[ii] * factor + offset; \
+	  } \
+	} \
+      } else { \
+	for (ii=0; ii<cnt; ii++) { \
+	  if (in[ii] != in[ii]) { \
+	    out[ii] = MISSVAL; \
+	  } else { \
+	    out[ii] = in[ii]; \
+	  } \
+	} \
+      } \
     } else { \
-      out[ii] = in[ii]; \
+      if (scale || add) { \
+	for (ii=0; ii<cnt; ii++) { \
+	  if (in[ii] == fillval) { \
+            out[ii] = MISSVAL; \
+          } else { \
+	    out[ii] = in[ii] * factor + offset; \
+	  } \
+	} \
+      } else { \
+	for (ii=0; ii<cnt; ii++) { \
+	  if (in[ii] == fillval) { \
+	    out[ii] = MISSVAL; \
+	  } else { \
+	    out[ii] = in[ii]; \
+	  } \
+	} \
+      } \
+    } \
+  } else { \
+    if (scale || add) { \
+      for (ii=0; ii<cnt; ii++) { \
+	out[ii] = in[ii] * factor + offset; \
+      } \
+    } else { \
+      for (ii=0; ii<cnt; ii++) { \
+	out[ii] = in[ii]; \
+      } \
     } \
   } \
   return rv; \
