@@ -337,11 +337,12 @@ R_NC_R2C_NUM(R_nc_r2c_int64_dbl, long long, REAL, double, \
 #define R_NC_C2R_NUM(FUN, ITYPE, SEXPTYPE, OFUN, OTYPE, MISSVAL) \
 static SEXP \
 FUN (const ITYPE* restrict in, size_t cnt, \
-     ITYPE *fill, ITYPE *min, ITYPE *max, double *scale, double *add) \
+     ITYPE *fill, double *scale, double *add) \
 { \
   size_t ii; \
   double factor, offset; \
   SEXP rv; \
+  ITYPE fillval; \
   OTYPE restrict *out; \
   rv = R_nc_protect (allocVector (SEXPTYPE, cnt)); \
   out = OFUN (rv); \
@@ -355,11 +356,12 @@ FUN (const ITYPE* restrict in, size_t cnt, \
   } else { \
     offset = 0.0; \
   } \
+  if (fill) { \
+    fillval = *fill; \
+  } \
   for (ii=0; ii<cnt; ii++) { \
     if ((in[ii] != in[ii]) || \
-        (fill && *fill == in[ii]) || \
-        (min && *min > in[ii]) || \
-        (max && *max < in[ii])) { \
+        (fill && fillval == in[ii])) \
       out[ii] = MISSVAL; \
     } else if (scale || add) { \
       out[ii] = in[ii] * factor + offset; \
