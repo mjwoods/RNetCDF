@@ -161,6 +161,33 @@ R_nc_char_strsxp (char *carr, int ndim, size_t *xdim)
 }
 
 
+char *
+R_nc_raw_char (SEXP rarr, int ndim, size_t *xdim)
+{
+  size_t cnt;
+  char *carr;
+  cnt = R_nc_length (ndim, xdim);
+  if (xlength (rarr) < cnt) {
+    RERROR (RNC_EDATALEN);
+  }
+  carr = R_alloc (cnt, sizeof (char));
+  memcpy (carr, RAW (rarr), cnt);
+  return carr;
+}
+
+
+SEXP
+R_nc_char_raw (char *carr, int ndim, size_t *xdim)
+{
+  size_t cnt;
+  SEXP rarr;
+  cnt = R_nc_length (ndim, xdim);
+  rarr = R_nc_allocArray (RAWSXP, ndim, xdim);
+  memcpy (RAW (rarr), carr, cnt);
+  return rarr;
+}
+
+
 const char **
 R_nc_strsxp_str (SEXP rstr, int ndim, size_t *xdim)
 {
@@ -205,7 +232,7 @@ R_nc_str_strsxp (char **cstr, int ndim, size_t *xdim)
 
 #define R_NC_ISNA_INT(value) (value==NA_INTEGER)
 #define R_NC_ISNA_REAL(value) (ISNAN(value))
-#define R_NC_ISNA_NONE(value) (0)
+#define R_NC_ISNA_BIT64(value) (value==NA_INTEGER64)
 
 #define R_NC_RANGE_MIN(VAL,LIM,TYPE) ((TYPE) LIM <= (TYPE) VAL)
 #define R_NC_RANGE_MAX(VAL,LIM,TYPE) ((TYPE) VAL <= (TYPE) LIM)
@@ -290,9 +317,6 @@ FUN (SEXP rv, int ndim, size_t *xdim, \
   return out; \
 }
 
-R_NC_R2C_NUM(R_nc_r2c_raw_uchar, unsigned char, RAW, unsigned char, \
-  R_NC_ISNA_NONE, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
-
 R_NC_R2C_NUM(R_nc_r2c_int_schar, int, INTEGER, signed char, \
   R_NC_ISNA_INT, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX);
 R_NC_R2C_NUM(R_nc_r2c_int_uchar, int, INTEGER, unsigned char, \
@@ -340,28 +364,28 @@ R_NC_R2C_NUM(R_nc_r2c_dbl_dbl, double, REAL, double, \
   R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 
 R_NC_R2C_NUM(R_nc_r2c_bit64_schar, long long, REAL, signed char, \
-  R_NC_ISNA_NONE, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX);
+  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX);
 R_NC_R2C_NUM(R_nc_r2c_bit64_uchar, long long, REAL, unsigned char, \
-  R_NC_ISNA_NONE, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX);
+  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX);
 R_NC_R2C_NUM(R_nc_r2c_bit64_short, long long, REAL, short, \
-  R_NC_ISNA_NONE, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX);
+  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_bit64_ushort, long long, REAL, unsigned short, \
-  R_NC_ISNA_NONE, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX);
+  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_bit64_int, long long, REAL, int, \
-  R_NC_ISNA_NONE, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX);
+  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_bit64_uint, long long, REAL, unsigned int, \
-  R_NC_ISNA_NONE, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX);
+  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_bit64_ll, long long, REAL, long long, \
-  R_NC_ISNA_NONE, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
+  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 /* Treat bit64 as unsigned when converting to unsigned long long */
 R_NC_R2C_NUM(R_nc_r2c_bit64_ull, unsigned long long, REAL, unsigned long long, \
-  R_NC_ISNA_NONE, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
+  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 R_NC_R2C_NUM(R_nc_r2c_bit64_size, long long, REAL, size_t, \
-  R_NC_ISNA_NONE, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX);
+  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX);
 R_NC_R2C_NUM(R_nc_r2c_bit64_float, long long, REAL, float, \
-  R_NC_ISNA_NONE, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX);
+  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_bit64_dbl, long long, REAL, double, \
-  R_NC_ISNA_NONE, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
+  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 
 
 #define R_NC_C2R_NUM(FUN, ITYPE, SEXPTYPE, OFUN, OTYPE, MISSVAL) \
@@ -439,8 +463,6 @@ FUN (const ITYPE* restrict in, int ndim, size_t *xdim, \
   } \
   return rv; \
 }
-
-R_NC_C2R_NUM(R_nc_c2r_uchar_raw, char, RAWSXP, RAW, char, '\0');
 
 R_NC_C2R_NUM(R_nc_c2r_schar_int, signed char, INTSXP, INTEGER, int, NA_INTEGER);
 R_NC_C2R_NUM(R_nc_c2r_uchar_int, unsigned char, INTSXP, INTEGER, int, NA_INTEGER);
@@ -606,7 +628,7 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, size_t *xdim,
     break;
   case RAWSXP:
     if (xtype == NC_CHAR) {
-      cv = R_nc_r2c_raw_uchar (rv, ndim, xdim, NULL, NULL, NULL);
+      cv = R_nc_raw_char (rv, ndim, xdim);
     } else {
       R_nc_error (RNC_EDATATYPE);
     }
@@ -690,7 +712,7 @@ R_nc_c2r (void *cv, int ncid, nc_type xtype, int ndim, size_t *xdim,
       break;
     case NC_CHAR:
       if (rawchar) {
-        rv = R_nc_c2r_char_raw (cv, ndim, xdim, NULL, NULL, NULL);
+        rv = R_nc_char_raw (cv, ndim, xdim);
       } else {
         rv = R_nc_char_strsxp (cv, ndim, xdim);
       }
