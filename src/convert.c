@@ -183,6 +183,8 @@ R_nc_str_strsxp (char **cstr, size_t cnt)
 
 #define R_NC_ISNA_INT(value) (value==NA_INTEGER)
 #define R_NC_ISNA_REAL(value) (ISNAN(value))
+#define R_NC_ISNA_NONE(value) (0)
+
 #define R_NC_RANGE_MIN(VAL,LIM,TYPE) ((TYPE) LIM <= (TYPE) VAL)
 #define R_NC_RANGE_MAX(VAL,LIM,TYPE) ((TYPE) VAL <= (TYPE) LIM)
 #define R_NC_RANGE_NONE(VAL,LIM,TYPE) (1)
@@ -307,29 +309,29 @@ R_NC_R2C_NUM(R_nc_r2c_dbl_float, double, REAL, float, \
 R_NC_R2C_NUM(R_nc_r2c_dbl_dbl, double, REAL, double, \
   R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 
-R_NC_R2C_NUM(R_nc_r2c_int64_schar, long long, REAL, signed char, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_uchar, long long, REAL, unsigned char, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_short, long long, REAL, short, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_ushort, long long, REAL, unsigned short, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_int, long long, REAL, int, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_uint, long long, REAL, unsigned int, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_ll, long long, REAL, long long, \
-  R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
+R_NC_R2C_NUM(R_nc_r2c_bit64_schar, long long, REAL, signed char, \
+  R_NC_ISNA_NONE, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX);
+R_NC_R2C_NUM(R_nc_r2c_bit64_uchar, long long, REAL, unsigned char, \
+  R_NC_ISNA_NONE, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX);
+R_NC_R2C_NUM(R_nc_r2c_bit64_short, long long, REAL, short, \
+  R_NC_ISNA_NONE, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX);
+R_NC_R2C_NUM(R_nc_r2c_bit64_ushort, long long, REAL, unsigned short, \
+  R_NC_ISNA_NONE, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX);
+R_NC_R2C_NUM(R_nc_r2c_bit64_int, long long, REAL, int, \
+  R_NC_ISNA_NONE, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX);
+R_NC_R2C_NUM(R_nc_r2c_bit64_uint, long long, REAL, unsigned int, \
+  R_NC_ISNA_NONE, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX);
+R_NC_R2C_NUM(R_nc_r2c_bit64_ll, long long, REAL, long long, \
+  R_NC_ISNA_NONE, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 /* Treat bit64 as unsigned when converting to unsigned long long */
-R_NC_R2C_NUM(R_nc_r2c_uint64_ull, unsigned long long, REAL, unsigned long long, \
-  R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
-R_NC_R2C_NUM(R_nc_r2c_int64_size, long long, REAL, size_t, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_float, long long, REAL, float, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX);
-R_NC_R2C_NUM(R_nc_r2c_int64_dbl, long long, REAL, double, \
-  R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
+R_NC_R2C_NUM(R_nc_r2c_bit64_ull, unsigned long long, REAL, unsigned long long, \
+  R_NC_ISNA_NONE, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
+R_NC_R2C_NUM(R_nc_r2c_bit64_size, long long, REAL, size_t, \
+  R_NC_ISNA_NONE, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX);
+R_NC_R2C_NUM(R_nc_r2c_bit64_float, long long, REAL, float, \
+  R_NC_ISNA_NONE, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX);
+R_NC_R2C_NUM(R_nc_r2c_bit64_dbl, long long, REAL, double, \
+  R_NC_ISNA_NONE, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 
 
 #define R_NC_C2R_NUM(FUN, ITYPE, SEXPTYPE, OFUN, OTYPE, MISSVAL) \
@@ -343,7 +345,7 @@ FUN (const ITYPE* restrict in, size_t cnt, \
   ITYPE fillval; \
   OTYPE restrict *out; \
   rv = R_nc_protect (allocVector (SEXPTYPE, cnt)); \
-  out = OFUN (rv); \
+  out = (OTYPE) OFUN (rv); \
   if (scale) { \
     factor = *scale; \
   } else { \
@@ -423,6 +425,18 @@ R_NC_C2R_NUM(R_nc_c2r_float_dbl, float, REALSXP, REAL, double, NA_REAL);
 R_NC_C2R_NUM(R_nc_c2r_dbl_dbl, double, REALSXP, REAL, double, NA_REAL);
 R_NC_C2R_NUM(R_nc_c2r_int64_dbl, long long, REALSXP, REAL, double, NA_REAL);
 R_NC_C2R_NUM(R_nc_c2r_uint64_dbl, unsigned long long, REALSXP, REAL, double, NA_REAL);
+
+R_NC_C2R_NUM(R_nc_c2r_schar_bit64, signed char, REALSXP, REAL, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_uchar_bit64, unsigned char, REALSXP, REAL, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_short_bit64, short, REALSXP, REAL, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_ushort_bit64, unsigned short, REALSXP, REAL, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_int_bit64, int, REALSXP, REAL, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_uint_bit64, unsigned int, REALSXP, REAL, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_float_bit64, float, REALSXP, REAL, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_dbl_bit64, double, REALSXP, REAL, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_int64_bit64, long long, REALSXP, REAL, long long, NA_INTEGER64);
+/* Treat bit64 as unsigned when converting from unsigned long long */
+R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, unsigned long long, REALSXP, REAL, unsigned long long, NA_INTEGER64);
 
 
 void *
