@@ -44,6 +44,15 @@
 int isInt64(SEXP rv);
 
 
+/* Structure for buffers used in IO.
+   Element buf may point to memory inside rxp.
+ */
+typedef struct {
+  SEXP rxp;
+  void *buf;
+  } R_nc_buf;
+
+
 /* Convert an R vector to a netcdf external type (xtype).
    Memory for the results is allocated by R_alloc (freed by R).
    The number and lengths of netcdf dimensions are ndim and xdim (C-order).

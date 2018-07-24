@@ -133,12 +133,23 @@ R_nc_strsxp_char (SEXP rstr, int ndim, size_t *xdim)
 }
 
 
+R_nc_buf
+R_nc_char_strsxp_init (int ndim, size_t *xdim)
+{
+  R_nc_buf io;
+  size_t cnt;
+  cnt = R_nc_length (ndim, xdim);
+  io.rxp = R_nc_allocArray (STRSXP, ndim-1, xdim);
+  io.buf = R_alloc (cnt, sizeof (char));
+  return io;
+}
+
+
 SEXP
-R_nc_char_strsxp (char *carr, int ndim, size_t *xdim)
+R_nc_char_strsxp (R_nc_buf io, int ndim, size_t *xdim)
 {
   size_t ii, cnt, clen, rlen;
   char *thisstr, *endstr, endchar;
-  SEXP rstr;
   if (ndim > 0) {
     /* Omit fastest-varying dimension from R character array */
     clen = xdim[ndim-1];
@@ -147,17 +158,16 @@ R_nc_char_strsxp (char *carr, int ndim, size_t *xdim)
     clen = 1;
   }
   rlen = (clen <= RNC_CHARSXP_MAXLEN) ? clen : RNC_CHARSXP_MAXLEN;
-  rstr = R_nc_allocArray (STRSXP, ndim-1, xdim);
-  cnt = xlength (rstr);
-  for (ii=0, thisstr=carr; ii<cnt; ii++, thisstr+=clen) {
+  cnt = xlength (io.rxp);
+  for (ii=0, thisstr=io.buf; ii<cnt; ii++, thisstr+=clen) {
     /* Temporarily null-terminate each string before passing to R */
     endstr = thisstr + rlen;
     endchar = *endstr;
     *endstr = '\0';
-    SET_STRING_ELT (rstr, ii, mkChar(thisstr));
+    SET_STRING_ELT (io.rxp, ii, mkChar(thisstr));
     *endstr = endchar;
   }
-  return rstr;
+  return io.rxp;
 }
 
 
@@ -176,15 +186,21 @@ R_nc_raw_char (SEXP rarr, int ndim, size_t *xdim)
 }
 
 
-SEXP
-R_nc_char_raw (char *carr, int ndim, size_t *xdim)
+R_nc_buf
+R_nc_char_raw_init (int ndim, size_t *xdim)
 {
-  size_t cnt;
-  SEXP rarr;
-  cnt = R_nc_length (ndim, xdim);
-  rarr = R_nc_allocArray (RAWSXP, ndim, xdim);
-  memcpy (RAW (rarr), carr, cnt);
-  return rarr;
+  R_nc_buf io;
+  io.rxp = R_nc_allocArray (RAWSXP, ndim, xdim);
+  io.buf = RAW (io.rxp);
+  return io;
+}
+
+
+SEXP
+R_nc_char_raw (R_nc_buf io, int ndim, size_t *xdim)
+{
+  // Nothing to do!
+  return io.rxp;
 }
 
 
@@ -201,14 +217,25 @@ R_nc_strsxp_str (SEXP rstr, int ndim, size_t *xdim)
 }
 
 
+R_nc_buf
+R_nc_str_strsxp_init (int ndim, size_t *xdim)
+{
+  R_nc_buf io;
+  size_t cnt;
+  cnt = R_nc_length (ndim, xdim);
+  io.rxp = R_nc_allocArray (STRSXP, ndim, xdim);
+  io.buf = R_alloc (cnt, sizeof(size_t));
+  return io;
+}
+
+
 SEXP
-R_nc_str_strsxp (char **cstr, int ndim, size_t *xdim)
+R_nc_str_strsxp (R_nc_buf io, int ndim, size_t *xdim)
 {
   size_t ii, nchar, cnt;
-  char *endstr, endchar;
-  SEXP rstr;
-  rstr = R_nc_allocArray (STRSXP, ndim, xdim);
-  cnt = xlength (rstr);
+  char **cstr, *endstr, endchar;
+  cnt = xlength (io.rxp);
+  cstr = (char **) io.buf;
   for (ii=0; ii<cnt; ii++) {
     nchar = strlen (cstr[ii]);
     if (nchar > RNC_CHARSXP_MAXLEN) {
@@ -216,13 +243,13 @@ R_nc_str_strsxp (char **cstr, int ndim, size_t *xdim)
       endstr = cstr[ii]+RNC_CHARSXP_MAXLEN+1;
       endchar = *endstr;
       *endstr = '\0';
-      SET_STRING_ELT (rstr, ii, mkChar (cstr[ii]));
+      SET_STRING_ELT (io.rxp, ii, mkChar (cstr[ii]));
       *endstr = endchar;
     } else if (nchar > 0) {
-      SET_STRING_ELT (rstr, ii, mkChar (cstr[ii]));
+      SET_STRING_ELT (io.rxp, ii, mkChar (cstr[ii]));
     }
   }
-  return rstr;
+  return io.rxp;
 }
 
 
@@ -388,19 +415,128 @@ R_NC_R2C_NUM(R_nc_r2c_bit64_dbl, long long, REAL, double, \
   R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 
 
-#define R_NC_C2R_NUM(FUN, ITYPE, SEXPTYPE, OFUN, OTYPE, MISSVAL) \
+/* Allocate memory for reading a netcdf variable slice
+   and converting the results to an R variable.
+   The R_nc_buf structure contains a pointer to a buffer inside an SEXP.
+ */
+#define R_NC_C2R_NUM_INIT(FUN, SEXPTYPE, OFUN) \
+static R_nc_buf \
+FUN (int ndim, size_t *xdim) \
+{ \
+  R_nc_buf io; \
+  size_t cnt; \
+  io.rxp = R_nc_allocArray (SEXPTYPE, ndim, xdim); \
+  io.buf = OFUN (io.rxp); \
+}
+
+// TODO: instance functions of each type ...
+
+
+/* Convert numeric values using the same buffer for input and output.
+   Output type may be larger (not smaller) than input,
+   so convert in reverse order to avoid overwriting input with output.
+   If input and output are same type, no copying needed.
+ */
+#define R_NC_C2R_NUM(FUN, NCITYPE, ITYPE, NCOTYPE, OTYPE, MISSVAL) \
 static SEXP \
-FUN (const ITYPE* restrict in, int ndim, size_t *xdim, \
+FUN (R_nc_buf io, int ndim, size_t *xdim, ITYPE *fill) \
+{ \
+  size_t ii, cnt; \
+  ITYPE fillval, *in; \
+  OTYPE *out; \
+  cnt = xlength (io.rxp); \
+  in = (ITYPE *) io.buf; \
+  out = (OTYPE *) io.buf; \
+  if (NCITYPE == NCOTYPE) { \
+    if (fill) { \
+      fillval = *fill; \
+      if (fillval != fillval) { \
+	for (ii=cnt-1; ii>=0; ii--) { \
+	  if (in[ii] != in[ii]) { \
+	    out[ii] = MISSVAL; \
+	  } \
+	} \
+      } else { \
+	for (ii=cnt-1; ii>=0; ii--) { \
+	  if (in[ii] == fillval) { \
+	    out[ii] = MISSVAL; \
+	  } \
+        } \
+      } \
+    } \
+  } else { \
+    if (fill) { \
+      fillval = *fill; \
+      if (fillval != fillval) { \
+	for (ii=cnt-1; ii>=0; ii--) { \
+	  if (in[ii] != in[ii]) { \
+	    out[ii] = MISSVAL; \
+	  } else { \
+	    out[ii] = in[ii]; \
+	  } \
+	} \
+      } else { \
+	for (ii=cnt-1; ii>=0; ii--) { \
+	  if (in[ii] == fillval) { \
+	    out[ii] = MISSVAL; \
+	  } else { \
+	    out[ii] = in[ii]; \
+	  } \
+	} \
+      } \
+    } else { \
+      for (ii=cnt-1; ii>=0; ii--) { \
+	out[ii] = in[ii]; \
+      } \
+    } \
+  } \
+  return rv; \
+}
+
+R_NC_C2R_NUM(R_nc_c2r_schar_int, NC_BYTE, signed char, NC_INT, int, NA_INTEGER);
+R_NC_C2R_NUM(R_nc_c2r_uchar_int, NC_UBYTE, unsigned char, NC_INT, int, NA_INTEGER);
+R_NC_C2R_NUM(R_nc_c2r_short_int, NC_SHORT, short, NC_INT, int, NA_INTEGER);
+R_NC_C2R_NUM(R_nc_c2r_ushort_int, NC_USHORT, unsigned short, NC_INT, int, NA_INTEGER);
+R_NC_C2R_NUM(R_nc_c2r_int_int, NC_INT, int, NC_INT, int, NA_INTEGER);
+
+R_NC_C2R_NUM(R_nc_c2r_schar_dbl, NC_BYTE, signed char, NC_DOUBLE, double, NA_REAL);
+R_NC_C2R_NUM(R_nc_c2r_uchar_dbl, NC_UBYTE, unsigned char, NC_DOUBLE, double, NA_REAL);
+R_NC_C2R_NUM(R_nc_c2r_short_dbl, NC_SHORT, short, NC_DOUBLE, double, NA_REAL);
+R_NC_C2R_NUM(R_nc_c2r_ushort_dbl, NC_USHORT, unsigned short, NC_DOUBLE, double, NA_REAL);
+R_NC_C2R_NUM(R_nc_c2r_int_dbl, NC_INT, int, NC_DOUBLE, double, NA_REAL);
+R_NC_C2R_NUM(R_nc_c2r_uint_dbl, NC_UINT, unsigned int, NC_DOUBLE, double, NA_REAL);
+R_NC_C2R_NUM(R_nc_c2r_float_dbl, NC_FLOAT, float, NC_DOUBLE, double, NA_REAL);
+R_NC_C2R_NUM(R_nc_c2r_dbl_dbl, NC_DOUBLE, double, NC_DOUBLE, double, NA_REAL);
+R_NC_C2R_NUM(R_nc_c2r_int64_dbl, NC_INT64, long long, NC_DOUBLE, double, NA_REAL);
+R_NC_C2R_NUM(R_nc_c2r_uint64_dbl, NC_UINT64, unsigned long long, NC_DOUBLE, double, NA_REAL);
+
+R_NC_C2R_NUM(R_nc_c2r_schar_bit64, NC_BYTE, signed char, NC_INT64, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_uchar_bit64, NC_UBYTE, unsigned char, NC_INT64, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_short_bit64, NC_SHORT, short, NC_INT64, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_ushort_bit64, NC_USHORT, unsigned short, NC_INT64, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_int_bit64, NC_INT, int, NC_INT64, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_uint_bit64, NC_UINT, unsigned int, NC_INT64, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_float_bit64, NC_FLOAT, float, NC_INT64, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_dbl_bit64, NC_DOUBLE, double, NC_INT64, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_int64_bit64, NC_INT64, long long, NC_INT64, long long, NA_INTEGER64);
+/* Treat bit64 as unsigned when converting from unsigned long long */
+R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, NC_UINT64, unsigned long long, NC_UINT64, unsigned long long, NA_INTEGER64);
+
+
+// TODO: create separate interface for unpacking ...
+
+#define R_NC_C2R_NUM_UNPACK(FUN, ITYPE, MISSVAL) \
+static SEXP \
+FUN (R_nc_buf io, int ndim, size_t *xdim, \
      ITYPE *fill, double *scale, double *add) \
 { \
   size_t ii, cnt; \
   double factor, offset; \
-  SEXP rv; \
-  ITYPE fillval; \
-  OTYPE restrict *out; \
-  rv = R_nc_allocArray (SEXPTYPE, ndims, xdim); \
-  cnt = xlength (rv); \
-  out = (OTYPE) OFUN (rv); \
+  ITYPE fillval, *in; \
+  double *out; \
+  cnt = xlength (io.rxp); \
+  in = (ITYPE *) io.buf; \
+  out = (double *) io.buf; \
   if (scale) { \
     factor = *scale; \
   } else { \
@@ -413,85 +549,31 @@ FUN (const ITYPE* restrict in, int ndim, size_t *xdim, \
   } \
   if (fill) { \
     fillval = *fill; \
-    if (fillval != fillval) \
-      if (scale || add) { \
-	for (ii=0; ii<cnt; ii++) { \
-	  if (in[ii] != in[ii]) { \
-            out[ii] = MISSVAL; \
-          } else { \
-	    out[ii] = in[ii] * factor + offset; \
-	  } \
-	} \
-      } else { \
-	for (ii=0; ii<cnt; ii++) { \
-	  if (in[ii] != in[ii]) { \
-	    out[ii] = MISSVAL; \
-	  } else { \
-	    out[ii] = in[ii]; \
-	  } \
+    if (fillval != fillval) { \
+      for (ii=cnt-1; ii>=0; ii--) { \
+	if (in[ii] != in[ii]) { \
+	  out[ii] = MISSVAL; \
+	} else { \
+	  out[ii] = in[ii] * factor + offset; \
 	} \
       } \
     } else { \
-      if (scale || add) { \
-	for (ii=0; ii<cnt; ii++) { \
-	  if (in[ii] == fillval) { \
-            out[ii] = MISSVAL; \
-          } else { \
-	    out[ii] = in[ii] * factor + offset; \
-	  } \
-	} \
-      } else { \
-	for (ii=0; ii<cnt; ii++) { \
-	  if (in[ii] == fillval) { \
-	    out[ii] = MISSVAL; \
-	  } else { \
-	    out[ii] = in[ii]; \
-	  } \
+      for (ii=cnt-1; ii>=0; ii--) { \
+	if (in[ii] == fillval) { \
+	  out[ii] = MISSVAL; \
+	} else { \
+	  out[ii] = in[ii] * factor + offset; \
 	} \
       } \
     } \
   } else { \
-    if (scale || add) { \
-      for (ii=0; ii<cnt; ii++) { \
-	out[ii] = in[ii] * factor + offset; \
-      } \
-    } else { \
-      for (ii=0; ii<cnt; ii++) { \
-	out[ii] = in[ii]; \
-      } \
+    for (ii=cnt-1; ii>=0; ii--) { \
+      out[ii] = in[ii] * factor + offset; \
     } \
   } \
   return rv; \
 }
 
-R_NC_C2R_NUM(R_nc_c2r_schar_int, signed char, INTSXP, INTEGER, int, NA_INTEGER);
-R_NC_C2R_NUM(R_nc_c2r_uchar_int, unsigned char, INTSXP, INTEGER, int, NA_INTEGER);
-R_NC_C2R_NUM(R_nc_c2r_short_int, short, INTSXP, INTEGER, int, NA_INTEGER);
-R_NC_C2R_NUM(R_nc_c2r_ushort_int, unsigned short, INTSXP, INTEGER, int, NA_INTEGER);
-R_NC_C2R_NUM(R_nc_c2r_int_int, int, INSTSXP, INTEGER, int, NA_INTEGER);
-
-R_NC_C2R_NUM(R_nc_c2r_schar_dbl, signed char, REALSXP, REAL, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_uchar_dbl, unsigned char, REALSXP, REAL, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_short_dbl, short, REALSXP, REAL, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_ushort_dbl, unsigned short, REALSXP, REAL, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_int_dbl, int, REALSXP, REAL, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_uint_dbl, unsigned int, REALSXP, REAL, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_float_dbl, float, REALSXP, REAL, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_dbl_dbl, double, REALSXP, REAL, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_int64_dbl, long long, REALSXP, REAL, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_uint64_dbl, unsigned long long, REALSXP, REAL, double, NA_REAL);
-
-R_NC_C2R_NUM(R_nc_c2r_schar_bit64, signed char, REALSXP, REAL, long long, NA_INTEGER64);
-R_NC_C2R_NUM(R_nc_c2r_uchar_bit64, unsigned char, REALSXP, REAL, long long, NA_INTEGER64);
-R_NC_C2R_NUM(R_nc_c2r_short_bit64, short, REALSXP, REAL, long long, NA_INTEGER64);
-R_NC_C2R_NUM(R_nc_c2r_ushort_bit64, unsigned short, REALSXP, REAL, long long, NA_INTEGER64);
-R_NC_C2R_NUM(R_nc_c2r_int_bit64, int, REALSXP, REAL, long long, NA_INTEGER64);
-R_NC_C2R_NUM(R_nc_c2r_uint_bit64, unsigned int, REALSXP, REAL, long long, NA_INTEGER64);
-R_NC_C2R_NUM(R_nc_c2r_float_bit64, float, REALSXP, REAL, long long, NA_INTEGER64);
-R_NC_C2R_NUM(R_nc_c2r_dbl_bit64, double, REALSXP, REAL, long long, NA_INTEGER64);
-R_NC_C2R_NUM(R_nc_c2r_int64_bit64, long long, REALSXP, REAL, long long, NA_INTEGER64);
-/* Treat bit64 as unsigned when converting from unsigned long long */
-R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, unsigned long long, REALSXP, REAL, unsigned long long, NA_INTEGER64);
 
 
 /*=============================================================================*\
@@ -640,6 +722,9 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, size_t *xdim,
 }
 
 
+// TODO: We need a generic "init" routine as well (defined publicly).
+
+
 SEXP
 R_nc_c2r (void *cv, int ncid, nc_type xtype, int ndim, size_t *xdim,
           int rawchar, int fitnum,
@@ -725,6 +810,17 @@ R_nc_c2r (void *cv, int ncid, nc_type xtype, int ndim, size_t *xdim,
   }
   return rv;
 }
+
+// TODO - Provide separate memory allocation and conversion routines?
+//   Reading: - Allocate SEXP for final data and optional temporary;
+//              return R_nc_buf containing SEXP and void *.
+//            - Read into void *;
+//            - Convert void * to final result:
+//              * in-place for atomic types (which never decrease in size)
+//              * no copying for raw, int, double, bit64.
+//              * Copying must occur for strings and some user-defined types.
+//   Writing: - Convert SEXP to void * (may be trivial if no fill or type conversion)
+//            - Write void *
 
 
 /*=============================================================================*\
