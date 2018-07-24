@@ -492,7 +492,7 @@ FUN (R_nc_buf io, int ndim, size_t *xdim, ITYPE *fill) \
       } \
     } \
   } \
-  return rv; \
+  return io.rxp; \
 }
 
 R_NC_C2R_NUM(R_nc_c2r_schar_int, NC_BYTE, signed char, NC_INT, int, NA_INTEGER);
@@ -525,9 +525,13 @@ R_NC_C2R_NUM(R_nc_c2r_int64_bit64, NC_INT64, long long, NC_INT64, long long, NA_
 R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, NC_UINT64, unsigned long long, NC_UINT64, unsigned long long, NA_INTEGER64);
 
 
-// TODO: create separate interface for unpacking ...
+/* Convert numeric values with unpacking.
+   Output type is assumed not to be smaller than input type,
+   so the same buffer is used for input and output
+   by converting in reverse order.
+ */
 
-#define R_NC_C2R_NUM_UNPACK(FUN, ITYPE, MISSVAL) \
+#define R_NC_C2R_NUM_UNPACK(FUN, ITYPE) \
 static SEXP \
 FUN (R_nc_buf io, int ndim, size_t *xdim, \
      ITYPE *fill, double *scale, double *add) \
@@ -554,7 +558,7 @@ FUN (R_nc_buf io, int ndim, size_t *xdim, \
     if (fillval != fillval) { \
       for (ii=cnt-1; ii>=0; ii--) { \
 	if (in[ii] != in[ii]) { \
-	  out[ii] = MISSVAL; \
+	  out[ii] = NA_REAL; \
 	} else { \
 	  out[ii] = in[ii] * factor + offset; \
 	} \
@@ -562,7 +566,7 @@ FUN (R_nc_buf io, int ndim, size_t *xdim, \
     } else { \
       for (ii=cnt-1; ii>=0; ii--) { \
 	if (in[ii] == fillval) { \
-	  out[ii] = MISSVAL; \
+	  out[ii] = NA_REAL; \
 	} else { \
 	  out[ii] = in[ii] * factor + offset; \
 	} \
@@ -573,9 +577,19 @@ FUN (R_nc_buf io, int ndim, size_t *xdim, \
       out[ii] = in[ii] * factor + offset; \
     } \
   } \
-  return rv; \
+  return io.rxp; \
 }
 
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_schar, signed char);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uchar, unsigned char);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_short, short);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_ushort, unsigned short);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_int, int);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint, unsigned int);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_float, float);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_dbl, double);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_int64, long long);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint64, unsigned long long);
 
 
 /*=============================================================================*\
