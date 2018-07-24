@@ -429,13 +429,15 @@ FUN (int ndim, size_t *xdim) \
   io.buf = OFUN (io.rxp); \
 }
 
-// TODO: instance functions of each type ...
+R_NC_C2R_NUM_INIT(R_nc_c2r_int_init, INTSXP, INTEGER);
+R_NC_C2R_NUM_INIT(R_nc_c2r_dbl_init, REALSXP, REAL);
+R_NC_C2R_NUM_INIT(R_nc_c2r_bit64_init, REALSXP, REAL);
 
 
 /* Convert numeric values using the same buffer for input and output.
    Output type may be larger (not smaller) than input,
    so convert in reverse order to avoid overwriting input with output.
-   If input and output are same type, no copying needed.
+   If input and output are same type, no copying is needed.
  */
 #define R_NC_C2R_NUM(FUN, NCITYPE, ITYPE, NCOTYPE, OTYPE, MISSVAL) \
 static SEXP \
