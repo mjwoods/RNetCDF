@@ -44,13 +44,8 @@
 int isInt64(SEXP rv);
 
 
-/* Structure for buffers used in IO.
-   Element buf may point to memory inside rxp.
- */
-typedef struct {
-  SEXP rxp;
-  void *buf;
-  } R_nc_buf;
+/* Structure for buffers used in IO. */
+typedef struct R_nc_buf R_nc_buf;
 
 
 /* Convert an R vector to a netcdf external type (xtype).
@@ -77,15 +72,13 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, size_t *xdim,
    Elements are set to missing if they equal the fill value.
    Unpacking is performed if either scale or add are not NULL.
  */
-R_nc_buf \
+R_nc_buf * \
 R_nc_c2r_init (int ncid, nc_type xtype, int ndim, size_t *xdim,
                int rawchar, int fitnum,
                void *fill, double *scale, double *add)
 
 SEXP
-R_nc_c2r (R_nc_buf io, int ncid, nc_type xtype, int ndim, size_t *xdim,
-          int rawchar, int fitnum,
-          void *fill, double *scale, double *add);
+R_nc_c2r (R_nc_buf *io);
 
 
 /* Reverse a vector in-place.
