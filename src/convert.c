@@ -770,15 +770,12 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, size_t *xdim,
 }
 
 
-R_nc_buf * \
-R_nc_c2r_init (int ncid, nc_type xtype, int ndim, size_t *xdim,
+void * \
+R_nc_c2r_init (R_nc_buf *io, int ncid, nc_type xtype, int ndim, size_t *xdim,
                int rawchar, int fitnum,
                void *fill, double *scale, double *add)
 {
-  R_nc_buf *io;
-
   /* Initialise the R_nc_buf */
-  io = R_alloc (1, sizeof (R_nc_buf));
   io->rxp = NULL;
   io->buf = NULL;
   io->xtype = xtype;
@@ -825,7 +822,7 @@ R_nc_c2r_init (int ncid, nc_type xtype, int ndim, size_t *xdim,
     default:
       R_nc_error (RNC_ETYPEDROP);
   }
-  return io;
+  return io->buf;
 }
 
 
