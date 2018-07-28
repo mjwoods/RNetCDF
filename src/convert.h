@@ -54,13 +54,15 @@ typedef struct {
 
 
 /* Convert an R vector to a netcdf external type (xtype).
-   Memory for the results is allocated by R_alloc (freed by R).
+   Memory for the results is allocated by R_alloc (freed by R),
+   except in special cases where no modification of the input is required,
+   when the output is a pointer to the input data.
    The number and lengths of netcdf dimensions are ndim and xdim (C-order).
    An error is raised for out-of-range values.
    Missing and NaN values are replaced by a fill value.
    Packing is performed if either scale or add are not NULL.
  */
-void *
+const void *
 R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, size_t *xdim,
           void *fill, double *scale, double *add);
 
