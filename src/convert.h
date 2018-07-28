@@ -58,8 +58,8 @@ typedef struct R_nc_buf R_nc_buf;
    Packing is performed if either scale or add are not NULL.
  */
 const void *
-R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, size_t *xdim,
-          void *fill, double *scale, double *add);
+R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
+          const void *fill, const double *scale, const double *add);
 
 
 /* Convert an array of netcdf external type (xtype) to R.
@@ -76,9 +76,9 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, size_t *xdim,
  */
 void * \
 R_nc_c2r_init (R_nc_buf *io,
-               int ncid, nc_type xtype, int ndim, size_t *xdim,
+               int ncid, nc_type xtype, int ndim, const size_t *xdim,
                int rawchar, int fitnum,
-               void *fill, double *scale, double *add)
+               const void *fill, const double *scale, const double *add);
 
 SEXP
 R_nc_c2r (R_nc_buf *io);

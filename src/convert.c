@@ -126,7 +126,7 @@ typedef struct {
 
 
 static char *
-R_nc_strsxp_char (SEXP rstr, int ndim, size_t *xdim)
+R_nc_strsxp_char (SEXP rstr, int ndim, const size_t *xdim)
 {
   size_t ii, strlen, cnt;
   char *carr, *thisstr;
@@ -186,7 +186,7 @@ R_nc_char_strsxp (R_nc_buf *io)
 
 
 static char *
-R_nc_raw_char (SEXP rarr, int ndim, size_t *xdim)
+R_nc_raw_char (SEXP rarr, int ndim, const size_t *xdim)
 {
   size_t cnt;
   char *carr;
@@ -217,7 +217,7 @@ R_nc_char_raw (R_nc_buf *io)
 
 
 static const char **
-R_nc_strsxp_str (SEXP rstr, int ndim, size_t *xdim)
+R_nc_strsxp_str (SEXP rstr, int ndim, const size_t *xdim)
 {
   size_t ii, cnt;
   cnt = R_nc_length (ndim, xdim);
@@ -285,8 +285,8 @@ R_nc_str_strsxp (R_nc_buf *io)
   NCITYPE, ITYPE, IFUN, NCOTYPE, OTYPE, \
   NATEST, MINTEST, MINVAL, MAXTEST, MAXVAL) \
 static const OTYPE* \
-FUN (SEXP rv, int ndim, size_t *xdim, \
-     OTYPE *fill, double *scale, double *add) \
+FUN (SEXP rv, int ndim, const size_t *xdim, \
+     const OTYPE *fill, const double *scale, const double *add) \
 { \
   size_t ii, cnt; \
   int erange=0; \
@@ -629,8 +629,8 @@ R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint64, unsigned long long);
 \*=============================================================================*/
 
 const void *
-R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, size_t *xdim,
-          void *fill, double *scale, double *add)
+R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
+          const void *fill, const double *scale, const double *add)
 {
   void *cv=NULL;
 
@@ -771,9 +771,9 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, size_t *xdim,
 
 
 void * \
-R_nc_c2r_init (R_nc_buf *io, int ncid, nc_type xtype, int ndim, size_t *xdim,
+R_nc_c2r_init (R_nc_buf *io, int ncid, nc_type xtype, int ndim, const size_t *xdim,
                int rawchar, int fitnum,
-               void *fill, double *scale, double *add)
+               const void *fill, const double *scale, const double *add)
 {
   /* Initialise the R_nc_buf */
   io->rxp = NULL;
