@@ -70,13 +70,21 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, size_t *xdim,
 /* Convert an array of netcdf external type (xtype) to R.
    Memory for the results is allocated by allocArray.
    The number and lengths of netcdf dimensions are ndim and xdim (C-order).
-   If fitnum is true (non-zero), the rv is the smallest R numeric type,
+   If fitnum is true (non-zero), rv is the smallest compatible R numeric type,
      otherwise rv is double precision.
+   If rawchar is true, NC_CHAR is returned to R as raw bytes, otherwise
+     all elements in the fastest-varying dimension are combined into R strings.
    Elements are set to missing if they equal the fill value.
    Unpacking is performed if either scale or add are not NULL.
  */
+R_nc_buf \
+R_nc_c2r_init (int ncid, nc_type xtype, int ndim, size_t *xdim,
+               int rawchar, int fitnum,
+               void *fill, double *scale, double *add)
+
 SEXP
-R_nc_c2r (void *cv, int ncid, nc_type xtype, int ndim, size_t *xdim, int fitnum,
+R_nc_c2r (R_nc_buf io, int ncid, nc_type xtype, int ndim, size_t *xdim,
+          int rawchar, int fitnum,
           void *fill, double *scale, double *add);
 
 

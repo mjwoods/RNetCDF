@@ -108,7 +108,7 @@ int isInt64(SEXP rv) {
 \*=============================================================================*/
 
 
-char *
+static char *
 R_nc_strsxp_char (SEXP rstr, int ndim, size_t *xdim)
 {
   size_t ii, strlen, cnt;
@@ -133,7 +133,7 @@ R_nc_strsxp_char (SEXP rstr, int ndim, size_t *xdim)
 }
 
 
-R_nc_buf
+static R_nc_buf
 R_nc_char_strsxp_init (int ndim, size_t *xdim)
 {
   R_nc_buf io;
@@ -145,7 +145,7 @@ R_nc_char_strsxp_init (int ndim, size_t *xdim)
 }
 
 
-SEXP
+static SEXP
 R_nc_char_strsxp (R_nc_buf io, int ndim, size_t *xdim)
 {
   size_t ii, cnt, clen, rlen;
@@ -171,7 +171,7 @@ R_nc_char_strsxp (R_nc_buf io, int ndim, size_t *xdim)
 }
 
 
-char *
+static char *
 R_nc_raw_char (SEXP rarr, int ndim, size_t *xdim)
 {
   size_t cnt;
@@ -186,7 +186,7 @@ R_nc_raw_char (SEXP rarr, int ndim, size_t *xdim)
 }
 
 
-R_nc_buf
+static R_nc_buf
 R_nc_char_raw_init (int ndim, size_t *xdim)
 {
   R_nc_buf io;
@@ -196,7 +196,7 @@ R_nc_char_raw_init (int ndim, size_t *xdim)
 }
 
 
-SEXP
+static SEXP
 R_nc_char_raw (R_nc_buf io, int ndim, size_t *xdim)
 {
   // Nothing to do!
@@ -204,7 +204,7 @@ R_nc_char_raw (R_nc_buf io, int ndim, size_t *xdim)
 }
 
 
-const char **
+static const char **
 R_nc_strsxp_str (SEXP rstr, int ndim, size_t *xdim)
 {
   size_t ii, cnt;
@@ -217,7 +217,7 @@ R_nc_strsxp_str (SEXP rstr, int ndim, size_t *xdim)
 }
 
 
-R_nc_buf
+static R_nc_buf
 R_nc_str_strsxp_init (int ndim, size_t *xdim)
 {
   R_nc_buf io;
@@ -229,7 +229,7 @@ R_nc_str_strsxp_init (int ndim, size_t *xdim)
 }
 
 
-SEXP
+static SEXP
 R_nc_str_strsxp (R_nc_buf io, int ndim, size_t *xdim)
 {
   size_t ii, nchar, cnt;
@@ -763,105 +763,161 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, size_t *xdim,
 }
 
 
-// TODO: We need a generic "init" routine as well (defined publicly).
+R_nc_buf \
+R_nc_c2r_init (int ncid, nc_type xtype, int ndim, size_t *xdim,
+               int rawchar, int fitnum,
+               void *fill, double *scale, double *add)
+{
+  R_nc_buf io;
+  switch (xtype) {
+    case NC_BYTE:
+    case NC_UBYTE:
+    case NC_SHORT:
+    case NC_USHORT:
+    case NC_INT:
+      if (fitnum && !scale && !add) {
+        io = R_nc_c2r_int_init (ndim, xdim);
+        break;
+      }
+    case NC_INT64:
+    case NC_UINT64:
+      if (fitnum && !scale && !add) {
+        io = R_nc_c2r_bit64_init (ndim, xdim);
+        break;
+      }
+    case NC_UINT:
+    case NC_FLOAT:
+    case NC_DOUBLE:
+      io = R_nc_c2r_dbl_init (ndim, xdim);
+      break;
+    case NC_CHAR:
+      if (rawchar) {
+        io = R_nc_char_raw_init (ndim, xdim);
+      } else {
+        io = R_nc_char_strsxp_init (ndim, xdim);
+      }
+      break;
+    case NC_STRING:
+      io = R_nc_str_strsxp_init (ndim, xdim);
+      break;
+    default:
+      R_nc_error (RNC_ETYPEDROP);
+  }
+  return io;
+}
 
 
 SEXP
-R_nc_c2r (void *cv, int ncid, nc_type xtype, int ndim, size_t *xdim,
+R_nc_c2r (R_nc_buf io, int ncid, nc_type xtype, int ndim, size_t *xdim,
           int rawchar, int fitnum,
           void *fill, double *scale, double *add)
 {
   SEXP rv=NULL;
-  int asInt;
+  int unpack;
 
-  asInt = ((fitnum == TRUE) && (scale == NULL) && (add == NULL));
+  unpack = (scale || add);
 
   /* Type conversions */
   switch (xtype) {
     case NC_BYTE:
-      if (asInt) {
-        rv = R_nc_c2r_schar_int (cv, ndim, xdim, fill, NULL, NULL);
+      if (unpack) {
+        rv = R_nc_c2r_unpack_schar (io, ndim, xdim, fill, scale, add);
+      } else if (fitnum) {
+        rv = R_nc_c2r_schar_int (io, ndim, xdim, fill);
       } else {
-        rv = R_nc_c2r_schar_dbl (cv, ndim, xdim, fill, scale, add);
+        rv = R_nc_c2r_schar_dbl (io, ndim, xdim, fill);
       }
       break;
     case NC_UBYTE:
-      if (asInt) {
-        rv = R_nc_c2r_uchar_int (cv, ndim, xdim, fill, NULL, NULL);
+      if (unpack) {
+        rv = R_nc_c2r_unpack_uchar (io, ndim, xdim, fill, scale, add);
+      } else if (fitnum) {
+        rv = R_nc_c2r_uchar_int (io, ndim, xdim, fill);
       } else {
-        rv = R_nc_c2r_uchar_dbl (cv, ndim, xdim, fill, scale, add);
+        rv = R_nc_c2r_uchar_dbl (io, ndim, xdim, fill);
       }
       break;
     case NC_SHORT:
-      if (asInt) {
-        rv = R_nc_c2r_short_int (cv, ndim, xdim, fill, NULL, NULL);
+      if (unpack) {
+        rv = R_nc_c2r_unpack_short (io, ndim, xdim, fill, scale, add);
+      } else if (fitnum) {
+        rv = R_nc_c2r_short_int (io, ndim, xdim, fill);
       } else {
-        rv = R_nc_c2r_short_dbl (cv, ndim, xdim, fill, scale, add);
+        rv = R_nc_c2r_short_dbl (io, ndim, xdim, fill);
       }
       break;
     case NC_USHORT:
-      if (asInt) {
-        rv = R_nc_c2r_ushort_int (cv, ndim, xdim, fill, NULL, NULL);
+      if (unpack) {
+        rv = R_nc_c2r_unpack_ushort (io, ndim, xdim, fill, scale, add);
+      } else if (fitnum) {
+        rv = R_nc_c2r_ushort_int (io, ndim, xdim, fill);
       } else {
-        rv = R_nc_c2r_ushort_dbl (cv, ndim, xdim, fill, scale, add);
+        rv = R_nc_c2r_ushort_dbl (io, ndim, xdim, fill);
       }
       break;
     case NC_INT:
-      if (asInt) {
-        rv = R_nc_c2r_int_int (cv, ndim, xdim, fill, NULL, NULL);
+      if (unpack) {
+        rv = R_nc_c2r_unpack_int (io, ndim, xdim, fill, scale, add);
+      } else if (fitnum) {
+        rv = R_nc_c2r_int_int (io, ndim, xdim, fill);
       } else {
-        rv = R_nc_c2r_int_dbl (cv, ndim, xdim, fill, scale, add);
+        rv = R_nc_c2r_int_dbl (io, ndim, xdim, fill);
       }
       break;
     case NC_UINT:
-      rv = R_nc_c2r_uint_dbl (cv, ndim, xdim, fill, scale, add);
+      if (unpack) {
+        rv = R_nc_c2r_unpack_uint (io, ndim, xdim, fill, scale, add);
+      } else {
+        rv = R_nc_c2r_uint_dbl (io, ndim, xdim, fill);
+      }
       break;
     case NC_FLOAT:
-      rv = R_nc_c2r_float_dbl (cv, ndim, xdim, fill, scale, add);
+      if (unpack) {
+        rv = R_nc_c2r_unpack_float (io, ndim, xdim, fill, scale, add);
+      } else {
+        rv = R_nc_c2r_float_dbl (io, ndim, xdim, fill);
+      }
       break;
     case NC_DOUBLE:
-      rv = R_nc_c2r_dbl_dbl (cv, ndim, xdim, fill, scale, add);
+      if (unpack) {
+        rv = R_nc_c2r_unpack_dbl (io, ndim, xdim, fill, scale, add);
+      } else {
+        rv = R_nc_c2r_dbl_dbl (io, ndim, xdim, fill, scale, add);
+      }
       break;
     case NC_INT64:
-      if (asInt) {
-        rv = R_nc_c2r_int64_bit64 (cv, ndim, xdim, fill, NULL, NULL);
+      if (unpack) {
+        rv = R_nc_c2r_unpack_int64 (io, ndim, xdim, fill, scale, add);
+      } else if (fitnum) {
+        rv = R_nc_c2r_int64_bit64 (io, ndim, xdim, fill);
       } else {
-        rv = R_nc_c2r_int64_dbl (cv, ndim, xdim, fill, scale, add);
+        rv = R_nc_c2r_int64_dbl (io, ndim, xdim, fill);
       }
       break;
     case NC_UINT64:
-      if (asInt) {
-        rv = R_nc_c2r_uint64_bit64 (cv, ndim, xdim, fill, NULL, NULL);
+      if (unpack) {
+        rv = R_nc_c2r_unpack_uint64 (io, ndim, xdim, fill, scale, add);
+      } else if (fitnum) {
+        rv = R_nc_c2r_uint64_bit64 (io, ndim, xdim, fill);
       } else {
-        rv = R_nc_c2r_uint64_dbl (cv, ndim, xdim, fill, scale, add);
+        rv = R_nc_c2r_uint64_dbl (io, ndim, xdim, fill);
       }
       break;
     case NC_CHAR:
       if (rawchar) {
-        rv = R_nc_char_raw (cv, ndim, xdim);
+        rv = R_nc_char_raw (io, ndim, xdim);
       } else {
-        rv = R_nc_char_strsxp (cv, ndim, xdim);
+        rv = R_nc_char_strsxp (io, ndim, xdim);
       }
       break;
     case NC_STRING:
-      rv = R_nc_str_strsxp (cv, ndim, xdim);
+      rv = R_nc_str_strsxp (io, ndim, xdim);
       break;
     default:
       R_nc_error (RNC_ETYPEDROP);
   }
   return rv;
 }
-
-// TODO - Provide separate memory allocation and conversion routines?
-//   Reading: - Allocate SEXP for final data and optional temporary;
-//              return R_nc_buf containing SEXP and void *.
-//            - Read into void *;
-//            - Convert void * to final result:
-//              * in-place for atomic types (which never decrease in size)
-//              * no copying for raw, int, double, bit64.
-//              * Copying must occur for strings and some user-defined types.
-//   Writing: - Convert SEXP to void * (may be trivial if no fill or type conversion)
-//            - Write void *
 
 
 /*=============================================================================*\
