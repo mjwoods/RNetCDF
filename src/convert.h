@@ -44,6 +44,11 @@
 int isInt64(SEXP rv);
 
 
+/* Allocate array with dimensions specified in C order */
+SEXP
+R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount);
+
+
 /* Structure whose members are used by R_nc_c2r_init and R_nc_c2r.
    Other functions should not access members directly. */
 typedef struct {

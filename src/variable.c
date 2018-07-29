@@ -284,30 +284,6 @@ R_nc_pack_att (int ncid, int varid, double **scale, double **add)
 }
 
 
-/* Allocate array with dimensions specified in C order */
-static SEXP
-R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount) {
-  SEXP result, rdim;
-  int *intp, ii, jj;
-  if (ndims > 0) {
-    rdim = R_nc_protect( allocVector (INTSXP, ndims));
-    intp = INTEGER (rdim);
-    for ( ii=0, jj=ndims-1; ii<ndims; ii++, jj-- ) {
-      if (ccount[jj] <= INT_MAX) {
-        intp[ii] = ccount[jj];
-      } else {
-        RERROR ("R array dimension cannot exceed range of type int");
-      }
-    }
-    result = R_nc_protect (allocArray (type, rdim));
-  } else {
-    /* R scalar or vector with no dimensions */
-    result = R_nc_protect (allocVector (type, 1));
-  }
-  return result;
-}
-
-
 /* Reshape R array with dimensions specified in C order */
 static void
 R_nc_reshape (SEXP array, int ndims, const size_t *ccount) {
