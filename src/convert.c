@@ -244,6 +244,7 @@ static const char **
 R_nc_strsxp_str (SEXP rstr, int ndim, const size_t *xdim)
 {
   size_t ii, cnt;
+  char **cstr;
   cnt = R_nc_length (ndim, xdim);
   cstr = (char **) R_alloc (cnt, sizeof(size_t));
   for (ii=0; ii<cnt; ii++) {
@@ -319,18 +320,17 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
   size_t ii, cnt; \
   int erange=0; \
   double factor, offset; \
-  const ITYPE* in; \
-  OTYPE fillval; \
-  OTYPE restrict *out; \
+  const ITYPE *in; \
+  OTYPE fillval, *out; \
   in = (ITYPE *) IFUN (rv); \
-  cnt = R_nc_length (ndim, xsize); \
+  cnt = R_nc_length (ndim, xdim); \
   if (xlength (rv) < cnt) { \
     RERROR (RNC_EDATALEN); \
   } \
   if (fill || scale || add || (NCITYPE != NCOTYPE)) { \
     out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE)); \
   } else { \
-    out = (ITYPE *) IFUN (rv); \
+    out = (OTYPE *) IFUN (rv); \
   } \
   if (scale) { \
     factor = *scale; \
@@ -513,7 +513,7 @@ FUN (R_nc_buf *io) \
   out = (OTYPE *) io->buf; \
   if (NCITYPE == NCOTYPE) { \
     if (io->fill) { \
-      fillval = *(io->fill); \
+      fillval = *((ITYPE *) io->fill); \
       if (fillval != fillval) { \
 	for (ii=cnt-1; ii>=0; ii--) { \
 	  if (in[ii] != in[ii]) { \
@@ -530,7 +530,7 @@ FUN (R_nc_buf *io) \
     } \
   } else { \
     if (io->fill) { \
-      fillval = *(io->fill); \
+      fillval = *((ITYPE *) io->fill); \
       if (fillval != fillval) { \
 	for (ii=cnt-1; ii>=0; ii--) { \
 	  if (in[ii] != in[ii]) { \
@@ -615,7 +615,7 @@ FUN (R_nc_buf *io) \
     offset = 0.0; \
   } \
   if (io->fill) { \
-    fillval = *(io->fill); \
+    fillval = *((ITYPE *) io->fill); \
     if (fillval != fillval) { \
       for (ii=cnt-1; ii>=0; ii--) { \
 	if (in[ii] != in[ii]) { \
@@ -835,17 +835,17 @@ R_nc_c2r_init (R_nc_buf *io, int ncid, nc_type xtype, int ndim, const size_t *xd
     case NC_UINT:
     case NC_FLOAT:
     case NC_DOUBLE:
-      io = R_nc_c2r_dbl_init (io);
+      R_nc_c2r_dbl_init (io);
       break;
     case NC_CHAR:
       if (rawchar) {
-        io = R_nc_char_raw_init (io);
+        R_nc_char_raw_init (io);
       } else {
-        io = R_nc_char_strsxp_init (io);
+        R_nc_char_strsxp_init (io);
       }
       break;
     case NC_STRING:
-      io = R_nc_str_strsxp_init (io);
+      R_nc_str_strsxp_init (io);
       break;
     default:
       R_nc_error (RNC_ETYPEDROP);
@@ -857,7 +857,7 @@ R_nc_c2r_init (R_nc_buf *io, int ncid, nc_type xtype, int ndim, const size_t *xd
 SEXP
 R_nc_c2r (R_nc_buf *io)
 {
-  int unpack;
+  int unpack, fitnum;
 
   unpack = (io->scale || io->add);
 
@@ -866,7 +866,7 @@ R_nc_c2r (R_nc_buf *io)
     case NC_BYTE:
       if (unpack) {
         R_nc_c2r_unpack_schar (io);
-      } else if (fitnum) {
+      } else if (io->fitnum) {
         R_nc_c2r_schar_int (io);
       } else {
         R_nc_c2r_schar_dbl (io);
@@ -875,7 +875,7 @@ R_nc_c2r (R_nc_buf *io)
     case NC_UBYTE:
       if (unpack) {
         R_nc_c2r_unpack_uchar (io);
-      } else if (fitnum) {
+      } else if (io->fitnum) {
         R_nc_c2r_uchar_int (io);
       } else {
         R_nc_c2r_uchar_dbl (io);
@@ -884,7 +884,7 @@ R_nc_c2r (R_nc_buf *io)
     case NC_SHORT:
       if (unpack) {
         R_nc_c2r_unpack_short (io);
-      } else if (fitnum) {
+      } else if (io->fitnum) {
         R_nc_c2r_short_int (io);
       } else {
         R_nc_c2r_short_dbl (io);
@@ -893,7 +893,7 @@ R_nc_c2r (R_nc_buf *io)
     case NC_USHORT:
       if (unpack) {
         R_nc_c2r_unpack_ushort (io);
-      } else if (fitnum) {
+      } else if (io->fitnum) {
         R_nc_c2r_ushort_int (io);
       } else {
         R_nc_c2r_ushort_dbl (io);
@@ -902,7 +902,7 @@ R_nc_c2r (R_nc_buf *io)
     case NC_INT:
       if (unpack) {
         R_nc_c2r_unpack_int (io);
-      } else if (fitnum) {
+      } else if (io->fitnum) {
         R_nc_c2r_int_int (io);
       } else {
         R_nc_c2r_int_dbl (io);
@@ -932,7 +932,7 @@ R_nc_c2r (R_nc_buf *io)
     case NC_INT64:
       if (unpack) {
         R_nc_c2r_unpack_int64 (io);
-      } else if (fitnum) {
+      } else if (io->fitnum) {
         R_nc_c2r_int64_bit64 (io);
       } else {
         R_nc_c2r_int64_dbl (io);
@@ -941,14 +941,14 @@ R_nc_c2r (R_nc_buf *io)
     case NC_UINT64:
       if (unpack) {
         R_nc_c2r_unpack_uint64 (io);
-      } else if (fitnum) {
+      } else if (io->fitnum) {
         R_nc_c2r_uint64_bit64 (io);
       } else {
         R_nc_c2r_uint64_dbl (io);
       }
       break;
     case NC_CHAR:
-      if (rawchar) {
+      if (io->rawchar) {
         R_nc_char_raw (io);
       } else {
         R_nc_char_strsxp (io);
@@ -990,16 +990,15 @@ R_NC_REVERSE(R_nc_rev_size, size_t);
 /* Define R_nc_rev for other types as needed */
 
 
-/* Copy the leading nr elements of R vector rv to C vector cv,
-   converting type to TYPE and reversing from Fortran to C storage order.
+/* Copy the leading nr elements of R vector rv into a new C vector of type TYPE,
+   reversing from Fortran to C storage order.
    Elements beyond the length of rv and non-finite values are stored as fillval.
  */
 #define R_NC_DIM_R2C(FUN, TYPENAME, TYPE) \
-void \
-FUN (SEXP rv, size_t nr, TYPE fillval, TYPE *cv) \
+TYPE * \
+FUN (SEXP rv, size_t nr, TYPE fillval) \
 { \
-  double *realp; \
-  int *intp; \
+  TYPE *cv; \
   size_t nc, ii; \
 \
   /* Number of elements to copy must not exceed length of rv */ \
@@ -1008,12 +1007,11 @@ FUN (SEXP rv, size_t nr, TYPE fillval, TYPE *cv) \
 \
   /* Copy elements */ \
   if (isReal (rv)) { \
-    realp = REAL (rv); \
-    R_nc_r2c_dbl_##TYPENAME (realp, cv, nc, &fillval, NULL, NULL); \
+    cv = R_nc_r2c_dbl_##TYPENAME (rv, 1, &nc, &fillval, NULL, NULL); \
   } else if (isInteger (rv)) { \
-    intp = INTEGER (rv); \
-    R_nc_r2c_int_##TYPENAME (intp, cv, nc, &fillval, NULL, NULL); \
+    cv = R_nc_r2c_int_##TYPENAME (rv, 1, &nc, &fillval, NULL, NULL); \
   } else { \
+    cv = NULL; \
     nc = 0; \
   } \
 \
@@ -1024,6 +1022,7 @@ FUN (SEXP rv, size_t nr, TYPE fillval, TYPE *cv) \
 \
   /* Reverse from Fortran to C order */ \
   R_nc_rev_##TYPENAME (cv, nr); \
+  return cv; \
 }
 
 R_NC_DIM_R2C (R_nc_dim_r2c_int, int, int);

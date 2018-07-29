@@ -189,8 +189,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
       } else {
         ndims = length (dimsizes);
         if (ndims > 0) {
-          csizes = (void *) R_alloc (ndims, sizeof (int));
-          R_nc_dim_r2c_int(dimsizes, ndims, -1, csizes);
+          csizes = R_nc_dim_r2c_int(dimsizes, ndims, -1);
         }
       }
     } else {

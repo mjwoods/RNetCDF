@@ -424,10 +424,8 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
 
   /*-- Convert start and count from R to C indices ----------------------------*/
   if (ndims > 0) {
-    cstart = (void *) R_alloc (ndims, sizeof (size_t));
-    ccount = (void *) R_alloc (ndims, sizeof (size_t));
-    R_nc_dim_r2c_size (start, ndims, 0, cstart);
-    R_nc_dim_r2c_size (count, ndims, 0, ccount);
+    cstart = R_nc_dim_r2c_size (start, ndims, 0);
+    ccount = R_nc_dim_r2c_size (count, ndims, 0);
     for (ii=0; ii<ndims; ii++) {
       cstart[ii] -= 1;
     }
@@ -547,10 +545,8 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
 
   /*-- Convert start and count from R to C indices ----------------------------*/
   if (ndims > 0) {
-    cstart = (void *) R_alloc (ndims, sizeof (size_t));
-    ccount = (void *) R_alloc (ndims, sizeof (size_t));
-    R_nc_dim_r2c_size (start, ndims, 0, cstart);
-    R_nc_dim_r2c_size (count, ndims, 0, ccount);
+    cstart = R_nc_dim_r2c_size (start, ndims, 0);
+    ccount = R_nc_dim_r2c_size (count, ndims, 0);
     for (ii=0; ii<ndims; ii++) {
       cstart[ii] -= 1;
     }

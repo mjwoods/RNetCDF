@@ -120,8 +120,8 @@ R_NC_REVERSE_H(R_nc_rev_size, size_t);
    Elements beyond the length of rv and non-finite values are stored as fillval.
  */
 #define R_NC_DIM_R2C_H(FUN, TYPE) \
-void \
-FUN (SEXP rv, size_t nr, TYPE fillval, TYPE *cv);
+TYPE * \
+FUN (SEXP rv, size_t nr, TYPE fillval);
 
 R_NC_DIM_R2C_H (R_nc_dim_r2c_int, int);
 R_NC_DIM_R2C_H (R_nc_dim_r2c_size, size_t);
