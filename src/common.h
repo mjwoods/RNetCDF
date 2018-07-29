@@ -38,7 +38,7 @@
 
 #define RRETURN(object) { R_nc_unprotect (); return (object); }
 
-#define RERROR(msg) { R_nc_error (msg); return R_NilValue; }
+#define RERROR(msg) { R_nc_error (msg); return NULL; }
 
 static const char RNC_EDATALEN[]="Not enough data", \
   RNC_EDATATYPE[]="Incompatible data for external type", \
