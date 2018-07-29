@@ -44,6 +44,12 @@
 int isInt64(SEXP rv);
 
 
+/* Find total number of elements in an array from dimension lengths.
+   Result is 1 for a scalar or product of dimensions for an array. */
+size_t
+R_nc_length (int ndims, const size_t *count);
+
+
 /* Allocate array with dimensions specified in C order */
 SEXP
 R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount);

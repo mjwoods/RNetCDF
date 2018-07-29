@@ -107,6 +107,20 @@ int isInt64(SEXP rv) {
  *  Memory management.
 \*=============================================================================*/
 
+size_t
+R_nc_length (int ndims, const size_t *count)
+{
+  int ii;
+  size_t length;
+
+  length = 1;
+  for ( ii=0; ii<ndims; ii++ ) {
+    length *= count[ii]; 
+  }
+  return (length);
+}
+
+
 SEXP
 R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount) {
   SEXP result, rdim;
