@@ -259,6 +259,10 @@ R_nc_str_strsxp (R_nc_buf *io)
       SET_STRING_ELT (io->rxp, ii, mkChar (cstr[ii]));
     }
   }
+  /* Free pointers to strings created by netcdf */
+  if (cnt > 0) {
+    R_nc_check (nc_free_string (cnt, io->buf));
+  }
 }
 
 
