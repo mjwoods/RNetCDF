@@ -44,8 +44,17 @@
 int isInt64(SEXP rv);
 
 
-/* Structure for buffers used in IO. */
-typedef struct R_nc_buf R_nc_buf;
+/* Structure whose members are used by R_nc_c2r_init and R_nc_c2r.
+   Other functions should not access members directly. */
+typedef struct {
+  SEXP rxp;
+  void *buf;
+  nc_type xtype;
+  int ncid, ndim, rawchar, fitnum;
+  size_t *xdim;
+  void *fill;
+  double *scale, *add;
+  } R_nc_buf;
 
 
 /* Convert an R vector to a netcdf external type (xtype).

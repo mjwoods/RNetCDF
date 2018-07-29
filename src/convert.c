@@ -105,22 +105,6 @@ int isInt64(SEXP rv) {
 
 
 /*=============================================================================*\
- *  Buffer management.
-\*=============================================================================*/
-
-/* Structure whose members are populated by R_nc_c2r_init */
-typedef struct {
-  SEXP rxp;
-  void *buf;
-  nc_type xtype;
-  int ncid, ndim, rawchar, fitnum;
-  size_t *xdim;
-  void *fill;
-  double *scale, *add;
-  } R_nc_buf;
-
-
-/*=============================================================================*\
  *  String conversions.
 \*=============================================================================*/
 
