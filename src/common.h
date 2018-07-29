@@ -112,4 +112,11 @@ R_nc_redef (int ncid);
 int
 R_nc_enddef (int ncid);
 
+
+/* Find total number of elements in an array from dimension lengths.
+   Result is 1 for a scalar or product of dimensions for an array. */
+size_t
+R_nc_length (int ndims, const size_t *count);
+
+
 #endif /* RNC_COMMON_H_INCLUDED */

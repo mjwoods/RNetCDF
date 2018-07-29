@@ -311,4 +311,17 @@ R_nc_enddef (int ncid)
 }
 
 
+size_t
+R_nc_length (int ndims, const size_t *count)
+{
+  int ii;
+  size_t length;
+
+  length = 1;
+  for ( ii=0; ii<ndims; ii++ ) {
+    length *= count[ii]; 
+  }
+  return (length);
+}
+
 

@@ -57,22 +57,6 @@
 #include "RNetCDF.h"
 
 
-/* Find total number of elements in an array from dimension lengths.
-   Result is 1 for a scalar or product of dimensions for an array. */
-static size_t
-R_nc_length (int ndims, const size_t *count)
-{
-  int ii;
-  size_t length;
-
-  length = 1;
-  for ( ii=0; ii<ndims; ii++ ) {
-    length *= count[ii]; 
-  }
-  return (length);
-}
-
-
 /*-----------------------------------------------------------------------------*\
  *  R_nc_def_var()
 \*-----------------------------------------------------------------------------*/
