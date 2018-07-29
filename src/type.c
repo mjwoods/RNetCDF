@@ -204,7 +204,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
 
   /*-- Insert the member or field ---------------------------------------------*/
   if (class == NC_ENUM) {
-    R_nc_check (nc_insert_enum (ncid, typeid, fldname, &tmpval));
+    R_nc_check (nc_insert_enum (ncid, typeid, fldname, tmpval));
   } else if (class == NC_COMPOUND) {
     if (ndims > 0) {
       R_nc_check (nc_insert_array_compound (ncid, typeid, fldname,
