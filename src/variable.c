@@ -367,22 +367,14 @@ R_nc_get_var_char (int ncid, int varid, int ndims,
                   const size_t *cstart, const size_t *ccount)
 {
   SEXP result;
-  size_t strcnt, strlen;
   char *charbuf;
-  if (ndims > 0) {
-    /* Omit fastest-varying dimension from R character array */
-    strlen = ccount[ndims-1];
-  } else {
-    /* Scalar character */
-    strlen = 1;
-  }
-  result = R_nc_allocArray (STRSXP, ndims-1, ccount);
-  strcnt = xlength (result);
-  if (strcnt > 0) {
-    charbuf = R_alloc (strcnt*strlen+1, sizeof (char));
+  R_nc_buf io;
+  charbuf = R_nc_c2r_init (&io, ncid, NC_CHAR, ndims, ccount,
+              0, 0, NULL, NULL, NULL);
+  if (R_nc_length (ndims, ccount) > 0) {
     R_nc_check (nc_get_vara_text (ncid, varid, cstart, ccount, charbuf));
-    R_nc_char_strsxp (charbuf, result, strlen, 0, strcnt);
   }
+  result = R_nc_c2r (&io);
   return result;
 }
 
@@ -392,16 +384,14 @@ R_nc_get_var_string (int ncid, int varid, int ndims,
                      const size_t *cstart, const size_t *ccount)
 {
   SEXP result;
-  size_t strcnt;
   char **strbuf;
-  result = R_nc_allocArray (STRSXP, ndims, ccount);
-  strcnt = xlength (result);
-  if (strcnt > 0) {
-    strbuf = (void *) R_alloc (strcnt, sizeof(char *));
+  R_nc_buf io;
+  strbuf = R_nc_c2r_init (&io, ncid, NC_STRING, ndims, ccount,
+              0, 0, NULL, NULL, NULL);
+  if (R_nc_length (ndims, ccount) > 0) {
     R_nc_check (nc_get_vara_string (ncid, varid, cstart, ccount, strbuf));
-    R_nc_str_strsxp (strbuf, result, 0, strcnt);
-    R_nc_check (nc_free_string (strcnt, strbuf));
   }
+  result = R_nc_c2r (&io);
   return result;
 }
 
@@ -635,26 +625,16 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
   case STRSXP:
     switch (xtype) {
     case NC_CHAR:
-      if (ndims > 0) {
-        /* Store strings along the fastest varying dimension */
-        strlen = ccount[ndims-1];
-        strcnt = R_nc_length (ndims-1, ccount);
-      } else {
-        /* Scalar character is a single string */
-        strlen = 1;
-        strcnt = 1;
+      if (R_nc_length (ndims, ccount) > 0) {
+        charbuf = R_nc_r2c (data, ncid, xtype, ndims, ccount, NULL, NULL, NULL);
+        R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount, charbuf));
       }
-      if (xlength (data) < strcnt) {
-        RERROR (RNC_EDATALEN);
-      }
-      charbuf = R_alloc (strcnt*strlen, sizeof (char));
-      R_nc_strsxp_char (data, charbuf, 0, strcnt, strlen);
-      R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount, charbuf));
       RRETURN (R_NilValue);
     case NC_STRING:
-      strbuf = (void *) R_alloc (arrlen, sizeof(char *));
-      R_nc_strsxp_str (data, strbuf, 0, arrlen);
-      R_nc_check (nc_put_vara_string (ncid, varid, cstart, ccount, strbuf));
+      if (R_nc_length (ndims, ccount) > 0) {
+        strbuf = R_nc_r2c (data, ncid, xtype, ndims, ccount, NULL, NULL, NULL);
+        R_nc_check (nc_put_vara_string (ncid, varid, cstart, ccount, strbuf));
+      }
       RRETURN (R_NilValue);
     }
     break;

@@ -169,12 +169,13 @@ R_nc_get_att_char (int ncid, int varid, const char *attname, size_t cnt)
 {
   SEXP result;
   char *charbuf;
-  result = R_nc_protect (allocVector (STRSXP, 1));
+  R_nc_buf io;
+  charbuf = R_nc_c2r_init (&io, ncid, NC_CHAR, 1, &cnt,
+                           0, 0, NULL, NULL, NULL);
   if (cnt > 0) {
-    charbuf = R_alloc (cnt + 1, sizeof (char));
     R_nc_check (nc_get_att_text (ncid, varid, attname, charbuf));
-    R_nc_char_strsxp (charbuf, result, cnt, 0, 1);
   }
+  result = R_nc_c2r (&io);
   return result;
 }
 
@@ -184,13 +185,13 @@ R_nc_get_att_string (int ncid, int varid, const char *attname, size_t cnt)
 {
   SEXP result;
   char **strbuf;
-  result = R_nc_protect (allocVector (STRSXP, cnt));
+  R_nc_buf io;
+  strbuf = R_nc_c2r_init (&io, ncid, NC_STRING, 1, &cnt,
+                          0, 0, NULL, NULL, NULL);
   if (cnt > 0) {
-    strbuf = (void *) R_alloc (cnt, sizeof(char *));
     R_nc_check (nc_get_att_string (ncid, varid, attname, strbuf));
-    R_nc_str_strsxp (strbuf, result, 0, cnt);
-    R_nc_check (nc_free_string (cnt, strbuf));
   }
+  result = R_nc_c2r (&io);
   return result;
 }
 
@@ -398,9 +399,10 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
       RRETURN (R_NilValue);
     case NC_STRING:
       cnt = xlength (data);
-      strbuf = (void *) R_alloc (cnt, sizeof(char *));
-      R_nc_strsxp_str (data, strbuf, 0, cnt);
-      R_nc_check (nc_put_att_string (ncid, varid, attname, cnt, strbuf));
+      if (cnt > 0) {
+        strbuf = R_nc_r2c (data, ncid, xtype, 1, &cnt, NULL, NULL, NULL);
+        R_nc_check (nc_put_att_string (ncid, varid, attname, cnt, strbuf));
+      }
       RRETURN (R_NilValue);
     }
     break;
