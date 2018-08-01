@@ -170,7 +170,7 @@ R_nc_get_att_char (int ncid, int varid, const char *attname, size_t cnt)
   SEXP result;
   char *charbuf;
   R_nc_buf io;
-  charbuf = R_nc_c2r_init (&io, ncid, NC_CHAR, 1, &cnt,
+  charbuf = R_nc_c2r_init (&io, ncid, NC_CHAR, -1, &cnt,
                            0, 0, NULL, NULL, NULL);
   if (cnt > 0) {
     R_nc_check (nc_get_att_text (ncid, varid, attname, charbuf));
@@ -186,7 +186,7 @@ R_nc_get_att_string (int ncid, int varid, const char *attname, size_t cnt)
   SEXP result;
   char **strbuf;
   R_nc_buf io;
-  strbuf = R_nc_c2r_init (&io, ncid, NC_STRING, 1, &cnt,
+  strbuf = R_nc_c2r_init (&io, ncid, NC_STRING, -1, &cnt,
                           0, 0, NULL, NULL, NULL);
   if (cnt > 0) {
     R_nc_check (nc_get_att_string (ncid, varid, attname, strbuf));

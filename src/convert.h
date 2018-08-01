@@ -45,12 +45,18 @@ int isInt64(SEXP rv);
 
 
 /* Find total number of elements in an array from dimension lengths.
-   Result is 1 for a scalar or product of dimensions for an array. */
+   Result is 1 for a scalar or product of dimensions for an array.
+   The special case ndims < 0 implies a vector of length count[0].
+ */
 size_t
 R_nc_length (int ndims, const size_t *count);
 
 
-/* Allocate array with dimensions specified in C order */
+/* Allocate array with dimensions specified in C order.
+   ndims > 0 implies an array with ndims dimension lengths in ccount[].
+   ndims == 0 implies a scalar (vector of length 1).
+   ndims < 0 implies a dimensionless vector of length ccount[0].
+ */
 SEXP
 R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount);
 
@@ -87,6 +93,7 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
    returning a pointer that can be used in netcdf read/write functions.
    The C to R conversion is performed by R_nc_c2r.
    The number and lengths of netcdf dimensions are ndim and xdim (C-order).
+   The special case ndims < 0 gives a vector (no dim attribute) of length xdim[0].
    If fitnum is true (non-zero), rv is the smallest compatible R numeric type,
      otherwise rv is double precision.
    If rawchar is true, NC_CHAR is returned to R as raw bytes, otherwise

@@ -113,6 +113,11 @@ R_nc_length (int ndims, const size_t *count)
   int ii;
   size_t length;
 
+  if (ndims < 0) {
+    /* Vector of length count[0] */
+    ndims = 1;
+  }
+
   length = 1;
   for ( ii=0; ii<ndims; ii++ ) {
     length *= count[ii]; 
@@ -136,9 +141,12 @@ R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount) {
       }
     }
     result = R_nc_protect (allocArray (type, rdim));
-  } else {
-    /* R scalar or vector with no dimensions */
+  } else if (ndims == 0) {
+    /* R scalar with no dimensions */
     result = R_nc_protect (allocVector (type, 1));
+  } else {
+    /* R vector of length ccount[0] without a dimension attribute */
+    result = R_nc_protect (allocVector (type, ccount[0]));
   }
   return result;
 }
@@ -158,9 +166,13 @@ R_nc_strsxp_char (SEXP rstr, int ndim, const size_t *xdim)
     /* Omit fastest-varying dimension from R character array */
     strlen = xdim[ndim-1];
     cnt = R_nc_length (ndim-1, xdim);
-  } else {
+  } else if (ndim == 0) {
     /* Scalar character */
     strlen = 1;
+    cnt = 1;
+  } else {
+    /* Single string */
+    strlen = xdim[0];
     cnt = 1;
   }
   if (xlength (rstr) < cnt) {
@@ -178,8 +190,13 @@ static void
 R_nc_char_strsxp_init (R_nc_buf *io)
 {
   size_t cnt;
+  if (io->ndim > 0) {
+    io->rxp = R_nc_allocArray (STRSXP, (io->ndim)-1, io->xdim);
+  } else {
+    /* Single character or string */
+    io->rxp = R_nc_allocArray (STRSXP, 0, io->xdim);
+  }
   cnt = R_nc_length (io->ndim, io->xdim);
-  io->rxp = R_nc_allocArray (STRSXP, (io->ndim)-1, io->xdim);
   io->buf = R_alloc (cnt, sizeof (char));
 }
 
@@ -192,9 +209,12 @@ R_nc_char_strsxp (R_nc_buf *io)
   if (io->ndim > 0) {
     /* Omit fastest-varying dimension from R character array */
     clen = io->xdim[(io->ndim)-1];
-  } else {
+  } else if (io->ndim == 0) {
     /* Scalar character */
     clen = 1;
+  } else {
+    /* Single string */
+    clen = io->xdim[0];
   }
   rlen = (clen <= RNC_CHARSXP_MAXLEN) ? clen : RNC_CHARSXP_MAXLEN;
   cnt = xlength (io->rxp);
