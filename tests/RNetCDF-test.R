@@ -216,7 +216,6 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     cat("Read NC_STRING variable attribute ...")
     x <- att_text2
     y <- att.get.nc(nc, "temperature", "string_att")
-    dim(x) <- length(x)
     tally <- testfun(x,y,tally)
 
     if (has_bit64) {
