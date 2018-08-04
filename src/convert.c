@@ -263,6 +263,9 @@ R_nc_strsxp_str (SEXP rstr, int ndim, const size_t *xdim)
   size_t ii, cnt;
   const char **cstr;
   cnt = R_nc_length (ndim, xdim);
+  if (xlength (rstr) < cnt) {
+    RERROR (RNC_EDATALEN);
+  }
   cstr = (const char **) R_alloc (cnt, sizeof(size_t));
   for (ii=0; ii<cnt; ii++) {
     cstr[ii] = CHAR( STRING_ELT (rstr, ii));
