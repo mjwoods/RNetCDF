@@ -409,15 +409,20 @@ SEXP
 R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
               SEXP rawchar, SEXP fitnum)
 {
-  int ncid, varid, ndims, ii;
+  int ncid, varid, ndims, ii, israw, isfit;
   size_t *cstart=NULL, *ccount=NULL;
   nc_type xtype;
   SEXP result=R_NilValue;
+  void *buf;
+  R_nc_buf io;
 
-  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  /*-- Convert arguments ------------------------------------------------------*/
   ncid = asInteger (nc);
 
   R_nc_check (R_nc_var_id (var, ncid, &varid));
+
+  israw = (asLogical (rawchar) == TRUE);
+  isfit = (asLogical (fitnum) == TRUE);
 
   /*-- Get type and rank of the variable --------------------------------------*/
   R_nc_check (nc_inq_var (ncid, varid, NULL, &xtype, &ndims, NULL, NULL));
@@ -435,40 +440,13 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   R_nc_check (R_nc_enddef (ncid));
 
   /*-- Allocate memory and read variable from file ----------------------------*/
-  switch (xtype) {
-    case NC_CHAR:
-      if (asLogical (rawchar) == TRUE) {
-	result = R_nc_get_var_raw (ncid, varid, ndims, cstart, ccount);
-      } else {
-	result = R_nc_get_var_char (ncid, varid, ndims, cstart, ccount);
-      }
-      break;
-    case NC_STRING:
-      result = R_nc_get_var_string (ncid, varid, ndims, cstart, ccount);
-      break;
-    case NC_BYTE:
-    case NC_UBYTE:
-    case NC_SHORT:
-    case NC_USHORT:
-    case NC_INT:
-      if (asLogical (fitnum) == TRUE) {
-	result = R_nc_get_var_int (ncid, varid, ndims, cstart, ccount);
-	break;
-      }
-    case NC_INT64:
-    case NC_UINT64:
-      if (asLogical (fitnum) == TRUE) {
-	result = R_nc_get_var_int64 (ncid, varid, ndims, cstart, ccount);
-	break;
-      }
-    case NC_UINT:
-    case NC_FLOAT:
-    case NC_DOUBLE:
-      result = R_nc_get_var_double (ncid, varid, ndims, cstart, ccount);
-      break;
-    default:
-      RERROR (RNC_ETYPEDROP);
+  buf = R_nc_c2r_init (&io, ncid, xtype, ndims, ccount,
+                       israw, isfit, NULL, NULL, NULL);
+
+  if (R_nc_length (ndims, ccount) > 0) {
+    R_nc_check (nc_get_vara (ncid, varid, cstart, ccount, buf));
   }
+  result = R_nc_c2r (&io);
 
   RRETURN (result);
 }
