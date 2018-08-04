@@ -242,13 +242,15 @@ R_nc_get_att_double (int ncid, int varid, const char *attname, size_t cnt)
 SEXP
 R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
 {
-  int ncid, varid;
+  int ncid, varid, israw, isfit;
   char attname[NC_MAX_NAME+1];
   size_t cnt;
   nc_type xtype;
   SEXP result;
+  void *buf;
+  R_nc_buf io;
 
-  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  /*-- Convert arguments ------------------------------------------------------*/
   ncid = asInteger (nc);
 
   if (R_nc_strcmp(var, "NC_GLOBAL")) {
@@ -259,6 +261,9 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
 
   R_nc_check (R_nc_att_name (att, ncid, varid, attname));
 
+  israw = (asLogical (rawchar) == TRUE);
+  isfit = (asLogical (fitnum) == TRUE);
+
   /*-- Get the attribute's type and size --------------------------------------*/
   R_nc_check(nc_inq_att (ncid, varid, attname, &xtype, &cnt));
 
@@ -266,40 +271,12 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
   R_nc_check (R_nc_enddef (ncid));
 
   /*-- Allocate memory and read attribute from file ---------------------------*/
-  switch (xtype) {
-    case NC_CHAR:
-      if (asLogical (rawchar) == TRUE) {
-	result = R_nc_get_att_raw (ncid, varid, attname, cnt);
-      } else {
-	result = R_nc_get_att_char (ncid, varid, attname, cnt);
-      }
-      break;
-    case NC_STRING:
-      result = R_nc_get_att_string (ncid, varid, attname, cnt);
-      break;
-    case NC_BYTE:
-    case NC_UBYTE:
-    case NC_SHORT:
-    case NC_USHORT:
-    case NC_INT:
-      if (asLogical (fitnum) == TRUE) {
-	result = R_nc_get_att_int (ncid, varid, attname, cnt);
-	break;
-      }
-    case NC_INT64:
-    case NC_UINT64:
-      if (asLogical (fitnum) == TRUE) {
-	result = R_nc_get_att_int64 (ncid, varid, attname, cnt);
-	break;
-      }
-    case NC_UINT:
-    case NC_FLOAT:
-    case NC_DOUBLE:
-      result = R_nc_get_att_double (ncid, varid, attname, cnt);
-      break;
-    default:
-      RERROR (RNC_ETYPEDROP);
+  buf = R_nc_c2r_init (&io, ncid, xtype, -1, &cnt,
+                       israw, isfit, NULL, NULL, NULL);
+  if (cnt > 0) {
+    R_nc_check (nc_get_att (ncid, varid, attname, buf));
   }
+  result = R_nc_c2r (&io);
 
   RRETURN (result);
 }
