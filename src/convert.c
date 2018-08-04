@@ -878,6 +878,7 @@ R_nc_c2r_init (R_nc_buf *io, int ncid, nc_type xtype, int ndim, const size_t *xd
     case NC_UINT64:
       if (fitnum && !scale && !add) {
         R_nc_c2r_bit64_init (io);
+        classgets(io->rxp, mkString("integer64"));
         break;
       }
     case NC_UINT:
