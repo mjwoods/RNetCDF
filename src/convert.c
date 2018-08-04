@@ -329,6 +329,8 @@ R_nc_str_strsxp (R_nc_buf *io)
    In special cases, the output is a pointer to the input data,
    so the output data should not be modified.
    An error is raised if any input values are outside the range of the output type.
+   For certain combinations of types, some or all range checks are always true,
+   and we assume that an optimising compiler will remove these checks.
  */
 #define R_NC_R2C_NUM(FUN, \
   NCITYPE, ITYPE, IFUN, NCOTYPE, OTYPE, \
