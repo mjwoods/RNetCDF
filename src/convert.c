@@ -595,14 +595,6 @@ R_NC_C2R_NUM(R_nc_c2r_dbl_dbl, NC_DOUBLE, double, NC_DOUBLE, double, NA_REAL);
 R_NC_C2R_NUM(R_nc_c2r_int64_dbl, NC_INT64, long long, NC_DOUBLE, double, NA_REAL);
 R_NC_C2R_NUM(R_nc_c2r_uint64_dbl, NC_UINT64, unsigned long long, NC_DOUBLE, double, NA_REAL);
 
-R_NC_C2R_NUM(R_nc_c2r_schar_bit64, NC_BYTE, signed char, NC_INT64, long long, NA_INTEGER64);
-R_NC_C2R_NUM(R_nc_c2r_uchar_bit64, NC_UBYTE, unsigned char, NC_INT64, long long, NA_INTEGER64);
-R_NC_C2R_NUM(R_nc_c2r_short_bit64, NC_SHORT, short, NC_INT64, long long, NA_INTEGER64);
-R_NC_C2R_NUM(R_nc_c2r_ushort_bit64, NC_USHORT, unsigned short, NC_INT64, long long, NA_INTEGER64);
-R_NC_C2R_NUM(R_nc_c2r_int_bit64, NC_INT, int, NC_INT64, long long, NA_INTEGER64);
-R_NC_C2R_NUM(R_nc_c2r_uint_bit64, NC_UINT, unsigned int, NC_INT64, long long, NA_INTEGER64);
-R_NC_C2R_NUM(R_nc_c2r_float_bit64, NC_FLOAT, float, NC_INT64, long long, NA_INTEGER64);
-R_NC_C2R_NUM(R_nc_c2r_dbl_bit64, NC_DOUBLE, double, NC_INT64, long long, NA_INTEGER64);
 R_NC_C2R_NUM(R_nc_c2r_int64_bit64, NC_INT64, long long, NC_INT64, long long, NA_INTEGER64);
 /* Treat bit64 as unsigned when converting from unsigned long long */
 R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, NC_UINT64, unsigned long long, NC_UINT64, unsigned long long, NA_INTEGER64);
