@@ -529,9 +529,9 @@ SEXP
 R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
 {
   int ncid, varid, ndims, ii;
-  size_t *cstart=NULL, *ccount=NULL, arrlen, strcnt, strlen;
+  size_t *cstart=NULL, *ccount=NULL;
   nc_type xtype;
-  const char *charbuf, **strbuf;
+  const void *buf;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -550,87 +550,16 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
     }
   }
 
-  /*-- Find total number of elements in data array ----------------------------*/
-  arrlen = R_nc_length (ndims, ccount);
-  if (arrlen == 0) {
-    /* Nothing to write, so return immediately */
-    RRETURN(R_NilValue);
-  }
-
-  /*-- Ensure that data array contains enough elements ------------------------*/
-  if (TYPEOF (data) != STRSXP || xtype != NC_CHAR) {
-    if (xlength (data) < arrlen) {
-      RERROR (RNC_EDATALEN);
-    }
-  } /* else check separately as a special case below */
-
   /*-- Enter data mode (if necessary) -----------------------------------------*/
   R_nc_check (R_nc_enddef (ncid));
 
   /*-- Write variable to file -------------------------------------------------*/
-  switch (TYPEOF (data)) {
-  case RAWSXP:
-    if (xtype == NC_CHAR) {
-      R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount,
-                                    (char *) RAW (data)));
-      RRETURN (R_NilValue);
-    }
-    break;
-  case STRSXP:
-    switch (xtype) {
-    case NC_CHAR:
-      if (R_nc_length (ndims, ccount) > 0) {
-        charbuf = (const char *) R_nc_r2c (data, ncid, xtype, ndims, ccount, NULL, NULL, NULL);
-        R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount, charbuf));
-      }
-      RRETURN (R_NilValue);
-    case NC_STRING:
-      if (R_nc_length (ndims, ccount) > 0) {
-        strbuf = (const char **) R_nc_r2c (data, ncid, xtype, ndims, ccount, NULL, NULL, NULL);
-        R_nc_check (nc_put_vara_string (ncid, varid, cstart, ccount, strbuf));
-      }
-      RRETURN (R_NilValue);
-    }
-    break;
+  if (R_nc_length (ndims, ccount) > 0) {
+    buf = R_nc_r2c (data, ncid, xtype, ndims, ccount, NULL, NULL, NULL);
+    R_nc_check (nc_put_vara (ncid, varid, cstart, ccount, buf));
   }
 
-  switch (xtype) {
-  case NC_BYTE:
-  case NC_UBYTE:
-  case NC_SHORT:
-  case NC_USHORT:
-  case NC_INT:
-  case NC_UINT:
-  case NC_FLOAT:
-  case NC_DOUBLE:
-  case NC_INT64:
-  case NC_UINT64:
-    switch (TYPEOF (data)) {
-    case INTSXP:
-    case LGLSXP:
-      R_nc_check (nc_put_vara_int (ncid, varid, cstart, ccount, INTEGER (data)));
-      RRETURN (R_NilValue);
-    case REALSXP:
-      if (isInt64 (data)) {
-        if (xtype == NC_UINT64) {
-          /* Preserve full range of unsigned long long */
-          R_nc_check (nc_put_vara_ulonglong (ncid, varid, cstart, ccount,
-                      (unsigned long long *) REAL (data)));
-        } else {
-          /* R integer64 is usually signed */
-          R_nc_check (nc_put_vara_longlong (ncid, varid, cstart, ccount,
-                      (long long *) REAL (data)));
-        }
-      } else {
-        R_nc_check (nc_put_vara_double (ncid, varid, cstart, ccount, REAL (data)));
-      }
-      RRETURN (R_NilValue);
-    }
-    break;
-  }
-
-  /* If this point is reached, input and external types were not compatible */
-  RERROR (RNC_EDATATYPE);
+  RRETURN (R_NilValue);
 }
 
 
