@@ -531,9 +531,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
   int ncid, varid, ndims, ii;
   size_t *cstart=NULL, *ccount=NULL, arrlen, strcnt, strlen;
   nc_type xtype;
-  char *charbuf;
-  const char **strbuf;
-  void *voidbuf;
+  const char *charbuf, **strbuf;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -582,13 +580,13 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
     switch (xtype) {
     case NC_CHAR:
       if (R_nc_length (ndims, ccount) > 0) {
-        charbuf = R_nc_r2c (data, ncid, xtype, ndims, ccount, NULL, NULL, NULL);
+        charbuf = (const char *) R_nc_r2c (data, ncid, xtype, ndims, ccount, NULL, NULL, NULL);
         R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount, charbuf));
       }
       RRETURN (R_NilValue);
     case NC_STRING:
       if (R_nc_length (ndims, ccount) > 0) {
-        strbuf = R_nc_r2c (data, ncid, xtype, ndims, ccount, NULL, NULL, NULL);
+        strbuf = (const char **) R_nc_r2c (data, ncid, xtype, ndims, ccount, NULL, NULL, NULL);
         R_nc_check (nc_put_vara_string (ncid, varid, cstart, ccount, strbuf));
       }
       RRETURN (R_NilValue);

@@ -92,6 +92,7 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
    Memory buffers are allocated by R_nc_c2r_init (and freed by R),
    returning a pointer that can be used in netcdf read/write functions.
    The C to R conversion is performed by R_nc_c2r.
+   Argument io is a pointer to an existing R_nc_buf (must not be NULL).
    The number and lengths of netcdf dimensions are ndim and xdim (C-order).
    The special case ndims < 0 gives a vector (no dim attribute) of length xdim[0].
    If fitnum is true (non-zero), rv is the smallest compatible R numeric type,

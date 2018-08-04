@@ -228,7 +228,7 @@ R_nc_char_strsxp (R_nc_buf *io)
   }
 }
 
-
+// Result should be const char *, so that copy can be eliminated.
 static char *
 R_nc_raw_char (SEXP rarr, int ndim, const size_t *xdim)
 {
@@ -264,9 +264,9 @@ static const char **
 R_nc_strsxp_str (SEXP rstr, int ndim, const size_t *xdim)
 {
   size_t ii, cnt;
-  char **cstr;
+  const char **cstr;
   cnt = R_nc_length (ndim, xdim);
-  cstr = (char **) R_alloc (cnt, sizeof(size_t));
+  cstr = (const char **) R_alloc (cnt, sizeof(size_t));
   for (ii=0; ii<cnt; ii++) {
     cstr[ii] = CHAR( STRING_ELT (rstr, ii));
   }
@@ -680,7 +680,7 @@ const void *
 R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
           const void *fill, const double *scale, const double *add)
 {
-  void *cv=NULL;
+  const void *cv=NULL;
 
   switch (TYPEOF(rv)) {
   case INTSXP:
@@ -823,7 +823,11 @@ R_nc_c2r_init (R_nc_buf *io, int ncid, nc_type xtype, int ndim, const size_t *xd
                int rawchar, int fitnum,
                const void *fill, const double *scale, const double *add)
 {
-  /* Initialise the R_nc_buf */
+  if (!io) {
+    RERROR ("Pointer to R_nc_buf must not be NULL in R_nc_c2r_init");
+  }
+
+  /* Initialise the R_nc_buf, making copies of pointer arguments */
   io->rxp = NULL;
   io->buf = NULL;
   io->xtype = xtype;
@@ -831,11 +835,41 @@ R_nc_c2r_init (R_nc_buf *io, int ncid, nc_type xtype, int ndim, const size_t *xd
   io->ndim = ndim;
   io->rawchar = rawchar;
   io->fitnum = fitnum;
-  io->xdim = xdim;
-  io->fill = fill;
-  io->scale = scale;
-  io->add = add;
+  io->xdim = NULL;
+  io->fill = NULL;
+  io->scale = NULL;
+  io->add = NULL;
 
+  if (xdim) {
+    if (ndim > 0) {
+      io->xdim = (size_t *) R_alloc (ndim, sizeof(size_t));
+      memcpy (io->xdim, xdim, ndim*sizeof(size_t));
+    } else if (ndim < 0) {
+      /* Special case for vector without dim attribute */
+      io->xdim = (size_t *) R_alloc (1, sizeof(size_t));
+      memcpy (io->xdim, xdim, sizeof(size_t));
+    }
+    /* Scalar has no dimensions */
+  }
+
+  if (fill) {
+    size_t size;
+    R_nc_check (nc_inq_type (ncid, xtype, NULL, &size));
+    io->fill = R_alloc (1, size);
+    memcpy (io->fill, fill, size);
+  }
+
+  if (scale) {
+    io->scale = (double *) R_alloc (1, sizeof(double));
+    *(io->scale) = *scale;
+  }
+
+  if (add) {
+    io->add = (double *) R_alloc (1, sizeof(double));
+    *(io->add) = *add;
+  }
+
+  /* Prepare buffers */ 
   switch (xtype) {
     case NC_BYTE:
     case NC_UBYTE:
@@ -1010,38 +1044,43 @@ R_NC_REVERSE(R_nc_rev_size, size_t);
 /* Define R_nc_rev for other types as needed */
 
 
-/* Copy the leading nr elements of R vector rv into a new C vector of type TYPE,
+/* Copy the leading N elements of R vector rv into a new C vector of type TYPE,
    reversing from Fortran to C storage order.
    Elements beyond the length of rv and non-finite values are stored as fillval.
  */
 #define R_NC_DIM_R2C(FUN, TYPENAME, TYPE) \
 TYPE * \
-FUN (SEXP rv, size_t nr, TYPE fillval) \
+FUN (SEXP rv, size_t N, TYPE fillval) \
 { \
   TYPE *cv; \
-  size_t nc, ii; \
+  const void *voidbuf; \
+  size_t nr, ii; \
 \
-  /* Number of elements to copy must not exceed length of rv */ \
-  nc = xlength (rv); \
-  nc = (nr < nc) ? nr : nc; \
+  /* Allocate new C vector (freed by R) */ \
+  cv = (TYPE *) R_alloc (N, sizeof (TYPE)); \
 \
-  /* Copy elements */ \
+  /* Number of elements to copy must not exceed N */ \
+  nr = xlength (rv); \
+  nr = (nr < N) ? nr : N; \
+\
+  /* Copy R elements to cv */ \
   if (isReal (rv)) { \
-    cv = R_nc_r2c_dbl_##TYPENAME (rv, 1, &nc, &fillval, NULL, NULL); \
+    voidbuf = R_nc_r2c_dbl_##TYPENAME (rv, 1, &nr, &fillval, NULL, NULL); \
   } else if (isInteger (rv)) { \
-    cv = R_nc_r2c_int_##TYPENAME (rv, 1, &nc, &fillval, NULL, NULL); \
+    voidbuf = R_nc_r2c_int_##TYPENAME (rv, 1, &nr, &fillval, NULL, NULL); \
   } else { \
-    cv = NULL; \
-    nc = 0; \
+    RERROR ("Unsupported R type in R_NC_DIM_R2C"); \
   } \
-\
-  /* Fill any remaining elements beyond length of rv */ \
-  for ( ii=nc; ii<nr; ii++ ) { \
-    cv[ii] = fillval; \
-  } \
+  memcpy (cv, voidbuf, nr*sizeof (TYPE)); \
 \
   /* Reverse from Fortran to C order */ \
   R_nc_rev_##TYPENAME (cv, nr); \
+\
+  /* Fill any remaining elements beyond length of rv */ \
+  for ( ii=nr; ii<N; ii++ ) { \
+    cv[ii] = fillval; \
+  } \
+\
   return cv; \
 }
 

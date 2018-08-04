@@ -360,7 +360,6 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
   size_t cnt;
   nc_type xtype;
   const char *attname, *charbuf, **strbuf;
-  void *voidbuf;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -400,7 +399,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
     case NC_STRING:
       cnt = xlength (data);
       if (cnt > 0) {
-        strbuf = R_nc_r2c (data, ncid, xtype, 1, &cnt, NULL, NULL, NULL);
+        strbuf = (const char **) R_nc_r2c (data, ncid, xtype, 1, &cnt, NULL, NULL, NULL);
         R_nc_check (nc_put_att_string (ncid, varid, attname, cnt, strbuf));
       }
       RRETURN (R_NilValue);
