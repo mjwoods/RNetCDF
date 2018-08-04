@@ -359,7 +359,8 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
   int ncid, varid;
   size_t cnt;
   nc_type xtype;
-  const char *attname, *charbuf, **strbuf;
+  const char *attname;
+  const void *buf;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -379,73 +380,15 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
   R_nc_check( R_nc_redef (ncid));
 
   /*-- Write attribute to file ------------------------------------------------*/
-  switch (TYPEOF (data)) {
-  case RAWSXP:
-    if (xtype == NC_CHAR) {
-      charbuf = (char *) RAW (data);
-      cnt = xlength (data);
-      R_nc_check (nc_put_att_text (ncid, varid, attname, cnt, charbuf));
-      RRETURN (R_NilValue);
-    }
-    break;
-  case STRSXP:
-    switch (xtype) {
-    case NC_CHAR:
-      /* Only write a single string */
-      charbuf = CHAR (STRING_ELT (data, 0));
-      cnt = strlen (charbuf);
-      R_nc_check (nc_put_att_text (ncid, varid, attname, cnt, charbuf));
-      RRETURN (R_NilValue);
-    case NC_STRING:
-      cnt = xlength (data);
-      if (cnt > 0) {
-        strbuf = (const char **) R_nc_r2c (data, ncid, xtype, 1, &cnt, NULL, NULL, NULL);
-        R_nc_check (nc_put_att_string (ncid, varid, attname, cnt, strbuf));
-      }
-      RRETURN (R_NilValue);
-    }
-    break;
+  if (xtype == NC_CHAR && isString (data)) {
+    cnt = strlen (CHAR (STRING_ELT (data, 0)));
+  } else {
+    cnt = xlength (data);
   }
+  buf = R_nc_r2c (data, ncid, xtype, 1, &cnt, NULL, NULL, NULL);
+  R_nc_check (nc_put_att (ncid, varid, attname, xtype, cnt, buf));
 
-  switch (xtype) {
-  case NC_BYTE:
-  case NC_UBYTE:
-  case NC_SHORT:
-  case NC_USHORT:
-  case NC_INT:
-  case NC_UINT:
-  case NC_FLOAT:
-  case NC_DOUBLE:
-  case NC_INT64:
-  case NC_UINT64:
-    switch (TYPEOF (data)) {
-    case INTSXP:
-    case LGLSXP:
-      cnt = xlength (data);
-      R_nc_check (nc_put_att_int (ncid, varid, attname, xtype, cnt, INTEGER (data)));
-      RRETURN (R_NilValue);
-    case REALSXP:
-      cnt = xlength (data);
-      if (isInt64 (data)) {
-        if (xtype == NC_UINT64) {
-          /* Preserve full range of unsigned long long */
-          R_nc_check (nc_put_att_ulonglong (ncid, varid, attname, xtype, cnt,
-                      (unsigned long long *) REAL (data)));
-        } else {
-          /* R integer64 is usually signed */
-          R_nc_check (nc_put_att_longlong (ncid, varid, attname, xtype, cnt,
-                      (long long *) REAL (data)));
-        }
-      } else {
-        R_nc_check (nc_put_att_double (ncid, varid, attname, xtype, cnt, REAL (data)));
-      }
-      RRETURN (R_NilValue);
-    }
-    break;
-  }
-
-  /* If this point is reached, input and external types were not compatible */
-  RERROR (RNC_EDATATYPE);
+  RRETURN (R_NilValue);
 }
 
 
