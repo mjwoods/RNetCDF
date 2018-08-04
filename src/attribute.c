@@ -272,8 +272,10 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
   } else {
     cnt = xlength (data);
   }
-  buf = R_nc_r2c (data, ncid, xtype, 1, &cnt, NULL, NULL, NULL);
-  R_nc_check (nc_put_att (ncid, varid, attname, xtype, cnt, buf));
+  if (cnt > 0) {
+    buf = R_nc_r2c (data, ncid, xtype, 1, &cnt, NULL, NULL, NULL);
+    R_nc_check (nc_put_att (ncid, varid, attname, xtype, cnt, buf));
+  }
 
   RRETURN (R_NilValue);
 }
