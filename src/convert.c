@@ -237,7 +237,7 @@ R_nc_raw_char (SEXP rarr, int ndim, const size_t *xdim)
   if (xlength (rarr) < cnt) {
     RERROR (RNC_EDATALEN);
   }
-  return RAW (rarr);
+  return (const char *) RAW (rarr);
 }
 
 
