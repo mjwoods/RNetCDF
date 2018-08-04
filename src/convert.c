@@ -527,23 +527,23 @@ R_NC_C2R_NUM_INIT(R_nc_c2r_bit64_init, REALSXP, REAL);
 static void \
 FUN (R_nc_buf *io) \
 { \
-  size_t ii, cnt; \
+  size_t ii; \
   ITYPE fillval, *in; \
   OTYPE *out; \
-  cnt = xlength (io->rxp); \
+  ii = xlength (io->rxp); \
   in = (ITYPE *) io->buf; \
   out = (OTYPE *) io->buf; \
   if (NCITYPE == NCOTYPE) { \
     if (io->fill) { \
       fillval = *((ITYPE *) io->fill); \
       if (fillval != fillval) { \
-	for (ii=cnt-1; ii>=0; ii--) { \
+        while (ii-- > 0) { \
 	  if (in[ii] != in[ii]) { \
 	    out[ii] = MISSVAL; \
 	  } \
 	} \
       } else { \
-	for (ii=cnt-1; ii>=0; ii--) { \
+        while (ii-- > 0) { \
 	  if (in[ii] == fillval) { \
 	    out[ii] = MISSVAL; \
 	  } \
@@ -554,7 +554,7 @@ FUN (R_nc_buf *io) \
     if (io->fill) { \
       fillval = *((ITYPE *) io->fill); \
       if (fillval != fillval) { \
-	for (ii=cnt-1; ii>=0; ii--) { \
+        while (ii-- > 0) { \
 	  if (in[ii] != in[ii]) { \
 	    out[ii] = MISSVAL; \
 	  } else { \
@@ -562,7 +562,7 @@ FUN (R_nc_buf *io) \
 	  } \
 	} \
       } else { \
-	for (ii=cnt-1; ii>=0; ii--) { \
+        while (ii-- > 0) { \
 	  if (in[ii] == fillval) { \
 	    out[ii] = MISSVAL; \
 	  } else { \
@@ -571,7 +571,7 @@ FUN (R_nc_buf *io) \
 	} \
       } \
     } else { \
-      for (ii=cnt-1; ii>=0; ii--) { \
+      while (ii-- > 0) { \
 	out[ii] = in[ii]; \
       } \
     } \
@@ -611,11 +611,11 @@ R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, NC_UINT64, unsigned long long, NC_UINT64, un
 static void \
 FUN (R_nc_buf *io) \
 { \
-  size_t ii, cnt; \
+  size_t ii; \
   double factor, offset; \
   ITYPE fillval, *in; \
   double *out; \
-  cnt = xlength (io->rxp); \
+  ii = xlength (io->rxp); \
   in = (ITYPE *) io->buf; \
   out = (double *) io->buf; \
   if (io->scale) { \
@@ -631,7 +631,7 @@ FUN (R_nc_buf *io) \
   if (io->fill) { \
     fillval = *((ITYPE *) io->fill); \
     if (fillval != fillval) { \
-      for (ii=cnt-1; ii>=0; ii--) { \
+      while (ii-- > 0) { \
 	if (in[ii] != in[ii]) { \
 	  out[ii] = NA_REAL; \
 	} else { \
@@ -639,7 +639,7 @@ FUN (R_nc_buf *io) \
 	} \
       } \
     } else { \
-      for (ii=cnt-1; ii>=0; ii--) { \
+      while (ii-- > 0) { \
 	if (in[ii] == fillval) { \
 	  out[ii] = NA_REAL; \
 	} else { \
@@ -648,7 +648,7 @@ FUN (R_nc_buf *io) \
       } \
     } \
   } else { \
-    for (ii=cnt-1; ii>=0; ii--) { \
+    while (ii-- > 0) { \
       out[ii] = in[ii] * factor + offset; \
     } \
   } \
