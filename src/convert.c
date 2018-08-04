@@ -228,19 +228,16 @@ R_nc_char_strsxp (R_nc_buf *io)
   }
 }
 
-// Result should be const char *, so that copy can be eliminated.
-static char *
+
+static const char *
 R_nc_raw_char (SEXP rarr, int ndim, const size_t *xdim)
 {
   size_t cnt;
-  char *carr;
   cnt = R_nc_length (ndim, xdim);
   if (xlength (rarr) < cnt) {
     RERROR (RNC_EDATALEN);
   }
-  carr = R_alloc (cnt, sizeof (char));
-  memcpy (carr, RAW (rarr), cnt);
-  return carr;
+  return RAW (rarr);
 }
 
 
