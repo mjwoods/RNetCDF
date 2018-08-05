@@ -40,6 +40,7 @@
 #  mw       13/02/16   Test file operations in all supported on-disk formats
 #  mw       17/06/18   Test bit64 operations
 #  mw       14/07/18   Test type definition and inquiry functions
+#  mw       05/08/18   Test numeric type conversion functions
 #
 #===============================================================================#
 
@@ -158,15 +159,21 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   for (numtype in numtypes) {
     var.def.nc(nc, numtype, numtype, c("station"))
+    var.def.nc(nc, paste(numtype,"_int",sep=""), numtype, c("station"))
 
     var.def.nc(nc, paste(numtype,"_fill",sep=""), numtype, c("station"))
     att.put.nc(nc, paste(numtype,"_fill",sep=""), "missing_value", numtype, 99)
+    var.def.nc(nc, paste(numtype,"_intfill",sep=""), numtype, c("station"))
+    att.put.nc(nc, paste(numtype,"_intfill",sep=""), "missing_value", numtype, 99)
 
     var.def.nc(nc, paste(numtype,"_pack",sep=""), numtype, c("station"))
     att.put.nc(nc, paste(numtype,"_pack",sep=""), "scale_factor", numtype, 10)
     att.put.nc(nc, paste(numtype,"_pack",sep=""), "add_offset", numtype, 5)
+    var.def.nc(nc, paste(numtype,"_intpack",sep=""), numtype, c("station"))
+    att.put.nc(nc, paste(numtype,"_intpack",sep=""), "scale_factor", numtype, 10)
+    att.put.nc(nc, paste(numtype,"_intpack",sep=""), "add_offset", numtype, 5)
 
-    varcnt <- varcnt+3
+    varcnt <- varcnt+6
   }
 
   ##  Put some missing_value attribute for temperature
@@ -199,10 +206,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   myint0        <- 12345
   mychar0       <- "?"
 
-  mysmall       <- c(1,2,3,4,5)
+  mysmall       <- as.double(c(1,2,3,4,5))
   mybig         <- mysmall*1e100
   myminus       <- -mysmall
-  mysmallfill   <- c(1,2,NA,4,5)
+  mysmallfill   <- as.double(c(1,2,NA,4,5))
   mybigfill     <- mysmallfill*1e100
   mypack        <- mysmall*10+5
 
@@ -240,8 +247,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
     # Should succeed for all types:
     var.put.nc(nc, numtype, mysmall)
+    var.put.nc(nc, paste(numtype,"_int",sep=""), as.integer(mysmall))
     var.put.nc(nc, paste(numtype,"_fill",sep=""), mysmallfill)
+    var.put.nc(nc, paste(numtype,"_intfill",sep=""), as.integer(mysmallfill))
     var.put.nc(nc, paste(numtype,"_pack",sep=""), mypack, pack=TRUE)
+    var.put.nc(nc, paste(numtype,"_intpack",sep=""), as.integer(mypack), pack=TRUE)
   }
 
   sync.nc(nc)
@@ -324,16 +334,25 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     y <- var.get.nc(nc, numtype)
     tally <- testfun(x,y,tally)
     tally <- testfun(is.double(y),TRUE,tally)
+    y <- var.get.nc(nc, paste(numtype,"_int",sep=""))
+    tally <- testfun(x,y,tally)
+    tally <- testfun(is.double(y),TRUE,tally)
 
     x <- mysmallfill
     dim(x) <- length(x)
     y <- var.get.nc(nc, paste(numtype,"_fill",sep=""))
     tally <- testfun(x,y,tally)
     tally <- testfun(is.double(y),TRUE,tally)
+    y <- var.get.nc(nc, paste(numtype,"_intfill",sep=""))
+    tally <- testfun(x,y,tally)
+    tally <- testfun(is.double(y),TRUE,tally)
 
     x <- mypack
     dim(x) <- length(x)
     y <- var.get.nc(nc, paste(numtype,"_pack",sep=""), unpack=TRUE)
+    tally <- testfun(x,y,tally)
+    tally <- testfun(is.double(y),TRUE,tally)
+    y <- var.get.nc(nc, paste(numtype,"_intpack",sep=""), unpack=TRUE)
     tally <- testfun(x,y,tally)
     tally <- testfun(is.double(y),TRUE,tally)
   }
