@@ -146,7 +146,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
   const char *fldname;
   int class, *csizes=NULL;
   size_t coffset=0;
-  void *tmpval=NULL;
+  const void *tmpval=NULL;
 
   /*-- Decode arguments -------------------------------------------------------*/
   ncid = asInteger (nc);
@@ -163,7 +163,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
 
   if (class == NC_ENUM) {
     if (!isNull (value)) {
-      R_nc_r2c (value, &tmpval, 0, 1, xtype, NULL, NULL, NULL);
+      tmpval = R_nc_r2c (value, ncid, xtype, 0, NULL, NULL, NULL, NULL);
     } else {
       RERROR ("No value given for enumerated type");
     }
@@ -189,8 +189,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
       } else {
         ndims = length (dimsizes);
         if (ndims > 0) {
-          csizes = (void *) R_alloc (ndims, sizeof (int));
-          R_nc_dim_r2c_int(dimsizes, ndims, -1, csizes);
+          csizes = R_nc_dim_r2c_int(dimsizes, ndims, -1);
         }
       }
     } else {
@@ -205,7 +204,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
 
   /*-- Insert the member or field ---------------------------------------------*/
   if (class == NC_ENUM) {
-    R_nc_check (nc_insert_enum (ncid, typeid, fldname, &tmpval));
+    R_nc_check (nc_insert_enum (ncid, typeid, fldname, tmpval));
   } else if (class == NC_COMPOUND) {
     if (ndims > 0) {
       R_nc_check (nc_insert_array_compound (ncid, typeid, fldname,
@@ -231,10 +230,11 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
   char typename[NC_MAX_NAME + 1], basename[NC_MAX_NAME + 1];
   char fieldname[NC_MAX_NAME + 1], subname[NC_MAX_NAME + 1];
   size_t size, nfields, offset;
-  int ii, imax, ic, ndims;
-  char *cval;
+  int ii, imax, ndims;
+  void *cval;
   SEXP result, resultnames;
   SEXP fieldnames, values, offsets, subnames, dimsize, dimsizes;
+  R_nc_buf io;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -303,17 +303,15 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
       if (extend) {
 	/* Read named vector of member values */
 	fieldnames = R_nc_protect (allocVector (STRSXP, nfields));
-	cval = R_alloc (nfields, size);
+        cval = R_nc_c2r_init (&io, ncid, basetype, -1, &nfields,
+                              0, 1, NULL, NULL, NULL);
 
 	imax = nfields; // netcdf member index is int
-	ic = 0;
-	for (ii=0; ii < imax; ii++) {
-	  R_nc_check (nc_inq_enum_member (ncid, xtype, ii, fieldname, cval+ic));
-	  ic += size;
+	for (ii=0; ii < imax; ii++, cval+=size) {
+	  R_nc_check (nc_inq_enum_member (ncid, xtype, ii, fieldname, cval));
 	  SET_STRING_ELT (fieldnames, ii, mkChar (fieldname));
 	}
-	values = R_nc_c2r (cval, 0, nfields, basetype, 1, 
-			   NULL, NULL, NULL, NULL, NULL);
+	values = R_nc_c2r (&io);
 	setAttrib (values, R_NamesSymbol, fieldnames);
 
 	result = R_nc_protect (allocVector (VECSXP, 6));

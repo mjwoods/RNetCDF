@@ -44,52 +44,72 @@
 int isInt64(SEXP rv);
 
 
-/* TODO: roll these into R_nc_r2c and R_nc_c2r */
-
-void
-R_nc_strsxp_char (SEXP rstr, char *carr, size_t imin, size_t cnt,
-                  size_t strlen);
-
-void
-R_nc_char_strsxp (char *carr, SEXP rstr,
-                  size_t len, size_t imin, size_t cnt);
+/* Find total number of elements in an array from dimension lengths.
+   Result is 1 for a scalar or product of dimensions for an array.
+   The special case ndims < 0 implies a vector of length count[0].
+ */
+size_t
+R_nc_length (int ndims, const size_t *count);
 
 
-void
-R_nc_strsxp_str (SEXP rstr, const char **cstr, size_t imin, size_t cnt);
+/* Allocate array with dimensions specified in C order.
+   ndims > 0 implies an array with ndims dimension lengths in ccount[].
+   ndims == 0 implies a scalar (vector of length 1).
+   ndims < 0 implies a dimensionless vector of length ccount[0].
+ */
+SEXP
+R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount);
 
 
-void
-R_nc_str_strsxp (char **cstr, SEXP rstr, size_t imin, size_t cnt);
+/* Structure whose members are used by R_nc_c2r_init and R_nc_c2r.
+   Other functions should not access members directly. */
+typedef struct {
+  SEXP rxp;
+  void *buf;
+  nc_type xtype;
+  int ncid, ndim, rawchar, fitnum;
+  size_t *xdim;
+  void *fill;
+  double *scale, *add;
+  } R_nc_buf;
 
 
-/* Convert an R vector to a netcdf external type.
-   Argument rv contains at least cnt values from index imin.
-   Argument cv is a pointer to a C vector.
-     If cv is NULL on entry, memory is allocated by R_alloc.
+/* Convert an R vector to a netcdf external type (xtype).
+   Memory for the results is allocated by R_alloc (freed by R),
+   except in special cases where no modification of the input is required,
+   when the output is a pointer to the input data.
+   The number and lengths of netcdf dimensions are ndim and xdim (C-order).
    An error is raised for out-of-range values.
    Missing and NaN values are replaced by a fill value.
    Packing is performed if either scale or add are not NULL.
-   Example: R_nc_r2c (rv, cv, cnt, &fill, &scale, &add);
  */
-void *
-R_nc_r2c (SEXP rv, void *cv, size_t imin, size_t cnt, nc_type xtype,
-          void *fill, double *scale, double *add);
+const void *
+R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
+          const void *fill, const double *scale, const double *add);
 
 
-/* Convert a vector of netcdf external type to R.
-   Argument cv is assumed to contain cnt values of the external type.
-   If fitnum is true (non-zero), the rv is the smallest compatible R type,
+/* Convert an array of netcdf external type (xtype) to R.
+   Memory buffers are allocated by R_nc_c2r_init (and freed by R),
+   returning a pointer that can be used in netcdf read/write functions.
+   The C to R conversion is performed by R_nc_c2r.
+   Argument io is a pointer to an existing R_nc_buf (must not be NULL).
+   The number and lengths of netcdf dimensions are ndim and xdim (C-order).
+   The special case ndims < 0 gives a vector (no dim attribute) of length xdim[0].
+   If fitnum is true (non-zero), rv is the smallest compatible R numeric type,
      otherwise rv is double precision.
-   Elements are set to missing if they are NaN,
-     equal to the fill value or outside the valid range (if not NULL).
+   If rawchar is true, NC_CHAR is returned to R as raw bytes, otherwise
+     all elements in the fastest-varying dimension are combined into R strings.
+   Elements are set to missing if they equal the fill value.
    Unpacking is performed if either scale or add are not NULL.
-   Example: R_nc_c2r (cv, rv, imin, cnt, xtype, 1,
-                      &fill, &min, &max, &scale, &add);
  */
+void * \
+R_nc_c2r_init (R_nc_buf *io,
+               int ncid, nc_type xtype, int ndim, const size_t *xdim,
+               int rawchar, int fitnum,
+               const void *fill, const double *scale, const double *add);
+
 SEXP
-R_nc_c2r (void *cv, size_t imin, size_t cnt, nc_type xtype, int fitnum,
-          void *fill, void *min, void *max, double *scale, double *add);
+R_nc_c2r (R_nc_buf *io);
 
 
 /* Reverse a vector in-place.
@@ -108,8 +128,8 @@ R_NC_REVERSE_H(R_nc_rev_size, size_t);
    Elements beyond the length of rv and non-finite values are stored as fillval.
  */
 #define R_NC_DIM_R2C_H(FUN, TYPE) \
-void \
-FUN (SEXP rv, size_t nr, TYPE fillval, TYPE *cv);
+TYPE * \
+FUN (SEXP rv, size_t nr, TYPE fillval);
 
 R_NC_DIM_R2C_H (R_nc_dim_r2c_int, int);
 R_NC_DIM_R2C_H (R_nc_dim_r2c_size, size_t);

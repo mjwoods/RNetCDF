@@ -57,22 +57,6 @@
 #include "RNetCDF.h"
 
 
-/* Find total number of elements in an array from dimension lengths.
-   Result is 1 for a scalar or product of dimensions for an array. */
-static size_t
-R_nc_length (int ndims, const size_t *count)
-{
-  int ii;
-  size_t length;
-
-  length = 1;
-  for ( ii=0; ii<ndims; ii++ ) {
-    length *= count[ii]; 
-  }
-  return (length);
-}
-
-
 /*-----------------------------------------------------------------------------*\
  *  R_nc_def_var()
 \*-----------------------------------------------------------------------------*/
@@ -300,157 +284,6 @@ R_nc_pack_att (int ncid, int varid, double **scale, double **add)
 }
 
 
-/* Allocate array with dimensions specified in C order */
-static SEXP
-R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount) {
-  SEXP result, rdim;
-  int *intp, ii, jj;
-  if (ndims > 0) {
-    rdim = R_nc_protect( allocVector (INTSXP, ndims));
-    intp = INTEGER (rdim);
-    for ( ii=0, jj=ndims-1; ii<ndims; ii++, jj-- ) {
-      if (ccount[jj] <= INT_MAX) {
-        intp[ii] = ccount[jj];
-      } else {
-        RERROR ("R array dimension cannot exceed range of type int");
-      }
-    }
-    result = R_nc_protect (allocArray (type, rdim));
-  } else {
-    /* R scalar or vector with no dimensions */
-    result = R_nc_protect (allocVector (type, 1));
-  }
-  return result;
-}
-
-
-/* Reshape R array with dimensions specified in C order */
-static void
-R_nc_reshape (SEXP array, int ndims, const size_t *ccount) {
-  SEXP rdim;
-  int *intp, ii, jj;
-  if (ndims > 0) {
-    rdim = R_nc_protect( allocVector (INTSXP, ndims));
-    intp = INTEGER (rdim);
-    for ( ii=0, jj=ndims-1; ii<ndims; ii++, jj-- ) {
-      if (ccount[jj] <= INT_MAX) {
-        intp[ii] = ccount[jj];
-      } else {
-        R_nc_error ("R array dimension cannot exceed range of type int");
-      }
-    }
-    setAttrib(array, R_DimSymbol, rdim);
-  } else {
-    /* R scalar or vector with no dimensions */
-    setAttrib(array, R_DimSymbol, R_NilValue);
-  }
-}
-
-
-/* Read NC_CHAR variable as R raw array */
-static SEXP
-R_nc_get_var_raw (int ncid, int varid, int ndims,
-                  const size_t *cstart, const size_t *ccount)
-{
-  SEXP result;
-  result = R_nc_allocArray (RAWSXP, ndims, ccount);
-  if (xlength (result) > 0) {
-    R_nc_check (nc_get_vara_text (ncid, varid, cstart, ccount,
-                                  (char *) RAW (result)));
-  }
-  return result;
-}
-
-/* Read NC_CHAR variable as R character array */
-static SEXP
-R_nc_get_var_char (int ncid, int varid, int ndims,
-                  const size_t *cstart, const size_t *ccount)
-{
-  SEXP result;
-  size_t strcnt, strlen;
-  char *charbuf;
-  if (ndims > 0) {
-    /* Omit fastest-varying dimension from R character array */
-    strlen = ccount[ndims-1];
-  } else {
-    /* Scalar character */
-    strlen = 1;
-  }
-  result = R_nc_allocArray (STRSXP, ndims-1, ccount);
-  strcnt = xlength (result);
-  if (strcnt > 0) {
-    charbuf = R_alloc (strcnt*strlen+1, sizeof (char));
-    R_nc_check (nc_get_vara_text (ncid, varid, cstart, ccount, charbuf));
-    R_nc_char_strsxp (charbuf, result, strlen, 0, strcnt);
-  }
-  return result;
-}
-
-/* Read NC_STRING variable as R character array */
-static SEXP
-R_nc_get_var_string (int ncid, int varid, int ndims,
-                     const size_t *cstart, const size_t *ccount)
-{
-  SEXP result;
-  size_t strcnt;
-  char **strbuf;
-  result = R_nc_allocArray (STRSXP, ndims, ccount);
-  strcnt = xlength (result);
-  if (strcnt > 0) {
-    strbuf = (void *) R_alloc (strcnt, sizeof(char *));
-    R_nc_check (nc_get_vara_string (ncid, varid, cstart, ccount, strbuf));
-    R_nc_str_strsxp (strbuf, result, 0, strcnt);
-    R_nc_check (nc_free_string (strcnt, strbuf));
-  }
-  return result;
-}
-
-/* Read NC_INT64 or NC_UINT64 variable as integer64 */
-static SEXP
-R_nc_get_var_int64 (int ncid, int varid, int ndims,
-                    const size_t *cstart, const size_t *ccount)
-{
-  SEXP result, class;
-  result = R_nc_allocArray (REALSXP, ndims, ccount);
-  class = R_nc_protect (allocVector(STRSXP, 1));
-  SET_STRING_ELT(class, 0, mkChar("integer64"));
-  classgets(result, class);
-  if (xlength (result) > 0) {
-    R_nc_check (nc_get_vara (ncid, varid, cstart, ccount, REAL (result)));
-  }
-  return result;
-}
-
-/* Read numeric variable as R integer array */
-static SEXP
-R_nc_get_var_int (int ncid, int varid, int ndims,
-                  const size_t *cstart, const size_t *ccount)
-{
-  SEXP result;
-  result = R_nc_allocArray (INTSXP, ndims, ccount);
-  if (xlength (result) > 0) {
-    R_nc_check (nc_get_vara_int (ncid, varid, cstart, ccount,
-                                 INTEGER (result)));
-  }
-  return result;
-}
-
-/* Read numeric variable as R double array */
-static SEXP
-R_nc_get_var_double (int ncid, int varid, int ndims,
-                     const size_t *cstart, const size_t *ccount)
-{
-  SEXP result;
-  result = R_nc_allocArray (REALSXP, ndims, ccount);
-  if (xlength (result) > 0) {
-    R_nc_check (nc_get_vara_double (ncid, varid, cstart, ccount,
-                                    REAL (result)));
-  }
-  return result;
-}
-
-
-
 /*-----------------------------------------------------------------------------*\
  *  R_nc_get_var()
 \*-----------------------------------------------------------------------------*/
@@ -459,25 +292,28 @@ SEXP
 R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
               SEXP rawchar, SEXP fitnum)
 {
-  int ncid, varid, ndims, ii;
+  int ncid, varid, ndims, ii, israw, isfit;
   size_t *cstart=NULL, *ccount=NULL;
   nc_type xtype;
   SEXP result=R_NilValue;
+  void *buf;
+  R_nc_buf io;
 
-  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  /*-- Convert arguments ------------------------------------------------------*/
   ncid = asInteger (nc);
 
   R_nc_check (R_nc_var_id (var, ncid, &varid));
+
+  israw = (asLogical (rawchar) == TRUE);
+  isfit = (asLogical (fitnum) == TRUE);
 
   /*-- Get type and rank of the variable --------------------------------------*/
   R_nc_check (nc_inq_var (ncid, varid, NULL, &xtype, &ndims, NULL, NULL));
 
   /*-- Convert start and count from R to C indices ----------------------------*/
   if (ndims > 0) {
-    cstart = (void *) R_alloc (ndims, sizeof (size_t));
-    ccount = (void *) R_alloc (ndims, sizeof (size_t));
-    R_nc_dim_r2c_size (start, ndims, 0, cstart);
-    R_nc_dim_r2c_size (count, ndims, 0, ccount);
+    cstart = R_nc_dim_r2c_size (start, ndims, 0);
+    ccount = R_nc_dim_r2c_size (count, ndims, 0);
     for (ii=0; ii<ndims; ii++) {
       cstart[ii] -= 1;
     }
@@ -487,40 +323,13 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   R_nc_check (R_nc_enddef (ncid));
 
   /*-- Allocate memory and read variable from file ----------------------------*/
-  switch (xtype) {
-    case NC_CHAR:
-      if (asLogical (rawchar) == TRUE) {
-	result = R_nc_get_var_raw (ncid, varid, ndims, cstart, ccount);
-      } else {
-	result = R_nc_get_var_char (ncid, varid, ndims, cstart, ccount);
-      }
-      break;
-    case NC_STRING:
-      result = R_nc_get_var_string (ncid, varid, ndims, cstart, ccount);
-      break;
-    case NC_BYTE:
-    case NC_UBYTE:
-    case NC_SHORT:
-    case NC_USHORT:
-    case NC_INT:
-      if (asLogical (fitnum) == TRUE) {
-	result = R_nc_get_var_int (ncid, varid, ndims, cstart, ccount);
-	break;
-      }
-    case NC_INT64:
-    case NC_UINT64:
-      if (asLogical (fitnum) == TRUE) {
-	result = R_nc_get_var_int64 (ncid, varid, ndims, cstart, ccount);
-	break;
-      }
-    case NC_UINT:
-    case NC_FLOAT:
-    case NC_DOUBLE:
-      result = R_nc_get_var_double (ncid, varid, ndims, cstart, ccount);
-      break;
-    default:
-      RERROR (RNC_ETYPEDROP);
+  buf = R_nc_c2r_init (&io, ncid, xtype, ndims, ccount,
+                       israw, isfit, NULL, NULL, NULL);
+
+  if (R_nc_length (ndims, ccount) > 0) {
+    R_nc_check (nc_get_vara (ncid, varid, cstart, ccount, buf));
   }
+  result = R_nc_c2r (&io);
 
   RRETURN (result);
 }
@@ -581,11 +390,9 @@ SEXP
 R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
 {
   int ncid, varid, ndims, ii;
-  size_t *cstart=NULL, *ccount=NULL, arrlen, strcnt, strlen;
+  size_t *cstart=NULL, *ccount=NULL;
   nc_type xtype;
-  char *charbuf;
-  const char **strbuf;
-  void *voidbuf;
+  const void *buf;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -597,106 +404,23 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
 
   /*-- Convert start and count from R to C indices ----------------------------*/
   if (ndims > 0) {
-    cstart = (void *) R_alloc (ndims, sizeof (size_t));
-    ccount = (void *) R_alloc (ndims, sizeof (size_t));
-    R_nc_dim_r2c_size (start, ndims, 0, cstart);
-    R_nc_dim_r2c_size (count, ndims, 0, ccount);
+    cstart = R_nc_dim_r2c_size (start, ndims, 0);
+    ccount = R_nc_dim_r2c_size (count, ndims, 0);
     for (ii=0; ii<ndims; ii++) {
       cstart[ii] -= 1;
     }
   }
 
-  /*-- Find total number of elements in data array ----------------------------*/
-  arrlen = R_nc_length (ndims, ccount);
-  if (arrlen == 0) {
-    /* Nothing to write, so return immediately */
-    RRETURN(R_NilValue);
-  }
-
-  /*-- Ensure that data array contains enough elements ------------------------*/
-  if (TYPEOF (data) != STRSXP || xtype != NC_CHAR) {
-    if (xlength (data) < arrlen) {
-      RERROR (RNC_EDATALEN);
-    }
-  } /* else check separately as a special case below */
-
   /*-- Enter data mode (if necessary) -----------------------------------------*/
   R_nc_check (R_nc_enddef (ncid));
 
   /*-- Write variable to file -------------------------------------------------*/
-  switch (TYPEOF (data)) {
-  case RAWSXP:
-    if (xtype == NC_CHAR) {
-      R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount,
-                                    (char *) RAW (data)));
-      RRETURN (R_NilValue);
-    }
-    break;
-  case STRSXP:
-    switch (xtype) {
-    case NC_CHAR:
-      if (ndims > 0) {
-        /* Store strings along the fastest varying dimension */
-        strlen = ccount[ndims-1];
-        strcnt = R_nc_length (ndims-1, ccount);
-      } else {
-        /* Scalar character is a single string */
-        strlen = 1;
-        strcnt = 1;
-      }
-      if (xlength (data) < strcnt) {
-        RERROR (RNC_EDATALEN);
-      }
-      charbuf = R_alloc (strcnt*strlen, sizeof (char));
-      R_nc_strsxp_char (data, charbuf, 0, strcnt, strlen);
-      R_nc_check (nc_put_vara_text (ncid, varid, cstart, ccount, charbuf));
-      RRETURN (R_NilValue);
-    case NC_STRING:
-      strbuf = (void *) R_alloc (arrlen, sizeof(char *));
-      R_nc_strsxp_str (data, strbuf, 0, arrlen);
-      R_nc_check (nc_put_vara_string (ncid, varid, cstart, ccount, strbuf));
-      RRETURN (R_NilValue);
-    }
-    break;
+  if (R_nc_length (ndims, ccount) > 0) {
+    buf = R_nc_r2c (data, ncid, xtype, ndims, ccount, NULL, NULL, NULL);
+    R_nc_check (nc_put_vara (ncid, varid, cstart, ccount, buf));
   }
 
-  switch (xtype) {
-  case NC_BYTE:
-  case NC_UBYTE:
-  case NC_SHORT:
-  case NC_USHORT:
-  case NC_INT:
-  case NC_UINT:
-  case NC_FLOAT:
-  case NC_DOUBLE:
-  case NC_INT64:
-  case NC_UINT64:
-    switch (TYPEOF (data)) {
-    case INTSXP:
-    case LGLSXP:
-      R_nc_check (nc_put_vara_int (ncid, varid, cstart, ccount, INTEGER (data)));
-      RRETURN (R_NilValue);
-    case REALSXP:
-      if (isInt64 (data)) {
-        if (xtype == NC_UINT64) {
-          /* Preserve full range of unsigned long long */
-          R_nc_check (nc_put_vara_ulonglong (ncid, varid, cstart, ccount,
-                      (unsigned long long *) REAL (data)));
-        } else {
-          /* R integer64 is usually signed */
-          R_nc_check (nc_put_vara_longlong (ncid, varid, cstart, ccount,
-                      (long long *) REAL (data)));
-        }
-      } else {
-        R_nc_check (nc_put_vara_double (ncid, varid, cstart, ccount, REAL (data)));
-      }
-      RRETURN (R_NilValue);
-    }
-    break;
-  }
-
-  /* If this point is reached, input and external types were not compatible */
-  RERROR (RNC_EDATATYPE);
+  RRETURN (R_NilValue);
 }
 
 
