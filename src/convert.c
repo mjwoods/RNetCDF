@@ -667,6 +667,41 @@ R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint64, unsigned long long);
 
 
 /*=============================================================================*\
+ *  User-defined type conversions
+\*=============================================================================*/
+
+/* Convert list of vectors from R to nc_vlen_t format.
+   Memory for the result is allocated if necessary (and freed by R).
+   In special cases, the output may point to the input data,
+   so the output data should not be modified.
+   An error is raised if input values cannot be converted to the vlen base type.
+ */
+static nc_vlen_t *
+R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
+                  const void *fill, const double *scale, const double *add)
+{
+  size_t ii, cnt, len;
+  nc_type basetype;
+  nc_vlen_t *vbuf;
+
+  R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, NULL, NULL));
+  cnt = R_nc_length (ndim, xdim);
+  if (xlength (rv) < cnt) {
+    RERROR (RNC_EDATALEN);
+  }
+
+  vbuf = (nc_vlen_t *) R_alloc (cnt, sizeof(nc_vlen_t));
+  for (ii=0; ii<cnt; ii++) {
+    len = xlength(VECTOR_ELT(rv, ii));
+    vbuf[ii].len = len;
+    vbuf[ii].p = (void *) R_nc_r2c (VECTOR_ELT(rv, ii), ncid, basetype,
+                                    -1, &len, fill, scale, add);
+  }
+  return vbuf;
+}
+
+
+/*=============================================================================*\
  *  Generic type conversions
 \*=============================================================================*/
 
@@ -674,141 +709,105 @@ const void *
 R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
           const void *fill, const double *scale, const double *add)
 {
-  const void *cv=NULL;
+  int class;
 
   switch (TYPEOF(rv)) {
   case INTSXP:
     switch (xtype) {
     case NC_BYTE:
-      cv = R_nc_r2c_int_schar (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_schar (rv, ndim, xdim, fill, scale, add);
     case NC_UBYTE:
-      cv = R_nc_r2c_int_uchar (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_uchar (rv, ndim, xdim, fill, scale, add);
     case NC_SHORT:
-      cv = R_nc_r2c_int_short (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_short (rv, ndim, xdim, fill, scale, add);
     case NC_USHORT:
-      cv = R_nc_r2c_int_ushort (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_ushort (rv, ndim, xdim, fill, scale, add);
     case NC_INT:
-      cv = R_nc_r2c_int_int (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_int (rv, ndim, xdim, fill, scale, add);
     case NC_UINT:
-      cv = R_nc_r2c_int_uint (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_uint (rv, ndim, xdim, fill, scale, add);
     case NC_INT64:
-      cv = R_nc_r2c_int_ll (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_ll (rv, ndim, xdim, fill, scale, add);
     case NC_UINT64:
-      cv = R_nc_r2c_int_ull (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_ull (rv, ndim, xdim, fill, scale, add);
     case NC_FLOAT:
-      cv = R_nc_r2c_int_float (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_float (rv, ndim, xdim, fill, scale, add);
     case NC_DOUBLE:
-      cv = R_nc_r2c_int_dbl (rv, ndim, xdim, fill, scale, add);
-      break;
-    default:
-      R_nc_error (RNC_EDATATYPE);
+      return R_nc_r2c_int_dbl (rv, ndim, xdim, fill, scale, add);
     }
     break;
   case REALSXP:  
     if (isInt64(rv)) {
       switch (xtype) {
       case NC_BYTE:
-	cv = R_nc_r2c_bit64_schar (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_schar (rv, ndim, xdim, fill, scale, add);
       case NC_UBYTE:
-	cv = R_nc_r2c_bit64_uchar (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_uchar (rv, ndim, xdim, fill, scale, add);
       case NC_SHORT:
-	cv = R_nc_r2c_bit64_short (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_short (rv, ndim, xdim, fill, scale, add);
       case NC_USHORT:
-	cv = R_nc_r2c_bit64_ushort (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_ushort (rv, ndim, xdim, fill, scale, add);
       case NC_INT:
-	cv = R_nc_r2c_bit64_int (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_int (rv, ndim, xdim, fill, scale, add);
       case NC_UINT:
-	cv = R_nc_r2c_bit64_uint (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_uint (rv, ndim, xdim, fill, scale, add);
       case NC_INT64:
-	cv = R_nc_r2c_bit64_ll (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_ll (rv, ndim, xdim, fill, scale, add);
       case NC_UINT64:
-	cv = R_nc_r2c_bit64_ull (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_ull (rv, ndim, xdim, fill, scale, add);
       case NC_FLOAT:
-	cv = R_nc_r2c_bit64_float (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_float (rv, ndim, xdim, fill, scale, add);
       case NC_DOUBLE:
-	cv = R_nc_r2c_bit64_dbl (rv, ndim, xdim, fill, scale, add);
-	break;
-      default:
-	R_nc_error (RNC_EDATATYPE);
+	return R_nc_r2c_bit64_dbl (rv, ndim, xdim, fill, scale, add);
       }
     } else {
       switch (xtype) {
       case NC_BYTE:
-	cv = R_nc_r2c_dbl_schar (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_schar (rv, ndim, xdim, fill, scale, add);
       case NC_UBYTE:
-	cv = R_nc_r2c_dbl_uchar (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_uchar (rv, ndim, xdim, fill, scale, add);
       case NC_SHORT:
-	cv = R_nc_r2c_dbl_short (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_short (rv, ndim, xdim, fill, scale, add);
       case NC_USHORT:
-	cv = R_nc_r2c_dbl_ushort (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_ushort (rv, ndim, xdim, fill, scale, add);
       case NC_INT:
-	cv = R_nc_r2c_dbl_int (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_int (rv, ndim, xdim, fill, scale, add);
       case NC_UINT:
-	cv = R_nc_r2c_dbl_uint (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_uint (rv, ndim, xdim, fill, scale, add);
       case NC_INT64:
-	cv = R_nc_r2c_dbl_ll (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_ll (rv, ndim, xdim, fill, scale, add);
       case NC_UINT64:
-	cv = R_nc_r2c_dbl_ull (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_ull (rv, ndim, xdim, fill, scale, add);
       case NC_FLOAT:
-	cv = R_nc_r2c_dbl_float (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_float (rv, ndim, xdim, fill, scale, add);
       case NC_DOUBLE:
-	cv = R_nc_r2c_dbl_dbl (rv, ndim, xdim, fill, scale, add);
-	break;
-      default:
-	R_nc_error (RNC_EDATATYPE);
+	return R_nc_r2c_dbl_dbl (rv, ndim, xdim, fill, scale, add);
       }
     }
     break;
   case STRSXP:
     switch (xtype) {
     case NC_CHAR:
-      cv = R_nc_strsxp_char (rv, ndim, xdim);
-      break;
+      return R_nc_strsxp_char (rv, ndim, xdim);
     case NC_STRING:
-      cv = R_nc_strsxp_str (rv, ndim, xdim);
-      break;
-    default:
-      R_nc_error (RNC_EDATATYPE);
+      return R_nc_strsxp_str (rv, ndim, xdim);
     }
     break;
   case RAWSXP:
     if (xtype == NC_CHAR) {
-      cv = R_nc_raw_char (rv, ndim, xdim);
-    } else {
-      R_nc_error (RNC_EDATATYPE);
+      return R_nc_raw_char (rv, ndim, xdim);
     }
     break;
-  default:
-    R_nc_error (RNC_EDATATYPE);
+  case VECSXP:
+    if (xtype > NC_MAX_ATOMIC_TYPE) {
+      R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, NULL, NULL, &class));
+      if (class == NC_VLEN) {
+        return R_nc_vecsxp_vlen (rv, ncid, xtype, ndim, xdim, fill, scale, add);
+      }
+    }
+    break;
   }
-  return cv;
+  RERROR (RNC_EDATATYPE);
 }
 
 

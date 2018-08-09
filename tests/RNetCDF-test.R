@@ -147,9 +147,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   if (format == "netcdf4") {
     var.def.nc(nc, "namestr", "NC_STRING", c("station"))
-    varcnt <- varcnt+1
-
+    var.def.nc(nc, "profile", "vector", c("station","time"))
+    varcnt <- varcnt+2
     numtypes <- c("NC_UBYTE", "NC_USHORT", "NC_UINT")
+
     if (has_bit64) {
       var.def.nc(nc, "stationid", "NC_UINT64", c("station"))
       varcnt <- varcnt+1
@@ -213,6 +214,16 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   mybigfill     <- mysmallfill*1e100
   mypack        <- mysmall*10+5
 
+  if (format == "netcdf4") {
+    profiles      <- vector("list", nstation*ntime)
+    dim(profiles) <- c(nstation, ntime)
+    for (ii in seq_len(nstation)) {
+      for (jj in seq_len(ntime)) {
+	profiles[[ii,jj]] <- seq_len(ii+jj)*(ii+jj)
+      }
+    }
+  }
+
   ##  Put the data
   cat("Writing variables ...\n")
   var.put.nc(nc, "time", mytime, 1, length(mytime))
@@ -225,6 +236,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   if (format == "netcdf4") {
     var.put.nc(nc, "namestr", myname)
+    var.put.nc(nc, "profile", profiles)
     if (has_bit64) {
       myid <- as.integer64("1234567890123456789")+c(0,1,2,3,4)
       var.put.nc(nc, "stationid", myid)

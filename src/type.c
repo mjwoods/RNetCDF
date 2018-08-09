@@ -56,10 +56,6 @@
 #include "convert.h"
 #include "RNetCDF.h"
 
-#ifndef NC_MAX_ATOMIC_TYPE
-  #define NC_MAX_ATOMIC_TYPE NC_STRING
-#endif
-
 
 /*-----------------------------------------------------------------------------*\
  *  R_nc_def_type()
