@@ -181,7 +181,7 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
   R_nc_check (R_nc_enddef (ncid));
 
   /*-- Allocate memory and read attribute from file ---------------------------*/
-  buf = R_nc_c2r_init (&io, ncid, xtype, -1, &cnt,
+  buf = R_nc_c2r_init (&io, NULL, ncid, xtype, -1, &cnt,
                        israw, isfit, NULL, NULL, NULL);
   if (cnt > 0) {
     R_nc_check (nc_get_att (ncid, varid, attname, buf));

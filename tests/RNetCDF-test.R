@@ -111,9 +111,9 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     id_blob <- type.def.nc(nc, "blob", "opaque", size=128)
     inq_blob <- list(id=id_blob, name="blob", class="opaque", size=128)
 
-    id_vector <- type.def.nc(nc, "vector", "vlen", basetype="NC_FLOAT")
+    id_vector <- type.def.nc(nc, "vector", "vlen", basetype="NC_INT")
     inq_vector <- list(id=id_vector, name="vector", class="vlen",
-                       size=NA, basetype="NC_FLOAT")
+                       size=NA, basetype="NC_INT")
 
     id_factor <- type.def.nc(nc, "factor", "enum", basetype="NC_INT")
     type.insert.nc(nc, "factor", "peanut butter", value=101)
@@ -515,6 +515,18 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     x <- inq_struct[1:4]
     y <- type.inq.nc(nc, id_struct, fields=FALSE)
     tally <- testfun(x,y,tally)
+
+    cat("Read vlen as double ...")
+    x <- profiles
+    y <- var.get.nc(nc, "profile")
+    tally <- testfun(x,y,tally)
+    tally <- testfun(isTRUE(all(lapply(y,is.double))), TRUE, tally)
+
+    cat("Read vlen as integer ...")
+    x <- profiles
+    y <- var.get.nc(nc, "profile", fitnum=TRUE)
+    tally <- testfun(x,y,tally)
+    tally <- testfun(isTRUE(all(lapply(y,is.integer))), TRUE, tally)
   }
 
   cat("Read and unpack numeric array ... ")
