@@ -146,7 +146,7 @@ att.put.nc <- function(ncfile, variable, name, type, value) {
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.character(name))
-  stopifnot(is.character(type))
+  stopifnot(is.character(type) || is.numeric(type))
   stopifnot(is.numeric(value) || is.character(value) ||
             is.raw(value) || is.logical(value))
   
@@ -426,7 +426,7 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions) {
   #-- Check args -------------------------------------------------------------
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(varname))
-  stopifnot(is.character(vartype))
+  stopifnot(is.character(vartype) || is.numeric(vartype))
 
   if (length(dimensions) == 1 && is.na(dimensions)) {
     dimensions <- integer(0)

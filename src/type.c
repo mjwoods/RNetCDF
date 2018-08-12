@@ -91,7 +91,7 @@ R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP basetype, SEXP size)
   switch (mode) {
   case 'e':
   case 'v':
-    R_nc_check (R_nc_str2type (ncid, CHAR (STRING_ELT (basetype, 0)), &xtype));
+    R_nc_check (R_nc_type_id (basetype, ncid, &xtype));
     break;
   case 'c':
   case 'o':
@@ -147,11 +147,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
   /*-- Decode arguments -------------------------------------------------------*/
   ncid = asInteger (nc);
 
-  if (isString (type)) {
-    R_nc_check (R_nc_str2type (ncid, CHAR (STRING_ELT (type, 0)), &typeid));
-  } else {
-    typeid = asInteger (type);
-  }
+  R_nc_check (R_nc_type_id (type, ncid, &typeid));
 
   fldname = CHAR (STRING_ELT (name, 0));
 
@@ -173,12 +169,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
         coffset = asReal (offset);
       }
 
-      if (isString (subtype)) {
-        R_nc_check (R_nc_str2type (ncid, CHAR (STRING_ELT (subtype, 0)),
-                                   &xtype));
-      } else {
-        xtype = asInteger (subtype);
-      }
+      R_nc_check (R_nc_type_id (subtype, ncid, &xtype));
 
       if (isNull (dimsizes)) {
         ndims = 0;
