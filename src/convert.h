@@ -65,7 +65,7 @@ R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount);
    Other functions should not access members directly. */
 typedef struct {
   SEXP rxp;
-  void *buf;
+  void *cbuf, *rbuf;
   nc_type xtype;
   int ncid, ndim, rawchar, fitnum;
   size_t *xdim;
@@ -89,10 +89,11 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
 
 
 /* Convert an array of netcdf external type (xtype) to R.
-   Memory buffers are allocated by R_nc_c2r_init (and freed by R),
-   returning a pointer that can be used in netcdf read/write functions.
-   The C to R conversion is performed by R_nc_c2r.
+   Memory buffers for R and (optionally) C arrays are allocated by R_nc_c2r_init;
+   the C to R conversion is performed by R_nc_c2r, and memory is freed by R.
    Argument io is a pointer to an existing R_nc_buf (must not be NULL).
+   The result of R_nc_c2r_init is a pointer to the C buffer used for netcdf functions,
+   which may be specified by argument cbuf or internally allocated if cbuf is NULL.
    The number and lengths of netcdf dimensions are ndim and xdim (C-order).
    The special case ndims < 0 gives a vector (no dim attribute) of length xdim[0].
    If fitnum is true (non-zero), rv is the smallest compatible R numeric type,
@@ -103,7 +104,7 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
    Unpacking is performed if either scale or add are not NULL.
  */
 void * \
-R_nc_c2r_init (R_nc_buf *io,
+R_nc_c2r_init (R_nc_buf *io, void *cbuf,
                int ncid, nc_type xtype, int ndim, const size_t *xdim,
                int rawchar, int fitnum,
                const void *fill, const double *scale, const double *add);

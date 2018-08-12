@@ -56,10 +56,6 @@
 #include "convert.h"
 #include "RNetCDF.h"
 
-#ifndef NC_MAX_ATOMIC_TYPE
-  #define NC_MAX_ATOMIC_TYPE NC_STRING
-#endif
-
 
 /*-----------------------------------------------------------------------------*\
  *  R_nc_def_type()
@@ -303,7 +299,7 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
       if (extend) {
 	/* Read named vector of member values */
 	fieldnames = R_nc_protect (allocVector (STRSXP, nfields));
-        cval = R_nc_c2r_init (&io, ncid, basetype, -1, &nfields,
+        cval = R_nc_c2r_init (&io, NULL, ncid, basetype, -1, &nfields,
                               0, 1, NULL, NULL, NULL);
 
 	imax = nfields; // netcdf member index is int

@@ -323,7 +323,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   R_nc_check (R_nc_enddef (ncid));
 
   /*-- Allocate memory and read variable from file ----------------------------*/
-  buf = R_nc_c2r_init (&io, ncid, xtype, ndims, ccount,
+  buf = R_nc_c2r_init (&io, NULL, ncid, xtype, ndims, ccount,
                        israw, isfit, NULL, NULL, NULL);
 
   if (R_nc_length (ndims, ccount) > 0) {

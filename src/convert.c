@@ -189,15 +189,15 @@ R_nc_strsxp_char (SEXP rstr, int ndim, const size_t *xdim)
 static void
 R_nc_char_strsxp_init (R_nc_buf *io)
 {
-  size_t cnt;
   if (io->ndim > 0) {
     io->rxp = R_nc_allocArray (STRSXP, (io->ndim)-1, io->xdim);
   } else {
     /* Single character or string */
     io->rxp = R_nc_allocArray (STRSXP, 0, io->xdim);
   }
-  cnt = R_nc_length (io->ndim, io->xdim);
-  io->buf = R_alloc (cnt, sizeof (char));
+  if (!io->cbuf) {
+    io->cbuf = R_alloc (R_nc_length (io->ndim, io->xdim), sizeof (char));
+  }
 }
 
 
@@ -218,7 +218,7 @@ R_nc_char_strsxp (R_nc_buf *io)
   }
   rlen = (clen <= RNC_CHARSXP_MAXLEN) ? clen : RNC_CHARSXP_MAXLEN;
   cnt = xlength (io->rxp);
-  for (ii=0, thisstr=io->buf; ii<cnt; ii++, thisstr+=clen) {
+  for (ii=0, thisstr=io->cbuf; ii<cnt; ii++, thisstr+=clen) {
     /* Temporarily null-terminate each string before passing to R */
     endstr = thisstr + rlen;
     endchar = *endstr;
@@ -245,14 +245,19 @@ static void
 R_nc_char_raw_init (R_nc_buf *io)
 {
   io->rxp = R_nc_allocArray (RAWSXP, io->ndim, io->xdim);
-  io->buf = RAW (io->rxp);
+  io->rbuf = RAW (io->rxp);
+  if (!io->cbuf) {
+    io->cbuf = io->rbuf;
+  }
 }
 
 
 static void
 R_nc_char_raw (R_nc_buf *io)
 {
-  // Nothing to do!
+  if (io->cbuf != io->rbuf) {
+    memcpy(io->rbuf, io->cbuf, xlength(io->rxp) * sizeof(char));
+  }
   return;
 }
 
@@ -277,10 +282,10 @@ R_nc_strsxp_str (SEXP rstr, int ndim, const size_t *xdim)
 static void
 R_nc_str_strsxp_init (R_nc_buf *io)
 {
-  size_t cnt;
-  cnt = R_nc_length (io->ndim, io->xdim);
   io->rxp = R_nc_allocArray (STRSXP, io->ndim, io->xdim);
-  io->buf = R_alloc (cnt, sizeof(size_t));
+  if (!io->cbuf) {
+    io->cbuf = R_alloc (xlength (io->rxp), sizeof(size_t));
+  }
 }
 
 
@@ -290,7 +295,7 @@ R_nc_str_strsxp (R_nc_buf *io)
   size_t ii, nchar, cnt;
   char **cstr, *endstr, endchar;
   cnt = xlength (io->rxp);
-  cstr = (char **) io->buf;
+  cstr = (char **) io->cbuf;
   for (ii=0; ii<cnt; ii++) {
     nchar = strlen (cstr[ii]);
     if (nchar > RNC_CHARSXP_MAXLEN) {
@@ -306,7 +311,7 @@ R_nc_str_strsxp (R_nc_buf *io)
   }
   /* Free pointers to strings created by netcdf */
   if (cnt > 0) {
-    R_nc_check (nc_free_string (cnt, io->buf));
+    R_nc_check (nc_free_string (cnt, io->cbuf));
   }
 }
 
@@ -508,7 +513,10 @@ static void \
 FUN (R_nc_buf *io) \
 { \
   io->rxp = R_nc_allocArray (SEXPTYPE, io->ndim, io->xdim); \
-  io->buf = OFUN (io->rxp); \
+  io->rbuf = OFUN (io->rxp); \
+  if (!io->cbuf) { \
+    io->cbuf = io->rbuf; \
+  } \
 }
 
 R_NC_C2R_NUM_INIT(R_nc_c2r_int_init, INTSXP, INTEGER);
@@ -531,9 +539,9 @@ FUN (R_nc_buf *io) \
   ITYPE fillval, *in; \
   OTYPE *out; \
   ii = xlength (io->rxp); \
-  in = (ITYPE *) io->buf; \
-  out = (OTYPE *) io->buf; \
-  if (NCITYPE == NCOTYPE) { \
+  in = (ITYPE *) io->cbuf; \
+  out = (OTYPE *) io->rbuf; \
+  if (NCITYPE == NCOTYPE && io->cbuf == io->rbuf) { \
     if (io->fill) { \
       fillval = *((ITYPE *) io->fill); \
       if (fillval != fillval) { \
@@ -616,8 +624,8 @@ FUN (R_nc_buf *io) \
   ITYPE fillval, *in; \
   double *out; \
   ii = xlength (io->rxp); \
-  in = (ITYPE *) io->buf; \
-  out = (double *) io->buf; \
+  in = (ITYPE *) io->cbuf; \
+  out = (double *) io->rbuf; \
   if (io->scale) { \
     factor = *(io->scale); \
   } else { \
@@ -667,6 +675,84 @@ R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint64, unsigned long long);
 
 
 /*=============================================================================*\
+ *  User-defined type conversions
+\*=============================================================================*/
+
+/* Convert list of vectors from R to nc_vlen_t format.
+   Memory for the result is allocated if necessary (and freed by R).
+   In special cases, the output may point to the input data,
+   so the output data should not be modified.
+   An error is raised if input values cannot be converted to the vlen base type.
+ */
+static nc_vlen_t *
+R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
+                  const void *fill, const double *scale, const double *add)
+{
+  size_t ii, cnt, len;
+  nc_type basetype;
+  nc_vlen_t *vbuf;
+
+  R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, NULL, NULL));
+  cnt = R_nc_length (ndim, xdim);
+  if (xlength (rv) < cnt) {
+    RERROR (RNC_EDATALEN);
+  }
+
+  vbuf = (nc_vlen_t *) R_alloc (cnt, sizeof(nc_vlen_t));
+  for (ii=0; ii<cnt; ii++) {
+    len = xlength(VECTOR_ELT(rv, ii));
+    vbuf[ii].len = len;
+    vbuf[ii].p = (void *) R_nc_r2c (VECTOR_ELT(rv, ii), ncid, basetype,
+                                    -1, &len, fill, scale, add);
+  }
+  return vbuf;
+}
+
+
+/* Allocate memory for reading a slice of a netcdf vlen variable
+   and converting the results to an R variable.
+   On input, the R_nc_buf structure contains dimensions of the buffer (ndim, *xdim).
+   On output, the R_nc_buf structure contains an allocated R list (with dim attribute),
+     and the C buffer is an array of pointers which are allocated by netcdf
+     when reading from the variable (and which must be freed later by netcdf).
+ */
+static void
+R_nc_vlen_vecsxp_init (R_nc_buf *io)
+{
+  io->rxp = R_nc_allocArray (VECSXP, io->ndim, io->xdim);
+  if (!io->cbuf) {
+    io->cbuf = R_alloc (xlength (io->rxp), sizeof(nc_vlen_t));
+  }
+}
+
+
+/* Convert netcdf vlen array from C to R format.
+   Parameters and buffers for the conversion are passed via the R_nc_buf struct.
+   On input, the C data is stored in io->cbuf.
+   On output, the R data is copied to io->rxp, and memory used by netcdf is freed.
+ */
+static void
+R_nc_vlen_vecsxp (R_nc_buf *io)
+{
+  size_t ii, cnt;
+  nc_type basetype;
+  nc_vlen_t *vbuf;
+  R_nc_buf tmpio;
+
+  vbuf = io->cbuf;
+  cnt = xlength (io->rxp);
+  R_nc_check (nc_inq_user_type (io->ncid, io->xtype, NULL, NULL, &basetype, NULL, NULL));
+
+  for (ii=0; ii<cnt; ii++) {
+    R_nc_c2r_init (&tmpio, vbuf[ii].p, io->ncid, basetype, -1, &(vbuf[ii].len),
+                   io->rawchar, io->fitnum, io->fill, io->scale, io->add);
+    SET_VECTOR_ELT (io->rxp, ii, R_nc_c2r (&tmpio));
+    nc_free_vlen(&(vbuf[ii]));
+  }
+}
+
+
+/*=============================================================================*\
  *  Generic type conversions
 \*=============================================================================*/
 
@@ -674,156 +760,125 @@ const void *
 R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
           const void *fill, const double *scale, const double *add)
 {
-  const void *cv=NULL;
+  int class;
 
   switch (TYPEOF(rv)) {
   case INTSXP:
     switch (xtype) {
     case NC_BYTE:
-      cv = R_nc_r2c_int_schar (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_schar (rv, ndim, xdim, fill, scale, add);
     case NC_UBYTE:
-      cv = R_nc_r2c_int_uchar (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_uchar (rv, ndim, xdim, fill, scale, add);
     case NC_SHORT:
-      cv = R_nc_r2c_int_short (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_short (rv, ndim, xdim, fill, scale, add);
     case NC_USHORT:
-      cv = R_nc_r2c_int_ushort (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_ushort (rv, ndim, xdim, fill, scale, add);
     case NC_INT:
-      cv = R_nc_r2c_int_int (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_int (rv, ndim, xdim, fill, scale, add);
     case NC_UINT:
-      cv = R_nc_r2c_int_uint (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_uint (rv, ndim, xdim, fill, scale, add);
     case NC_INT64:
-      cv = R_nc_r2c_int_ll (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_ll (rv, ndim, xdim, fill, scale, add);
     case NC_UINT64:
-      cv = R_nc_r2c_int_ull (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_ull (rv, ndim, xdim, fill, scale, add);
     case NC_FLOAT:
-      cv = R_nc_r2c_int_float (rv, ndim, xdim, fill, scale, add);
-      break;
+      return R_nc_r2c_int_float (rv, ndim, xdim, fill, scale, add);
     case NC_DOUBLE:
-      cv = R_nc_r2c_int_dbl (rv, ndim, xdim, fill, scale, add);
-      break;
-    default:
-      R_nc_error (RNC_EDATATYPE);
+      return R_nc_r2c_int_dbl (rv, ndim, xdim, fill, scale, add);
     }
     break;
   case REALSXP:  
     if (isInt64(rv)) {
       switch (xtype) {
       case NC_BYTE:
-	cv = R_nc_r2c_bit64_schar (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_schar (rv, ndim, xdim, fill, scale, add);
       case NC_UBYTE:
-	cv = R_nc_r2c_bit64_uchar (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_uchar (rv, ndim, xdim, fill, scale, add);
       case NC_SHORT:
-	cv = R_nc_r2c_bit64_short (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_short (rv, ndim, xdim, fill, scale, add);
       case NC_USHORT:
-	cv = R_nc_r2c_bit64_ushort (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_ushort (rv, ndim, xdim, fill, scale, add);
       case NC_INT:
-	cv = R_nc_r2c_bit64_int (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_int (rv, ndim, xdim, fill, scale, add);
       case NC_UINT:
-	cv = R_nc_r2c_bit64_uint (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_uint (rv, ndim, xdim, fill, scale, add);
       case NC_INT64:
-	cv = R_nc_r2c_bit64_ll (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_ll (rv, ndim, xdim, fill, scale, add);
       case NC_UINT64:
-	cv = R_nc_r2c_bit64_ull (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_ull (rv, ndim, xdim, fill, scale, add);
       case NC_FLOAT:
-	cv = R_nc_r2c_bit64_float (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_bit64_float (rv, ndim, xdim, fill, scale, add);
       case NC_DOUBLE:
-	cv = R_nc_r2c_bit64_dbl (rv, ndim, xdim, fill, scale, add);
-	break;
-      default:
-	R_nc_error (RNC_EDATATYPE);
+	return R_nc_r2c_bit64_dbl (rv, ndim, xdim, fill, scale, add);
       }
     } else {
       switch (xtype) {
       case NC_BYTE:
-	cv = R_nc_r2c_dbl_schar (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_schar (rv, ndim, xdim, fill, scale, add);
       case NC_UBYTE:
-	cv = R_nc_r2c_dbl_uchar (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_uchar (rv, ndim, xdim, fill, scale, add);
       case NC_SHORT:
-	cv = R_nc_r2c_dbl_short (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_short (rv, ndim, xdim, fill, scale, add);
       case NC_USHORT:
-	cv = R_nc_r2c_dbl_ushort (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_ushort (rv, ndim, xdim, fill, scale, add);
       case NC_INT:
-	cv = R_nc_r2c_dbl_int (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_int (rv, ndim, xdim, fill, scale, add);
       case NC_UINT:
-	cv = R_nc_r2c_dbl_uint (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_uint (rv, ndim, xdim, fill, scale, add);
       case NC_INT64:
-	cv = R_nc_r2c_dbl_ll (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_ll (rv, ndim, xdim, fill, scale, add);
       case NC_UINT64:
-	cv = R_nc_r2c_dbl_ull (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_ull (rv, ndim, xdim, fill, scale, add);
       case NC_FLOAT:
-	cv = R_nc_r2c_dbl_float (rv, ndim, xdim, fill, scale, add);
-	break;
+	return R_nc_r2c_dbl_float (rv, ndim, xdim, fill, scale, add);
       case NC_DOUBLE:
-	cv = R_nc_r2c_dbl_dbl (rv, ndim, xdim, fill, scale, add);
-	break;
-      default:
-	R_nc_error (RNC_EDATATYPE);
+	return R_nc_r2c_dbl_dbl (rv, ndim, xdim, fill, scale, add);
       }
     }
     break;
   case STRSXP:
     switch (xtype) {
     case NC_CHAR:
-      cv = R_nc_strsxp_char (rv, ndim, xdim);
-      break;
+      return R_nc_strsxp_char (rv, ndim, xdim);
     case NC_STRING:
-      cv = R_nc_strsxp_str (rv, ndim, xdim);
-      break;
-    default:
-      R_nc_error (RNC_EDATATYPE);
+      return R_nc_strsxp_str (rv, ndim, xdim);
     }
     break;
   case RAWSXP:
     if (xtype == NC_CHAR) {
-      cv = R_nc_raw_char (rv, ndim, xdim);
-    } else {
-      R_nc_error (RNC_EDATATYPE);
+      return R_nc_raw_char (rv, ndim, xdim);
     }
     break;
-  default:
-    R_nc_error (RNC_EDATATYPE);
+  case VECSXP:
+    if (xtype > NC_MAX_ATOMIC_TYPE) {
+      R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, NULL, NULL, &class));
+      if (class == NC_VLEN) {
+        return R_nc_vecsxp_vlen (rv, ncid, xtype, ndim, xdim, fill, scale, add);
+      }
+    }
+    break;
   }
-  return cv;
+  RERROR (RNC_EDATATYPE);
 }
 
 
 void * \
-R_nc_c2r_init (R_nc_buf *io, int ncid, nc_type xtype, int ndim, const size_t *xdim,
+R_nc_c2r_init (R_nc_buf *io, void *cbuf,
+               int ncid, nc_type xtype, int ndim, const size_t *xdim,
                int rawchar, int fitnum,
                const void *fill, const double *scale, const double *add)
 {
+  int class;
+  size_t size;
+
   if (!io) {
     RERROR ("Pointer to R_nc_buf must not be NULL in R_nc_c2r_init");
   }
 
   /* Initialise the R_nc_buf, making copies of pointer arguments */
   io->rxp = NULL;
-  io->buf = NULL;
+  io->cbuf = cbuf;
+  io->rbuf = NULL;
   io->xtype = xtype;
   io->ncid = ncid;
   io->ndim = ndim;
@@ -847,7 +902,6 @@ R_nc_c2r_init (R_nc_buf *io, int ncid, nc_type xtype, int ndim, const size_t *xd
   }
 
   if (fill) {
-    size_t size;
     R_nc_check (nc_inq_type (ncid, xtype, NULL, &size));
     io->fill = R_alloc (1, size);
     memcpy (io->fill, fill, size);
@@ -897,16 +951,27 @@ R_nc_c2r_init (R_nc_buf *io, int ncid, nc_type xtype, int ndim, const size_t *xd
       R_nc_str_strsxp_init (io);
       break;
     default:
-      R_nc_error (RNC_ETYPEDROP);
+      if (xtype > NC_MAX_ATOMIC_TYPE) {
+        R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, NULL, NULL, &class));
+        switch (class) {
+        case NC_VLEN:
+          R_nc_vlen_vecsxp_init (io);
+          break;
+        default:
+          RERROR (RNC_ETYPEDROP);
+        }
+      } else {
+        RERROR (RNC_ETYPEDROP);
+      }
   }
-  return io->buf;
+  return io->cbuf;
 }
 
 
 SEXP
 R_nc_c2r (R_nc_buf *io)
 {
-  int unpack, fitnum;
+  int unpack, class;
 
   unpack = (io->scale || io->add);
 
@@ -1007,7 +1072,19 @@ R_nc_c2r (R_nc_buf *io)
       R_nc_str_strsxp (io);
       break;
     default:
-      R_nc_error (RNC_ETYPEDROP);
+      if (io->xtype > NC_MAX_ATOMIC_TYPE) {
+        R_nc_check (nc_inq_user_type (
+          io->ncid, io->xtype, NULL, NULL, NULL, NULL, &class));
+        switch (class) {
+        case NC_VLEN:
+          R_nc_vlen_vecsxp (io);
+          break;
+        default:
+          RERROR (RNC_ETYPEDROP);
+        }
+      } else {
+        RERROR (RNC_ETYPEDROP);
+      }
   }
   return io->rxp;
 }

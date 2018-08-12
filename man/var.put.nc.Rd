@@ -26,6 +26,8 @@ Due to the lack of native support for 64-bit integers in R, NetCDF types \code{N
 
 Values of \code{NA} are supported in numeric variables if the variable's missing value attribute (as defined in \code{na.mode}) is set. They are converted to the corresponding value before writing to disk. If \code{na.mode=0} and both attributes are defined, the value of \code{_FillValue} is used.
 
+Variables of user-defined types are supported, with assumptions about the corresponding data structures in R. "vlen" arrays must be stored in R as a list of vectors; array dimensions may be applied to the list.
+
 To reduce the storage space required by a NetCDF file, numeric variables can be "packed" into types of lower precision. The packing operation involves subtraction of attribute \code{add_offset} before division by attribute \code{scale_factor}. This packing operation is performed automatically for variables defined with the two attributes \code{add_offset} and \code{scale_factor} if argument \code{pack} is set to \code{TRUE}. If \code{pack} is \code{FALSE}, \code{data} values are assumed to be packed correctly and are written to the variable without alteration.
 
 Data in a NetCDF variable is represented as a multi-dimensional array. The number and length of dimensions is determined when the variable is created. The \code{start} and \code{count} arguments of this routine indicate where the writing starts and the number of values to write along each dimension.
