@@ -116,14 +116,14 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
                        size=NA, basetype="NC_INT")
 
     id_factor <- type.def.nc(nc, "factor", "enum", basetype="NC_INT")
-    type.insert.nc(nc, "factor", "peanut butter", value=101)
+    type.insert.nc(nc, id_factor, "peanut butter", value=101)
     type.insert.nc(nc, "factor", "jelly", value=102)
     inq_factor <- list(id=id_factor, name="factor", class="enum",
                        size=4, basetype="NC_INT",
                        value=c("peanut butter"=101,"jelly"=102))
 
     id_struct <- type.def.nc(nc, "struct", "compound", size=4+8+3*2)
-    type.insert.nc(nc, "struct", "siteid", offset=0, subtype="NC_INT")
+    type.insert.nc(nc, id_struct, "siteid", offset=0, subtype="NC_INT")
     type.insert.nc(nc, "struct", "height", offset=4, subtype="NC_DOUBLE")
     type.insert.nc(nc, "struct", "colour", offset=12, subtype="NC_SHORT", dimsizes=c(3))
     inq_struct <- list(id=id_struct, name="struct", class="compound", size=18,
@@ -147,7 +147,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   if (format == "netcdf4") {
     var.def.nc(nc, "namestr", "NC_STRING", c("station"))
-    var.def.nc(nc, "profile", "vector", c("station","time"))
+    var.def.nc(nc, "profile", id_vector, c("station","time"))
     varcnt <- varcnt+2
     numtypes <- c("NC_UBYTE", "NC_USHORT", "NC_UINT")
 
@@ -181,7 +181,8 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   att.put.nc(nc, "temperature", "missing_value", "NC_DOUBLE", -99999.9)
 
   ## Define the packing used by packvar
-  att.put.nc(nc, "packvar", "scale_factor", "NC_DOUBLE", 10)
+  id_double <- type.inq.nc(nc, "NC_DOUBLE")$id
+  att.put.nc(nc, "packvar", "scale_factor", id_double, 10)
   att.put.nc(nc, "packvar", "add_offset", "NC_DOUBLE", -5)
 
   ## Define some additional test attributes:
