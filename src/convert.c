@@ -678,6 +678,8 @@ R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint64, unsigned long long);
  *  User-defined type conversions
 \*=============================================================================*/
 
+/* -- VLEN class -- */
+
 /* Convert list of vectors from R to nc_vlen_t format.
    Memory for the result is allocated if necessary (and freed by R).
    In special cases, the output may point to the input data,
@@ -749,6 +751,56 @@ R_nc_vlen_vecsxp (R_nc_buf *io)
     SET_VECTOR_ELT (io->rxp, ii, R_nc_c2r (&tmpio));
     nc_free_vlen(&(vbuf[ii]));
   }
+}
+
+
+/* -- Opaque class -- */
+
+
+/* Convert raw array from R to netcdf opaque type.
+   Memory for the result is allocated if necessary (and freed by R).
+   In special cases, the output may point to the input data,
+   so the output data should not be modified.
+ */
+static const char *
+R_nc_raw_opaque (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim)
+{
+  size_t cnt, size;
+  R_nc_check (nc_inq_user_type (ncid, xtype, NULL, &size, NULL, NULL, NULL));
+  cnt = R_nc_length (ndim, xdim);
+  if (xlength (rv) < (cnt * size)) {
+    RERROR (RNC_EDATALEN);
+  }
+  return (const char *) RAW (rv);
+}
+
+
+static void
+R_nc_opaque_raw_init (R_nc_buf *io)
+{
+  size_t *xdim, size;
+
+  /* Fastest varying dimension of R array contains bytes of opaque data */
+  R_nc_check (nc_inq_user_type (io->ncid, io->xtype, NULL, &size, NULL, NULL, NULL));
+  xdim = (size_t *) R_alloc (io->ndim + 1, sizeof(size_t));
+  memcpy (xdim, io->xdim, io->ndim);
+  xdim[io->ndim] = size;
+
+  io->rxp = R_nc_allocArray (RAWSXP, io->ndim + 1, xdim);
+  io->rbuf = RAW (io->rxp);
+  if (!io->cbuf) {
+    io->cbuf = io->rbuf;
+  }
+}
+
+
+static void
+R_nc_opaque_raw (R_nc_buf *io)
+{
+  if (io->cbuf != io->rbuf) {
+    memcpy(io->rbuf, io->cbuf, xlength(io->rxp) * sizeof(char));
+  }
+  return;
 }
 
 
