@@ -807,7 +807,7 @@ R_nc_opaque_raw_init (R_nc_buf *io)
   /* Fastest varying dimension of R array contains bytes of opaque data */
   R_nc_check (nc_inq_user_type (io->ncid, io->xtype, NULL, &size, NULL, NULL, NULL));
   xdim = (size_t *) R_alloc (io->ndim + 1, sizeof(size_t));
-  memcpy (xdim, io->xdim, io->ndim);
+  memcpy (xdim, io->xdim, io->ndim * sizeof(size_t));
   xdim[io->ndim] = size;
 
   io->rxp = R_nc_allocArray (RAWSXP, io->ndim + 1, xdim);
@@ -837,6 +837,10 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
           const void *fill, const double *scale, const double *add)
 {
   int class;
+
+  if (xtype > NC_MAX_ATOMIC_TYPE) {
+    R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, NULL, NULL, &class));
+  }
 
   switch (TYPEOF(rv)) {
   case INTSXP:
@@ -923,14 +927,13 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
   case RAWSXP:
     if (xtype == NC_CHAR) {
       return R_nc_raw_char (rv, ndim, xdim);
+    } else if (xtype > NC_MAX_ATOMIC_TYPE && class == NC_OPAQUE) {
+      return R_nc_raw_opaque (rv, ncid, xtype, ndim, xdim);
     }
     break;
   case VECSXP:
-    if (xtype > NC_MAX_ATOMIC_TYPE) {
-      R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, NULL, NULL, &class));
-      if (class == NC_VLEN) {
-        return R_nc_vecsxp_vlen (rv, ncid, xtype, ndim, xdim, fill, scale, add);
-      }
+    if (xtype > NC_MAX_ATOMIC_TYPE && class == NC_VLEN) {
+      return R_nc_vecsxp_vlen (rv, ncid, xtype, ndim, xdim, fill, scale, add);
     }
     break;
   }
@@ -1032,6 +1035,9 @@ R_nc_c2r_init (R_nc_buf *io, void *cbuf,
         switch (class) {
         case NC_VLEN:
           R_nc_vlen_vecsxp_init (io);
+          break;
+        case NC_OPAQUE:
+          R_nc_opaque_raw_init (io);
           break;
         default:
           RERROR (RNC_ETYPEDROP);
@@ -1154,6 +1160,9 @@ R_nc_c2r (R_nc_buf *io)
         switch (class) {
         case NC_VLEN:
           R_nc_vlen_vecsxp (io);
+          break;
+        case NC_OPAQUE:
+          R_nc_opaque_raw (io);
           break;
         default:
           RERROR (RNC_ETYPEDROP);
