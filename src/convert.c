@@ -690,22 +690,46 @@ static nc_vlen_t *
 R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
                   const void *fill, const double *scale, const double *add)
 {
-  size_t ii, cnt, len;
+  size_t ii, cnt, len, size;
+  int baseclass;
   nc_type basetype;
   nc_vlen_t *vbuf;
+  SEXP item;
 
-  R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, NULL, NULL));
   cnt = R_nc_length (ndim, xdim);
   if (xlength (rv) < cnt) {
     RERROR (RNC_EDATALEN);
   }
 
+  R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, NULL, NULL));
+  if (basetype > NC_MAX_ATOMIC_TYPE) {
+    R_nc_check (nc_inq_user_type (ncid, basetype, NULL, &size, NULL, NULL, &baseclass));
+  } else {
+    baseclass = NC_NAT;
+    size = 0;
+  }
+
   vbuf = (nc_vlen_t *) R_alloc (cnt, sizeof(nc_vlen_t));
   for (ii=0; ii<cnt; ii++) {
-    len = xlength(VECTOR_ELT(rv, ii));
+    item = VECTOR_ELT(rv, ii);
+    if (basetype == NC_CHAR && TYPEOF (item) == STRSXP) {
+      if (xlength (item) > 0) {
+        len = strlen (CHAR (STRING_ELT (item, 0)));
+      } else {
+        len = 0;
+      }
+    } else if (baseclass == NC_OPAQUE && TYPEOF (item) == RAWSXP) {
+      len = xlength(item) / size;
+    } else {
+      len = xlength(item);
+    }
     vbuf[ii].len = len;
-    vbuf[ii].p = (void *) R_nc_r2c (VECTOR_ELT(rv, ii), ncid, basetype,
-                                    -1, &len, fill, scale, add);
+    if (len > 0) {
+      vbuf[ii].p = (void *) R_nc_r2c (item, ncid, basetype,
+                                      -1, &len, fill, scale, add);
+    } else {
+      vbuf[ii].p = NULL;
+    }
   }
   return vbuf;
 }
