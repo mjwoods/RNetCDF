@@ -160,8 +160,12 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.def.nc(nc, "profile", id_vector, c("station","time"))
     var.def.nc(nc, "profile_char", id_vector_char, c("station","time"))
     var.def.nc(nc, "profile_blob", id_vector_blob, c("time"))
+    var.def.nc(nc, "profile_scalar", id_vector, NA)
     var.def.nc(nc, "rawdata", id_blob, c("station","time"))
-    varcnt <- varcnt+5
+    var.def.nc(nc, "rawdata_scalar", id_blob, NA)
+    var.def.nc(nc, "rawdata_vector", id_blob, c("station"))
+    varcnt <- varcnt+8
+
     numtypes <- c("NC_UBYTE", "NC_USHORT", "NC_UINT")
 
     if (has_bit64) {
@@ -262,7 +266,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.put.nc(nc, "profile", profiles)
     var.put.nc(nc, "profile_char", profiles_char)
     var.put.nc(nc, "profile_blob", profiles_blob)
+    var.put.nc(nc, "profile_scalar", profiles[1])
     var.put.nc(nc, "rawdata", rawdata)
+    var.put.nc(nc, "rawdata_scalar", rawdata[,1,1])
+    var.put.nc(nc, "rawdata_vector", rawdata[,,1])
     if (has_bit64) {
       myid <- as.integer64("1234567890123456789")+c(0,1,2,3,4)
       var.put.nc(nc, "stationid", myid)
@@ -562,6 +569,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     tally <- testfun(x,y,tally)
     tally <- testfun(isTRUE(all(sapply(y,is.integer))), TRUE, tally)
 
+    cat("Read vlen scalar ...")
+    x <- profiles[1]
+    y <- var.get.nc(nc, "profile_scalar")
+    tally <- testfun(x,y,tally)
+
     cat("Read vlen as character ...")
     x <- profiles_char
     y <- var.get.nc(nc, "profile_char")
@@ -576,6 +588,17 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     cat("Read opaque ...")
     x <- rawdata
     y <- var.get.nc(nc, "rawdata")
+    tally <- testfun(x,y,tally)
+
+    cat("Read opaque scalar ...")
+    x <- rawdata[,1,1]
+    dim(x) <- length(x)
+    y <- var.get.nc(nc, "rawdata_scalar")
+    tally <- testfun(x,y,tally)
+
+    cat("Read opaque vector ...")
+    x <- rawdata[,,1]
+    y <- var.get.nc(nc, "rawdata_vector")
     tally <- testfun(x,y,tally)
 
     cat("Read opaque vlen ...")
