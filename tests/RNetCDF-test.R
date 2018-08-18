@@ -253,7 +253,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.put.nc(nc, "namestr", myname)
     var.put.nc(nc, "profile", profiles)
     var.put.nc(nc, "profile_char", profiles_char)
-    var.put.nc(nc, "rawdata", rawdata, start=c(1,1), count=c(nstation,ntime))
+    var.put.nc(nc, "rawdata", rawdata)
     if (has_bit64) {
       myid <- as.integer64("1234567890123456789")+c(0,1,2,3,4)
       var.put.nc(nc, "stationid", myid)
