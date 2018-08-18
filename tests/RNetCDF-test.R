@@ -85,6 +85,10 @@ testfun <- function(x,y,tally=NULL) {
 
 tally <- NULL
 
+# TODO: add tests:
+# - opaque
+# - VLEN with strings and opaque
+
 ##  Create a new NetCDF dataset and define dimensions
 for (format in c("classic","offset64","classic4","netcdf4")) {
   cat("Test",format,"file format ...\n")
@@ -115,6 +119,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     inq_vector <- list(id=id_vector, name="vector", class="vlen",
                        size=NA, basetype="NC_INT")
 
+    id_vector_char <- type.def.nc(nc, "vector_char", "vlen", basetype="NC_CHAR")
+    inq_vector_char <- list(id=id_vector_char, name="vector_char", class="vlen",
+                            size=NA, basetype="NC_CHAR")
+
     id_factor <- type.def.nc(nc, "factor", "enum", basetype="NC_INT")
     type.insert.nc(nc, id_factor, "peanut butter", value=101)
     type.insert.nc(nc, "factor", "jelly", value=102)
@@ -130,6 +138,8 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
                        offset=c(siteid=0,height=4,colour=12),
                        subtype=c(siteid="NC_INT",height="NC_DOUBLE",colour="NC_SHORT"),
                        dimsizes=list("siteid"=NULL,"height"=NULL,"colour"=c(3)))
+
+    typeids <- c(id_blob,id_vector,id_vector_char,id_factor,id_struct)
   }
 
   ##  Define variables
@@ -148,7 +158,8 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   if (format == "netcdf4") {
     var.def.nc(nc, "namestr", "NC_STRING", c("station"))
     var.def.nc(nc, "profile", id_vector, c("station","time"))
-    varcnt <- varcnt+2
+    var.def.nc(nc, "profile_char", id_vector_char, c("station","time"))
+    varcnt <- varcnt+3
     numtypes <- c("NC_UBYTE", "NC_USHORT", "NC_UINT")
 
     if (has_bit64) {
@@ -223,6 +234,9 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 	profiles[[ii,jj]] <- seq_len(ii+jj)*(ii+jj)
       }
     }
+
+    profiles_char <- lapply(profiles,function(x) {paste(as.character(x),collapse=",")})
+    dim(profiles_char) <- dim(profiles)
   }
 
   ##  Put the data
@@ -238,6 +252,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   if (format == "netcdf4") {
     var.put.nc(nc, "namestr", myname)
     var.put.nc(nc, "profile", profiles)
+    var.put.nc(nc, "profile_char", profiles_char)
     if (has_bit64) {
       myid <- as.integer64("1234567890123456789")+c(0,1,2,3,4)
       var.put.nc(nc, "stationid", myid)
@@ -331,7 +346,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   }
   if (format == "netcdf4") {
     cat("Inquire about user-defined types in file/group ...")
-    tally <- testfun(grpinfo$typeids,c(id_blob,id_vector,id_factor,id_struct),tally)
+    tally <- testfun(grpinfo$typeids,typeids,tally)
   }
 
   cat("Read integer vector as double ... ")
@@ -501,6 +516,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     y <- type.inq.nc(nc, id_vector)[-4]
     tally <- testfun(x,y,tally)
 
+    x <- inq_vector_char[-4]
+    y <- type.inq.nc(nc, id_vector_char)[-4]
+    tally <- testfun(x,y,tally)
+
     x <- inq_factor
     y <- type.inq.nc(nc, id_factor)
     tally <- testfun(x,y,tally)
@@ -528,6 +547,17 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     y <- var.get.nc(nc, "profile", fitnum=TRUE)
     tally <- testfun(x,y,tally)
     tally <- testfun(isTRUE(all(lapply(y,is.integer))), TRUE, tally)
+
+    cat("Read vlen as character ...")
+    x <- profiles_char
+    y <- var.get.nc(nc, "profile_char")
+    tally <- testfun(x,y,tally)
+
+    cat("Read vlen as raw ...")
+    x <- lapply(profiles_char,charToRaw)
+    dim(x) <- dim(profiles_char)
+    y <- var.get.nc(nc, "profile_char", rawchar=TRUE)
+    tally <- testfun(x,y,tally)    
   }
 
   cat("Read and unpack numeric array ... ")
