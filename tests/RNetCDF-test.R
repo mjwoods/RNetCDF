@@ -85,10 +85,6 @@ testfun <- function(x,y,tally=NULL) {
 
 tally <- NULL
 
-# TODO: add tests:
-# - opaque
-# - VLEN with strings and opaque
-
 ##  Create a new NetCDF dataset and define dimensions
 for (format in c("classic","offset64","classic4","netcdf4")) {
   cat("Test",format,"file format ...\n")
@@ -159,7 +155,8 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.def.nc(nc, "namestr", "NC_STRING", c("station"))
     var.def.nc(nc, "profile", id_vector, c("station","time"))
     var.def.nc(nc, "profile_char", id_vector_char, c("station","time"))
-    varcnt <- varcnt+3
+    var.def.nc(nc, "rawdata", id_blob, c("station","time"))
+    varcnt <- varcnt+4
     numtypes <- c("NC_UBYTE", "NC_USHORT", "NC_UINT")
 
     if (has_bit64) {
@@ -237,6 +234,9 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
     profiles_char <- lapply(profiles,function(x) {paste(as.character(x),collapse=",")})
     dim(profiles_char) <- dim(profiles)
+
+    rawdata <- as.raw(seq_len(nstation*ntime*128) %% 256)
+    dim(rawdata) <- c(128,nstation,ntime)
   }
 
   ##  Put the data
@@ -253,6 +253,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.put.nc(nc, "namestr", myname)
     var.put.nc(nc, "profile", profiles)
     var.put.nc(nc, "profile_char", profiles_char)
+    var.put.nc(nc, "rawdata", rawdata, start=c(1,1), count=c(nstation,ntime))
     if (has_bit64) {
       myid <- as.integer64("1234567890123456789")+c(0,1,2,3,4)
       var.put.nc(nc, "stationid", myid)
@@ -557,7 +558,12 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     x <- lapply(profiles_char,charToRaw)
     dim(x) <- dim(profiles_char)
     y <- var.get.nc(nc, "profile_char", rawchar=TRUE)
-    tally <- testfun(x,y,tally)    
+    tally <- testfun(x,y,tally)
+
+    cat("Read opaque ...")
+    x <- rawdata
+    y <- var.get.nc(nc, "rawdata")
+    tally <- testfun(x,y,tally)
   }
 
   cat("Read and unpack numeric array ... ")
