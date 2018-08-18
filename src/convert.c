@@ -802,15 +802,24 @@ R_nc_raw_opaque (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim)
 static void
 R_nc_opaque_raw_init (R_nc_buf *io)
 {
+  int ndim;
   size_t *xdim, size;
 
   /* Fastest varying dimension of R array contains bytes of opaque data */
   R_nc_check (nc_inq_user_type (io->ncid, io->xtype, NULL, &size, NULL, NULL, NULL));
-  xdim = (size_t *) R_alloc (io->ndim + 1, sizeof(size_t));
-  memcpy (xdim, io->xdim, io->ndim * sizeof(size_t));
-  xdim[io->ndim] = size;
 
-  io->rxp = R_nc_allocArray (RAWSXP, io->ndim + 1, xdim);
+  ndim = io->ndim;
+  if (ndim < 0) {
+    /* Special case for an R vector without dimension attribute,
+       but dimensions are needed to select opaque elements of a vector
+     */
+    ndim = 1;
+  }
+  xdim = (size_t *) R_alloc (ndim + 1, sizeof(size_t));
+  memcpy (xdim, io->xdim, ndim * sizeof(size_t));
+  xdim[ndim] = size;
+
+  io->rxp = R_nc_allocArray (RAWSXP, ndim + 1, xdim);
   io->rbuf = RAW (io->rxp);
   if (!io->cbuf) {
     io->cbuf = io->rbuf;
