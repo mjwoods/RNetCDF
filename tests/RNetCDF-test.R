@@ -541,13 +541,13 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     x <- profiles
     y <- var.get.nc(nc, "profile")
     tally <- testfun(x,y,tally)
-    tally <- testfun(isTRUE(all(lapply(y,is.double))), TRUE, tally)
+    tally <- testfun(isTRUE(all(sapply(y,is.double))), TRUE, tally)
 
     cat("Read vlen as integer ...")
     x <- profiles
     y <- var.get.nc(nc, "profile", fitnum=TRUE)
     tally <- testfun(x,y,tally)
-    tally <- testfun(isTRUE(all(lapply(y,is.integer))), TRUE, tally)
+    tally <- testfun(isTRUE(all(sapply(y,is.integer))), TRUE, tally)
 
     cat("Read vlen as character ...")
     x <- profiles_char
