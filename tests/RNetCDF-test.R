@@ -119,6 +119,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     inq_vector_char <- list(id=id_vector_char, name="vector_char", class="vlen",
                             size=NA, basetype="NC_CHAR")
 
+    id_vector_blob <- type.def.nc(nc, "vector_blob", "vlen", basetype=id_blob)
+    inq_vector_blob <- list(id=id_vector_blob, name="vector_blob", class="vlen",
+                            size=NA, basetype="blob")
+
     id_factor <- type.def.nc(nc, "factor", "enum", basetype="NC_INT")
     type.insert.nc(nc, id_factor, "peanut butter", value=101)
     type.insert.nc(nc, "factor", "jelly", value=102)
@@ -135,7 +139,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
                        subtype=c(siteid="NC_INT",height="NC_DOUBLE",colour="NC_SHORT"),
                        dimsizes=list("siteid"=NULL,"height"=NULL,"colour"=c(3)))
 
-    typeids <- c(id_blob,id_vector,id_vector_char,id_factor,id_struct)
+    typeids <- c(id_blob,id_vector,id_vector_char,id_vector_blob,id_factor,id_struct)
   }
 
   ##  Define variables
@@ -155,8 +159,9 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.def.nc(nc, "namestr", "NC_STRING", c("station"))
     var.def.nc(nc, "profile", id_vector, c("station","time"))
     var.def.nc(nc, "profile_char", id_vector_char, c("station","time"))
+    var.def.nc(nc, "profile_blob", id_vector_blob, c("time"))
     var.def.nc(nc, "rawdata", id_blob, c("station","time"))
-    varcnt <- varcnt+4
+    varcnt <- varcnt+5
     numtypes <- c("NC_UBYTE", "NC_USHORT", "NC_UINT")
 
     if (has_bit64) {
@@ -237,6 +242,9 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
     rawdata <- as.raw(seq_len(nstation*ntime*128) %% 256)
     dim(rawdata) <- c(128,nstation,ntime)
+
+    profiles_blob <- list(rawdata[,1:2,1], rawdata[,3:5,1])
+    dim(profiles_blob) <- ntime
   }
 
   ##  Put the data
@@ -253,6 +261,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.put.nc(nc, "namestr", myname)
     var.put.nc(nc, "profile", profiles)
     var.put.nc(nc, "profile_char", profiles_char)
+    var.put.nc(nc, "profile_blob", profiles_blob)
     var.put.nc(nc, "rawdata", rawdata)
     if (has_bit64) {
       myid <- as.integer64("1234567890123456789")+c(0,1,2,3,4)
@@ -521,6 +530,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     y <- type.inq.nc(nc, id_vector_char)[-4]
     tally <- testfun(x,y,tally)
 
+    x <- inq_vector_blob[-4]
+    y <- type.inq.nc(nc, id_vector_blob)[-4]
+    tally <- testfun(x,y,tally)
+
     x <- inq_factor
     y <- type.inq.nc(nc, id_factor)
     tally <- testfun(x,y,tally)
@@ -563,6 +576,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     cat("Read opaque ...")
     x <- rawdata
     y <- var.get.nc(nc, "rawdata")
+    tally <- testfun(x,y,tally)
+
+    cat("Read opaque vlen ...")
+    x <- profiles_blob
+    y <- var.get.nc(nc, "profile_blob")
     tally <- testfun(x,y,tally)
   }
 
