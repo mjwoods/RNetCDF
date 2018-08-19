@@ -561,7 +561,7 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.numeric(data) || is.character(data) || is.raw(data) ||
-            is.logical(data) || is.list(data))
+            is.logical(data) || is.list(data) || is.factor(data))
   stopifnot(is.numeric(start) || is.logical(start))
   stopifnot(is.numeric(count) || is.logical(count))
   stopifnot(is.logical(pack))

@@ -164,7 +164,8 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.def.nc(nc, "rawdata", id_blob, c("station","time"))
     var.def.nc(nc, "rawdata_scalar", id_blob, NA)
     var.def.nc(nc, "rawdata_vector", id_blob, c("station"))
-    varcnt <- varcnt+8
+    var.def.nc(nc, "snacks", "factor", c("station", "time"))
+    varcnt <- varcnt+9
 
     numtypes <- c("NC_UBYTE", "NC_USHORT", "NC_UINT")
 
@@ -249,6 +250,9 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
     profiles_blob <- list(rawdata[,1:2,1], rawdata[,3:5,1])
     dim(profiles_blob) <- ntime
+
+    snacks <- factor(rep(c("jelly","peanut butter"),times=5))
+    dim(snacks) <- c(nstation, ntime)
   }
 
   ##  Put the data
@@ -270,6 +274,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.put.nc(nc, "rawdata", rawdata)
     var.put.nc(nc, "rawdata_scalar", rawdata[,1,1])
     var.put.nc(nc, "rawdata_vector", rawdata[,,1])
+    var.put.nc(nc, "snacks", snacks)
     if (has_bit64) {
       myid <- as.integer64("1234567890123456789")+c(0,1,2,3,4)
       var.put.nc(nc, "stationid", myid)
