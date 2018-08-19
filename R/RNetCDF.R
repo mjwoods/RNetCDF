@@ -570,8 +570,10 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
 
   # Determine type and dimensions of variable:
   varinfo <- var.inq.nc(ncfile, variable)
+  typeinfo <- type.inq.nc(ncfile, varinfo$type)
   ndims <- varinfo$ndims
   str2char <- is.character(data) && varinfo$type == "NC_CHAR"
+  opaque <- is.raw(data) && typeinfo$class == "opaque"
 
   # Truncate start & count and replace NA as described in the man page:
   if (isTRUE(is.na(start))) {
@@ -593,7 +595,10 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
     if (str2char && ndims > 0) {
       strlen <- dim.inq.nc(ncfile, varinfo$dimids[1])$length
       count <- c(strlen, count)
-    }    
+    } else if (opaque && length(count) > 0) {
+      # Opaque items in R have an extra leading dimension
+      count <- count[-1]
+    }
   } else if (length(count) > ndims) {
     count <- count[seq_len(ndims)]
   }
@@ -608,6 +613,8 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
   #-- Check that length of data is sufficient --------------------------------#
   if (str2char && ndims > 0) {
     numelem <- prod(count[-1])
+  } else if (opaque) {
+    numelem <- prod(c(typeinfo$size,count))
   } else {
     numelem <- prod(count) # Returns 1 if ndims==0 (scalar variable)
   }
@@ -632,6 +639,8 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
   if (!is.null(dim(data))) {
     if (str2char && ndims > 0) {
       count_drop <- count[-1]
+    } else if (opaque) {
+      count_drop <- c(typeinfo$size,count)
     } else {
       count_drop <- count
     }

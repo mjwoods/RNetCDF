@@ -678,6 +678,8 @@ R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint64, unsigned long long);
  *  User-defined type conversions
 \*=============================================================================*/
 
+/* -- VLEN class -- */
+
 /* Convert list of vectors from R to nc_vlen_t format.
    Memory for the result is allocated if necessary (and freed by R).
    In special cases, the output may point to the input data,
@@ -688,22 +690,46 @@ static nc_vlen_t *
 R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
                   const void *fill, const double *scale, const double *add)
 {
-  size_t ii, cnt, len;
+  size_t ii, cnt, len, size;
+  int baseclass;
   nc_type basetype;
   nc_vlen_t *vbuf;
+  SEXP item;
 
-  R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, NULL, NULL));
   cnt = R_nc_length (ndim, xdim);
   if (xlength (rv) < cnt) {
     RERROR (RNC_EDATALEN);
   }
 
+  R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, NULL, NULL));
+  if (basetype > NC_MAX_ATOMIC_TYPE) {
+    R_nc_check (nc_inq_user_type (ncid, basetype, NULL, &size, NULL, NULL, &baseclass));
+  } else {
+    baseclass = NC_NAT;
+    size = 0;
+  }
+
   vbuf = (nc_vlen_t *) R_alloc (cnt, sizeof(nc_vlen_t));
   for (ii=0; ii<cnt; ii++) {
-    len = xlength(VECTOR_ELT(rv, ii));
+    item = VECTOR_ELT(rv, ii);
+    if (basetype == NC_CHAR && TYPEOF (item) == STRSXP) {
+      if (xlength (item) > 0) {
+        len = strlen (CHAR (STRING_ELT (item, 0)));
+      } else {
+        len = 0;
+      }
+    } else if (baseclass == NC_OPAQUE && TYPEOF (item) == RAWSXP) {
+      len = xlength(item) / size;
+    } else {
+      len = xlength(item);
+    }
     vbuf[ii].len = len;
-    vbuf[ii].p = (void *) R_nc_r2c (VECTOR_ELT(rv, ii), ncid, basetype,
-                                    -1, &len, fill, scale, add);
+    if (len > 0) {
+      vbuf[ii].p = (void *) R_nc_r2c (item, ncid, basetype,
+                                      -1, &len, fill, scale, add);
+    } else {
+      vbuf[ii].p = NULL;
+    }
   }
   return vbuf;
 }
@@ -752,6 +778,65 @@ R_nc_vlen_vecsxp (R_nc_buf *io)
 }
 
 
+/* -- Opaque class -- */
+
+
+/* Convert raw array from R to netcdf opaque type.
+   Memory for the result is allocated if necessary (and freed by R).
+   In special cases, the output may point to the input data,
+   so the output data should not be modified.
+ */
+static const char *
+R_nc_raw_opaque (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim)
+{
+  size_t cnt, size;
+  R_nc_check (nc_inq_user_type (ncid, xtype, NULL, &size, NULL, NULL, NULL));
+  cnt = R_nc_length (ndim, xdim);
+  if (xlength (rv) < (cnt * size)) {
+    RERROR (RNC_EDATALEN);
+  }
+  return (const char *) RAW (rv);
+}
+
+
+static void
+R_nc_opaque_raw_init (R_nc_buf *io)
+{
+  int ndim;
+  size_t *xdim, size;
+
+  /* Fastest varying dimension of R array contains bytes of opaque data */
+  R_nc_check (nc_inq_user_type (io->ncid, io->xtype, NULL, &size, NULL, NULL, NULL));
+
+  ndim = io->ndim;
+  if (ndim < 0) {
+    /* Special case for an R vector without dimension attribute,
+       but dimensions are needed to select opaque elements of a vector
+     */
+    ndim = 1;
+  }
+  xdim = (size_t *) R_alloc (ndim + 1, sizeof(size_t));
+  memcpy (xdim, io->xdim, ndim * sizeof(size_t));
+  xdim[ndim] = size;
+
+  io->rxp = R_nc_allocArray (RAWSXP, ndim + 1, xdim);
+  io->rbuf = RAW (io->rxp);
+  if (!io->cbuf) {
+    io->cbuf = io->rbuf;
+  }
+}
+
+
+static void
+R_nc_opaque_raw (R_nc_buf *io)
+{
+  if (io->cbuf != io->rbuf) {
+    memcpy(io->rbuf, io->cbuf, xlength(io->rxp) * sizeof(char));
+  }
+  return;
+}
+
+
 /*=============================================================================*\
  *  Generic type conversions
 \*=============================================================================*/
@@ -761,6 +846,10 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
           const void *fill, const double *scale, const double *add)
 {
   int class;
+
+  if (xtype > NC_MAX_ATOMIC_TYPE) {
+    R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, NULL, NULL, &class));
+  }
 
   switch (TYPEOF(rv)) {
   case INTSXP:
@@ -847,14 +936,13 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
   case RAWSXP:
     if (xtype == NC_CHAR) {
       return R_nc_raw_char (rv, ndim, xdim);
+    } else if (xtype > NC_MAX_ATOMIC_TYPE && class == NC_OPAQUE) {
+      return R_nc_raw_opaque (rv, ncid, xtype, ndim, xdim);
     }
     break;
   case VECSXP:
-    if (xtype > NC_MAX_ATOMIC_TYPE) {
-      R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, NULL, NULL, &class));
-      if (class == NC_VLEN) {
-        return R_nc_vecsxp_vlen (rv, ncid, xtype, ndim, xdim, fill, scale, add);
-      }
+    if (xtype > NC_MAX_ATOMIC_TYPE && class == NC_VLEN) {
+      return R_nc_vecsxp_vlen (rv, ncid, xtype, ndim, xdim, fill, scale, add);
     }
     break;
   }
@@ -956,6 +1044,9 @@ R_nc_c2r_init (R_nc_buf *io, void *cbuf,
         switch (class) {
         case NC_VLEN:
           R_nc_vlen_vecsxp_init (io);
+          break;
+        case NC_OPAQUE:
+          R_nc_opaque_raw_init (io);
           break;
         default:
           RERROR (RNC_ETYPEDROP);
@@ -1078,6 +1169,9 @@ R_nc_c2r (R_nc_buf *io)
         switch (class) {
         case NC_VLEN:
           R_nc_vlen_vecsxp (io);
+          break;
+        case NC_OPAQUE:
+          R_nc_opaque_raw (io);
           break;
         default:
           RERROR (RNC_ETYPEDROP);
