@@ -91,16 +91,7 @@ static const double SIZE_MAX_DBL = \
 
 /* Definitions for integer64 as provided by bit64 package */
 int isInt64(SEXP rv) {
-  int status=-1, ii;
-  SEXP class;
-  class = getAttrib(rv, R_ClassSymbol);
-  if (isString(class)) {
-    for (ii=0; ii<length(class); ii++) {
-      status = strcmp(CHAR(STRING_ELT(class, ii)), "integer64");
-      if (status == 0) break;
-    }
-  }
-  return (status == 0);
+  return R_nc_inherits (rv, "integer64");
 }
 
 /*=============================================================================*\
@@ -837,6 +828,88 @@ R_nc_opaque_raw (R_nc_buf *io)
 }
 
 
+/* -- Enum class -- */
+
+
+/* Convert factor array from R to netcdf enum type.
+   Memory for the result is allocated if necessary (and freed by R).
+ */
+static void *
+R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
+                  const void *fill)
+{
+  SEXP levels;
+  size_t size, imem, nmem, ilev, nlev, *ilev2mem, ifac, nfac;
+  char *memnames, *memname, *memvals, *memval, *out;
+  const char **levnames;
+  int match, *in, inval;
+
+  /* Extract indices and level names of R factor */
+  in = INTEGER (rv);
+
+  levels = getAttrib (rv, R_LevelsSymbol);
+  if (!isString (levels)) {
+    RERROR ("Expected character vector for levels of factor array")
+  }
+
+  nlev = xlength (levels);
+
+  levnames = (const char **) R_alloc (nlev, sizeof(size_t));
+
+  for (ilev=0; ilev<nlev; ilev++) {
+    levnames[ilev] = CHAR( STRING_ELT (levels, ilev));
+  }
+
+  /* Read values and names of enum members */
+  R_nc_check (nc_inq_enum(ncid, xtype, NULL, NULL, &size, &nmem));
+
+  memnames = R_alloc (nmem, NC_MAX_NAME+1);
+  memvals = R_alloc (nmem, size);
+
+  for (imem=0, memname=memnames, memval=memvals; imem<nmem;
+       imem++, memname+=(NC_MAX_NAME+1), memval+=size) {
+    R_nc_check (nc_inq_enum_member (ncid, xtype, imem, memname, memval));
+  }
+
+  /* Find enum member for each R level */
+  ilev2mem = (size_t *) R_alloc (nlev, sizeof(size_t));
+
+  for (ilev=0; ilev<nlev; ilev++) {
+    match = 0;
+    for (imem=0, memname=memnames; imem<nmem;
+         imem++, memname+=(NC_MAX_NAME+1)) {
+      if (strcmp(memname, levnames[ilev]) == 0) {
+        match = 1;
+        ilev2mem[ilev] = imem;
+        break;
+      }
+    }
+    if (!match) {
+      RERROR ("Level has no matching member in enum type")
+    }
+  }
+
+  /* Convert factor indices to enum values */
+  nfac = xlength (rv);
+  out = R_alloc (nfac, size);
+
+  for (ifac=0; ifac<nfac; ifac++) {
+    inval = in[ifac];
+    if (inval==NA_INTEGER && fill) {
+      memcpy(out + ifac*size, fill, size);
+    } else if (0 < inval && inval <= nlev) {
+      imem = ilev2mem[inval-1];
+      memcpy(out + ifac*size, memvals + imem*size, size);
+    } else {
+      RERROR ("Invalid index in factor")
+    }
+  }
+
+  return out;
+}
+
+
+
 /*=============================================================================*\
  *  Generic type conversions
 \*=============================================================================*/
@@ -874,6 +947,11 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
       return R_nc_r2c_int_float (rv, ndim, xdim, fill, scale, add);
     case NC_DOUBLE:
       return R_nc_r2c_int_dbl (rv, ndim, xdim, fill, scale, add);
+    }
+    if (xtype > NC_MAX_ATOMIC_TYPE &&
+        class == NC_ENUM &&
+        R_nc_inherits (rv, "factor")) {
+      return R_nc_factor_enum (rv, ncid, xtype, ndim, xdim, fill);
     }
     break;
   case REALSXP:  
