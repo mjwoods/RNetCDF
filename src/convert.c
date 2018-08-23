@@ -909,6 +909,79 @@ R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
 }
 
 
+static void
+R_nc_enum_factor_init (R_nc_buf *io)
+{
+  size_t size;
+  io->rxp = R_nc_allocArray (INTSXP, io->ndim, io->xdim);
+  io->rbuf = INTEGER (io->rxp);
+  if (!io->cbuf) {
+    R_nc_check (nc_inq_type (io->ncid, io->xtype, NULL, &size));
+    io->cbuf = R_alloc (xlength (io->rxp), size);
+  }
+}
+
+
+/* Convert netcdf enum values in io->cbuf to R factor array in io->rbuf.
+   Memory for the result must be pre-allocated by R_nc_enum_factor_init.
+ */
+static void
+R_nc_enum_factor (R_nc_buf *io)
+{
+  SEXP levels, classname;
+  size_t size, imem, nmem, ifac, nfac;
+  char *memname, *memvals, *memval, *inval, *fill;
+  int ncid, match, *out;
+  nc_type xtype;
+
+  /* Read values and names of enum members */
+  ncid = io->ncid;
+  xtype = io->xtype;
+  R_nc_check (nc_inq_enum(ncid, xtype, NULL, NULL, &size, &nmem));
+
+  levels = R_nc_allocArray (STRSXP, -1, &nmem);
+  memname = R_alloc (nmem, NC_MAX_NAME+1);
+  memvals = R_alloc (nmem, size);
+
+  for (imem=0, memval=memvals; imem<nmem; imem++, memval+=size) {
+    R_nc_check (nc_inq_enum_member (ncid, xtype, imem, memname, memval));
+    SET_STRING_ELT (levels, imem, mkChar (memname));
+  }
+
+  /* Convert enum values to (1-based) factor indices.
+     Use a brute-force search method for now,
+     but a hash table (e.g. ENVSXP) could be used in future.
+   */
+  nfac = xlength (io->rxp);
+
+  fill = io->fill;
+  out = io->rbuf;
+  for (ifac=0, inval=io->cbuf; ifac<nfac; ifac++, inval+=size) {
+    match = 0;
+    if (fill && memcmp(inval, fill, size) == 0) {
+      out[ifac] =  NA_INTEGER;
+      match = 1;
+    } else {
+      for (imem=0, memval=memvals; imem<nmem; imem++, memval+=size) {
+        if (memcmp(inval, memval, size) == 0) {
+          out[ifac] = imem + 1;
+          match = 1;
+          break;
+        }
+      }
+    }
+    if (match == 0) {
+      R_nc_error ("Unknown enum value in variable");
+    }
+  }
+
+  /* Set attributes for R factor */
+  setAttrib(io->rxp, R_LevelsSymbol, levels);
+  classname = R_nc_protect (allocVector (STRSXP, 1));
+  SET_STRING_ELT(classname, 0, mkChar("factor"));
+  setAttrib(io->rxp, R_ClassSymbol, classname);
+}
+
 
 /*=============================================================================*\
  *  Generic type conversions
@@ -1120,6 +1193,9 @@ R_nc_c2r_init (R_nc_buf *io, void *cbuf,
       if (xtype > NC_MAX_ATOMIC_TYPE) {
         R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, NULL, NULL, &class));
         switch (class) {
+        case NC_ENUM:
+          R_nc_enum_factor_init (io);
+          break;
         case NC_VLEN:
           R_nc_vlen_vecsxp_init (io);
           break;
@@ -1245,6 +1321,9 @@ R_nc_c2r (R_nc_buf *io)
         R_nc_check (nc_inq_user_type (
           io->ncid, io->xtype, NULL, NULL, NULL, NULL, &class));
         switch (class) {
+        case NC_ENUM:
+          R_nc_enum_factor (io);
+          break;
         case NC_VLEN:
           R_nc_vlen_vecsxp (io);
           break;
