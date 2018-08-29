@@ -97,6 +97,24 @@ R_nc_strcmp (SEXP var, const char *str)
 
 
 int
+R_nc_inherits (SEXP var, const char *class)
+{
+  SEXP classes;
+  size_t ii, cnt;
+  classes = getAttrib (var, R_ClassSymbol);
+  if (isString (classes)) {
+    cnt = xlength (classes);
+    for (ii=0; ii<cnt; ii++) {
+      if (strcmp(class, CHAR (STRING_ELT (classes, ii))) == 0) {
+        return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+
+int
 R_nc_dim_id (SEXP dim, int ncid, int *dimid, int idx)
 {
   if (isInteger (dim)) {

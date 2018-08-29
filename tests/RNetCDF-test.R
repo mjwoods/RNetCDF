@@ -123,11 +123,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     inq_vector_blob <- list(id=id_vector_blob, name="vector_blob", class="vlen",
                             size=NA, basetype="blob")
 
-    id_factor <- type.def.nc(nc, "factor", "enum", basetype="NC_INT")
+    id_factor <- type.def.nc(nc, "factor", "enum", basetype="NC_UBYTE")
     type.insert.nc(nc, id_factor, "peanut butter", value=101)
     type.insert.nc(nc, "factor", "jelly", value=102)
     inq_factor <- list(id=id_factor, name="factor", class="enum",
-                       size=4, basetype="NC_INT",
+                       size=1, basetype="NC_UBYTE",
                        value=c("peanut butter"=101,"jelly"=102))
 
     id_struct <- type.def.nc(nc, "struct", "compound", size=4+8+3*2)
@@ -164,7 +164,8 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.def.nc(nc, "rawdata", id_blob, c("station","time"))
     var.def.nc(nc, "rawdata_scalar", id_blob, NA)
     var.def.nc(nc, "rawdata_vector", id_blob, c("station"))
-    varcnt <- varcnt+8
+    var.def.nc(nc, "snacks", "factor", c("station", "time"))
+    varcnt <- varcnt+9
 
     numtypes <- c("NC_UBYTE", "NC_USHORT", "NC_UINT")
 
@@ -249,6 +250,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
     profiles_blob <- list(rawdata[,1:2,1], rawdata[,3:5,1])
     dim(profiles_blob) <- ntime
+
+    snack_foods <- names(inq_factor$value)
+    snacks <- factor(rep(snack_foods,times=5),
+                         levels=snack_foods)
+    dim(snacks) <- c(nstation, ntime)
   }
 
   ##  Put the data
@@ -270,6 +276,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.put.nc(nc, "rawdata", rawdata)
     var.put.nc(nc, "rawdata_scalar", rawdata[,1,1])
     var.put.nc(nc, "rawdata_vector", rawdata[,,1])
+    var.put.nc(nc, "snacks", snacks)
     if (has_bit64) {
       myid <- as.integer64("1234567890123456789")+c(0,1,2,3,4)
       var.put.nc(nc, "stationid", myid)
@@ -604,6 +611,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     cat("Read opaque vlen ...")
     x <- profiles_blob
     y <- var.get.nc(nc, "profile_blob")
+    tally <- testfun(x,y,tally)
+
+    cat("Read enum ...")
+    x <- snacks
+    y <- var.get.nc(nc, "snacks")
     tally <- testfun(x,y,tally)
   }
 

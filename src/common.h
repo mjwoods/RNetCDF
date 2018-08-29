@@ -70,6 +70,11 @@ R_nc_check(int status);
 int
 R_nc_strcmp (SEXP var, const char *str);
 
+/* Determine if an R object inherits from a given class.
+   Result is a logical value. */
+int
+R_nc_inherits (SEXP var, const char *class);
+
 /* Convert dimension identifier from R string or number to an integer.
    Result is a netcdf status value.
  */
