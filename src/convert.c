@@ -922,56 +922,74 @@ R_nc_enum_factor_init (R_nc_buf *io)
 }
 
 
+/* Convert specified number of bytes to an R symbol,
+   as required to store and retrieve values from a hashed environment.
+ */
+static SEXP
+R_nc_char_symbol (char *in, size_t size)
+{
+  size_t ii;
+  char out[2*size+2];
+  out[0]='X';
+  for (ii=0; ii<size; ii++) {
+    sprintf(out+1+ii*2, "%02X", in[ii]);
+  }
+  out[2*size+1]='\0';
+  return install(out);
+}
+
+
 /* Convert netcdf enum values in io->cbuf to R factor array in io->rbuf.
    Memory for the result must be pre-allocated by R_nc_enum_factor_init.
  */
 static void
 R_nc_enum_factor (R_nc_buf *io)
 {
-  SEXP levels, classname;
-  size_t size, imem, nmem, ifac, nfac;
-  char *memname, *memvals, *memval, *inval, *fill;
-  int ncid, match, *out;
+  SEXP levels, classname, env, value;
+  size_t size, nmem, ifac, nfac;
+  char *memname, *memval, *inval, *fill;
+  int ncid, imem, imemmax, *out;
   nc_type xtype;
 
-  /* Read values and names of enum members */
+  /* Read values and names of netcdf enum members.
+     Store names in an R character vector for use as R factor levels.
+     Store values and their R indices (1-based) in a hashed environment.
+   */
   ncid = io->ncid;
   xtype = io->xtype;
   R_nc_check (nc_inq_enum(ncid, xtype, NULL, NULL, &size, &nmem));
+  env = R_nc_protect (eval(lang1(install("new.env")),R_BaseEnv));
 
   levels = R_nc_allocArray (STRSXP, -1, &nmem);
   memname = R_alloc (nmem, NC_MAX_NAME+1);
-  memvals = R_alloc (nmem, size);
+  memval = R_alloc (1, size);
 
-  for (imem=0, memval=memvals; imem<nmem; imem++, memval+=size) {
+  imemmax = nmem; // netcdf member index is int
+  for (imem=0; imem<imemmax; imem++) {
     R_nc_check (nc_inq_enum_member (ncid, xtype, imem, memname, memval));
     SET_STRING_ELT (levels, imem, mkChar (memname));
+    defineVar (R_nc_char_symbol (memval, size), ScalarInteger (imem+1), env);
   }
 
-  /* Convert enum values to (1-based) factor indices.
-     Use a brute-force search method for now,
-     but a hash table (e.g. ENVSXP) could be used in future.
+  /* Add fill value (if defined) to the hashed environment.
+   */
+  fill = io->fill;
+  if (fill) {
+    defineVar (R_nc_char_symbol (fill, size), ScalarInteger (NA_INTEGER), env);
+  }
+
+  /* Convert netcdf enum values to R indices.
+     Use hashed environment prepared above for efficient lookups.
    */
   nfac = xlength (io->rxp);
 
-  fill = io->fill;
   out = io->rbuf;
   for (ifac=0, inval=io->cbuf; ifac<nfac; ifac++, inval+=size) {
-    match = 0;
-    if (fill && memcmp(inval, fill, size) == 0) {
-      out[ifac] =  NA_INTEGER;
-      match = 1;
-    } else {
-      for (imem=0, memval=memvals; imem<nmem; imem++, memval+=size) {
-        if (memcmp(inval, memval, size) == 0) {
-          out[ifac] = imem + 1;
-          match = 1;
-          break;
-        }
-      }
-    }
-    if (match == 0) {
+    value = findVarInFrame3 (env, R_nc_char_symbol (inval, size), TRUE);
+    if (value == R_UnboundValue) {
       R_nc_error ("Unknown enum value in variable");
+    } else {
+      out[ifac] = INTEGER (value)[0];
     }
   }
 
