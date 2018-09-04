@@ -924,18 +924,18 @@ R_nc_enum_factor_init (R_nc_buf *io)
 
 /* Convert specified number of bytes to an R symbol,
    as required to store and retrieve values from a hashed environment.
+   The work array must have minimum size 2*size+2 bytes.
  */
 static SEXP
-R_nc_char_symbol (char *in, size_t size)
+R_nc_char_symbol (char *in, size_t size, char *work)
 {
   size_t ii;
-  char out[2*size+2];
-  out[0]='X';
+  work[0]='X';
   for (ii=0; ii<size; ii++) {
-    sprintf(out+1+ii*2, "%02X", in[ii]);
+    sprintf(work+1+ii*2, "%02X", in[ii]);
   }
-  out[2*size+1]='\0';
-  return install(out);
+  work[2*size+1]='\0';
+  return install(work);
 }
 
 
@@ -947,7 +947,7 @@ R_nc_enum_factor (R_nc_buf *io)
 {
   SEXP levels, classname, env, value;
   size_t size, nmem, ifac, nfac;
-  char *memname, *memval, *inval, *fill;
+  char *memname, *memval, *work, *inval, *fill;
   int ncid, imem, imemmax, *out;
   nc_type xtype;
 
@@ -963,19 +963,20 @@ R_nc_enum_factor (R_nc_buf *io)
   levels = R_nc_allocArray (STRSXP, -1, &nmem);
   memname = R_alloc (nmem, NC_MAX_NAME+1);
   memval = R_alloc (1, size);
+  work = R_alloc (2*size+2, 1);
 
   imemmax = nmem; // netcdf member index is int
   for (imem=0; imem<imemmax; imem++) {
     R_nc_check (nc_inq_enum_member (ncid, xtype, imem, memname, memval));
     SET_STRING_ELT (levels, imem, mkChar (memname));
-    defineVar (R_nc_char_symbol (memval, size), ScalarInteger (imem+1), env);
+    defineVar (R_nc_char_symbol (memval, size, work), ScalarInteger (imem+1), env);
   }
 
   /* Add fill value (if defined) to the hashed environment.
    */
   fill = io->fill;
   if (fill) {
-    defineVar (R_nc_char_symbol (fill, size), ScalarInteger (NA_INTEGER), env);
+    defineVar (R_nc_char_symbol (fill, size, work), ScalarInteger (NA_INTEGER), env);
   }
 
   /* Convert netcdf enum values to R indices.
@@ -985,7 +986,7 @@ R_nc_enum_factor (R_nc_buf *io)
 
   out = io->rbuf;
   for (ifac=0, inval=io->cbuf; ifac<nfac; ifac++, inval+=size) {
-    value = findVarInFrame3 (env, R_nc_char_symbol (inval, size), TRUE);
+    value = findVarInFrame3 (env, R_nc_char_symbol (inval, size, work), TRUE);
     if (value == R_UnboundValue) {
       R_nc_error ("Unknown enum value in variable");
     } else {
