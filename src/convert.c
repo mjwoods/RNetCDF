@@ -1025,6 +1025,7 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
   int ifldmax, ifld, idimfld, ndimfld, *dimlenfld, match;
   char *bufout, namefld[NC_MAX_NAME+1];
   const char *buffld;
+  void *highwater;
   SEXP namelist;
 
   /* Get size and number of fields in compound type */
@@ -1047,6 +1048,11 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
   /* Convert each field in turn */
   ifldmax = nfld;
   for (ifld=0; ifld<ifldmax; ifld++) {
+
+    /* Save memory "highwater mark" to reclaim memory from R_alloc,
+       which may consume large chunks of memory after R_nc_r2c.
+     */
+    highwater = vmaxget();
 
     /* Query the dataset for details of the field. */
     R_nc_check (nc_inq_compound_field (ncid, xtype, ifld, namefld,
@@ -1082,6 +1088,9 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
     for (ielem=0; ielem<cnt; ielem++) {
       memcpy (bufout+ielem*size+offset, buffld+ielem*fldlen, fldlen);
     }
+
+    /* Allow memory from R_alloc since vmaxget to be reclaimed */
+    vmaxset (highwater);
   }
 
   return bufout;
