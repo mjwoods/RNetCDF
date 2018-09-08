@@ -574,6 +574,7 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
   ndims <- varinfo$ndims
   str2char <- is.character(data) && varinfo$type == "NC_CHAR"
   opaque <- is.raw(data) && typeinfo$class == "opaque"
+  compound <- is.list(data) && typeinfo$class == "compound"
 
   # Truncate start & count and replace NA as described in the man page:
   if (isTRUE(is.na(start))) {
@@ -589,6 +590,11 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
       count <- dim(data)
     } else if (ndims==0 && length(data)==1) {
       count <- integer(0)
+    } else if (compound) {
+      # Compound type is stored as an R list,
+      # and fields may have different dimensions.
+      # Use dimensions from the netcdf variable instead.
+      count <- rep(NA, ndims)
     } else {
       count <- length(data)
     }
@@ -615,6 +621,8 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
     numelem <- prod(count[-1])
   } else if (opaque) {
     numelem <- prod(c(typeinfo$size,count))
+  } else if (compound) {
+    numelem <- length(typeinfo$offset)
   } else {
     numelem <- prod(count) # Returns 1 if ndims==0 (scalar variable)
   }
