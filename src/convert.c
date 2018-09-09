@@ -196,7 +196,7 @@ static void
 R_nc_char_strsxp (R_nc_buf *io)
 {
   size_t ii, cnt, clen, rlen;
-  char *thisstr, *endstr, endchar;
+  char *thisstr, *endstr;
   if (io->ndim > 0) {
     /* Omit fastest-varying dimension from R character array */
     clen = io->xdim[(io->ndim)-1];
@@ -210,12 +210,13 @@ R_nc_char_strsxp (R_nc_buf *io)
   rlen = (clen <= RNC_CHARSXP_MAXLEN) ? clen : RNC_CHARSXP_MAXLEN;
   cnt = xlength (io->rxp);
   for (ii=0, thisstr=io->cbuf; ii<cnt; ii++, thisstr+=clen) {
-    /* Temporarily null-terminate each string before passing to R */
-    endstr = thisstr + rlen;
-    endchar = *endstr;
-    *endstr = '\0';
-    SET_STRING_ELT (io->rxp, ii, mkChar(thisstr));
-    *endstr = endchar;
+    /* Check if string is null-terminated */
+    endstr = memchr (thisstr, 0, rlen);
+    if (!endstr) {
+      SET_STRING_ELT (io->rxp, ii, mkCharLen (thisstr, rlen));
+    } else {
+      SET_STRING_ELT (io->rxp, ii, mkChar (thisstr));
+    }
   }
 }
 
@@ -290,12 +291,8 @@ R_nc_str_strsxp (R_nc_buf *io)
   for (ii=0; ii<cnt; ii++) {
     nchar = strlen (cstr[ii]);
     if (nchar > RNC_CHARSXP_MAXLEN) {
-      /* Temporarily truncate excessively long strings before passing to R */
-      endstr = cstr[ii]+RNC_CHARSXP_MAXLEN+1;
-      endchar = *endstr;
-      *endstr = '\0';
-      SET_STRING_ELT (io->rxp, ii, mkChar (cstr[ii]));
-      *endstr = endchar;
+      /* Truncate excessively long strings while reading into R */
+      SET_STRING_ELT (io->rxp, ii, mkCharLen (cstr[ii], RNC_CHARSXP_MAXLEN));
     } else if (nchar > 0) {
       SET_STRING_ELT (io->rxp, ii, mkChar (cstr[ii]));
     }
