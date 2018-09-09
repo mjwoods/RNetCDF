@@ -1128,6 +1128,7 @@ R_nc_compound_vecsxp (R_nc_buf *io)
   SEXP namelist, rxpfld;
   char namefld[NC_MAX_NAME+1], *buffld, *bufcmp;
   R_nc_buf iofld;
+  void *highwater;
 
   /* Get size and number of fields in compound type */
   ncid = io->ncid;
@@ -1143,6 +1144,11 @@ R_nc_compound_vecsxp (R_nc_buf *io)
   bufcmp = io->cbuf;
   ifldmax = nfld;
   for (ifld=0; ifld<ifldmax; ifld++) {
+
+    /* Save memory "highwater mark" to reclaim memory from R_alloc,
+       which may consume large chunks of memory after R_nc_r2c.
+     */
+    highwater = vmaxget();
 
     /* Query the dataset for details of the field. */
     R_nc_check (nc_inq_compound_field (ncid, xtype, ifld, namefld,
@@ -1179,6 +1185,9 @@ R_nc_compound_vecsxp (R_nc_buf *io)
 
     /* Insert field data into R list */
     SET_VECTOR_ELT (io->rxp, ifld, rxpfld);
+
+    /* Allow memory from R_alloc since vmaxget to be reclaimed */
+    vmaxset (highwater);
   }
 }
 
