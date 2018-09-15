@@ -70,16 +70,20 @@ AC_CHECK_DECLS([nc_rename_grp], [], [], [[#include <netcdf.h>]])
 # and define preprocessor macro HAVE_LIBUDUNITS or HAVE_LIBUDUNITS2.
 # Also check for udunits.h in places that depend on the udunits version,
 # and define macro HAVE_UDUNITS_H or HAVE_UDUNITS2_UDUNITS_H accordingly.
+# Finally, check for optional function utIsInit,
+# defining macro HAVE_UTISINIT if available.
 udunits=0
 AC_SEARCH_LIBS(utFree, udunits2,
   [
     AC_CHECK_HEADERS(udunits2/udunits.h udunits.h, [udunits=2; break])
     AC_DEFINE(HAVE_LIBUDUNITS2)
+    AC_SEARCH_LIBS(utIsInit, udunits2, [AC_DEFINE(HAVE_UTISINIT)])
   ], [
     AC_SEARCH_LIBS(utScan, udunits,
       [
         AC_CHECK_HEADERS(udunits.h, [udunits=1; break])
         AC_DEFINE(HAVE_LIBUDUNITS)
+        AC_SEARCH_LIBS(utIsInit, udunits, [AC_DEFINE(HAVE_UTISINIT)])
       ]
     )
   ]
