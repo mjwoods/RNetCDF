@@ -686,6 +686,10 @@ y <- utinvcal.nc("hours since 1900-01-01 00:00:00 +01:00",
          ISOdatetime(1900,1,1,5,25,0,tz="UTC"))
 tally <- testfun(x,y,tally)
 
+# Check that package can be unloaded:
+cat("Unload RNetCDF ...")
+detach("package:RNetCDF",unload=TRUE)
+
 #-------------------------------------------------------------------------------#
 #  Overall summary
 #-------------------------------------------------------------------------------#
