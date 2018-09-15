@@ -21,9 +21,4 @@ If path is non-NULL and not empty, then it specifies a units file containing ini
 
 \author{Pavel Michna}
 
-\examples{
-##  NOTE: The user will normally never need to call this function
-utinit.nc()
-}
-
 \keyword{utilities}
