@@ -194,6 +194,13 @@ R_nc_utinit (SEXP path)
 {
   int status;
 
+  /*-- Terminate library if loaded previously ---------------------------------*/
+#ifdef HAVE_UTISINIT
+  if (utIsInit()) {
+    utTerm();
+  }
+#endif
+
   /*-- Avoid "overriding default" messages from UDUNITS-2 (1/2) ---------------*/
 #ifdef HAVE_LIBUDUNITS2
   ut_set_error_message_handler (ut_ignore);
@@ -312,3 +319,16 @@ cleanup:
   RRETURN(result);
 }
 
+
+/*-----------------------------------------------------------------------------*\
+ *  R_nc_utterm()
+\*-----------------------------------------------------------------------------*/
+
+SEXP
+R_nc_utterm ()
+{
+  /*-- Terminate udunits library ----------------------------------------------*/
+  utTerm ();
+
+  RRETURN(R_NilValue);
+}

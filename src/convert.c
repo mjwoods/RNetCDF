@@ -942,7 +942,7 @@ R_nc_char_symbol (char *in, size_t size, char *work)
 static void
 R_nc_enum_factor (R_nc_buf *io)
 {
-  SEXP levels, classname, env, value;
+  SEXP levels, classname, env, symbol, value;
   size_t size, nmem, ifac, nfac;
   char *memname, *memval, *work, *inval, *fill;
   int ncid, imem, imemmax, *out;
@@ -951,6 +951,10 @@ R_nc_enum_factor (R_nc_buf *io)
   /* Read values and names of netcdf enum members.
      Store names in an R character vector for use as R factor levels.
      Store values and their R indices (1-based) in a hashed environment.
+     The env is PROTECTed, so individual variables need not be.
+     But values do need PROTECTing before assignment to env, 
+     otherwise gctorture reveals problems.
+     I'm not sure if symbols need PROTECTing, but better safe than sorry.
    */
   ncid = io->ncid;
   xtype = io->xtype;
@@ -966,14 +970,20 @@ R_nc_enum_factor (R_nc_buf *io)
   for (imem=0; imem<imemmax; imem++) {
     R_nc_check (nc_inq_enum_member (ncid, xtype, imem, memname, memval));
     SET_STRING_ELT (levels, imem, mkChar (memname));
-    defineVar (R_nc_char_symbol (memval, size, work), ScalarInteger (imem+1), env);
+    symbol = PROTECT (R_nc_char_symbol (memval, size, work));
+    value = PROTECT (ScalarInteger (imem+1));
+    defineVar (symbol, value, env);
+    UNPROTECT(2);
   }
 
   /* Add fill value (if defined) to the hashed environment.
    */
   fill = io->fill;
   if (fill) {
-    defineVar (R_nc_char_symbol (fill, size, work), ScalarInteger (NA_INTEGER), env);
+    symbol = PROTECT (R_nc_char_symbol (fill, size, work));
+    value = PROTECT (ScalarInteger (NA_INTEGER));
+    defineVar (symbol, value, env);
+    UNPROTECT(2);
   }
 
   /* Convert netcdf enum values to R indices.
@@ -983,7 +993,9 @@ R_nc_enum_factor (R_nc_buf *io)
 
   out = io->rbuf;
   for (ifac=0, inval=io->cbuf; ifac<nfac; ifac++, inval+=size) {
-    value = findVarInFrame3 (env, R_nc_char_symbol (inval, size, work), TRUE);
+    symbol = PROTECT (R_nc_char_symbol (inval, size, work));
+    value = findVarInFrame3 (env, symbol, TRUE);
+    UNPROTECT(1);
     if (value == R_UnboundValue) {
       R_nc_error ("Unknown enum value in variable");
     } else {
