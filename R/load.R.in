@@ -18,3 +18,9 @@
 
 }
 
+
+".onUnload" <- function(libpath) {
+    # Free (most) memory allocated by utinit.nc.
+    # udunits2 leaks around 80 bytes on each load/unload cycle.
+    .Call(R_nc_utterm)
+}
