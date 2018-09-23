@@ -1122,9 +1122,9 @@ R_nc_compound_vecsxp_init (R_nc_buf *io)
 static void
 R_nc_compound_vecsxp (R_nc_buf *io)
 {
-  int ncid, ifld, ifldmax, idimfld, ndimfld, *dimlenfld;
+  int ncid, ifld, ifldmax, idim, ndim, idimfld, ndimfld, *dimlenfld, ndimslice;
   nc_type xtype, typefld;
-  size_t size, nfld, cnt, offset, fldsize, *dimsizefld, fldcnt, fldlen, ielem;
+  size_t size, nfld, cnt, offset, fldsize, *dimslice, fldcnt, fldlen, ielem;
   SEXP namelist, rxpfld;
   char namefld[NC_MAX_NAME+1], *buffld, *bufcmp;
   R_nc_buf iofld;
@@ -1160,21 +1160,23 @@ R_nc_compound_vecsxp (R_nc_buf *io)
     /* Set the field name in the R list */
     SET_STRING_ELT (namelist, ifld, mkChar (namefld));
 
-    /* Convert the dimension lengths from integer to size_t,
-       adding an extra dimension (slowest varying) for the total number
-       of elements in the compound array (cnt). */
-    dimsizefld = (size_t *) R_alloc (ndimfld+1, sizeof(size_t));
-    dimsizefld[0] = cnt;
-    for (idimfld=0; idimfld<ndimfld; idimfld++) {
-      dimsizefld[idimfld+1] = dimlenfld[idimfld];
+    /* Append field dimensions to the variable dimensions */
+    ndim = io->ndim;
+    ndimslice = ndim + ndimfld;
+    dimslice = (size_t *) R_alloc (ndimslice, sizeof(size_t));
+    for (idim=0; idim<ndim; idim++) {
+      dimslice[idim] = io->xdim[idim];
     }
+    for (idimfld=0; idimfld<ndimfld; idimfld++) {
+      dimslice[ndim+idimfld] = dimlenfld[idimfld];
+    }
+    fldcnt = R_nc_length (ndimfld, dimslice+ndim);
 
     /* Prepare to convert field data from C to R */
-    buffld = R_nc_c2r_init (&iofld, NULL, ncid, typefld, ndimfld+1, dimsizefld,
+    buffld = R_nc_c2r_init (&iofld, NULL, ncid, typefld, ndimslice, dimslice,
                io->rawchar, io->fitnum, NULL, NULL, NULL);
 
     /* Copy elements from the compound array into the field array */
-    fldcnt = R_nc_length (ndimfld, dimsizefld+1);
     fldlen = fldsize * fldcnt;
     for (ielem=0; ielem<cnt; ielem++) {
       memcpy (buffld+ielem*fldlen, bufcmp+ielem*size+offset, fldlen);
