@@ -893,43 +893,31 @@ read.nc <- function(ncfile, recursive = FALSE, ...) {
 # type.def.nc()
 #-------------------------------------------------------------------------------
 
-type.def.nc <- function(ncfile, typename, class, basetype=NULL, size=NULL) {
+type.def.nc <- function(ncfile, typename, class, size=NULL, basetype=NULL,
+                        names=NULL, values=NULL, subtypes=NULL, dimsizes=NULL) {
   # Check arguments
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(typename))
   stopifnot(is.character(class))
-  if (class == "compound" || class == "opaque") {
-    stopifnot(is.numeric(size))
-  } else if (class == "enum" || class == "vlen") {
+  if (class == "compound") {
+    stopifnot(is.character(names))
+    stopifnot(is.character(subtypes) || is.numeric(subtypes))
+    stopifnot(is.list(dimsizes))
+  } else if (class == "enum") {
     stopifnot(is.character(basetype) || is.numeric(basetype))
+    stopifnot(is.character(names))
+    stopifnot(is.numeric(values))
+  } else if (class == "opaque") {
+    stopifnot(is.numeric(size))
+  } else if (class == "vlen") {
+    stopifnot (is.character(basetype) || is.numeric(basetype))
   } else {
     stop("Unknown class for type definition", call.=FALSE)
   }
 
-  id <- .Call(R_nc_def_type, ncfile, typename, class, basetype, size)
+  id <- .Call(R_nc_def_type, ncfile, typename, class, size, basetype,
+              names, values, subtypes, dimsizes)
   return(invisible(id))
-}
-
-
-#-------------------------------------------------------------------------------
-# type.insert.nc()
-#-------------------------------------------------------------------------------
-
-type.insert.nc <- function(ncfile, type, name, value=NULL,
-  offset=NULL, subtype=NULL, dimsizes=NULL) {
-  # Check arguments
-  stopifnot(class(ncfile) == "NetCDF")
-  stopifnot(is.numeric(type) || is.character(type))
-  stopifnot(is.character(name))
-  stopifnot(is.null(value) || is.numeric(value))
-  stopifnot(is.null(offset) || is.numeric(offset))
-  stopifnot(is.null(subtype) || is.numeric(subtype) || is.character(subtype))
-  stopifnot(is.null(dimsizes) || is.numeric(dimsizes))
-
-  .Call(R_nc_insert_type, ncfile, type, name, value,
-         offset, subtype, dimsizes)
-
-  return(invisible(NULL))
 }
 
 
