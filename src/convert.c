@@ -1102,6 +1102,18 @@ R_nc_compound_vecsxp_init (R_nc_buf *io)
 {
   size_t size, nfld, cnt;
 
+  /* The in-memory layout of compound types can differ between writing and reading.
+     When writing, an arbitrary layout is specified by the user.
+     When reading, a "native" layout is returned by the netcdf library.
+     If the layout has been defined since the dataset was opened,
+     the type inquiry functions always return the layout used for writing.
+     We can get the layout for reading from a read-only instance of the dataset.
+   */
+  if (R_nc_redef (io->ncid) == NC_NOERR) {
+    /* Dataset must be writable because it is now in define mode */
+    R_nc_error ("Please read compound type from a read-only dataset");
+  }
+
   /* Get number of fields in compound type */
   R_nc_check (nc_inq_compound(io->ncid, io->xtype, NULL, &size, &nfld));
 
