@@ -229,7 +229,7 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
   size_t size, nfields, offset;
   int ii, imax, ndims;
   void *cval;
-  SEXP result, resultnames;
+  SEXP result=R_NilValue, resultnames=R_NilValue;
   SEXP fieldnames, values, offsets, subnames, dimsize, dimsizes;
   R_nc_buf io;
 

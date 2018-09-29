@@ -285,7 +285,7 @@ static void
 R_nc_str_strsxp (R_nc_buf *io)
 {
   size_t ii, nchar, cnt;
-  char **cstr, *endstr, endchar;
+  char **cstr;
   cnt = xlength (io->rxp);
   cstr = (char **) io->cbuf;
   for (ii=0; ii<cnt; ii++) {
@@ -839,7 +839,7 @@ R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
   size_t size, imem, nmem, ilev, nlev, *ilev2mem, ifac, nfac;
   char *memnames, *memname, *memvals, *memval, *out;
   const char **levnames;
-  int match, *in, inval;
+  int ismatch, *in, inval;
 
   /* Extract indices and level names of R factor */
   in = INTEGER (rv);
@@ -872,16 +872,16 @@ R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
   ilev2mem = (size_t *) R_alloc (nlev, sizeof(size_t));
 
   for (ilev=0; ilev<nlev; ilev++) {
-    match = 0;
+    ismatch = 0;
     for (imem=0, memname=memnames; imem<nmem;
          imem++, memname+=(NC_MAX_NAME+1)) {
       if (strcmp(memname, levnames[ilev]) == 0) {
-        match = 1;
+        ismatch = 1;
         ilev2mem[ilev] = imem;
         break;
       }
     }
-    if (!match) {
+    if (!ismatch) {
       RERROR ("Level has no matching member in enum type")
     }
   }
@@ -1022,7 +1022,7 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
   size_t cnt, size, nfld, offset, fldsize, fldcnt, fldlen,
          nlist, ilist, ielem, *dimsizefld;
   nc_type typefld;
-  int ifldmax, ifld, idimfld, ndimfld, *dimlenfld, match;
+  int ifldmax, ifld, idimfld, ndimfld, *dimlenfld, ismatch;
   char *bufout, namefld[NC_MAX_NAME+1];
   const char *buffld;
   void *highwater;
@@ -1062,11 +1062,15 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
     R_nc_check (nc_inq_type (ncid, typefld, NULL, &fldsize));
 
     /* Find the field by name in the R input list */
+    ismatch = 0;
     for (ilist=0; ilist<nlist; ilist++) {
-      match = strcmp (CHAR (STRING_ELT (namelist, ilist)), namefld);
-      if (match == 0) break; // ilist is the matching list index
+      if (strcmp (CHAR (STRING_ELT (namelist, ilist)), namefld) == 0) {
+        // ilist is the matching list index
+        ismatch = 1;
+        break;
+      }
     }
-    if (match != 0) {
+    if (!ismatch) {
       R_nc_error ("Name of compound field not found in input list");
     }
 
