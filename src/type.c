@@ -137,11 +137,11 @@ SEXP
 R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
   SEXP offset, SEXP subtype, SEXP dimsizes)
 {
-  int ncid, ndims=0;
+  int ncid, idim, ndims=0;
   nc_type typeid, xtype;
   const char *fldname;
   int class, *csizes=NULL;
-  size_t coffset=0;
+  size_t coffset=0, xsize, subsize, nelem;
   const void *tmpval=NULL;
 
   /*-- Decode arguments -------------------------------------------------------*/
@@ -151,7 +151,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
 
   fldname = CHAR (STRING_ELT (name, 0));
 
-  R_nc_check (nc_inq_user_type (ncid, typeid, NULL, NULL, &xtype, NULL, &class));
+  R_nc_check (nc_inq_user_type (ncid, typeid, NULL, &xsize, &xtype, NULL, &class));
 
   if (class == NC_ENUM) {
     if (!isNull (value)) {
@@ -170,17 +170,27 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
       }
 
       R_nc_check (R_nc_type_id (subtype, ncid, &xtype));
+      R_nc_check (nc_inq_type (ncid, xtype, NULL, &subsize));
 
+      nelem = 1;
       if (isNull (dimsizes)) {
         ndims = 0;
       } else {
         ndims = length (dimsizes);
         if (ndims > 0) {
           csizes = R_nc_dim_r2c_int(dimsizes, ndims, -1);
+          for (idim=0; idim<ndims; idim++) {
+            nelem *= csizes[idim];
+          }
         }
       }
+
+      if ( (coffset + subsize*nelem) > xsize) {
+        RERROR("Field exceeds size of compound type")
+      }
+
     } else {
-      RERROR ("No offset or subtype given for compound type");
+      RERROR ("Missing offset or subtype for compound type");
     }
   } else {
     RERROR ("Expected enumerated or compound type");
