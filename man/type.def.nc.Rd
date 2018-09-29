@@ -12,8 +12,8 @@
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{typename}{Name to identify the new data type. Must begin with an alphabetic character, followed by zero or more alphanumeric characters including the underscore ("\code{_}"). Case is significant.}
   \item{class}{One of the keywords "compound", "enum", "opaque" or "vlen".}
-  \item{basetype}{Name or identifier of an existing NetCDF type. Required when \code{class} is "enum" or "vlen", ignored otherwise. Only built-in integer types (e.g. "NC_INT") are allowed for \code{class} "enum".}
-  \item{size}{Size in bytes of a single item of the new type. Required when \code{class} is "compound" or "opaque", ignored otherwise.}
+  \item{basetype}{("enum" and "vlen" only) Name or identifier of an existing NetCDF type. Only built-in integer types (e.g. "NC_INT") are allowed for \code{class} "enum".}
+  \item{size}{("compound" and "opaque" only) Size in bytes of a single item of the new type. The \code{size} of a "compound" type must include all fields and optional padding.}
 }
 
 \value{NetCDF type identifier, returned invisibly.}

@@ -13,7 +13,7 @@
   \item{type}{ID or name of a data type created by \code{type.def.nc}.}
   \item{name}{Name of a new field in a compound type or member of an enumerated type.}
   \item{value}{(Enumerated types only) Numeric value of a new member.}
-  \item{offset}{(Compound types only) Offset of this field in bytes from the beginning of the compound type.}
+  \item{offset}{(Compound types only) Offset of this field in bytes from the beginning of the compound type. Offsets must be spaced widely enough that fields do not overlap, and they may include optional padding between fields.}
   \item{subtype}{(Compound types only) NetCDF type of this field, specified by NetCDF name or identifier.}
   \item{dimsizes}{(Compound types only) Dimensions of an array field, specified as a vector of lengths in R order (leftmost index varies fastest; opposite to CDL conventions). If \code{dimsizes} is \code{NULL} (default), the field is a scalar.}
 }
