@@ -312,7 +312,15 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.put.nc(nc, paste(numtype,"_intpack",sep=""), as.integer(mypack), pack=TRUE)
   }
 
-  sync.nc(nc)
+#  sync.nc(nc)
+  if (format == "netcdf4") {
+    close.nc(ncroot)
+    ncroot <- open.nc(ncfile)
+    nc <- grp.inq.nc(ncroot, "testgrp")$self
+  } else {
+    close.nc(nc)
+    nc <- open.nc(ncfile)
+  } 
 
   ## Read tests
 
@@ -562,12 +570,14 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     y <- type.inq.nc(nc, id_factor, fields=FALSE)
     tally <- testfun(x,y,tally)
 
-    x <- inq_struct
-    y <- type.inq.nc(nc, id_struct)
+    # Size and offset of compound types may differ between writing and reading.
+    # The layout for writing (reading) is defined by the user (compiler).
+    x <- inq_struct[c(-4,-5)]
+    y <- type.inq.nc(nc, id_struct)[c(-4,-5)]
     tally <- testfun(x,y,tally)
 
-    x <- inq_struct[1:4]
-    y <- type.inq.nc(nc, id_struct, fields=FALSE)
+    x <- inq_struct[1:3]
+    y <- type.inq.nc(nc, id_struct, fields=FALSE)[-4]
     tally <- testfun(x,y,tally)
 
     cat("Read vlen as double ...")
@@ -622,6 +632,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     cat("Read enum ...")
     x <- snacks
     y <- var.get.nc(nc, "snacks")
+    tally <- testfun(x,y,tally)
+
+    cat("Read compound ...")
+    x <- person
+    y <- var.get.nc(nc, "person")
     tally <- testfun(x,y,tally)
   }
 
