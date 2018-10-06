@@ -125,7 +125,9 @@ R_nc_inherits (SEXP var, const char *class)
 int
 R_nc_dim_id (SEXP dim, int ncid, int *dimid, int idx)
 {
-  if (isInteger (dim)) {
+  if (xlength (dim) <= idx) {
+    return NC_EINVAL;
+  } else if (isInteger (dim)) {
     *dimid = INTEGER (dim)[idx];
     return NC_NOERR;
   } else if (isReal (dim)) {
@@ -142,7 +144,9 @@ R_nc_dim_id (SEXP dim, int ncid, int *dimid, int idx)
 int
 R_nc_var_id (SEXP var, int ncid, int *varid)
 {
-  if (isNumeric (var)) {
+  if (xlength (var) <= 0) {
+    return NC_EINVAL;
+  } else if (isNumeric (var)) {
     *varid = asInteger (var);
     return NC_NOERR;
   } else if (isString (var)) {
@@ -158,8 +162,7 @@ R_nc_type_id (SEXP type, int ncid, nc_type *xtype, int idx)
 {
   if (length (type) <= idx) {
     return NC_EINVAL;
-  }
-  if (isInteger (type)) {
+  } else if (isInteger (type)) {
     *xtype = INTEGER (type)[idx];
     return NC_NOERR;
   } else if (isReal (type)) {
