@@ -69,11 +69,19 @@ R_nc_unprotect (void)
 }
 
 
+#define R_NC_ERRLEN 8192
 void
-R_nc_error(const char *msg)
+R_nc_error(const char *fmt, ...)
 {
+  char buf[R_NC_ERRLEN];
+  va_list(ap);
+
+  va_start(ap, fmt);
+  vsnprintf(buf, R_NC_ERRLEN, fmt, ap);
+  va_end(ap);
+ 
   R_nc_unprotect ();
-  error ("%s", msg);
+  error (buf);
 }
 
 
