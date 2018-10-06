@@ -85,14 +85,7 @@ R_nc_def_compound (int ncid, const char *typename,
 
 
   for (ifld=0; ifld<nfld; ifld++) {
-
-    if (isString (subtypes)) {
-      R_nc_check (R_nc_type_id (STRING_ELT (subtypes, ifld), ncid, &xtype));
-    } else {
-      xtype = VECTOR_ELT (subtypes, ifld);
-    }
-// Add an index argument to R_nc_type_id?
-// Otherwise we need to repeat the function here with a non-zero index.
+    R_nc_check (R_nc_type_id (subtypes, ncid, &xtype, ifld));
     R_nc_check (nc_inq_user_type (ncid, xtype, NULL, &xsize, NULL, NULL, NULL));
     xcnt = R_nc_length_sexp (VECTOR_ELT (dimsizes, ifld));
 
@@ -111,7 +104,7 @@ R_nc_def_compound (int ncid, const char *typename,
     coffset = asReal (offset);
   }
 
-  R_nc_check (R_nc_type_id (subtype, ncid, &xtype));
+  R_nc_check (R_nc_type_id (subtype, ncid, &xtype, 0));
 
   if (isNull (dimsizes)) {
     ndims = 0;
@@ -149,7 +142,7 @@ R_nc_def_enum (int ncid, const char *typename, SEXP basetype,
   const char *tmpname=NULL, cvals=NULL, *thisval=NULL;
 
   /*-- Decode arguments -------------------------------------------------------*/
-  R_nc_check (R_nc_type_id (basetype, ncid, &xtype));
+  R_nc_check (R_nc_type_id (basetype, ncid, &xtype, 0));
 
   nval = xlength (values);
   if (xlength (names) != nval) {
@@ -227,7 +220,7 @@ R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP size, SEXP basetype,
     }
     R_nc_check (nc_def_opaque (ncid, typenamep, xsize, &typeid));
   } else if (R_nc_strcmp (class, "vlen")) {
-    R_nc_check (R_nc_type_id (basetype, ncid, &xtype));
+    R_nc_check (R_nc_type_id (basetype, ncid, &xtype, 0));
     R_nc_check (nc_def_vlen (ncid, typenamep, xtype, &typeid));
   } else {
     RERROR ("Unknown class for type definition");
@@ -256,7 +249,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
   /*-- Decode arguments -------------------------------------------------------*/
   ncid = asInteger (nc);
 
-  R_nc_check (R_nc_type_id (type, ncid, &typeid));
+  R_nc_check (R_nc_type_id (type, ncid, &typeid, 0));
 
   fldname = CHAR (STRING_ELT (name, 0));
 
@@ -278,7 +271,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
         coffset = asReal (offset);
       }
 
-      R_nc_check (R_nc_type_id (subtype, ncid, &xtype));
+      R_nc_check (R_nc_type_id (subtype, ncid, &xtype, 0));
       R_nc_check (nc_inq_type (ncid, xtype, NULL, &subsize));
 
       nelem = 1;
@@ -344,7 +337,7 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
-  R_nc_check (R_nc_type_id (type, ncid, &xtype));
+  R_nc_check (R_nc_type_id (type, ncid, &xtype, 0));
   extend = (asLogical (fields) == TRUE);
 
   /*-- General properties -----------------------------------------------------*/

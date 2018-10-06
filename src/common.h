@@ -91,7 +91,7 @@ R_nc_var_id (SEXP var, int ncid, int *varid);
    Result is a netcdf status value.
  */
 int
-R_nc_type_id (SEXP type, int ncid, nc_type *xtype);
+R_nc_type_id (SEXP type, int ncid, nc_type *xtype, int idx);
 
 /* Convert netcdf type code to string label.
    Return NC_NOERR if ok, netcdf error code otherwise.

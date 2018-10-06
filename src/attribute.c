@@ -261,7 +261,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
 
   attname = CHAR (STRING_ELT (att, 0));
 
-  R_nc_check (R_nc_type_id (type, ncid, &xtype));
+  R_nc_check (R_nc_type_id (type, ncid, &xtype, 0));
 
   /*-- Enter define mode ------------------------------------------------------*/
   R_nc_check( R_nc_redef (ncid));

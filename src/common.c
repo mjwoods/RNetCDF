@@ -154,13 +154,19 @@ R_nc_var_id (SEXP var, int ncid, int *varid)
 
 
 int
-R_nc_type_id (SEXP type, int ncid, nc_type *xtype)
+R_nc_type_id (SEXP type, int ncid, nc_type *xtype, int idx)
 {
-  if (isNumeric (type)) {
-    *xtype = asInteger (type);
+  if (length (type) <= idx) {
+    return NC_EINVAL;
+  }
+  if (isInteger (type)) {
+    *xtype = INTEGER (type)[idx];
+    return NC_NOERR;
+  } else if (isReal (type)) {
+    *xtype = REAL (type)[idx];
     return NC_NOERR;
   } else if (isString (type)) {
-    return R_nc_str2type (ncid, CHAR (STRING_ELT (type, 0)), xtype);
+    return R_nc_str2type (ncid, CHAR (STRING_ELT (type, idx)), xtype);
   } else {
     return NC_EINVAL;
   }
