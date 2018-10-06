@@ -117,6 +117,36 @@ R_nc_length (int ndims, const size_t *count)
 }
 
 
+size_t
+R_nc_length_sexp (SEXP count)
+{
+  size_t length, ii, ndims;
+  double *rcount;
+  int *icount;
+
+  ndims = xlength (count);
+
+  // Assume scalar if count is empty
+  length = 1;
+
+  if (isReal (count)) {
+    rcount = REAL (count);
+    for ( ii=0; ii<ndims; ii++ ) {
+      length *= rcount[ii]; 
+    }
+  } else if (isInteger (count)) {
+    icount = INTEGER (count);
+    for ( ii=0; ii<ndims; ii++ ) {
+      length *= icount[ii]; 
+    }
+  } else if (!isNull (count)) {
+    R_nc_error ("Unsupported type in R_nc_length_sexp");
+  }
+
+  return (length);
+}
+
+
 SEXP
 R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount) {
   SEXP result, rdim;
