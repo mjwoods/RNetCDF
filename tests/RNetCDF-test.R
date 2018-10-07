@@ -123,17 +123,17 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     inq_vector_blob <- list(id=id_vector_blob, name="vector_blob", class="vlen",
                             size=NA, basetype="blob")
 
-    id_factor <- type.def.nc(nc, "factor", "enum", basetype="NC_UBYTE")
-    type.insert.nc(nc, id_factor, "peanut butter", value=101)
-    type.insert.nc(nc, "factor", "jelly", value=102)
+    id_factor <- type.def.nc(nc, "factor", "enum", basetype="NC_UBYTE",
+                             names=c("peanut butter", "jelly"),
+                             values=c(101, 102))
     inq_factor <- list(id=id_factor, name="factor", class="enum",
                        size=1, basetype="NC_UBYTE",
                        value=c("peanut butter"=101,"jelly"=102))
 
-    id_struct <- type.def.nc(nc, "struct", "compound", size=4+8+3*2)
-    type.insert.nc(nc, id_struct, "siteid", offset=0, subtype="NC_INT")
-    type.insert.nc(nc, "struct", "height", offset=4, subtype="NC_DOUBLE")
-    type.insert.nc(nc, "struct", "colour", offset=12, subtype="NC_SHORT", dimsizes=c(3))
+    id_struct <- type.def.nc(nc, "struct", "compound",
+                             names=c("siteid", "height", "colour"),
+                             subtypes=c("NC_INT", "NC_DOUBLE", "NC_SHORT"),
+                             dimsizes=list(NULL, NULL, c(3)))
     inq_struct <- list(id=id_struct, name="struct", class="compound", size=18,
                        offset=c(siteid=0,height=4,colour=12),
                        subtype=c(siteid="NC_INT",height="NC_DOUBLE",colour="NC_SHORT"),

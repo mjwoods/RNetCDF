@@ -38,7 +38,6 @@
 \seealso{
   \code{\link{grp.inq.nc}} - get a list of NetCDF types defined in a dataset or group.
   \code{\link{type.def.nc}} - define a new NetCDF type.
-  \code{\link{type.insert.nc}} - define components of an "enum" or "compound" type.
 }
 
 \examples{
@@ -49,14 +48,14 @@ nc <- create.nc("type.inq.nc", format="netcdf4")
 type.def.nc(nc, "blob", "opaque", size=128)
 type.def.nc(nc, "vector", "vlen", basetype="NC_FLOAT")
 
-type.def.nc(nc, "factor", "enum", basetype="NC_INT")
-type.insert.nc(nc, "factor", "peanut butter", value=101)
-type.insert.nc(nc, "factor", "jelly", value=102)
+type.def.nc(nc, "factor", "enum", basetype="NC_INT",
+            names=c("peanut butter", "jelly"),
+            values=c(101, 102))
 
-type.def.nc(nc, "struct", "compound", size=4+8+3*2)
-type.insert.nc(nc, "struct", "siteid", offset=0, subtype="NC_INT")
-type.insert.nc(nc, "struct", "height", offset=4, subtype="NC_DOUBLE")
-type.insert.nc(nc, "struct", "colour", offset=12, subtype="NC_SHORT", dimsizes=c(3))
+type.def.nc(nc, "struct", "compound",
+            names=c("siteid", "height", "colour"),
+            subtypes=c("NC_INT", "NC_DOUBLE", "NC_SHORT"),
+            dimsizes=list(NULL, NULL, c(3))) 
 
 # Inquire about the types:
 typeids <- grp.inq.nc(nc)$typeids
