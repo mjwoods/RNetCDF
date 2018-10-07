@@ -67,68 +67,98 @@ static nc_type
 R_nc_def_compound (int ncid, const char *typename,
                    SEXP names, SEXP subtypes, SEXP dimsizes)
 {
-// TODO ...
-  int ndims=0;
-  nc_type typeid, xtype;
-  int class, *csizes=NULL, ifld, nfld;
-  size_t ifld, nfld, *coffset, xsize, xcnt;
-  const char *fldname;
-  const void *tmpval=NULL;
+  int ndims, status;
+  nc_type typeid, *xtypes;
+  int class, *csizes;
+  size_t ifld, nfld, *coffset, xsize, xsizemax, xcnt, typesize, align, nskip;
+  SEXP shape;
 
   /*-- Check arguments -------------------------------------------------------*/
   nfld = xlength (names);
   if (xlength (subtypes) != nfld || xlength (dimsizes) != nfld) {
-    RERROR ("Lengths of 'names', 'subtypes' and 'dimsizes' must match");
+    R_nc_error ("Lengths of names, subtypes and dimsizes must match");
+  } else if (nfld < 1) {
+    R_nc_error ("Compound type must have at least one field");
   }
 
-  /*-- Calculate field offsets and size of compound --------------------------*/
-
-
+  /*-- Calculate field offsets with suitable alignment for each native subtype,
+     recording the total size of the compound type and its largest subtype ---*/
+  coffset = (size_t *) R_alloc (nfld, sizeof(size_t));
+  xtypes = (nc_type *) R_alloc (nfld, sizeof(nc_type));
+  typesize = 0;
+  xsizemax = 0;
   for (ifld=0; ifld<nfld; ifld++) {
-    R_nc_check (R_nc_type_id (subtypes, ncid, &xtype, ifld));
-    R_nc_check (nc_inq_user_type (ncid, xtype, NULL, &xsize, NULL, NULL, NULL));
+    R_nc_check (R_nc_type_id (subtypes, ncid, &(xtypes[ifld]), ifld));
+    R_nc_check (nc_inq_type(ncid, xtypes[ifld], NULL, &xsize));
+    if (xsize > xsizemax) {
+      xsizemax = xsize;
+    }
     xcnt = R_nc_length_sexp (VECTOR_ELT (dimsizes, ifld));
 
-// Now calculate alignment and offset, updating using total size so far.
-
-  }
-
-  fldname = CHAR (STRING_ELT (name, 0));
-
-  R_nc_check (nc_inq_user_type (ncid, typeid, NULL, NULL, &xtype, NULL, &class));
-
-  if (isInteger (offset)) {
-    coffset = asInteger (offset);
-  } else {
-    /* offset could be larger than integer */
-    coffset = asReal (offset);
-  }
-
-  R_nc_check (R_nc_type_id (subtype, ncid, &xtype, 0));
-
-  if (isNull (dimsizes)) {
-    ndims = 0;
-  } else {
-    ndims = length (dimsizes);
-    if (ndims > 0) {
-      csizes = R_nc_dim_r2c_int(dimsizes, ndims, 0);
+    align = xsize < 8 ? xsize : 8;
+    if (typesize % align == 0) {
+      coffset[ifld] = typesize;
+    } else {
+      coffset[ifld] = align * (typesize / align + 1);
     }
+    typesize = coffset[ifld] + xsize * xcnt;
   }
 
-  cvals = R_nc_r2c (values, ncid, xtype, 1, &nval, NULL, NULL, NULL);
+  /*-- Pad the compound type to align the largest native subtype -------------*/
+  align = xsizemax < 8 ? xsizemax : 8;
+  if (typesize % align != 0) {
+    typesize = align * (typesize / align + 1);
+  }
 
-
-  /*-- Enter define mode ------------------------------------------------------*/
+  /*-- Enter define mode -----------------------------------------------------*/
   R_nc_check( R_nc_redef (ncid));
 
-  if (ndims > 0) {
-    R_nc_check (nc_insert_array_compound (ncid, typeid, fldname,
-                  coffset, xtype, ndims, csizes));
+  /*-- Define the type, continuing if a compatible type already exists -------*/
+  status = nc_def_compound (ncid, typesize, typename, &typeid);
+  if (status == NC_ENAMEINUSE) {
+    R_nc_check (nc_inq_typeid (ncid, typename, &typeid));
+    R_nc_check (nc_inq_user_type (ncid, typeid, NULL, &xsize,
+                                  NULL, NULL, &class));
+    if (class != NC_COMPOUND || xsize != typesize) {
+      R_nc_error ("Existing type has same name but different class or size");
+    }
+    warning("Inserting fields in existing type %s", typename);
   } else {
-    R_nc_check (nc_insert_compound (ncid, typeid, fldname, coffset, xtype));
+    R_nc_check (status);
   }
 
-  RRETURN(R_NilValue);
+  /*-- Insert fields, skipping any field that already exists -----------------*/
+  nskip = 0;
+  for (ifld=0; ifld<nfld; ifld++) {
+    shape = VECTOR_ELT (dimsizes, ifld);
+
+    csizes = NULL;
+    if (isNull (shape)) {
+      ndims = 0;
+    } else if (isNumeric (shape)) {
+      ndims = length (shape);
+      if (ndims > 0) {
+	csizes = R_nc_dim_r2c_int(shape, ndims, 0);
+      }
+    } else {
+      R_nc_error ("Dimensions of field must be numeric or null");
+      return NC_NAT;
+    }
+
+    status = nc_insert_array_compound (ncid, typeid,
+               CHAR (STRING_ELT(names, ifld)),
+               coffset[ifld], xtypes[ifld], ndims, csizes);
+    if (status == NC_ENAMEINUSE) {
+      nskip++;
+    } else {
+      R_nc_check (status);
+    }
+  }
+  if (nskip > 0) {
+    warning("Skipped existing fields of type %s", typename);
+  }
+
+  return typeid;
 }
 
 
@@ -139,14 +169,13 @@ R_nc_def_enum (int ncid, const char *typename, SEXP basetype,
   nc_type xtype, xtype2, typeid;
   int status, class;
   size_t size, ival, nval, nskip;
-  const char *tmpname=NULL, cvals=NULL, *thisval=NULL;
+  const char *tmpname, *cvals, *thisval;
 
   /*-- Decode arguments -------------------------------------------------------*/
   R_nc_check (R_nc_type_id (basetype, ncid, &xtype, 0));
-
   nval = xlength (values);
   if (xlength (names) != nval) {
-    RERROR ("Lengths of 'names' and 'values' must match");
+    R_nc_error ("Lengths of names and values must match");
   }
 
   cvals = R_nc_r2c (values, ncid, xtype, 1, &nval, NULL, NULL, NULL);
@@ -163,18 +192,18 @@ R_nc_def_enum (int ncid, const char *typename, SEXP basetype,
     if (class != NC_ENUM || xtype != xtype2) {
       R_nc_error ("Existing type has same name but different class or basetype");
     }
-    warning("Inserting members in existing type %s", typename)
+    warning("Inserting members in existing type %s", typename);
   } else {
     R_nc_check (status);
   }
 
   /*-- Insert members, skipping any member that already exists ----------------*/
-  R_nc_check (nc_inq_user_type (ncid, typeid, NULL, &size, NULL, NULL, NULL));
+  R_nc_check (nc_inq_type(ncid, typeid, NULL, &size));
   nskip = 0;
   for (ival=0, thisval=cvals; ival<nval; ival++, thisval+=size) {
     tmpname = CHAR (STRING_ELT (names, ival));
     status = nc_insert_enum (ncid, typeid, tmpname, thisval);
-    if (status = NC_ENAMEINUSE) {
+    if (status == NC_ENAMEINUSE) {
       nskip++;
     } else {
       R_nc_check (status);
@@ -218,7 +247,7 @@ R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP size, SEXP basetype,
     } else {
       xsize = asReal (size);
     }
-    R_nc_check (nc_def_opaque (ncid, typenamep, xsize, &typeid));
+    R_nc_check (nc_def_opaque (ncid, xsize, typenamep, &typeid));
   } else if (R_nc_strcmp (class, "vlen")) {
     R_nc_check (R_nc_type_id (basetype, ncid, &xtype, 0));
     R_nc_check (nc_def_vlen (ncid, typenamep, xtype, &typeid));

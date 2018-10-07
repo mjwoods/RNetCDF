@@ -125,11 +125,8 @@ R_nc_rename_grp (SEXP nc, SEXP grpname);
 /* Types */
 
 SEXP
-R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP basetype, SEXP size);
-
-SEXP
-R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
-  SEXP offset, SEXP subtype, SEXP dimsizes);
+R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP size, SEXP basetype,
+               SEXP names, SEXP values, SEXP subtypes, SEXP dimsizes);
 
 SEXP
 R_nc_inq_type (SEXP nc, SEXP type, SEXP fields);
