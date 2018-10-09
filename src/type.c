@@ -222,7 +222,6 @@ R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP size, SEXP basetype,
                SEXP names, SEXP values, SEXP subtypes, SEXP dimsizes)
 {
   int ncid;
-  char mode;
   const char *typenamep;
   nc_type typeid=0, xtype=0;
   size_t xsize=0;
