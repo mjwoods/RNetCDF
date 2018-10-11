@@ -74,7 +74,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
 
   varnamep = CHAR (STRING_ELT (varname, 0));
 
-  R_nc_check (R_nc_type_id (type, ncid, &xtype));
+  R_nc_check (R_nc_type_id (type, ncid, &xtype, 0));
 
   ndims = length(dims);
   dimids = (void *) R_alloc (ndims, sizeof(int));

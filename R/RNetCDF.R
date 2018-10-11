@@ -574,6 +574,7 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
   ndims <- varinfo$ndims
   str2char <- is.character(data) && varinfo$type == "NC_CHAR"
   opaque <- is.raw(data) && typeinfo$class == "opaque"
+  compound <- is.list(data) && typeinfo$class == "compound"
 
   # Truncate start & count and replace NA as described in the man page:
   if (isTRUE(is.na(start))) {
@@ -589,6 +590,11 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
       count <- dim(data)
     } else if (ndims==0 && length(data)==1) {
       count <- integer(0)
+    } else if (compound) {
+      # Compound type is stored as an R list,
+      # and fields may have different dimensions.
+      # Use dimensions from the netcdf variable instead.
+      count <- rep(NA, ndims)
     } else {
       count <- length(data)
     }
@@ -615,6 +621,8 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
     numelem <- prod(count[-1])
   } else if (opaque) {
     numelem <- prod(c(typeinfo$size,count))
+  } else if (compound) {
+    numelem <- length(typeinfo$offset)
   } else {
     numelem <- prod(count) # Returns 1 if ndims==0 (scalar variable)
   }
@@ -885,43 +893,31 @@ read.nc <- function(ncfile, recursive = FALSE, ...) {
 # type.def.nc()
 #-------------------------------------------------------------------------------
 
-type.def.nc <- function(ncfile, typename, class, basetype=NULL, size=NULL) {
+type.def.nc <- function(ncfile, typename, class, size=NULL, basetype=NULL,
+                        names=NULL, values=NULL, subtypes=NULL, dimsizes=NULL) {
   # Check arguments
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(typename))
   stopifnot(is.character(class))
-  if (class == "compound" || class == "opaque") {
-    stopifnot(is.numeric(size))
-  } else if (class == "enum" || class == "vlen") {
+  if (class == "compound") {
+    stopifnot(is.character(names))
+    stopifnot(is.character(subtypes) || is.numeric(subtypes))
+    stopifnot(is.list(dimsizes))
+  } else if (class == "enum") {
     stopifnot(is.character(basetype) || is.numeric(basetype))
+    stopifnot(is.character(names))
+    stopifnot(is.numeric(values))
+  } else if (class == "opaque") {
+    stopifnot(is.numeric(size))
+  } else if (class == "vlen") {
+    stopifnot (is.character(basetype) || is.numeric(basetype))
   } else {
     stop("Unknown class for type definition", call.=FALSE)
   }
 
-  id <- .Call(R_nc_def_type, ncfile, typename, class, basetype, size)
+  id <- .Call(R_nc_def_type, ncfile, typename, class, size, basetype,
+              names, values, subtypes, dimsizes)
   return(invisible(id))
-}
-
-
-#-------------------------------------------------------------------------------
-# type.insert.nc()
-#-------------------------------------------------------------------------------
-
-type.insert.nc <- function(ncfile, type, name, value=NULL,
-  offset=NULL, subtype=NULL, dimsizes=NULL) {
-  # Check arguments
-  stopifnot(class(ncfile) == "NetCDF")
-  stopifnot(is.numeric(type) || is.character(type))
-  stopifnot(is.character(name))
-  stopifnot(is.null(value) || is.numeric(value))
-  stopifnot(is.null(offset) || is.numeric(offset))
-  stopifnot(is.null(subtype) || is.numeric(subtype) || is.character(subtype))
-  stopifnot(is.null(dimsizes) || is.numeric(dimsizes))
-
-  .Call(R_nc_insert_type, ncfile, type, name, value,
-         offset, subtype, dimsizes)
-
-  return(invisible(NULL))
 }
 
 

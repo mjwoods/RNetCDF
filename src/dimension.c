@@ -141,7 +141,7 @@ R_nc_unlimdims (int ncid, int *nunlim, int **unlimids)
 SEXP
 R_nc_inq_unlimids (SEXP nc)
 {
-  int ncid, nunlim, *unlimids;
+  int ncid, nunlim, *unlimids=NULL;
   SEXP result;
 
   ncid = asInteger (nc);

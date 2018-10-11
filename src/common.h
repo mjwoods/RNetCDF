@@ -58,7 +58,7 @@ R_nc_unprotect (void);
 
 /* Raise an error in R */
 void
-R_nc_error(const char *msg);
+R_nc_error(const char *fmt, ...);
 
 /* If status is a netcdf error, raise an R error with a suitable message,
    otherwise return to caller. */
@@ -91,7 +91,7 @@ R_nc_var_id (SEXP var, int ncid, int *varid);
    Result is a netcdf status value.
  */
 int
-R_nc_type_id (SEXP type, int ncid, nc_type *xtype);
+R_nc_type_id (SEXP type, int ncid, nc_type *xtype, int idx);
 
 /* Convert netcdf type code to string label.
    Return NC_NOERR if ok, netcdf error code otherwise.

@@ -69,11 +69,19 @@ R_nc_unprotect (void)
 }
 
 
+#define R_NC_ERRLEN 8192
 void
-R_nc_error(const char *msg)
+R_nc_error(const char *fmt, ...)
 {
+  char buf[R_NC_ERRLEN];
+  va_list(ap);
+
+  va_start(ap, fmt);
+  vsnprintf(buf, R_NC_ERRLEN, fmt, ap);
+  va_end(ap);
+ 
   R_nc_unprotect ();
-  error ("%s", msg);
+  error (buf);
 }
 
 
@@ -117,7 +125,9 @@ R_nc_inherits (SEXP var, const char *class)
 int
 R_nc_dim_id (SEXP dim, int ncid, int *dimid, int idx)
 {
-  if (isInteger (dim)) {
+  if (xlength (dim) <= idx) {
+    return NC_EINVAL;
+  } else if (isInteger (dim)) {
     *dimid = INTEGER (dim)[idx];
     return NC_NOERR;
   } else if (isReal (dim)) {
@@ -134,7 +144,9 @@ R_nc_dim_id (SEXP dim, int ncid, int *dimid, int idx)
 int
 R_nc_var_id (SEXP var, int ncid, int *varid)
 {
-  if (isNumeric (var)) {
+  if (xlength (var) <= 0) {
+    return NC_EINVAL;
+  } else if (isNumeric (var)) {
     *varid = asInteger (var);
     return NC_NOERR;
   } else if (isString (var)) {
@@ -146,13 +158,18 @@ R_nc_var_id (SEXP var, int ncid, int *varid)
 
 
 int
-R_nc_type_id (SEXP type, int ncid, nc_type *xtype)
+R_nc_type_id (SEXP type, int ncid, nc_type *xtype, int idx)
 {
-  if (isNumeric (type)) {
-    *xtype = asInteger (type);
+  if (length (type) <= idx) {
+    return NC_EINVAL;
+  } else if (isInteger (type)) {
+    *xtype = INTEGER (type)[idx];
+    return NC_NOERR;
+  } else if (isReal (type)) {
+    *xtype = REAL (type)[idx];
     return NC_NOERR;
   } else if (isString (type)) {
-    return R_nc_str2type (ncid, CHAR (STRING_ELT (type, 0)), xtype);
+    return R_nc_str2type (ncid, CHAR (STRING_ELT (type, idx)), xtype);
   } else {
     return NC_EINVAL;
   }

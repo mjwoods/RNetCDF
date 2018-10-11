@@ -67,7 +67,8 @@ R_nc_att_name (SEXP att, int ncid, int varid, char *attname)
   if (isNumeric (att)) {
     return nc_inq_attname (ncid, varid, asInteger (att), attname);
   } else if (isString (att)) {
-    strcpy (attname, CHAR (STRING_ELT (att, 0)));
+    strncpy (attname, CHAR (STRING_ELT (att, 0)), NC_MAX_NAME);
+    attname[NC_MAX_NAME] = '\0';
     return NC_NOERR;
   } else {
     return NC_EINVAL;
@@ -260,7 +261,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
 
   attname = CHAR (STRING_ELT (att, 0));
 
-  R_nc_check (R_nc_type_id (type, ncid, &xtype));
+  R_nc_check (R_nc_type_id (type, ncid, &xtype, 0));
 
   /*-- Enter define mode ------------------------------------------------------*/
   R_nc_check( R_nc_redef (ncid));

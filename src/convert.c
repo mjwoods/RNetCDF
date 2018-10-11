@@ -117,6 +117,36 @@ R_nc_length (int ndims, const size_t *count)
 }
 
 
+size_t
+R_nc_length_sexp (SEXP count)
+{
+  size_t length, ii, ndims;
+  double *rcount;
+  int *icount;
+
+  ndims = xlength (count);
+
+  // Assume scalar if count is empty
+  length = 1;
+
+  if (isReal (count)) {
+    rcount = REAL (count);
+    for ( ii=0; ii<ndims; ii++ ) {
+      length *= rcount[ii]; 
+    }
+  } else if (isInteger (count)) {
+    icount = INTEGER (count);
+    for ( ii=0; ii<ndims; ii++ ) {
+      length *= icount[ii]; 
+    }
+  } else if (!isNull (count)) {
+    R_nc_error ("Unsupported type in R_nc_length_sexp");
+  }
+
+  return (length);
+}
+
+
 SEXP
 R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount) {
   SEXP result, rdim;
@@ -285,7 +315,7 @@ static void
 R_nc_str_strsxp (R_nc_buf *io)
 {
   size_t ii, nchar, cnt;
-  char **cstr, *endstr, endchar;
+  char **cstr;
   cnt = xlength (io->rxp);
   cstr = (char **) io->cbuf;
   for (ii=0; ii<cnt; ii++) {
@@ -839,7 +869,7 @@ R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
   size_t size, imem, nmem, ilev, nlev, *ilev2mem, ifac, nfac;
   char *memnames, *memname, *memvals, *memval, *out;
   const char **levnames;
-  int match, *in, inval;
+  int ismatch, *in, inval;
 
   /* Extract indices and level names of R factor */
   in = INTEGER (rv);
@@ -872,16 +902,16 @@ R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
   ilev2mem = (size_t *) R_alloc (nlev, sizeof(size_t));
 
   for (ilev=0; ilev<nlev; ilev++) {
-    match = 0;
+    ismatch = 0;
     for (imem=0, memname=memnames; imem<nmem;
          imem++, memname+=(NC_MAX_NAME+1)) {
       if (strcmp(memname, levnames[ilev]) == 0) {
-        match = 1;
+        ismatch = 1;
         ilev2mem[ilev] = imem;
         break;
       }
     }
-    if (!match) {
+    if (!ismatch) {
       RERROR ("Level has no matching member in enum type")
     }
   }
@@ -1011,6 +1041,208 @@ R_nc_enum_factor (R_nc_buf *io)
 }
 
 
+/* -- Compound class -- */
+
+/* Convert list of arrays from R to netcdf compound type.
+   Memory for the result is allocated (and freed by R).
+ */
+static void *
+R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim)
+{
+  size_t cnt, size, nfld, offset, fldsize, fldcnt, fldlen,
+         nlist, ilist, ielem, *dimsizefld;
+  nc_type typefld;
+  int ifldmax, ifld, idimfld, ndimfld, *dimlenfld, ismatch;
+  char *bufout, namefld[NC_MAX_NAME+1];
+  const char *buffld;
+  void *highwater;
+  SEXP namelist;
+
+  /* Get size and number of fields in compound type */
+  R_nc_check (nc_inq_compound(ncid, xtype, NULL, &size, &nfld));
+
+  /* Check names attribute of R list */
+  namelist = getAttrib (rv, R_NamesSymbol);
+  if (!isString (namelist)) {
+    R_nc_error ("Named list required for conversion to compound type");
+  }
+  nlist = xlength (namelist);
+  if (nlist < nfld) {
+    R_nc_error ("Not enough fields in list for conversion to compound type");
+  }
+
+  /* Allocate memory for compound array,
+     filling with zeros so that valgrind does not complain about
+     uninitialised values in gaps inserted for alignment */
+  cnt = R_nc_length (ndim, xdim);
+  bufout = R_alloc (cnt, size);
+  memset(bufout, 0, cnt*size);
+
+  /* Convert each field in turn */
+  ifldmax = nfld;
+  for (ifld=0; ifld<ifldmax; ifld++) {
+
+    /* Save memory "highwater mark" to reclaim memory from R_alloc,
+       which may consume large chunks of memory after R_nc_r2c.
+     */
+    highwater = vmaxget();
+
+    /* Query the dataset for details of the field. */
+    R_nc_check (nc_inq_compound_field (ncid, xtype, ifld, namefld,
+                  &offset, &typefld, &ndimfld, NULL));
+    dimlenfld = (int *) R_alloc (ndimfld, sizeof(int));
+    R_nc_check (nc_inq_compound_fielddim_sizes(ncid, xtype, ifld, dimlenfld));
+    R_nc_check (nc_inq_type (ncid, typefld, NULL, &fldsize));
+
+    /* Find the field by name in the R input list */
+    ismatch = 0;
+    for (ilist=0; ilist<nlist; ilist++) {
+      if (strcmp (CHAR (STRING_ELT (namelist, ilist)), namefld) == 0) {
+        // ilist is the matching list index
+        ismatch = 1;
+        break;
+      }
+    }
+    if (!ismatch) {
+      R_nc_error ("Name of compound field not found in input list");
+    }
+
+    /* Convert the field from R to C.
+       Convert the dimension lengths from integer to size_t,
+       adding an extra dimension (slowest varying) for the total number
+       of elements in the compound array (cnt). */
+    dimsizefld = (size_t *) R_alloc (ndimfld+1, sizeof(size_t));
+    dimsizefld[0] = cnt;
+    for (idimfld=0; idimfld<ndimfld; idimfld++) {
+      dimsizefld[idimfld+1] = dimlenfld[idimfld];
+    }
+    buffld = R_nc_r2c (VECTOR_ELT (rv, ilist), ncid, typefld, ndimfld+1, dimsizefld,
+                       NULL, NULL, NULL);
+
+    /* Copy elements from the field array into the compound array */
+    fldcnt = R_nc_length (ndimfld, dimsizefld+1);
+    fldlen = fldsize * fldcnt;
+    for (ielem=0; ielem<cnt; ielem++) {
+      memcpy (bufout+ielem*size+offset, buffld+ielem*fldlen, fldlen);
+    }
+
+    /* Allow memory from R_alloc since vmaxget to be reclaimed */
+    vmaxset (highwater);
+  }
+
+  return bufout;
+}
+
+
+static void
+R_nc_compound_vecsxp_init (R_nc_buf *io)
+{
+  size_t size, nfld, cnt;
+
+  /* The in-memory layout of compound types can differ between writing and reading.
+     When writing, an arbitrary layout is specified by the user.
+     When reading, a "native" layout is returned by the netcdf library.
+     If the layout has been defined since the dataset was opened,
+     the type inquiry functions always return the layout used for writing.
+     We can get the layout for reading from a read-only instance of the dataset.
+   */
+  if (R_nc_redef (io->ncid) == NC_NOERR) {
+    /* Dataset must be writable because it is now in define mode */
+    R_nc_error ("Please read compound type from a read-only dataset");
+  }
+
+  /* Get number of fields in compound type */
+  R_nc_check (nc_inq_compound(io->ncid, io->xtype, NULL, &size, &nfld));
+
+  /* Allocate memory for output list */
+  io->rxp = R_nc_allocArray (VECSXP, -1, &nfld);
+
+  /* Allocate memory for compound array */
+  if (!io->cbuf) {
+    cnt = R_nc_length (io->ndim, io->xdim);
+    io->cbuf = R_alloc (cnt, size);
+  }
+}
+
+
+/* Convert netcdf compound values in io->cbuf to R list of arrays in io->rxp.
+   Data structures are prepared by a prior call to R_nc_compound_vecsxp_init.
+ */
+static void
+R_nc_compound_vecsxp (R_nc_buf *io)
+{
+  int ncid, ifld, ifldmax, idim, ndim, idimfld, ndimfld, *dimlenfld, ndimslice;
+  nc_type xtype, typefld;
+  size_t size, nfld, cnt, offset, fldsize, *dimslice, fldcnt, fldlen, ielem;
+  SEXP namelist, rxpfld;
+  char namefld[NC_MAX_NAME+1], *buffld, *bufcmp;
+  R_nc_buf iofld;
+  void *highwater;
+
+  /* Get size and number of fields in compound type */
+  ncid = io->ncid;
+  xtype = io->xtype;
+  R_nc_check (nc_inq_compound(ncid, xtype, NULL, &size, &nfld));
+  cnt = R_nc_length (io->ndim, io->xdim);
+
+  /* Set names attribute of R list */
+  namelist = R_nc_allocArray (STRSXP, -1, &nfld);
+  setAttrib(io->rxp, R_NamesSymbol, namelist);
+
+  /* Convert each field in turn */
+  bufcmp = io->cbuf;
+  ifldmax = nfld;
+  for (ifld=0; ifld<ifldmax; ifld++) {
+
+    /* Save memory "highwater mark" to reclaim memory from R_alloc,
+       which may consume large chunks of memory after R_nc_r2c.
+     */
+    highwater = vmaxget();
+
+    /* Query the dataset for details of the field. */
+    R_nc_check (nc_inq_compound_field (ncid, xtype, ifld, namefld,
+                  &offset, &typefld, &ndimfld, NULL));
+    dimlenfld = (int *) R_alloc (ndimfld, sizeof(int));
+    R_nc_check (nc_inq_compound_fielddim_sizes(ncid, xtype, ifld, dimlenfld));
+    R_nc_check (nc_inq_type (ncid, typefld, NULL, &fldsize));
+
+    /* Set the field name in the R list */
+    SET_STRING_ELT (namelist, ifld, mkChar (namefld));
+
+    /* Append field dimensions to the variable dimensions */
+    ndim = io->ndim;
+    ndimslice = ndim + ndimfld;
+    dimslice = (size_t *) R_alloc (ndimslice, sizeof(size_t));
+    for (idim=0; idim<ndim; idim++) {
+      dimslice[idim] = io->xdim[idim];
+    }
+    for (idimfld=0; idimfld<ndimfld; idimfld++) {
+      dimslice[ndim+idimfld] = dimlenfld[idimfld];
+    }
+    fldcnt = R_nc_length (ndimfld, dimslice+ndim);
+
+    /* Prepare to convert field data from C to R */
+    buffld = R_nc_c2r_init (&iofld, NULL, ncid, typefld, ndimslice, dimslice,
+               io->rawchar, io->fitnum, NULL, NULL, NULL);
+
+    /* Copy elements from the compound array into the field array */
+    fldlen = fldsize * fldcnt;
+    for (ielem=0; ielem<cnt; ielem++) {
+      memcpy (buffld+ielem*fldlen, bufcmp+ielem*size+offset, fldlen);
+    }
+
+    /* Convert field data from C to R */
+    rxpfld = R_nc_c2r (&iofld);
+
+    /* Insert field data into R list */
+    SET_VECTOR_ELT (io->rxp, ifld, rxpfld);
+
+    /* Allow memory from R_alloc since vmaxget to be reclaimed */
+    vmaxset (highwater);
+  }
+}
+
+
 /*=============================================================================*\
  *  Generic type conversions
 \*=============================================================================*/
@@ -1120,8 +1352,13 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
     }
     break;
   case VECSXP:
-    if (xtype > NC_MAX_ATOMIC_TYPE && class == NC_VLEN) {
-      return R_nc_vecsxp_vlen (rv, ncid, xtype, ndim, xdim, fill, scale, add);
+    if (xtype > NC_MAX_ATOMIC_TYPE) {
+      switch (class) {
+      case NC_VLEN:
+        return R_nc_vecsxp_vlen (rv, ncid, xtype, ndim, xdim, fill, scale, add);
+      case NC_COMPOUND:
+        return R_nc_vecsxp_compound (rv, ncid, xtype, ndim, xdim);
+      }
     }
     break;
   }
@@ -1221,6 +1458,9 @@ R_nc_c2r_init (R_nc_buf *io, void *cbuf,
       if (xtype > NC_MAX_ATOMIC_TYPE) {
         R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, NULL, NULL, &class));
         switch (class) {
+        case NC_COMPOUND:
+          R_nc_compound_vecsxp_init (io);
+          break;
         case NC_ENUM:
           R_nc_enum_factor_init (io);
           break;
@@ -1349,6 +1589,9 @@ R_nc_c2r (R_nc_buf *io)
         R_nc_check (nc_inq_user_type (
           io->ncid, io->xtype, NULL, NULL, NULL, NULL, &class));
         switch (class) {
+        case NC_COMPOUND:
+          R_nc_compound_vecsxp (io);
+          break;
         case NC_ENUM:
           R_nc_enum_factor (io);
           break;

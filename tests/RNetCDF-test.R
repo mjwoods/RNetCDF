@@ -123,17 +123,17 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     inq_vector_blob <- list(id=id_vector_blob, name="vector_blob", class="vlen",
                             size=NA, basetype="blob")
 
-    id_factor <- type.def.nc(nc, "factor", "enum", basetype="NC_UBYTE")
-    type.insert.nc(nc, id_factor, "peanut butter", value=101)
-    type.insert.nc(nc, "factor", "jelly", value=102)
+    id_factor <- type.def.nc(nc, "factor", "enum", basetype="NC_UBYTE",
+                             names=c("peanut butter", "jelly"),
+                             values=c(101, 102))
     inq_factor <- list(id=id_factor, name="factor", class="enum",
                        size=1, basetype="NC_UBYTE",
                        value=c("peanut butter"=101,"jelly"=102))
 
-    id_struct <- type.def.nc(nc, "struct", "compound", size=4+8+3*2)
-    type.insert.nc(nc, id_struct, "siteid", offset=0, subtype="NC_INT")
-    type.insert.nc(nc, "struct", "height", offset=4, subtype="NC_DOUBLE")
-    type.insert.nc(nc, "struct", "colour", offset=12, subtype="NC_SHORT", dimsizes=c(3))
+    id_struct <- type.def.nc(nc, "struct", "compound",
+                             names=c("siteid", "height", "colour"),
+                             subtypes=c("NC_INT", "NC_DOUBLE", "NC_SHORT"),
+                             dimsizes=list(NULL, NULL, c(3)))
     inq_struct <- list(id=id_struct, name="struct", class="compound", size=18,
                        offset=c(siteid=0,height=4,colour=12),
                        subtype=c(siteid="NC_INT",height="NC_DOUBLE",colour="NC_SHORT"),
@@ -165,7 +165,8 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.def.nc(nc, "rawdata_scalar", id_blob, NA)
     var.def.nc(nc, "rawdata_vector", id_blob, c("station"))
     var.def.nc(nc, "snacks", "factor", c("station", "time"))
-    varcnt <- varcnt+9
+    var.def.nc(nc, "person", "struct", c("station", "time"))
+    varcnt <- varcnt+10
 
     numtypes <- c("NC_UBYTE", "NC_USHORT", "NC_UINT")
 
@@ -255,6 +256,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     snacks <- factor(rep(snack_foods,times=5),
                          levels=snack_foods)
     dim(snacks) <- c(nstation, ntime)
+
+    person <- list(siteid=array(rep(seq(1,nstation),ntime), c(nstation,ntime)),
+                   height=array(1+0.1*seq(1,nstation*ntime), c(nstation,ntime)),
+                   colour=array(rep(c(0,0,0,64,128,192),nstation), c(3,nstation,ntime)))
   }
 
   ##  Put the data
@@ -277,6 +282,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.put.nc(nc, "rawdata_scalar", rawdata[,1,1])
     var.put.nc(nc, "rawdata_vector", rawdata[,,1])
     var.put.nc(nc, "snacks", snacks)
+    var.put.nc(nc, "person", person)
     if (has_bit64) {
       myid <- as.integer64("1234567890123456789")+c(0,1,2,3,4)
       var.put.nc(nc, "stationid", myid)
@@ -306,7 +312,15 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.put.nc(nc, paste(numtype,"_intpack",sep=""), as.integer(mypack), pack=TRUE)
   }
 
-  sync.nc(nc)
+#  sync.nc(nc)
+  if (format == "netcdf4") {
+    close.nc(ncroot)
+    ncroot <- open.nc(ncfile)
+    nc <- grp.inq.nc(ncroot, "testgrp")$self
+  } else {
+    close.nc(nc)
+    nc <- open.nc(ncfile)
+  } 
 
   ## Read tests
 
@@ -556,12 +570,14 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     y <- type.inq.nc(nc, id_factor, fields=FALSE)
     tally <- testfun(x,y,tally)
 
-    x <- inq_struct
-    y <- type.inq.nc(nc, id_struct)
+    # Size and offset of compound types may differ between writing and reading.
+    # The layout for writing (reading) is defined by the user (compiler).
+    x <- inq_struct[c(-4,-5)]
+    y <- type.inq.nc(nc, id_struct)[c(-4,-5)]
     tally <- testfun(x,y,tally)
 
-    x <- inq_struct[1:4]
-    y <- type.inq.nc(nc, id_struct, fields=FALSE)
+    x <- inq_struct[1:3]
+    y <- type.inq.nc(nc, id_struct, fields=FALSE)[-4]
     tally <- testfun(x,y,tally)
 
     cat("Read vlen as double ...")
@@ -616,6 +632,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     cat("Read enum ...")
     x <- snacks
     y <- var.get.nc(nc, "snacks")
+    tally <- testfun(x,y,tally)
+
+    cat("Read compound ...")
+    x <- person
+    y <- var.get.nc(nc, "person")
     tally <- testfun(x,y,tally)
   }
 

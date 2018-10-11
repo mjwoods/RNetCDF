@@ -51,6 +51,9 @@ int isInt64(SEXP rv);
 size_t
 R_nc_length (int ndims, const size_t *count);
 
+size_t
+R_nc_length_sexp (SEXP count);
+
 
 /* Allocate array with dimensions specified in C order.
    ndims > 0 implies an array with ndims dimension lengths in ccount[].
