@@ -1071,9 +1071,12 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
     R_nc_error ("Not enough fields in list for conversion to compound type");
   }
 
-  /* Allocate memory for compound array */
+  /* Allocate memory for compound array,
+     filling with zeros so that valgrind does not complain about
+     uninitialised values in gaps inserted for alignment */
   cnt = R_nc_length (ndim, xdim);
   bufout = R_alloc (cnt, size);
+  memset(bufout, 0, cnt*size);
 
   /* Convert each field in turn */
   ifldmax = nfld;
