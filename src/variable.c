@@ -298,6 +298,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   SEXP result=R_NilValue;
   void *buf;
   R_nc_buf io;
+  double add, scale, *addp, *scalep;
 
   /*-- Convert arguments ------------------------------------------------------*/
   ncid = asInteger (nc);
@@ -319,12 +320,17 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
     }
   }
 
+  /*-- Get packing attributes (if any) ----------------------------------------*/
+  scalep = &scale;
+  addp = &add;
+  R_nc_pack_att (ncid, varid, &scalep, &addp);
+
   /*-- Enter data mode (if necessary) -----------------------------------------*/
   R_nc_check (R_nc_enddef (ncid));
 
   /*-- Allocate memory and read variable from file ----------------------------*/
   buf = R_nc_c2r_init (&io, NULL, ncid, xtype, ndims, ccount,
-                       israw, isfit, NULL, NULL, NULL);
+                       israw, isfit, NULL, scalep, addp);
 
   if (R_nc_length (ndims, ccount) > 0) {
     R_nc_check (nc_get_vara (ncid, varid, cstart, ccount, buf));
@@ -393,6 +399,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
   size_t *cstart=NULL, *ccount=NULL;
   nc_type xtype;
   const void *buf;
+  double scale, add, *scalep, *addp;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -411,12 +418,17 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
     }
   }
 
+  /*-- Get packing attributes (if any) ----------------------------------------*/
+  scalep = &scale;
+  addp = &add;
+  R_nc_pack_att (ncid, varid, &scalep, &addp);
+
   /*-- Enter data mode (if necessary) -----------------------------------------*/
   R_nc_check (R_nc_enddef (ncid));
 
   /*-- Write variable to file -------------------------------------------------*/
   if (R_nc_length (ndims, ccount) > 0) {
-    buf = R_nc_r2c (data, ncid, xtype, ndims, ccount, NULL, NULL, NULL);
+    buf = R_nc_r2c (data, ncid, xtype, ndims, ccount, NULL, scalep, addp);
     R_nc_check (nc_put_vara (ncid, varid, cstart, ccount, buf));
   }
 
