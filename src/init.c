@@ -69,9 +69,9 @@ static const R_CallMethodDef callMethods[]  = {
   {"R_nc_inv_calendar", (DL_FUNC) &R_nc_inv_calendar, 2},
   {"R_nc_utterm", (DL_FUNC) &R_nc_utterm, 0},
   {"R_nc_def_var", (DL_FUNC) &R_nc_def_var, 4},
-  {"R_nc_get_var", (DL_FUNC) &R_nc_get_var, 6},
+  {"R_nc_get_var", (DL_FUNC) &R_nc_get_var, 8},
   {"R_nc_inq_var", (DL_FUNC) &R_nc_inq_var, 2},
-  {"R_nc_put_var", (DL_FUNC) &R_nc_put_var, 5},
+  {"R_nc_put_var", (DL_FUNC) &R_nc_put_var, 7},
   {"R_nc_rename_var", (DL_FUNC) &R_nc_rename_var, 3},
   {NULL, NULL, 0}
 };

@@ -290,15 +290,16 @@ R_nc_pack_att (int ncid, int varid, double **scale, double **add)
 
 SEXP
 R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
-              SEXP rawchar, SEXP fitnum)
+              SEXP rawchar, SEXP fitnum, SEXP namode, SEXP unpack)
 {
-  int ncid, varid, ndims, ii, israw, isfit;
+  int ncid, varid, ndims, ii, israw, isfit, inamode, isunpack;
   size_t *cstart=NULL, *ccount=NULL;
   nc_type xtype;
   SEXP result=R_NilValue;
   void *buf;
   R_nc_buf io;
-  double add, scale, *addp, *scalep;
+  double add, scale, *addp=NULL, *scalep=NULL;
+  void *fillp=NULL, *minp=NULL, *maxp=NULL;
 
   /*-- Convert arguments ------------------------------------------------------*/
   ncid = asInteger (nc);
@@ -307,6 +308,8 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
 
   israw = (asLogical (rawchar) == TRUE);
   isfit = (asLogical (fitnum) == TRUE);
+  inamode = asInteger (namode);
+  isunpack = (asLogical (unpack) == TRUE);
 
   /*-- Get type and rank of the variable --------------------------------------*/
   R_nc_check (nc_inq_var (ncid, varid, NULL, &xtype, &ndims, NULL, NULL));
@@ -320,17 +323,25 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
     }
   }
 
+  /*-- Get fill attributes (if any) -------------------------------------------*/
+  /* Note that min, max are not currently handled in conversions */
+  if (inamode >=0 && inamode <=3) {
+    R_nc_miss_att (ncid, varid, inamode, &xtype, &fillp, &minp, &maxp);
+  }
+
   /*-- Get packing attributes (if any) ----------------------------------------*/
-  scalep = &scale;
-  addp = &add;
-  R_nc_pack_att (ncid, varid, &scalep, &addp);
+  if (isunpack) {
+    scalep = &scale;
+    addp = &add;
+    R_nc_pack_att (ncid, varid, &scalep, &addp);
+  }
 
   /*-- Enter data mode (if necessary) -----------------------------------------*/
   R_nc_check (R_nc_enddef (ncid));
 
   /*-- Allocate memory and read variable from file ----------------------------*/
   buf = R_nc_c2r_init (&io, NULL, ncid, xtype, ndims, ccount,
-                       israw, isfit, NULL, scalep, addp);
+                       israw, isfit, fillp, scalep, addp);
 
   if (R_nc_length (ndims, ccount) > 0) {
     R_nc_check (nc_get_vara (ncid, varid, cstart, ccount, buf));
@@ -393,18 +404,23 @@ R_nc_inq_var (SEXP nc, SEXP var)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
+R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
+              SEXP namode, SEXP pack)
 {
-  int ncid, varid, ndims, ii;
+  int ncid, varid, ndims, ii, inamode, ispack;
   size_t *cstart=NULL, *ccount=NULL;
   nc_type xtype;
   const void *buf;
-  double scale, add, *scalep, *addp;
+  double scale, add, *scalep=NULL, *addp=NULL;
+  void *fillp=NULL, *minp=NULL, *maxp=NULL;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
 
   R_nc_check (R_nc_var_id (var, ncid, &varid));
+
+  inamode = asInteger (namode);
+  ispack = (asLogical (pack) == TRUE);
 
   /*-- Get type and rank of the variable --------------------------------------*/
   R_nc_check (nc_inq_var (ncid, varid, NULL, &xtype, &ndims, NULL, NULL));
@@ -418,17 +434,25 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data)
     }
   }
 
+  /*-- Get fill attributes (if any) -------------------------------------------*/
+  /* Note that min, max are not currently handled in conversions */
+  if (inamode >= 0 && inamode <= 3) {
+    R_nc_miss_att (ncid, varid, inamode, &xtype, &fillp, &minp, &maxp);
+  }
+
   /*-- Get packing attributes (if any) ----------------------------------------*/
-  scalep = &scale;
-  addp = &add;
-  R_nc_pack_att (ncid, varid, &scalep, &addp);
+  if (ispack) {
+    scalep = &scale;
+    addp = &add;
+    R_nc_pack_att (ncid, varid, &scalep, &addp);
+  }
 
   /*-- Enter data mode (if necessary) -----------------------------------------*/
   R_nc_check (R_nc_enddef (ncid));
 
   /*-- Write variable to file -------------------------------------------------*/
   if (R_nc_length (ndims, ccount) > 0) {
-    buf = R_nc_r2c (data, ncid, xtype, ndims, ccount, NULL, scalep, addp);
+    buf = R_nc_r2c (data, ncid, xtype, ndims, ccount, fillp, scalep, addp);
     R_nc_check (nc_put_vara (ncid, varid, cstart, ccount, buf));
   }
 
