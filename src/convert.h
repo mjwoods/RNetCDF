@@ -72,7 +72,7 @@ typedef struct {
   nc_type xtype;
   int ncid, ndim, rawchar, fitnum;
   size_t *xdim;
-  void *fill;
+  void *fill, *min, *max;
   double *scale, *add;
   } R_nc_buf;
 
@@ -110,7 +110,8 @@ void * \
 R_nc_c2r_init (R_nc_buf *io, void *cbuf,
                int ncid, nc_type xtype, int ndim, const size_t *xdim,
                int rawchar, int fitnum,
-               const void *fill, const double *scale, const double *add);
+               const void *fill, const void *min, const void *max,
+               const double *scale, const double *add);
 
 SEXP
 R_nc_c2r (R_nc_buf *io);

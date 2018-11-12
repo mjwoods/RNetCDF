@@ -183,7 +183,7 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
 
   /*-- Allocate memory and read attribute from file ---------------------------*/
   buf = R_nc_c2r_init (&io, NULL, ncid, xtype, -1, &cnt,
-                       israw, isfit, NULL, NULL, NULL);
+                       israw, isfit, NULL, NULL, NULL, NULL, NULL);
   if (cnt > 0) {
     R_nc_check (nc_get_att (ncid, varid, attname, buf));
   }

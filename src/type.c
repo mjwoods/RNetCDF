@@ -431,7 +431,7 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
 	/* Read named vector of member values */
 	fieldnames = R_nc_protect (allocVector (STRSXP, nfields));
         cval = R_nc_c2r_init (&io, NULL, ncid, basetype, -1, &nfields,
-                              0, 1, NULL, NULL, NULL);
+                              0, 1, NULL, NULL, NULL, NULL, NULL);
 
 	imax = nfields; // netcdf member index is int
 	for (ii=0; ii < imax; ii++, cval+=size) {

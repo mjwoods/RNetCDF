@@ -324,10 +324,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   }
 
   /*-- Get fill attributes (if any) -------------------------------------------*/
-  /* Note that min, max are not currently handled in conversions */
-  if (inamode >=0 && inamode <=3) {
-    R_nc_miss_att (ncid, varid, inamode, &xtype, &fillp, &minp, &maxp);
-  }
+  R_nc_miss_att (ncid, varid, inamode, &xtype, &fillp, &minp, &maxp);
 
   /*-- Get packing attributes (if any) ----------------------------------------*/
   if (isunpack) {
@@ -341,7 +338,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
 
   /*-- Allocate memory and read variable from file ----------------------------*/
   buf = R_nc_c2r_init (&io, NULL, ncid, xtype, ndims, ccount,
-                       israw, isfit, fillp, scalep, addp);
+                       israw, isfit, fillp, minp, maxp, scalep, addp);
 
   if (R_nc_length (ndims, ccount) > 0) {
     R_nc_check (nc_get_vara (ncid, varid, cstart, ccount, buf));
