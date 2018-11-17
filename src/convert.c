@@ -363,7 +363,7 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
      const OTYPE *fill, const double *scale, const double *add) \
 { \
   size_t ii, cnt; \
-  int erange=0; \
+  int erange=0, efill=0; \
   double factor, offset; \
   const ITYPE *in; \
   OTYPE fillval, *out; \
@@ -389,61 +389,29 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
   } \
   if (fill) { \
     fillval = *fill; \
-    if (scale || add) { \
-      for (ii=0; ii<cnt; ii++) { \
-	if (NATEST(in[ii])) { \
-	  out[ii] = fillval; \
-	} else if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
-	  out[ii] = round((in[ii] - offset) / factor); \
-	} else { \
-	  erange = 1; \
-	  break; \
-	} \
-      } \
-    } else { \
-      for (ii=0; ii<cnt; ii++) { \
-	if (NATEST(in[ii])) { \
-	  out[ii] = fillval; \
-	} else if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
-	  out[ii] = in[ii]; \
-	} else { \
-	  erange = 1; \
-	  break; \
-	} \
-      } \
-    } \
-  } else { \
-    if (scale || add) { \
-      for (ii=0; ii<cnt; ii++) { \
-	if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
-	  out[ii] = round((in[ii] - offset) / factor); \
-	} else { \
-	  erange = 1; \
-	  break; \
-	} \
-      } \
-    } else { \
-      if (NCITYPE != NCOTYPE) { \
-	for (ii=0; ii<cnt; ii++) { \
-	  if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
-	    out[ii] = in[ii]; \
-	  } else { \
-	    erange = 1; \
-	    break; \
-	  } \
-        } \
+  } \
+  for (ii=0; ii<cnt; ii++) { \
+    if (NATEST(in[ii])) { \
+      if (fill) { \
+        out[ii] = fillval; \
       } else { \
-	for (ii=0; ii<cnt; ii++) { \
-	  if (!(MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE))) { \
-	    erange = 1; \
-	    break; \
-	  } \
-	} \
+        efill = 1; \
       } \
+    } else if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
+      if (scale || add) { \
+        out[ii] = round((in[ii] - offset) / factor); \
+      } else { \
+        out[ii] = in[ii]; \
+      } \
+    } else { \
+      erange = 1; \
+      break; \
     } \
   } \
   if ( erange ) { \
     R_nc_error (nc_strerror (NC_ERANGE)); \
+  } else if ( efill ) { \
+    warning ("NA values sent to netcdf without conversion to fill value"); \
   } \
   return out; \
 }
