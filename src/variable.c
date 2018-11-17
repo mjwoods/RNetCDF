@@ -100,6 +100,26 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
  *  Private functions used by R_nc_get_var()
  *-----------------------------------------------------------------------------*/
 
+/* Macros to set **max or **min so that **fill is outside valid range */
+#define FILL2RANGE_REAL(TYPE, EPS) { \
+  if (**(TYPE **) fill > (TYPE) 0) { \
+    *max = R_alloc (1, sizeof(TYPE)); \
+    **(TYPE **) max = **(TYPE **) fill * ((TYPE) 1 - (TYPE) 2 * (TYPE) EPS); \
+  } else { \
+    *min = R_alloc (1, sizeof(TYPE)); \
+    **(TYPE **) min = **(TYPE **) fill * ((TYPE) 1 + (TYPE) 2 * (TYPE) EPS); \
+  } \
+}
+#define FILL2RANGE_INT(TYPE) { \
+  if (**(TYPE **) fill > (TYPE) 0) { \
+    *max = R_alloc (1, sizeof(TYPE)); \
+    **(TYPE **) max = **(TYPE **) fill - (TYPE) 1; \
+  } else { \
+    *min = R_alloc (1, sizeof(TYPE)); \
+    **(TYPE **) min = **(TYPE **) fill + (TYPE) 1; \
+  } \
+}
+
 /* Find attributes related to missing values for a netcdf variable.
    On exit, relevant parameters are returned via double pointers to
      fill, min and max, which are either NULL or allocated by R_alloc.
@@ -108,155 +128,211 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
      1 - _FillValue only
      2 - missing_value only
      3 - none
-     4 - valid range determined as described at
-         http://www.unidata.ucar.edu/software/netcdf/docs/attribute_conventions.html:
-         valid_min & valid_max, or valid_range, or _FillValue, or default.
-   Example: R_nc_miss_att (ncid, varid, mode, &xtype, &fill, &min, &max);
+     4 - fill value and valid range determined as described at
+         http://www.unidata.ucar.edu/software/netcdf/docs/attribute_conventions.html
+   Example: R_nc_miss_att (ncid, varid, mode, &fill, &min, &max);
   */
 static void
 R_nc_miss_att (int ncid, int varid, int mode,
-               nc_type *xtype, void **fill, void **min, void **max)
+               void **fill, void **min, void **max)
 {
   size_t cnt, size;
-  nc_type atype;
-  void *range, *tmpfill;
+  int class;
+  nc_type atype, xtype, basetype;
+  char *range;
   *fill = NULL;
   *min = NULL;
   *max = NULL;
-  R_nc_check (nc_inq_vartype (ncid, varid, xtype));
-  R_nc_check (nc_inq_type (ncid, *xtype, NULL, &size));
+
+  /* Get details about type of netcdf variable */
+  R_nc_check (nc_inq_vartype (ncid, varid, &xtype));
+  if (xtype > NC_MAX_ATOMIC_TYPE) {
+    /* Use base type of vlen or enum type */
+    R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, NULL, &class));
+    if (class == NC_ENUM || class == NC_VLEN) {
+      xtype = basetype;
+    } else {
+      /* Other user-defined types can be handled by users,
+         based on any convention they choose.
+       */
+      return;
+    }
+  }
+  R_nc_check (nc_inq_type (ncid, xtype, NULL, &size));
+
   if ((mode == 0 || mode == 1) &&
       nc_inq_att (ncid, varid, "_FillValue", &atype, &cnt) == NC_NOERR &&
       cnt == 1 &&
-      atype == *xtype) {
+      atype == xtype) {
     *fill = R_alloc (1, size);
     R_nc_check (nc_get_att (ncid, varid, "_FillValue", *fill));
-    return;
+
   } else if ((mode == 0 || mode == 2) &&
       nc_inq_att (ncid, varid, "missing_value", &atype, &cnt) == NC_NOERR &&
       cnt == 1 &&
-      atype == *xtype) {
+      atype == xtype) {
     *fill = R_alloc (1, size);
     R_nc_check (nc_get_att (ncid, varid, "missing_value", *fill));
-    return;
+
   } else if (mode == 4) {
-    if (nc_inq_att (ncid, varid, "valid_min", &atype, &cnt) == NC_NOERR &&
-        cnt == 1 &&
-        atype == *xtype) {
-      *min = R_alloc (1, size);
-      R_nc_check (nc_get_att (ncid, varid, "valid_min", *min));
-    }
-    if (nc_inq_att (ncid, varid, "valid_max", &atype, &cnt) == NC_NOERR &&
-        cnt == 1 &&
-        atype == *xtype) {
-      *max = R_alloc (1, size);
-      R_nc_check (nc_get_att (ncid, varid, "valid_max", *max));
-    }
-    if (*min || *max) {
-      return;
-    }
-    if (nc_inq_att (ncid, varid, "valid_range", &atype, &cnt) == NC_NOERR &&
-        cnt == 2 &&
-        atype == *xtype) {
-      range = R_alloc (2, size);
-      *min = R_alloc (1, size);
-      *max = R_alloc (1, size);
-      R_nc_check (nc_get_att (ncid, varid, "valid_range", range));
-      memcpy(*min, range, size);
-      memcpy(*max, range + size, size);
-      return;
-    }
-    /* Derive valid range from fill value */
-    tmpfill = R_alloc (1, size);
-    if (nc_inq_att (ncid, varid, "_FillValue", &atype, &cnt) == NC_NOERR &&
-        cnt == 1 &&
-        atype == *xtype) {
-      R_nc_check (nc_get_att (ncid, varid, "_FillValue", tmpfill));
-    } else {
-      /* According to the netcdf attribute conventions:
-         "If the data type is byte and _FillValue is not explicitly defined,
-          then the valid range should include all possible values."
+
+    /* Special rules apply to byte data */
+    if ((xtype == NC_BYTE) || (xtype == NC_UBYTE)) {
+
+      /* For byte data, valid_range, valid_min and valid_max attributes
+       * may differ from the type of variable, so we read the attributes
+       * with routines that convert to the expected type.
        */
-      switch (*xtype) {
-	case NC_SHORT:
-	  *(short *) tmpfill = NC_FILL_SHORT;
-	  break;
-	case NC_USHORT:
-	  *(unsigned short *) tmpfill = NC_FILL_USHORT;
-	  break;
-	case NC_INT:
-	  *(int *) tmpfill = NC_FILL_INT;
-	  break;
-	case NC_UINT:
-	  *(unsigned int *) tmpfill = NC_FILL_UINT;
-	  break;
-	case NC_FLOAT:
-	  *(float *) tmpfill = NC_FILL_FLOAT;
-	  break;
-	case NC_DOUBLE:
-	  *(double *) tmpfill = NC_FILL_DOUBLE;
-	  break;
-	case NC_INT64:
-	  *(long long *) tmpfill = NC_FILL_INT64;
-	  break;
-	case NC_UINT64:
-	  *(unsigned long long *) tmpfill = NC_FILL_UINT64;
-	  break;
-        default:
-          return;
+      if (nc_inq_att (ncid, varid, "valid_min", &atype, &cnt) == NC_NOERR &&
+          cnt == 1) {
+        *min = R_alloc (1, 1);
+        if (xtype == NC_UBYTE) {
+          R_nc_check (nc_get_att_uchar (ncid, varid, "valid_min", *min));
+        } else {
+          R_nc_check (nc_get_att_schar (ncid, varid, "valid_min", *min));
+        }
       }
-    }
-#define FILL2RANGE_REAL(TYPE, EPS) { \
-  if (*(TYPE *) tmpfill > (TYPE) 0) { \
-    *max = R_alloc (1, size); \
-    **(TYPE **) max = *(TYPE *) tmpfill * ((TYPE) 1 - (TYPE) 2 * (TYPE) EPS); \
-  } else { \
-    *min = R_alloc (1, size); \
-    **(TYPE **) min = *(TYPE *) tmpfill * ((TYPE) 1 + (TYPE) 2 * (TYPE) EPS); \
-  } \
-}
-#define FILL2RANGE_INT(TYPE) { \
-  if (*(TYPE *) tmpfill > (TYPE) 0) { \
-    *max = R_alloc (1, size); \
-    **(TYPE **) max = *(TYPE *) tmpfill - (TYPE) 1; \
-  } else { \
-    *min = R_alloc (1, size); \
-    **(TYPE **) min = *(TYPE *) tmpfill + (TYPE) 1; \
-  } \
-}
-    switch (*xtype) {
-      case NC_BYTE:
-        FILL2RANGE_INT(signed char);
-        break;
-      case NC_UBYTE:
-        FILL2RANGE_INT(unsigned char);
-        break;
-      case NC_SHORT:
-        FILL2RANGE_INT(short);
-	break;
-      case NC_USHORT:
-        FILL2RANGE_INT(unsigned short);
-	break;
-      case NC_INT:
-        FILL2RANGE_INT(int);
-	break;
-      case NC_UINT:
-        FILL2RANGE_INT(unsigned int);
-	break;
-      case NC_INT64:
-        FILL2RANGE_INT(long long);
-	break;
-      case NC_UINT64:
-        FILL2RANGE_INT(unsigned long long);
-	break;
-      case NC_FLOAT:
-        FILL2RANGE_REAL(float, FLT_EPSILON);
-	break;
-      case NC_DOUBLE:
-        FILL2RANGE_REAL(double, DBL_EPSILON);
-	break;
-      default:
-        return;
+      if (nc_inq_att (ncid, varid, "valid_max", &atype, &cnt) == NC_NOERR &&
+          cnt == 1) {
+        *max = R_alloc (1, 1);
+        if (xtype == NC_UBYTE) {
+          R_nc_check (nc_get_att_uchar (ncid, varid, "valid_max", *max));
+        } else {
+          R_nc_check (nc_get_att_schar (ncid, varid, "valid_max", *max));
+        }
+      }
+      if (!*min && !*max &&
+          nc_inq_att (ncid, varid, "valid_range", &atype, &cnt) == NC_NOERR &&
+          cnt == 2) {
+        range = R_alloc (2, 1);
+        *min = range;
+        *max = range + 1;
+        if (xtype == NC_UBYTE) {
+          R_nc_check (nc_get_att_uchar (ncid, varid, "valid_range", range));
+        } else {
+          R_nc_check (nc_get_att_schar (ncid, varid, "valid_range", range));
+        }
+      }
+
+      /* Only set fill value if explicitly defined.
+       * _FillValue attribute should have same type as variable.
+       */
+      if (nc_inq_att (ncid, varid, "_FillValue", &atype, &cnt) == NC_NOERR &&
+          cnt == 1 &&
+          atype == xtype) {
+        *fill = R_alloc (1, 1);
+        R_nc_check (nc_get_att (ncid, varid, "_FillValue", *fill));
+      }
+
+      /* If _FillValue is defined without a valid range,
+       * set the valid range to exclude _FillValue
+       */
+      if (*fill && !*max && !*min) {
+        if (xtype == NC_UBYTE) {
+          FILL2RANGE_INT(unsigned char)
+        } else {
+          FILL2RANGE_INT(signed char)
+        }
+      }
+
+    } else {
+      /* All types other than byte data */
+
+      /* Type of valid_* attribute must match type of variable data */
+      if (nc_inq_att (ncid, varid, "valid_min", &atype, &cnt) == NC_NOERR &&
+          cnt == 1 &&
+          atype == xtype) {
+        *min = R_alloc (1, size);
+        R_nc_check (nc_get_att (ncid, varid, "valid_min", *min));
+      }
+      if (nc_inq_att (ncid, varid, "valid_max", &atype, &cnt) == NC_NOERR &&
+          cnt == 1 &&
+          atype == xtype) {
+        *max = R_alloc (1, size);
+        R_nc_check (nc_get_att (ncid, varid, "valid_max", *max));
+      }
+      if (!*min && !*max &&
+          nc_inq_att (ncid, varid, "valid_range", &atype, &cnt) == NC_NOERR &&
+          cnt == 2 &&
+          atype == xtype) {
+        range = R_alloc (2, size);
+        *min = range;
+        *max = range + size;
+        R_nc_check (nc_get_att (ncid, varid, "valid_range", range));
+      }
+
+      /* Get fill value from attribute or use default */
+      if (nc_inq_att (ncid, varid, "_FillValue", &atype, &cnt) == NC_NOERR &&
+          cnt == 1 &&
+          atype == xtype) {
+        *fill = R_alloc (1, size);
+        R_nc_check (nc_get_att (ncid, varid, "_FillValue", *fill));
+      } else {
+        *fill = R_alloc (1, size);
+        switch (xtype) {
+          case NC_SHORT:
+            **(short **) fill = NC_FILL_SHORT;
+            break;
+          case NC_USHORT:
+            **(unsigned short **) fill = NC_FILL_USHORT;
+            break;
+          case NC_INT:
+            **(int **) fill = NC_FILL_INT;
+            break;
+          case NC_UINT:
+            **(unsigned int **) fill = NC_FILL_UINT;
+            break;
+          case NC_FLOAT:
+            **(float **) fill = NC_FILL_FLOAT;
+            break;
+          case NC_DOUBLE:
+            **(double **) fill = NC_FILL_DOUBLE;
+            break;
+          case NC_INT64:
+            **(long long **) fill = NC_FILL_INT64;
+            break;
+          case NC_UINT64:
+            **(unsigned long long **) fill = NC_FILL_UINT64;
+            break;
+          default:
+            return;
+        }
+      }
+
+      /* If _FillValue is defined without a valid range,
+       * set the valid range to exclude _FillValue
+       */
+      if (*fill && !*max && !*min) {
+        switch (xtype) {
+          case NC_SHORT:
+            FILL2RANGE_INT(short);
+            break;
+          case NC_USHORT:
+            FILL2RANGE_INT(unsigned short);
+            break;
+          case NC_INT:
+            FILL2RANGE_INT(int);
+            break;
+          case NC_UINT:
+            FILL2RANGE_INT(unsigned int);
+            break;
+          case NC_INT64:
+            FILL2RANGE_INT(long long);
+            break;
+          case NC_UINT64:
+            FILL2RANGE_INT(unsigned long long);
+            break;
+          case NC_FLOAT:
+            FILL2RANGE_REAL(float, FLT_EPSILON);
+            break;
+          case NC_DOUBLE:
+            FILL2RANGE_REAL(double, DBL_EPSILON);
+            break;
+          default:
+            return;
+        }
+      }
+
     }
   }
 }
@@ -324,7 +400,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   }
 
   /*-- Get fill attributes (if any) -------------------------------------------*/
-  R_nc_miss_att (ncid, varid, inamode, &xtype, &fillp, &minp, &maxp);
+  R_nc_miss_att (ncid, varid, inamode, &fillp, &minp, &maxp);
 
   /*-- Get packing attributes (if any) ----------------------------------------*/
   if (isunpack) {
@@ -434,7 +510,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
   /*-- Get fill attributes (if any) -------------------------------------------*/
   /* Note that min, max are not currently handled in conversions */
   if (inamode >= 0 && inamode <= 3) {
-    R_nc_miss_att (ncid, varid, inamode, &xtype, &fillp, &minp, &maxp);
+    R_nc_miss_att (ncid, varid, inamode, &fillp, &minp, &maxp);
   }
 
   /*-- Get packing attributes (if any) ----------------------------------------*/
