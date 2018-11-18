@@ -444,7 +444,7 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions) {
 # var.get.nc()
 #-------------------------------------------------------------------------------
 
-var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 0, 
+var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 4, 
   collapse = TRUE, unpack = FALSE, rawchar = FALSE, fitnum = FALSE) {
   #-- Check args -------------------------------------------------------------
   stopifnot(class(ncfile) == "NetCDF")
@@ -456,8 +456,6 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 0,
   stopifnot(is.logical(rawchar))
   stopifnot(is.logical(fitnum))
   
-  stopifnot(isTRUE(na.mode %in% c(0, 1, 2, 3)))
-
   # Truncate start & count and replace NA as described in the man page:
   varinfo <- var.inq.nc(ncfile, variable)
   ndims <- varinfo$ndims
@@ -523,7 +521,7 @@ var.inq.nc <- function(ncfile, variable) {
 #-------------------------------------------------------------------------------
 
 var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
-  na.mode = 0, pack = FALSE) {
+  na.mode = 4, pack = FALSE) {
   #-- Check args -------------------------------------------------------------
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(variable) || is.numeric(variable))
@@ -533,8 +531,6 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
   stopifnot(is.numeric(count) || is.logical(count))
   stopifnot(is.logical(pack))
   
-  stopifnot(isTRUE(na.mode %in% c(0, 1, 2)))
-
   # Determine type and dimensions of variable:
   varinfo <- var.inq.nc(ncfile, variable)
   typeinfo <- type.inq.nc(ncfile, varinfo$type)

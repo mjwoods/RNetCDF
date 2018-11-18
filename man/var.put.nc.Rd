@@ -6,7 +6,7 @@
 
 \description{Write the contents of a NetCDF variable.}
 
-\usage{var.put.nc(ncfile, variable, data, start=NA, count=NA, na.mode=0, pack=FALSE)}
+\usage{var.put.nc(ncfile, variable, data, start=NA, count=NA, na.mode=4, pack=FALSE)}
 
 \arguments{
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
@@ -14,7 +14,7 @@
   \item{data}{An R vector or array of data to be written to the NetCDF variable. Values are taken from \code{data} in the order of R vector elements, so that leftmost indices vary fastest over an array.}
   \item{start}{A vector of indices specifying the element where writing starts along each dimension of \code{variable}. Indices are numbered from 1 onwards, and the order of dimensions is shown by \code{\link[RNetCDF]{print.nc}} (array elements are stored sequentially with leftmost indices varying fastest). By default (\code{start=NA}), all dimensions of \code{variable} are written from the first element onwards. Otherwise, \code{start} must be a vector whose length is not less than the number of dimensions in \code{variable} (excess elements are ignored). Any \code{NA} values in vector \code{start} are set to 1.}
   \item{count}{A vector of integers specifying the number of values to write along each dimension of \code{variable}. The order of dimensions is the same as for \code{start}. By default (\code{count=NA}), \code{count} is set to \code{dim(data)} for an array or \code{length(data)} for a vector. Otherwise, \code{count} must be a vector whose length is not less than the number of dimensions in \code{variable} (excess elements are ignored). Any \code{NA} value in vector \code{count} indicates that the corresponding dimension should be written from the \code{start} index to the end of the dimension. Note that an unlimited dimension initially has zero length, and the dimension is extended by setting the corresponding element of \code{count} greater than the current length.}
-  \item{na.mode}{Set the mode for handling missing values (\code{NA}) in numeric variables: 0=accept \code{_FillValue}, then \code{missing_value} attribute; 1=accept only \code{_FillValue} attribute; 2=accept only \code{missing_value} attribute; 3=no missing value conversion; 4=valid range from valid_min and valid_max or valid_range, fill value from _FillValue, with defaults for each type (see \url{http://www.unidata.ucar.edu/software/netcdf/docs/attribute_conventions.html}).}
+  \item{na.mode}{Set the mode for handling missing values (\code{NA}) in numeric variables: 0=accept \code{_FillValue}, then \code{_FillValue} attribute; 1=accept only \code{_FillValue} attribute; 2=accept only \code{_FillValue} attribute; 3=no missing value conversion; 4=valid range from valid_min and valid_max or valid_range, fill value from _FillValue, with defaults for each type (see \url{http://www.unidata.ucar.edu/software/netcdf/docs/attribute_conventions.html}).}
   \item{pack}{Variables are packed if \code{pack=TRUE} and the attributes \code{add_offset} and \code{scale_factor} are defined. Default is \code{FALSE}.}
 }
 
@@ -53,8 +53,8 @@ var.def.nc(nc, "time", "NC_INT", "time")
 var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1))
 var.def.nc(nc, "name", "NC_CHAR", c("max_string_length", "station"))
 
-##  Put some missing_value attribute for temperature
-att.put.nc(nc, "temperature", "missing_value", "NC_DOUBLE", -99999.9)
+##  Put some _FillValue attribute for temperature
+att.put.nc(nc, "temperature", "_FillValue", "NC_DOUBLE", -99999.9)
 
 ##  Define variable values
 mytime        <- c(1:2)

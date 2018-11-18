@@ -117,7 +117,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
   } else { \
     *min = R_alloc (1, sizeof(TYPE)); \
     **(TYPE **) min = **(TYPE **) fill + (TYPE) 1; \
-  } \
+  }; \
 }
 
 /* Find attributes related to missing values for a netcdf variable.
@@ -173,6 +173,10 @@ R_nc_miss_att (int ncid, int varid, int mode,
       atype == xtype) {
     *fill = R_alloc (1, size);
     R_nc_check (nc_get_att (ncid, varid, "missing_value", *fill));
+
+  } else if (mode == 3) {
+    /* Let user code handle missing values */
+    return;
 
   } else if (mode == 4) {
 
@@ -334,6 +338,9 @@ R_nc_miss_att (int ncid, int varid, int mode,
       }
 
     }
+  } else {
+    R_nc_error ("Unknown mode for handling missing values");
+
   }
 }
 
@@ -508,10 +515,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
   }
 
   /*-- Get fill attributes (if any) -------------------------------------------*/
-  /* Note that min, max are not currently handled in conversions */
-  if (inamode >= 0 && inamode <= 3) {
-    R_nc_miss_att (ncid, varid, inamode, &fillp, &minp, &maxp);
-  }
+  R_nc_miss_att (ncid, varid, inamode, &fillp, &minp, &maxp);
 
   /*-- Get packing attributes (if any) ----------------------------------------*/
   if (ispack) {
