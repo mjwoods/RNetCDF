@@ -444,7 +444,7 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions) {
 # var.get.nc()
 #-------------------------------------------------------------------------------
 
-var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 0, 
+var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 4, 
   collapse = TRUE, unpack = FALSE, rawchar = FALSE, fitnum = FALSE) {
   #-- Check args -------------------------------------------------------------
   stopifnot(class(ncfile) == "NetCDF")
@@ -456,8 +456,6 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 0,
   stopifnot(is.logical(rawchar))
   stopifnot(is.logical(fitnum))
   
-  stopifnot(isTRUE(na.mode %in% c(0, 1, 2, 3)))
-
   # Truncate start & count and replace NA as described in the man page:
   varinfo <- var.inq.nc(ncfile, variable)
   ndims <- varinfo$ndims
@@ -484,41 +482,8 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 0,
   }
 
   #-- C function call --------------------------------------------------------
-  nc <- .Call(R_nc_get_var, ncfile, variable, start, count, rawchar, fitnum)
-  
-  #-- Convert missing value to NA if defined in NetCDF file --------------
-  if (na.mode < 3 && is.numeric(nc)) {
-    na.flag <- FALSE
-    
-    if (na.mode == 0) {
-      na.value <- try(att.get.nc(ncfile, variable, "_FillValue"), silent = TRUE)
-      na.flag <- !inherits(na.value, "try-error")
-      if (!na.flag) {
-        na.value <- try(att.get.nc(ncfile, variable, "missing_value"), silent = TRUE)
-        na.flag <- !inherits(na.value, "try-error")
-      }
-    } else if (na.mode == 1) {
-      na.value <- try(att.get.nc(ncfile, variable, "_FillValue"), silent = TRUE)
-      na.flag <- !inherits(na.value, "try-error")
-    } else if (na.mode == 2) {
-      na.value <- try(att.get.nc(ncfile, variable, "missing_value"), silent = TRUE)
-      na.flag <- !inherits(na.value, "try-error")
-    }
-    
-    if (na.flag && is.numeric(na.value)) {
-      nc[nc == na.value] <- NA
-    }
-  }
-  
-  #-- Unpack variables if requested (missing values are preserved) -------
-  if (unpack && is.numeric(nc)) {
-    offset <- try(att.get.nc(ncfile, variable, "add_offset"), silent = TRUE)
-    scale <- try(att.get.nc(ncfile, variable, "scale_factor"), silent = TRUE)
-    if ((!inherits(offset, "try-error")) && is.numeric(offset) &&
-        (!inherits(scale,  "try-error")) && is.numeric(scale)) {
-      nc <- nc * scale + offset
-    }
-  }
+  nc <- .Call(R_nc_get_var, ncfile, variable, start, count,
+              rawchar, fitnum, na.mode, unpack)
   
   #-- Collapse singleton dimensions --------------------------------------
   if (collapse && !is.null(dim(nc))) {
@@ -556,7 +521,7 @@ var.inq.nc <- function(ncfile, variable) {
 #-------------------------------------------------------------------------------
 
 var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
-  na.mode = 0, pack = FALSE) {
+  na.mode = 4, pack = FALSE) {
   #-- Check args -------------------------------------------------------------
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(variable) || is.numeric(variable))
@@ -566,8 +531,6 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
   stopifnot(is.numeric(count) || is.logical(count))
   stopifnot(is.logical(pack))
   
-  stopifnot(isTRUE(na.mode %in% c(0, 1, 2)))
-
   # Determine type and dimensions of variable:
   varinfo <- var.inq.nc(ncfile, variable)
   typeinfo <- type.inq.nc(ncfile, varinfo$type)
@@ -665,44 +628,9 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
     }
   }
 
-  #-- Pack variables if requested (missing values are preserved) -------------
-  if (pack && is.numeric(data)) {
-    offset <- try(att.get.nc(ncfile, variable, "add_offset"), silent = TRUE)
-    scale <- try(att.get.nc(ncfile, variable, "scale_factor"), silent = TRUE)
-    if ((!inherits(offset, "try-error")) && is.numeric(offset) &&
-        (!inherits(scale,  "try-error")) && is.numeric(scale)) {
-      data <- (data - offset) * (1/scale)
-    }
-  }
- 
-  #-- Convert missing values to a suitable netcdf value ----------------------
-  if (na.mode < 3 && is.numeric(data) && any(is.na(data))) {
-    na.flag <- FALSE
-    
-    if (na.mode == 0) {
-      na.value <- try(att.get.nc(ncfile, variable, "_FillValue"), silent = TRUE)
-      na.flag <- !inherits(na.value, "try-error")
-      if (!na.flag) {
-        na.value <- try(att.get.nc(ncfile, variable, "missing_value"), silent = TRUE)
-        na.flag <- !inherits(na.value, "try-error")
-      }
-    } else if (na.mode == 1) {
-      na.value <- try(att.get.nc(ncfile, variable, "_FillValue"), silent = TRUE)
-      na.flag <- !inherits(na.value, "try-error")
-    } else if (na.mode == 2) {
-      na.value <- try(att.get.nc(ncfile, variable, "missing_value"), silent = TRUE)
-      na.flag <- !inherits(na.value, "try-error")
-    }
-
-    if (na.flag && is.numeric(na.value)) {
-      data[is.na(data)] <- na.value
-    } else {
-      stop("Found NAs but no applicable missing value attribute", call. = FALSE)
-    }
-  }
- 
   #-- C function call --------------------------------------------------------
-  nc <- .Call(R_nc_put_var, ncfile, variable, start, count, data)
+  nc <- .Call(R_nc_put_var, ncfile, variable, start, count, data,
+              na.mode, pack)
  
   return(invisible(NULL))
 }

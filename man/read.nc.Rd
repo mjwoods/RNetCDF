@@ -46,8 +46,8 @@ grp <- grp.def.nc(nc, "data")
 ## Create a data variable
 var.def.nc(grp, "temperature", "NC_DOUBLE", c("station","time"))
 
-##  Put some missing_value attribute for temperature
-att.put.nc(grp, "temperature", "missing_value", "NC_DOUBLE", -99999.9)
+##  Put some _FillValue attribute for temperature
+att.put.nc(grp, "temperature", "_FillValue", "NC_DOUBLE", -99999.9)
 
 ##  Define variable values
 mytime        <- c(1:2)

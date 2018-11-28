@@ -41,7 +41,7 @@ var.def.nc(nc.2, "time", "NC_INT", "time")
 var.def.nc(nc.2, "temperature", "NC_DOUBLE", c(0,1))
 
 ##  Put some attributes to the first dataset
-att.put.nc(nc.1, "temperature", "missing_value", "NC_DOUBLE", -99999.9)
+att.put.nc(nc.1, "temperature", "_FillValue", "NC_DOUBLE", -99999.9)
 att.put.nc(nc.1, "NC_GLOBAL", "title", "NC_CHAR", "Data from Foo")
 
 ##  Copy the attributes to the second dataset

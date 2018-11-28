@@ -168,7 +168,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.def.nc(nc, "person", "struct", c("station", "time"))
     varcnt <- varcnt+10
 
-    numtypes <- c("NC_UBYTE", "NC_USHORT", "NC_UINT")
+    numtypes <- c(numtypes, "NC_UBYTE", "NC_USHORT", "NC_UINT")
 
     if (has_bit64) {
       var.def.nc(nc, "stationid", "NC_UINT64", c("station"))
@@ -182,9 +182,9 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.def.nc(nc, paste(numtype,"_int",sep=""), numtype, c("station"))
 
     var.def.nc(nc, paste(numtype,"_fill",sep=""), numtype, c("station"))
-    att.put.nc(nc, paste(numtype,"_fill",sep=""), "missing_value", numtype, 99)
+    att.put.nc(nc, paste(numtype,"_fill",sep=""), "_FillValue", numtype, 99)
     var.def.nc(nc, paste(numtype,"_intfill",sep=""), numtype, c("station"))
-    att.put.nc(nc, paste(numtype,"_intfill",sep=""), "missing_value", numtype, 99)
+    att.put.nc(nc, paste(numtype,"_intfill",sep=""), "_FillValue", numtype, 99)
 
     var.def.nc(nc, paste(numtype,"_pack",sep=""), numtype, c("station"))
     att.put.nc(nc, paste(numtype,"_pack",sep=""), "scale_factor", numtype, 10)
@@ -196,8 +196,8 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     varcnt <- varcnt+6
   }
 
-  ##  Put some missing_value attribute for temperature
-  att.put.nc(nc, "temperature", "missing_value", "NC_DOUBLE", -99999.9)
+  ##  Set a _FillValue attribute for temperature
+  att.put.nc(nc, "temperature", "_FillValue", "NC_DOUBLE", -99999.9)
 
   ## Define the packing used by packvar
   id_double <- type.inq.nc(nc, "NC_DOUBLE")$id
@@ -395,6 +395,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   tally <- testfun(is.double(y),TRUE,tally)
 
   for (numtype in numtypes) {
+    cat("Read", numtype, "...")
     x <- mysmall
     dim(x) <- length(x)
     y <- var.get.nc(nc, numtype)

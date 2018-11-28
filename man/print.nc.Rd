@@ -39,7 +39,7 @@ var.def.nc(grp, "temperature", "NC_DOUBLE", c("station","time"))
 
 ##  Put some attributes
 att.put.nc(nc, "NC_GLOBAL", "history", "NC_CHAR", paste("Created on", date()))
-att.put.nc(grp, "temperature", "missing_value", "NC_DOUBLE", -99999.9)
+att.put.nc(grp, "temperature", "_FillValue", "NC_DOUBLE", -99999.9)
 att.put.nc(grp, "temperature", "long_name", "NC_CHAR", "air temperature")
 att.put.nc(grp, "NC_GLOBAL", "title", "NC_CHAR", "Data from Foo")
 

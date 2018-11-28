@@ -363,7 +363,7 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
      const OTYPE *fill, const double *scale, const double *add) \
 { \
   size_t ii, cnt; \
-  int erange=0; \
+  int erange=0, efill=0; \
   double factor, offset; \
   const ITYPE *in; \
   OTYPE fillval, *out; \
@@ -389,61 +389,29 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
   } \
   if (fill) { \
     fillval = *fill; \
-    if (scale || add) { \
-      for (ii=0; ii<cnt; ii++) { \
-	if (NATEST(in[ii])) { \
-	  out[ii] = fillval; \
-	} else if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
-	  out[ii] = round((in[ii] - offset) / factor); \
-	} else { \
-	  erange = 1; \
-	  break; \
-	} \
-      } \
-    } else { \
-      for (ii=0; ii<cnt; ii++) { \
-	if (NATEST(in[ii])) { \
-	  out[ii] = fillval; \
-	} else if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
-	  out[ii] = in[ii]; \
-	} else { \
-	  erange = 1; \
-	  break; \
-	} \
-      } \
-    } \
-  } else { \
-    if (scale || add) { \
-      for (ii=0; ii<cnt; ii++) { \
-	if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
-	  out[ii] = round((in[ii] - offset) / factor); \
-	} else { \
-	  erange = 1; \
-	  break; \
-	} \
-      } \
-    } else { \
-      if (NCITYPE != NCOTYPE) { \
-	for (ii=0; ii<cnt; ii++) { \
-	  if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
-	    out[ii] = in[ii]; \
-	  } else { \
-	    erange = 1; \
-	    break; \
-	  } \
-        } \
+  } \
+  for (ii=0; ii<cnt; ii++) { \
+    if (NATEST(in[ii])) { \
+      if (fill) { \
+        out[ii] = fillval; \
       } else { \
-	for (ii=0; ii<cnt; ii++) { \
-	  if (!(MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE))) { \
-	    erange = 1; \
-	    break; \
-	  } \
-	} \
+        efill = 1; \
       } \
+    } else if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
+      if (scale || add) { \
+        out[ii] = round((in[ii] - offset) / factor); \
+      } else { \
+        out[ii] = in[ii]; \
+      } \
+    } else { \
+      erange = 1; \
+      break; \
     } \
   } \
   if ( erange ) { \
     R_nc_error (nc_strerror (NC_ERANGE)); \
+  } else if ( efill ) { \
+    warning ("NA values sent to netcdf without conversion to fill value"); \
   } \
   return out; \
 }
@@ -544,102 +512,108 @@ R_NC_C2R_NUM_INIT(R_nc_c2r_bit64_init, REALSXP, REAL);
 
 /* Convert numeric values from C to R format.
    Parameters and buffers for the conversion are passed via the R_nc_buf struct.
-   The same buffer is used for input and output.
+   The same buffer may be used for input and output.
    Output type may be larger (not smaller) than input,
    so convert in reverse order to avoid overwriting input with output.
-   If input and output are same type, no copying is needed.
+   Fill values and values outside the valid range are set to missing.
  */
-#define R_NC_C2R_NUM(FUN, NCITYPE, ITYPE, NCOTYPE, OTYPE, MISSVAL) \
+#define R_NC_C2R_NUM(FUN, NCITYPE, ITYPE, NCOTYPE, OTYPE, \
+  MISSVAL, MINVAL, MAXVAL) \
 static void \
 FUN (R_nc_buf *io) \
 { \
   size_t ii; \
-  ITYPE fillval, *in; \
+  ITYPE fillval, minval, maxval, *in; \
   OTYPE *out; \
   ii = xlength (io->rxp); \
   in = (ITYPE *) io->cbuf; \
   out = (OTYPE *) io->rbuf; \
-  if (NCITYPE == NCOTYPE && io->cbuf == io->rbuf) { \
-    if (io->fill) { \
-      fillval = *((ITYPE *) io->fill); \
-      if (fillval != fillval) { \
-        while (ii-- > 0) { \
-	  if (in[ii] != in[ii]) { \
-	    out[ii] = MISSVAL; \
-	  } \
-	} \
+  if (io->fill) { \
+    fillval = *((ITYPE *) io->fill); \
+  } \
+  if (io->min) { \
+    minval = *((ITYPE *) io->min); \
+  } else { \
+    minval = MINVAL; \
+  } \
+  if (io->max) { \
+    maxval = *((ITYPE *) io->max); \
+  } else { \
+    maxval = MAXVAL; \
+  } \
+  if (io->fill) { \
+    while (ii-- > 0) { \
+      if ((in[ii] == fillval) || (in[ii] < minval) || (maxval < in[ii])) { \
+        out[ii] = MISSVAL; \
       } else { \
-        while (ii-- > 0) { \
-	  if (in[ii] == fillval) { \
-	    out[ii] = MISSVAL; \
-	  } \
-        } \
+        out[ii] = in[ii]; \
       } \
     } \
   } else { \
-    if (io->fill) { \
-      fillval = *((ITYPE *) io->fill); \
-      if (fillval != fillval) { \
-        while (ii-- > 0) { \
-	  if (in[ii] != in[ii]) { \
-	    out[ii] = MISSVAL; \
-	  } else { \
-	    out[ii] = in[ii]; \
-	  } \
-	} \
+    while (ii-- > 0) { \
+      if ((in[ii] < minval) || (maxval < in[ii])) { \
+        out[ii] = MISSVAL; \
       } else { \
-        while (ii-- > 0) { \
-	  if (in[ii] == fillval) { \
-	    out[ii] = MISSVAL; \
-	  } else { \
-	    out[ii] = in[ii]; \
-	  } \
-	} \
-      } \
-    } else { \
-      while (ii-- > 0) { \
-	out[ii] = in[ii]; \
+        out[ii] = in[ii]; \
       } \
     } \
   } \
 }
 
-R_NC_C2R_NUM(R_nc_c2r_schar_int, NC_BYTE, signed char, NC_INT, int, NA_INTEGER);
-R_NC_C2R_NUM(R_nc_c2r_uchar_int, NC_UBYTE, unsigned char, NC_INT, int, NA_INTEGER);
-R_NC_C2R_NUM(R_nc_c2r_short_int, NC_SHORT, short, NC_INT, int, NA_INTEGER);
-R_NC_C2R_NUM(R_nc_c2r_ushort_int, NC_USHORT, unsigned short, NC_INT, int, NA_INTEGER);
-R_NC_C2R_NUM(R_nc_c2r_int_int, NC_INT, int, NC_INT, int, NA_INTEGER);
+R_NC_C2R_NUM(R_nc_c2r_schar_int, NC_BYTE, signed char, NC_INT, int, \
+  NA_INTEGER, SCHAR_MIN, SCHAR_MAX);
+R_NC_C2R_NUM(R_nc_c2r_uchar_int, NC_UBYTE, unsigned char, NC_INT, int, \
+  NA_INTEGER, 0, UCHAR_MAX);
+R_NC_C2R_NUM(R_nc_c2r_short_int, NC_SHORT, short, NC_INT, int, \
+  NA_INTEGER, SHRT_MIN, SHRT_MAX);
+R_NC_C2R_NUM(R_nc_c2r_ushort_int, NC_USHORT, unsigned short, NC_INT, int, \
+  NA_INTEGER, 0, USHRT_MAX);
+R_NC_C2R_NUM(R_nc_c2r_int_int, NC_INT, int, NC_INT, int, \
+  NA_INTEGER, INT_MIN, INT_MAX);
 
-R_NC_C2R_NUM(R_nc_c2r_schar_dbl, NC_BYTE, signed char, NC_DOUBLE, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_uchar_dbl, NC_UBYTE, unsigned char, NC_DOUBLE, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_short_dbl, NC_SHORT, short, NC_DOUBLE, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_ushort_dbl, NC_USHORT, unsigned short, NC_DOUBLE, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_int_dbl, NC_INT, int, NC_DOUBLE, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_uint_dbl, NC_UINT, unsigned int, NC_DOUBLE, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_float_dbl, NC_FLOAT, float, NC_DOUBLE, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_dbl_dbl, NC_DOUBLE, double, NC_DOUBLE, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_int64_dbl, NC_INT64, long long, NC_DOUBLE, double, NA_REAL);
-R_NC_C2R_NUM(R_nc_c2r_uint64_dbl, NC_UINT64, unsigned long long, NC_DOUBLE, double, NA_REAL);
+R_NC_C2R_NUM(R_nc_c2r_schar_dbl, NC_BYTE, signed char, NC_DOUBLE, double, \
+  NA_REAL, SCHAR_MIN, SCHAR_MAX);
+R_NC_C2R_NUM(R_nc_c2r_uchar_dbl, NC_UBYTE, unsigned char, NC_DOUBLE, double, \
+  NA_REAL, 0, UCHAR_MAX);
+R_NC_C2R_NUM(R_nc_c2r_short_dbl, NC_SHORT, short, NC_DOUBLE, double, \
+  NA_REAL, SHRT_MIN, SHRT_MAX);
+R_NC_C2R_NUM(R_nc_c2r_ushort_dbl, NC_USHORT, unsigned short, NC_DOUBLE, double, \
+  NA_REAL, 0, USHRT_MAX);
+R_NC_C2R_NUM(R_nc_c2r_int_dbl, NC_INT, int, NC_DOUBLE, double, \
+  NA_REAL, INT_MIN, INT_MAX);
+R_NC_C2R_NUM(R_nc_c2r_uint_dbl, NC_UINT, unsigned int, NC_DOUBLE, double, \
+  NA_REAL, 0, UINT_MAX);
+R_NC_C2R_NUM(R_nc_c2r_float_dbl, NC_FLOAT, float, NC_DOUBLE, double, \
+  NA_REAL, -FLT_MAX, FLT_MAX);
+R_NC_C2R_NUM(R_nc_c2r_dbl_dbl, NC_DOUBLE, double, NC_DOUBLE, double, \
+  NA_REAL, -DBL_MAX, DBL_MAX);
+R_NC_C2R_NUM(R_nc_c2r_int64_dbl, NC_INT64, long long, NC_DOUBLE, double, \
+  NA_REAL, LLONG_MIN, LLONG_MAX);
+R_NC_C2R_NUM(R_nc_c2r_uint64_dbl, NC_UINT64, unsigned long long, NC_DOUBLE, double, \
+  NA_REAL, 0, ULLONG_MAX);
 
-R_NC_C2R_NUM(R_nc_c2r_int64_bit64, NC_INT64, long long, NC_INT64, long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_int64_bit64, NC_INT64, long long, NC_INT64, long long, \
+  NA_INTEGER64, LLONG_MIN, LLONG_MAX);
 /* Treat bit64 as unsigned when converting from unsigned long long */
-R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, NC_UINT64, unsigned long long, NC_UINT64, unsigned long long, NA_INTEGER64);
+R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, NC_UINT64, unsigned long long, NC_UINT64, unsigned long long, \
+  NA_INTEGER64, 0, ULLONG_MAX);
 
 
 /* Convert numeric values from C to R format with unpacking.
    Parameters and buffers for the conversion are passed via the R_nc_buf struct.
    Output type is assumed not to be smaller than input type,
-   so the same buffer is used for input and output
+   so the same buffer may be used for input and output
    by converting in reverse order.
+   Fill values and values outside the valid range are set to missing.
  */
 
-#define R_NC_C2R_NUM_UNPACK(FUN, ITYPE) \
+#define R_NC_C2R_NUM_UNPACK(FUN, ITYPE, MINVAL, MAXVAL) \
 static void \
 FUN (R_nc_buf *io) \
 { \
   size_t ii; \
   double factor, offset; \
-  ITYPE fillval, *in; \
+  ITYPE fillval, minval, maxval, *in; \
   double *out; \
   ii = xlength (io->rxp); \
   in = (ITYPE *) io->cbuf; \
@@ -656,40 +630,46 @@ FUN (R_nc_buf *io) \
   } \
   if (io->fill) { \
     fillval = *((ITYPE *) io->fill); \
-    if (fillval != fillval) { \
-      while (ii-- > 0) { \
-	if (in[ii] != in[ii]) { \
-	  out[ii] = NA_REAL; \
-	} else { \
-	  out[ii] = in[ii] * factor + offset; \
-	} \
-      } \
-    } else { \
-      while (ii-- > 0) { \
-	if (in[ii] == fillval) { \
-	  out[ii] = NA_REAL; \
-	} else { \
-	  out[ii] = in[ii] * factor + offset; \
-	} \
+  } \
+  if (io->min) { \
+    minval = *((ITYPE *) io->min); \
+  } else { \
+    minval = MINVAL; \
+  } \
+  if (io->max) { \
+    maxval = *((ITYPE *) io->max); \
+  } else { \
+    maxval = MAXVAL; \
+  } \
+  if (io->fill) { \
+    while (ii-- > 0) { \
+      if ((in[ii] == fillval) || (in[ii] < minval) || (maxval < in[ii])) { \
+        out[ii] = NA_REAL; \
+      } else { \
+        out[ii] = in[ii] * factor + offset; \
       } \
     } \
   } else { \
     while (ii-- > 0) { \
-      out[ii] = in[ii] * factor + offset; \
+      if ((in[ii] < minval) || (maxval < in[ii])) { \
+        out[ii] = NA_REAL; \
+      } else { \
+        out[ii] = in[ii] * factor + offset; \
+      } \
     } \
   } \
 }
 
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_schar, signed char);
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uchar, unsigned char);
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_short, short);
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_ushort, unsigned short);
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_int, int);
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint, unsigned int);
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_float, float);
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_dbl, double);
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_int64, long long);
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint64, unsigned long long);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_schar, signed char, SCHAR_MIN, SCHAR_MAX);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uchar, unsigned char, 0, UCHAR_MAX);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_short, short, SHRT_MIN, SHRT_MAX);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_ushort, unsigned short, 0, USHRT_MAX);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_int, int, INT_MIN, INT_MAX);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint, unsigned int, 0, UINT_MAX);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_float, float, -FLT_MAX, FLT_MAX);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_dbl, double, -DBL_MAX, DBL_MAX);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_int64, long long, LLONG_MIN, LLONG_MAX);
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint64, unsigned long long, 0, ULLONG_MAX);
 
 
 /*=============================================================================*\
@@ -789,7 +769,8 @@ R_nc_vlen_vecsxp (R_nc_buf *io)
 
   for (ii=0; ii<cnt; ii++) {
     R_nc_c2r_init (&tmpio, vbuf[ii].p, io->ncid, basetype, -1, &(vbuf[ii].len),
-                   io->rawchar, io->fitnum, io->fill, io->scale, io->add);
+                   io->rawchar, io->fitnum, io->fill, io->min, io->max,
+                   io->scale, io->add);
     SET_VECTOR_ELT (io->rxp, ii, R_nc_c2r (&tmpio));
     nc_free_vlen(&(vbuf[ii]));
   }
@@ -1223,7 +1204,7 @@ R_nc_compound_vecsxp (R_nc_buf *io)
 
     /* Prepare to convert field data from C to R */
     buffld = R_nc_c2r_init (&iofld, NULL, ncid, typefld, ndimslice, dimslice,
-               io->rawchar, io->fitnum, NULL, NULL, NULL);
+               io->rawchar, io->fitnum, NULL, NULL, NULL, NULL, NULL);
 
     /* Copy elements from the compound array into the field array */
     fldlen = fldsize * fldcnt;
@@ -1365,12 +1346,12 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
   RERROR (RNC_EDATATYPE);
 }
 
-
 void * \
 R_nc_c2r_init (R_nc_buf *io, void *cbuf,
                int ncid, nc_type xtype, int ndim, const size_t *xdim,
                int rawchar, int fitnum,
-               const void *fill, const double *scale, const double *add)
+               const void *fill, const void *min, const void *max,
+               const double *scale, const double *add)
 {
   int class;
   size_t size;
@@ -1390,6 +1371,8 @@ R_nc_c2r_init (R_nc_buf *io, void *cbuf,
   io->fitnum = fitnum;
   io->xdim = NULL;
   io->fill = NULL;
+  io->min = NULL;
+  io->max = NULL;
   io->scale = NULL;
   io->add = NULL;
 
@@ -1405,10 +1388,23 @@ R_nc_c2r_init (R_nc_buf *io, void *cbuf,
     /* Scalar has no dimensions */
   }
 
-  if (fill) {
+  if (fill || min || max) {
     R_nc_check (nc_inq_type (ncid, xtype, NULL, &size));
+  }
+
+  if (fill) {
     io->fill = R_alloc (1, size);
     memcpy (io->fill, fill, size);
+  }
+
+  if (min) {
+    io->min = R_alloc (1, size);
+    memcpy (io->min, min, size);
+  }
+
+  if (max) {
+    io->max = R_alloc (1, size);
+    memcpy (io->max, max, size);
   }
 
   if (scale) {
