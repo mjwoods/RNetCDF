@@ -411,7 +411,7 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
   if ( erange ) { \
     R_nc_error (nc_strerror (NC_ERANGE)); \
   } else if ( efill ) { \
-    warning ("NA values sent to netcdf without conversion to fill value"); \
+    R_nc_error ("NA values sent to netcdf without conversion to fill value"); \
   } \
   return out; \
 }
