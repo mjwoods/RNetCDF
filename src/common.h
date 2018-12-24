@@ -58,7 +58,7 @@ R_nc_unprotect (void);
 
 /* Raise an error in R */
 void
-R_nc_error(const char *fmt, ...);
+R_nc_error(const char *msg);
 
 /* If status is a netcdf error, raise an R error with a suitable message,
    otherwise return to caller. */
