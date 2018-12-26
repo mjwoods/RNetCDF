@@ -72,7 +72,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
 
-  varnamep = CHAR (STRING_ELT (varname, 0));
+  varnamep = R_nc_strarg (varname);
 
   R_nc_check (R_nc_type_id (type, ncid, &xtype, 0));
 
@@ -552,7 +552,7 @@ R_nc_rename_var (SEXP nc, SEXP var, SEXP newname)
 
   R_nc_check (R_nc_var_id (var, ncid, &varid));
 
-  cnewname = CHAR (STRING_ELT (newname, 0));
+  cnewname = R_nc_strarg (newname);
 
   /*-- Enter define mode ------------------------------------------------------*/
   R_nc_check( R_nc_redef (ncid));
