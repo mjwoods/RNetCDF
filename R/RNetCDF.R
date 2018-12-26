@@ -484,7 +484,7 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 4,
               rawchar, fitnum, na.mode, unpack)
   
   #-- Collapse singleton dimensions --------------------------------------
-  if (collapse && !is.null(dim(nc))) {
+  if (isTRUE(collapse) && !is.null(dim(nc))) {
     datadim <- dim(nc)
     keepdim <- (datadim != 1)
     if (any(keepdim)) {
@@ -599,7 +599,7 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
     } else {
       strlen <- 1
     }
-    if (max(nchar(data,type="bytes")) > strlen) {
+    if (isTRUE(max(nchar(data,type="bytes")) > strlen)) {
       warning(paste("Strings truncated to length",strlen), call.=FALSE)
     }
   }
@@ -727,7 +727,7 @@ grp.inq.nc <- function(ncid, grpname = NULL, ancestors = TRUE) {
   
   # Names of group:
   out$name <- .Call(R_nc_inq_grpname, ncid, FALSE)
-  if (ancestors) {
+  if (isTRUE(ancestors)) {
     out$fullname <- .Call(R_nc_inq_grpname, ncid, TRUE)
   }
   
@@ -784,7 +784,7 @@ read.nc <- function(ncfile, recursive = FALSE, ...) {
   #-- Initialise storage -----------------------------------------------------
   inq <- grp.inq.nc(ncfile)
   nvars <- length(inq$varids)
-  if (recursive) {
+  if (isTRUE(recursive)) {
     ngrps <- length(inq$grps)
     nelem <- nvars + ngrps
   } else {
@@ -825,17 +825,17 @@ type.def.nc <- function(ncfile, typename, class, size=NULL, basetype=NULL,
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(typename))
   stopifnot(is.character(class))
-  if (class == "compound") {
+  if (isTRUE(class == "compound")) {
     stopifnot(is.character(names))
     stopifnot(is.character(subtypes) || is.numeric(subtypes))
     stopifnot(is.list(dimsizes))
-  } else if (class == "enum") {
+  } else if (isTRUE(class == "enum")) {
     stopifnot(is.character(basetype) || is.numeric(basetype))
     stopifnot(is.character(names))
     stopifnot(is.numeric(values))
-  } else if (class == "opaque") {
+  } else if (isTRUE(class == "opaque")) {
     stopifnot(is.numeric(size))
-  } else if (class == "vlen") {
+  } else if (isTRUE(class == "vlen")) {
     stopifnot (is.character(basetype) || is.numeric(basetype))
   } else {
     stop("Unknown class for type definition", call.=FALSE)
@@ -881,17 +881,17 @@ utcal.nc <- function(unitstring, value, type = "n") {
   ut <- .Call(R_nc_calendar, unitstring, value)
   
   #-- Return object if no error ------------------------------------------
-  if (type == "n") {
+  if (isTRUE(type == "n")) {
     colnames(ut) <- c("year", "month", "day", "hour", "minute", "second")
     return(ut)
-  } else if (type == "s") {
+  } else if (isTRUE(type == "s")) {
     x <- apply(ut, 1, function(x) {
       paste(x[1], "-", sprintf("%02g", x[2]), "-", sprintf("%02g", 
         x[3]), " ", sprintf("%02g", x[4]), ":", sprintf("%02g", x[5]), 
         ":", sprintf("%02g", x[6]), sep = "")
     })
     return(x)
-  } else if (type == "c") {
+  } else if (isTRUE(type == "c")) {
     ct <- as.POSIXct(utinvcal.nc("seconds since 1970-01-01 00:00:00 +00:00", 
       ut), tz = "UTC", origin = ISOdatetime(1970, 1, 1, 0, 0, 0, tz = "UTC"))
     return(ct)
@@ -919,7 +919,7 @@ utinvcal.nc <- function(unitstring, value) {
   stopifnot(is.character(unitstring))
   
   if (is.character(value)) {
-    stopifnot(all(nchar(value) == 19))
+    stopifnot(isTRUE(all(nchar(value) == 19)))
     value <- cbind(substr(value, 1, 4), substr(value, 6, 7), substr(value, 
       9, 10), substr(value, 12, 13), substr(value, 15, 16), substr(value, 
       18, 19))
