@@ -107,6 +107,14 @@ R_nc_type2str (int ncid, nc_type xtype, char *str);
 int
 R_nc_str2type (int ncid, const char *str, nc_type * xtype);
 
+
+/* Extract C string from R character vector argument.
+   Raise an error if no string is found.
+ */
+const char *
+R_nc_strarg (SEXP str);
+
+
 /* Enter netcdf define mode if possible.
    Returns netcdf error code if an unhandled error occurs.
  */

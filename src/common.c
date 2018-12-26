@@ -318,6 +318,17 @@ R_nc_str2type (int ncid, const char *str, nc_type * xtype)
 }
 
 
+const char *
+R_nc_strarg (SEXP str)
+{
+  if (xlength (str) > 0 && isString (str)) {
+    return CHAR (STRING_ELT (str, 0));
+  } else {
+    RERROR ("Expected character string as argument");
+  }
+}
+
+
 int
 R_nc_redef (int ncid)
 {
@@ -336,5 +347,4 @@ R_nc_enddef (int ncid)
   nc_enddef(ncid);
   return NC_NOERR;
 }
-
 
