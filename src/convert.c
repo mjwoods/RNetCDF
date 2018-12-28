@@ -134,10 +134,17 @@ R_nc_length_sexp (SEXP count)
     for ( ii=0; ii<ndims; ii++ ) {
       length *= rcount[ii]; 
     }
+    if (!R_FINITE (length)) {
+      R_nc_error ("Non-finite length in R_nc_length_sexp");
+    }
   } else if (isInteger (count)) {
     icount = INTEGER (count);
     for ( ii=0; ii<ndims; ii++ ) {
-      length *= icount[ii]; 
+      if (icount[ii] != NA_INTEGER) {
+        length *= icount[ii];
+      } else {
+        R_nc_error ("Missing value in R_nc_length_sexp");
+      }
     }
   } else if (!isNull (count)) {
     R_nc_error ("Unsupported type in R_nc_length_sexp");
