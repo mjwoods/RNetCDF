@@ -1662,7 +1662,11 @@ FUN (SEXP rv, size_t N, TYPE fillval) \
 \
   /* Copy R elements to cv */ \
   if (isReal (rv)) { \
-    voidbuf = R_nc_r2c_dbl_##TYPENAME (rv, 1, &nr, &fillval, NULL, NULL); \
+    if (isInt64 (rv)) { \
+      voidbuf = R_nc_r2c_bit64_##TYPENAME (rv, 1, &nr, &fillval, NULL, NULL); \
+    } else { \
+      voidbuf = R_nc_r2c_dbl_##TYPENAME (rv, 1, &nr, &fillval, NULL, NULL); \
+    } \
   } else if (isInteger (rv)) { \
     voidbuf = R_nc_r2c_int_##TYPENAME (rv, 1, &nr, &fillval, NULL, NULL); \
   } else { \
