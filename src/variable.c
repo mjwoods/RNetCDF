@@ -212,9 +212,11 @@ R_nc_miss_att (int ncid, int varid, int mode,
         *min = range;
         *max = range + 1;
         if (xtype == NC_UBYTE) {
-          R_nc_check (nc_get_att_uchar (ncid, varid, "valid_range", range));
+          R_nc_check (nc_get_att_uchar (
+                        ncid, varid, "valid_range", (unsigned char *) range));
         } else {
-          R_nc_check (nc_get_att_schar (ncid, varid, "valid_range", range));
+          R_nc_check (nc_get_att_schar (
+                        ncid, varid, "valid_range", (signed char *) range));
         }
       }
 
