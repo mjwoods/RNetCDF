@@ -80,12 +80,7 @@ R_nc_def_dim (SEXP nc, SEXP dimname, SEXP size, SEXP unlim)
   if (asLogical(unlim) == TRUE) {
     nccnt = NC_UNLIMITED;
   } else {
-    /* Allow size to be a double, which can be larger than integer */
-    if (isInteger(size)) {
-      nccnt = asInteger(size);
-    } else {
-      nccnt = asReal(size);
-    }
+    nccnt = R_nc_sizearg (size);
   }
 
   R_nc_check (nc_def_dim (ncid, dimnamep, nccnt, &dimid));
