@@ -37,13 +37,6 @@
 #define RNC_CONVERT_H_INCLUDED
 
 
-#define NA_SIZE SIZE_MAX
-
-/* Definitions for integer64 as provided by bit64 package */
-#define NA_INTEGER64 LLONG_MIN
-int isInt64(SEXP rv);
-
-
 /* Find total number of elements in an array from dimension lengths.
    Result is 1 for a scalar or product of dimensions for an array.
    The special case ndims < 0 implies a vector of length count[0].

@@ -89,10 +89,6 @@ static const double ULLONG_MAX_DBL = \
 static const double SIZE_MAX_DBL = \
   ((double) SIZE_MAX) * (1.0 - DBL_EPSILON);
 
-/* Definitions for integer64 as provided by bit64 package */
-int isInt64(SEXP rv) {
-  return R_nc_inherits (rv, "integer64");
-}
 
 /*=============================================================================*\
  *  Memory management.
@@ -1283,7 +1279,7 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
     }
     break;
   case REALSXP:  
-    if (isInt64(rv)) {
+    if (R_nc_inherits (rv, "integer64")) {
       switch (xtype) {
       case NC_BYTE:
 	return R_nc_r2c_bit64_schar (rv, ndim, xdim, fill, scale, add);
@@ -1669,7 +1665,7 @@ FUN (SEXP rv, size_t N, TYPE fillval) \
 \
   /* Copy R elements to cv */ \
   if (isReal (rv)) { \
-    if (isInt64 (rv)) { \
+    if (R_nc_inherits (rv, "integer64")) { \
       voidbuf = R_nc_r2c_bit64_##TYPENAME (rv, 1, &nr, &fillval, NULL, NULL); \
     } else { \
       voidbuf = R_nc_r2c_dbl_##TYPENAME (rv, 1, &nr, &fillval, NULL, NULL); \

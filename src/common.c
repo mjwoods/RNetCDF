@@ -329,6 +329,51 @@ R_nc_strarg (SEXP str)
 }
 
 
+size_t
+R_nc_sizearg (SEXP size)
+{
+  int erange=0;
+  size_t result=0;
+  if (xlength (size) > 0) {
+    if (TYPEOF (size) == INTSXP) {
+      int ival;
+      ival = INTEGER (size)[0];
+      erange = (ival < 0 || ival > SIZE_MAX || ival == NA_INTEGER);
+      if (!erange) {
+        result = ival;
+      }
+    } else if (TYPEOF (size) == REALSXP) {
+      if (R_nc_inherits (size, "integer64")) {
+        long long llval;
+        unsigned long long ullval;
+        llval = *(long long *) REAL (size);
+        /* Allow wrapping of negative to positive values
+           by converting from signed to unsigned long long
+         */
+        ullval = llval;
+        erange = (ullval > SIZE_MAX || llval == NA_INTEGER64);
+        if (!erange) {
+          result = ullval;
+        }
+      } else {
+        double dval;
+        dval = REAL (size)[0];
+        erange = (dval < 0 || dval > SIZE_MAX || ! R_FINITE (dval));
+        result = dval;
+      }
+    } else {
+      R_nc_error ("Size argument has unsupported R type");
+    }
+  } else {
+    R_nc_error ("Size argument must contain at least one numeric value");
+  }
+  if (erange) {
+    R_nc_error ("Size argument is outside valid range");
+  }
+  return result;
+}
+
+
 int
 R_nc_redef (int ncid)
 {
