@@ -345,15 +345,19 @@ R_nc_sizearg (SEXP size)
     } else if (TYPEOF (size) == REALSXP) {
       if (R_nc_inherits (size, "integer64")) {
         long long llval;
-        unsigned long long ullval;
         llval = *(long long *) REAL (size);
         /* Allow wrapping of negative to positive values
            by converting from signed to unsigned long long
          */
-        ullval = llval;
-        erange = (ullval > SIZE_MAX || llval == NA_INTEGER64);
+        if (sizeof (long long) > sizeof (size_t)) {
+          erange = (llval < 0 || llval > SIZE_MAX || llval == NA_INTEGER64);
+        } else {
+          /* Allow wrapping of negative to positive values
+             in conversion from signed long long to (unsigned) size_t */
+          erange = (llval == NA_INTEGER64);
+        }
         if (!erange) {
-          result = ullval;
+          result = llval;
         }
       } else {
         double dval;
