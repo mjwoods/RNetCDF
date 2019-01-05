@@ -46,8 +46,7 @@ Awkwardness arises mainly from one thing: NetCDF data are written with the last 
 
 \value{An array with dimensions determined by \code{count} and a data type that depends on the type of \code{variable}. For NetCDF variables of type \code{NC_CHAR}, the R type is either \code{character} or \code{raw}, as specified by argument \code{rawchar}. For \code{NC_STRING}, the R type is \code{character}. Numeric variables are read as double precision by default, but the smallest R type that exactly represents each external type is used if \code{fitnum} is \code{TRUE}.
 
-Variables of user-defined types are supported. "vlen" arrays are read into R as a list with array dimensions; items in the list are usually vectors, which may have different lengths.
-"opaque" arrays are read into R as raw (byte) arrays, with dimensions of the netcdf variable extended by a leading dimension for bytes of the opaque type. "enum" arrays are read into R as factor arrays.
+Variables of user-defined types are supported. "compound" arrays are read into R as lists, with items named for the compound fields; items of base NetCDF data types are converted to R arrays, with leading dimensions from the field dimensions (if any) and trailing dimensions from the NetCDF variable. "enum" arrays are read into R as factor arrays. "opaque" arrays are read into R as raw (byte) arrays, with a leading dimension for bytes of the opaque type and trailing dimensions from the NetCDF variable. "vlen" arrays are read into R as a list with dimensions of the NetCDF variable; items in the list may have different lengths; base NetCDF data types are converted to R vectors.
 
 The dimension order in the R array is reversed relative to the order reported by NetCDF commands such as \code{ncdump}, because NetCDF arrays are stored in row-major (C) order whereas R arrays are stored in column-major (Fortran) order.
 
