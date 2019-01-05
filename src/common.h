@@ -36,6 +36,9 @@
 #ifndef RNC_COMMON_H_INCLUDED
 #define RNC_COMMON_H_INCLUDED
 
+#include <limits.h>
+#include <stdint.h>
+
 #ifndef NC_MAX_ATOMIC_TYPE
   #define NC_MAX_ATOMIC_TYPE NC_STRING
 #endif
