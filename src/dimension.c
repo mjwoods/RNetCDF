@@ -71,7 +71,7 @@ R_nc_def_dim (SEXP nc, SEXP dimname, SEXP size, SEXP unlim)
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
 
-  dimnamep = CHAR (STRING_ELT (dimname, 0));
+  dimnamep = R_nc_strarg (dimname);
 
   /*-- Enter define mode ------------------------------------------------------*/
   R_nc_check( R_nc_redef (ncid));
@@ -80,12 +80,7 @@ R_nc_def_dim (SEXP nc, SEXP dimname, SEXP size, SEXP unlim)
   if (asLogical(unlim) == TRUE) {
     nccnt = NC_UNLIMITED;
   } else {
-    /* Allow size to be a double, which can be larger than integer */
-    if (isInteger(size)) {
-      nccnt = asInteger(size);
-    } else {
-      nccnt = asReal(size);
-    }
+    nccnt = R_nc_sizearg (size);
   }
 
   R_nc_check (nc_def_dim (ncid, dimnamep, nccnt, &dimid));
@@ -218,7 +213,7 @@ R_nc_rename_dim (SEXP nc, SEXP dim, SEXP newname)
 
   R_nc_check (R_nc_dim_id (dim, ncid, &dimid, 0));
 
-  newnamep = CHAR (STRING_ELT (newname, 0));
+  newnamep = R_nc_strarg (newname);
 
   /*-- Enter define mode ------------------------------------------------------*/
   R_nc_check( R_nc_redef (ncid));

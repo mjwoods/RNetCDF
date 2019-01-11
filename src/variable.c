@@ -72,7 +72,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
 
-  varnamep = CHAR (STRING_ELT (varname, 0));
+  varnamep = R_nc_strarg (varname);
 
   R_nc_check (R_nc_type_id (type, ncid, &xtype, 0));
 
@@ -212,9 +212,11 @@ R_nc_miss_att (int ncid, int varid, int mode,
         *min = range;
         *max = range + 1;
         if (xtype == NC_UBYTE) {
-          R_nc_check (nc_get_att_uchar (ncid, varid, "valid_range", range));
+          R_nc_check (nc_get_att_uchar (
+                        ncid, varid, "valid_range", (unsigned char *) range));
         } else {
-          R_nc_check (nc_get_att_schar (ncid, varid, "valid_range", range));
+          R_nc_check (nc_get_att_schar (
+                        ncid, varid, "valid_range", (signed char *) range));
         }
       }
 
@@ -552,7 +554,7 @@ R_nc_rename_var (SEXP nc, SEXP var, SEXP newname)
 
   R_nc_check (R_nc_var_id (var, ncid, &varid));
 
-  cnewname = CHAR (STRING_ELT (newname, 0));
+  cnewname = R_nc_strarg (newname);
 
   /*-- Enter define mode ------------------------------------------------------*/
   R_nc_check( R_nc_redef (ncid));

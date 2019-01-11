@@ -230,7 +230,7 @@ R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP size, SEXP basetype,
   /*-- Decode arguments -------------------------------------------------------*/
   ncid = asInteger (nc);
 
-  typenamep = CHAR (STRING_ELT (typename, 0));
+  typenamep = R_nc_strarg (typename);
 
   /*-- Enter define mode ------------------------------------------------------*/
   R_nc_check( R_nc_redef (ncid));
@@ -241,11 +241,7 @@ R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP size, SEXP basetype,
   } else if (R_nc_strcmp (class, "enum")) {
     typeid = R_nc_def_enum (ncid, typenamep, basetype, names, values);
   } else if (R_nc_strcmp (class, "opaque")) {
-    if (isInteger (size)) {
-      xsize = asInteger (size);
-    } else {
-      xsize = asReal (size);
-    }
+    xsize = R_nc_sizearg (size);
     R_nc_check (nc_def_opaque (ncid, xsize, typenamep, &typeid));
   } else if (R_nc_strcmp (class, "vlen")) {
     R_nc_check (R_nc_type_id (basetype, ncid, &xtype, 0));
@@ -279,7 +275,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
 
   R_nc_check (R_nc_type_id (type, ncid, &typeid, 0));
 
-  fldname = CHAR (STRING_ELT (name, 0));
+  fldname = R_nc_strarg (name);
 
   R_nc_check (nc_inq_user_type (ncid, typeid, NULL, &xsize, &xtype, NULL, &class));
 
@@ -292,12 +288,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
   } else if (class == NC_COMPOUND) {
     if (!isNull (offset) && !isNull (subtype)) {
 
-      if (isInteger (offset)) {
-        coffset = asInteger (offset);
-      } else {
-        /* offset could be larger than integer */
-        coffset = asReal (offset);
-      }
+      coffset = R_nc_sizearg (offset);
 
       R_nc_check (R_nc_type_id (subtype, ncid, &xtype, 0));
       R_nc_check (nc_inq_type (ncid, xtype, NULL, &subsize));
