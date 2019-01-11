@@ -111,7 +111,7 @@ R_nc_calendar (SEXP unitstring, SEXP values)
   SEXP result;
 
   /* Handle arguments and initialise outputs */
-  cstring = CHAR (STRING_ELT (unitstring, 0));
+  cstring = R_nc_strarg (unitstring);
   isreal = isReal (values);
   if (isreal) {
     dvals = REAL (values);
@@ -193,6 +193,7 @@ SEXP
 R_nc_utinit (SEXP path)
 {
   int status;
+  const char *pathp;
 
   /*-- Terminate library if loaded previously ---------------------------------*/
 #ifdef HAVE_UTISINIT
@@ -207,7 +208,8 @@ R_nc_utinit (SEXP path)
 #endif
 
   /*-- Initialize udunits library ---------------------------------------------*/
-  status = utInit (R_ExpandFileName (CHAR (STRING_ELT (path, 0))));
+  pathp = R_nc_strarg (path);
+  status = utInit (R_ExpandFileName (pathp));
 
   /*-- Avoid "overriding default" messages from UDUNITS-2 (2/2) ---------------*/
 #ifdef HAVE_LIBUDUNITS2
@@ -239,7 +241,7 @@ R_nc_inv_calendar (SEXP unitstring, SEXP values)
   SEXP result;
 
   /* Handle arguments and initialise outputs */
-  cstring = CHAR (STRING_ELT (unitstring, 0));
+  cstring = R_nc_strarg (unitstring);
   isreal = isReal (values);
   if (isreal) {
     dvals = REAL (values);

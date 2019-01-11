@@ -89,10 +89,6 @@ static const double ULLONG_MAX_DBL = \
 static const double SIZE_MAX_DBL = \
   ((double) SIZE_MAX) * (1.0 - DBL_EPSILON);
 
-/* Definitions for integer64 as provided by bit64 package */
-int isInt64(SEXP rv) {
-  return R_nc_inherits (rv, "integer64");
-}
 
 /*=============================================================================*\
  *  Memory management.
@@ -134,10 +130,17 @@ R_nc_length_sexp (SEXP count)
     for ( ii=0; ii<ndims; ii++ ) {
       length *= rcount[ii]; 
     }
+    if (!R_FINITE (length)) {
+      R_nc_error ("Non-finite length in R_nc_length_sexp");
+    }
   } else if (isInteger (count)) {
     icount = INTEGER (count);
     for ( ii=0; ii<ndims; ii++ ) {
-      length *= icount[ii]; 
+      if (icount[ii] != NA_INTEGER) {
+        length *= icount[ii];
+      } else {
+        R_nc_error ("Missing value in R_nc_length_sexp");
+      }
     }
   } else if (!isNull (count)) {
     R_nc_error ("Unsupported type in R_nc_length_sexp");
@@ -411,7 +414,7 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
   if ( erange ) { \
     R_nc_error (nc_strerror (NC_ERANGE)); \
   } else if ( efill ) { \
-    warning ("NA values sent to netcdf without conversion to fill value"); \
+    R_nc_error ("NA values sent to netcdf without conversion to fill value"); \
   } \
   return out; \
 }
@@ -463,6 +466,11 @@ R_NC_R2C_NUM(R_nc_r2c_dbl_float, NC_DOUBLE, double, REAL, NC_FLOAT, float, \
 R_NC_R2C_NUM(R_nc_r2c_dbl_dbl, NC_DOUBLE, double, REAL, NC_DOUBLE, double, \
   R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
 
+/* bit64 is treated by R as signed long long,
+   but we may need to store unsigned long long,
+   with very large positive values wrapping to negative values in R.
+   We allow wrapping in reverse for conversion of bit64 to unsigned long long.
+ */
 R_NC_R2C_NUM(R_nc_r2c_bit64_schar, NC_INT64, long long, REAL, NC_BYTE, signed char, \
   R_NC_ISNA_BIT64, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX);
 R_NC_R2C_NUM(R_nc_r2c_bit64_uchar, NC_INT64, long long, REAL, NC_UBYTE, unsigned char, \
@@ -477,17 +485,23 @@ R_NC_R2C_NUM(R_nc_r2c_bit64_uint, NC_INT64, long long, REAL, NC_UINT, unsigned i
   R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_bit64_ll, NC_INT64, long long, REAL, NC_INT64, long long, \
   R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
-/* Treat bit64 as unsigned when converting to unsigned long long */
-R_NC_R2C_NUM(R_nc_r2c_bit64_ull, NC_UINT64, unsigned long long, REAL, NC_UINT64, unsigned long long, \
+R_NC_R2C_NUM(R_nc_r2c_bit64_ull, NC_INT64, long long, REAL, NC_UINT64, unsigned long long, \
   R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
-/* Assume bit64 and size_t are different types */
-R_NC_R2C_NUM(R_nc_r2c_bit64_size, NC_INT64, long long, REAL, NC_UINT64, size_t, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX);
 R_NC_R2C_NUM(R_nc_r2c_bit64_float, NC_INT64, long long, REAL, NC_FLOAT, float, \
   R_NC_ISNA_BIT64, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX);
 R_NC_R2C_NUM(R_nc_r2c_bit64_dbl, NC_INT64, long long, REAL, NC_DOUBLE, double, \
   R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, );
-
+#if LLONG_MAX > SIZE_MAX
+/* size_t is smaller than unsigned long long.
+   Only allow positive values of bit64
+ */
+R_NC_R2C_NUM(R_nc_r2c_bit64_size, NC_INT64, long long, REAL, NC_NAT, size_t, \
+  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX);
+#else
+/* Allow wrapping from negative bit64 to positive size_t */
+R_NC_R2C_NUM(R_nc_r2c_bit64_size, NC_INT64, long long, REAL, NC_NAT, size_t, \
+  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_MAX, SIZE_MAX);
+#endif
 
 /* Allocate memory for reading a netcdf variable slice
    and converting the results to an R variable.
@@ -592,10 +606,13 @@ R_NC_C2R_NUM(R_nc_c2r_int64_dbl, NC_INT64, long long, NC_DOUBLE, double, \
 R_NC_C2R_NUM(R_nc_c2r_uint64_dbl, NC_UINT64, unsigned long long, NC_DOUBLE, double, \
   NA_REAL, 0, ULLONG_MAX);
 
+/* bit64 is treated by R as signed long long,
+   but we may need to store unsigned long long,
+   with very large positive values wrapping to negative values in R.
+ */
 R_NC_C2R_NUM(R_nc_c2r_int64_bit64, NC_INT64, long long, NC_INT64, long long, \
   NA_INTEGER64, LLONG_MIN, LLONG_MAX);
-/* Treat bit64 as unsigned when converting from unsigned long long */
-R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, NC_UINT64, unsigned long long, NC_UINT64, unsigned long long, \
+R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, NC_UINT64, unsigned long long, NC_INT64, long long, \
   NA_INTEGER64, 0, ULLONG_MAX);
 
 
@@ -1269,7 +1286,7 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
     }
     break;
   case REALSXP:  
-    if (isInt64(rv)) {
+    if (R_nc_inherits (rv, "integer64")) {
       switch (xtype) {
       case NC_BYTE:
 	return R_nc_r2c_bit64_schar (rv, ndim, xdim, fill, scale, add);
@@ -1655,7 +1672,11 @@ FUN (SEXP rv, size_t N, TYPE fillval) \
 \
   /* Copy R elements to cv */ \
   if (isReal (rv)) { \
-    voidbuf = R_nc_r2c_dbl_##TYPENAME (rv, 1, &nr, &fillval, NULL, NULL); \
+    if (R_nc_inherits (rv, "integer64")) { \
+      voidbuf = R_nc_r2c_bit64_##TYPENAME (rv, 1, &nr, &fillval, NULL, NULL); \
+    } else { \
+      voidbuf = R_nc_r2c_dbl_##TYPENAME (rv, 1, &nr, &fillval, NULL, NULL); \
+    } \
   } else if (isInteger (rv)) { \
     voidbuf = R_nc_r2c_int_##TYPENAME (rv, 1, &nr, &fillval, NULL, NULL); \
   } else { \

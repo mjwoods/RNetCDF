@@ -69,19 +69,11 @@ R_nc_unprotect (void)
 }
 
 
-#define R_NC_ERRLEN 8192
 void
-R_nc_error(const char *fmt, ...)
+R_nc_error(const char *msg)
 {
-  char buf[R_NC_ERRLEN];
-  va_list(ap);
-
-  va_start(ap, fmt);
-  vsnprintf(buf, R_NC_ERRLEN, fmt, ap);
-  va_end(ap);
- 
   R_nc_unprotect ();
-  error (buf);
+  error (msg);
 }
 
 
@@ -326,6 +318,66 @@ R_nc_str2type (int ncid, const char *str, nc_type * xtype)
 }
 
 
+const char *
+R_nc_strarg (SEXP str)
+{
+  if (xlength (str) > 0 && isString (str)) {
+    return CHAR (STRING_ELT (str, 0));
+  } else {
+    RERROR ("Expected character string as argument");
+  }
+}
+
+
+size_t
+R_nc_sizearg (SEXP size)
+{
+  int erange=0;
+  size_t result=0;
+  if (xlength (size) > 0) {
+    if (TYPEOF (size) == INTSXP) {
+      int ival;
+      ival = INTEGER (size)[0];
+      erange = (ival < 0 || ival > SIZE_MAX || ival == NA_INTEGER);
+      if (!erange) {
+        result = ival;
+      }
+    } else if (TYPEOF (size) == REALSXP) {
+      if (R_nc_inherits (size, "integer64")) {
+        long long llval;
+        llval = *(long long *) REAL (size);
+        /* Allow wrapping of negative to positive values
+           by converting from signed to unsigned long long
+         */
+        if (sizeof (long long) > sizeof (size_t)) {
+          erange = (llval < 0 || llval > SIZE_MAX || llval == NA_INTEGER64);
+        } else {
+          /* Allow wrapping of negative to positive values
+             in conversion from signed long long to (unsigned) size_t */
+          erange = (llval == NA_INTEGER64);
+        }
+        if (!erange) {
+          result = llval;
+        }
+      } else {
+        double dval;
+        dval = REAL (size)[0];
+        erange = (dval < 0 || dval > SIZE_MAX || ! R_FINITE (dval));
+        result = dval;
+      }
+    } else {
+      R_nc_error ("Size argument has unsupported R type");
+    }
+  } else {
+    R_nc_error ("Size argument must contain at least one numeric value");
+  }
+  if (erange) {
+    R_nc_error ("Size argument is outside valid range");
+  }
+  return result;
+}
+
+
 int
 R_nc_redef (int ncid)
 {
@@ -344,5 +396,4 @@ R_nc_enddef (int ncid)
   nc_enddef(ncid);
   return NC_NOERR;
 }
-
 

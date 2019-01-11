@@ -66,7 +66,7 @@ R_nc_att_name (SEXP att, int ncid, int varid, char *attname)
 {
   if (isNumeric (att)) {
     return nc_inq_attname (ncid, varid, asInteger (att), attname);
-  } else if (isString (att)) {
+  } else if (isString (att) && xlength (att) > 0) {
     strncpy (attname, CHAR (STRING_ELT (att, 0)), NC_MAX_NAME);
     attname[NC_MAX_NAME] = '\0';
     return NC_NOERR;
@@ -259,7 +259,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
     R_nc_check (R_nc_var_id (var, ncid, &varid));
   }
 
-  attname = CHAR (STRING_ELT (att, 0));
+  attname = R_nc_strarg (att);
 
   R_nc_check (R_nc_type_id (type, ncid, &xtype, 0));
 
@@ -268,7 +268,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
 
   /*-- Write attribute to file ------------------------------------------------*/
   if (xtype == NC_CHAR && isString (data)) {
-    cnt = strlen (CHAR (STRING_ELT (data, 0)));
+    cnt = strlen (R_nc_strarg (data));
   } else {
     cnt = xlength (data);
   }
@@ -289,8 +289,7 @@ SEXP
 R_nc_rename_att (SEXP nc, SEXP var, SEXP att, SEXP newname)
 {
   int ncid, varid;
-  char attname[NC_MAX_NAME+1];
-  const char *newnamep;
+  const char *attname, *newattname;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -301,15 +300,15 @@ R_nc_rename_att (SEXP nc, SEXP var, SEXP att, SEXP newname)
     R_nc_check (R_nc_var_id (var, ncid, &varid));
   }
 
-  R_nc_check (R_nc_att_name (att, ncid, varid, attname));
+  attname = R_nc_strarg (att);
 
-  newnamep = CHAR (STRING_ELT (newname, 0));
+  newattname = R_nc_strarg (newname);
 
   /*-- Enter define mode ------------------------------------------------------*/
   R_nc_check( R_nc_redef (ncid));
 
   /*-- Rename the attribute ---------------------------------------------------*/
-  R_nc_check (nc_rename_att (ncid, varid, attname, newnamep));
+  R_nc_check (nc_rename_att (ncid, varid, attname, newattname));
 
   RRETURN(R_NilValue);
 }

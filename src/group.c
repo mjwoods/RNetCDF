@@ -70,7 +70,7 @@ R_nc_def_grp (SEXP nc, SEXP grpname)
   /* Convert arguments to netcdf ids */
   ncid = asInteger (nc);
 
-  cgrpname = CHAR (STRING_ELT (grpname, 0));
+  cgrpname = R_nc_strarg (grpname);
 
   /* Enter define mode */
   R_nc_check( R_nc_redef (ncid));
@@ -159,7 +159,7 @@ R_nc_inq_grp_ncid (SEXP nc, SEXP grpname, SEXP full)
   SEXP result;
 
   ncid = asInteger (nc);
-  cgrpname = CHAR (STRING_ELT (grpname, 0));
+  cgrpname = R_nc_strarg (grpname);
 
   if (asLogical (full) == TRUE) {
     R_nc_check (nc_inq_grp_full_ncid (ncid, cgrpname, &grpid));
@@ -226,7 +226,7 @@ R_nc_rename_grp (SEXP nc, SEXP grpname)
   const char *cgrpname;
 
   ncid = asInteger (nc);
-  cgrpname = CHAR (STRING_ELT (grpname, 0));
+  cgrpname = R_nc_strarg (grpname);
 
   /* Enter define mode */
   R_nc_check( R_nc_redef (ncid));

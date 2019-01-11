@@ -93,6 +93,10 @@ R_nc_close (SEXP ptr)
 {
   int *fileid;
 
+  if (TYPEOF (ptr) != EXTPTRSXP) {
+    RERROR ("Not a valid NetCDF object");
+  }
+
   fileid = R_ExternalPtrAddr (ptr);
   if (!fileid) {
     RRETURN(R_NilValue);
@@ -124,6 +128,7 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
 {
   int cmode, fillmode, old_fillmode, ncid, *fileid;
   SEXP Rptr, result;
+  const char *filep;
 
   /*-- Determine the cmode ----------------------------------------------------*/
   if (asLogical(clobber) == TRUE) {
@@ -154,8 +159,12 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
   }
 
   /*-- Create the file --------------------------------------------------------*/
-  R_nc_check (nc_create (R_ExpandFileName (CHAR (STRING_ELT (filename, 0))),
-                       cmode, &ncid));
+  filep = R_nc_strarg (filename);
+  if (strlen (filep) > 0) {
+    R_nc_check (nc_create (R_ExpandFileName (filep), cmode, &ncid));
+  } else {
+    RERROR ("Filename must be a non-empty string");
+  }
   result = R_nc_protect (ScalarInteger (ncid));
 
   /*-- Arrange for file to be closed if handle is garbage collected -----------*/
@@ -214,6 +223,7 @@ SEXP
 R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
 {
   int ncid, omode, fillmode, old_fillmode, *fileid;
+  const char *filep;
   SEXP Rptr, result;
 
   /*-- Determine the omode ----------------------------------------------------*/
@@ -235,8 +245,12 @@ R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
   }
 
   /*-- Open the file ----------------------------------------------------------*/
-  R_nc_check (nc_open (R_ExpandFileName (CHAR (STRING_ELT (filename, 0))),
-                     omode, &ncid));
+  filep = R_nc_strarg (filename);
+  if (strlen (filep) > 0) {
+    R_nc_check (nc_open (R_ExpandFileName (filep), omode, &ncid));
+  } else {
+    RERROR ("Filename must be a non-empty string");
+  }
   result = R_nc_protect (ScalarInteger (ncid));
 
   /*-- Arrange for file to be closed if handle is garbage collected -----------*/

@@ -36,6 +36,9 @@
 #ifndef RNC_COMMON_H_INCLUDED
 #define RNC_COMMON_H_INCLUDED
 
+#include <limits.h>
+#include <stdint.h>
+
 #ifndef NC_MAX_ATOMIC_TYPE
   #define NC_MAX_ATOMIC_TYPE NC_STRING
 #endif
@@ -44,6 +47,12 @@
 
 #define RERROR(msg) { R_nc_error (msg); return NULL; }
 
+#define NA_SIZE SIZE_MAX
+
+/* Definition of missing value used by bit64 package */
+#define NA_INTEGER64 LLONG_MIN
+
+/* Common error strings */
 static const char RNC_EDATALEN[]="Not enough data", \
   RNC_EDATATYPE[]="Incompatible data for external type", \
   RNC_ETYPEDROP[]="Unsupported external type";
@@ -58,7 +67,7 @@ R_nc_unprotect (void);
 
 /* Raise an error in R */
 void
-R_nc_error(const char *fmt, ...);
+R_nc_error(const char *msg);
 
 /* If status is a netcdf error, raise an R error with a suitable message,
    otherwise return to caller. */
@@ -106,6 +115,21 @@ R_nc_type2str (int ncid, nc_type xtype, char *str);
  */
 int
 R_nc_str2type (int ncid, const char *str, nc_type * xtype);
+
+
+/* Extract C string from R character vector argument.
+   Raise an error if no string is found.
+ */
+const char *
+R_nc_strarg (SEXP str);
+
+
+/* Convert R numeric scalar argument to size_t.
+   Raise an error if R type or value is not compatible.
+ */
+size_t
+R_nc_sizearg (SEXP size);
+
 
 /* Enter netcdf define mode if possible.
    Returns netcdf error code if an unhandled error occurs.
