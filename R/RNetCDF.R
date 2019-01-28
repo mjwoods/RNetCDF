@@ -322,13 +322,14 @@ print_grp <- function(x, level = 0) {
       if (varinfo$natts != 0) {
         for (jj in 0:(varinfo$natts - 1)) {
           attinfo <- att.inq.nc(x, id, jj)
-          cat(indent, rep(" ", 16), varinfo$name, ":", attinfo$name, 
-          sep = "")
-          if (attinfo$type == "NC_CHAR") {
-          cat(" = \"", att.get.nc(x, id, jj), "\" ;\n", sep = "")
+          if (attinfo$type == "NC_CHAR" || attinfo$type == "NC_STRING") {
+            attvalstr <- paste("\"", att.get.nc(x, id, jj), "\"", 
+                               collapse=", ", sep="")
           } else {
-          cat(" = ", att.get.nc(x, id, jj), " ;\n", sep = "")
+            attvalstr <- paste(att.get.nc(x, id, jj), collapse=", ", sep="")
           }
+          cat(indent, rep(" ", 16), varinfo$name, ":", attinfo$name,
+              " = ", attvalstr, " ;\n", sep="")
         }
       }
     }
@@ -340,15 +341,17 @@ print_grp <- function(x, level = 0) {
     id <- "NC_GLOBAL"
     for (jj in 0:(grpinfo$ngatts - 1)) {
       attinfo <- att.inq.nc(x, id, jj)
-      cat(indent, rep(" ", 16), ":", attinfo$name, sep = "")
-      if (attinfo$type == "NC_CHAR") {
-        cat(" = \"", att.get.nc(x, id, jj), "\" ;\n", sep = "")
+      if (attinfo$type == "NC_CHAR" || attinfo$type == "NC_STRING") {
+        attvalstr <- paste("\"", att.get.nc(x, id, jj), "\"", 
+                           collapse=", ", sep="")
       } else {
-        cat(" = ", att.get.nc(x, id, jj), " ;\n", sep = "")
+        attvalstr <- paste(att.get.nc(x, id, jj), collapse=", ", sep="")
       }
+      cat(indent, rep(" ", 16), ":", attinfo$name,
+          " = ", attvalstr, " ;\n", sep="")
     }
   }
-  
+
   #-- Print groups recursively -----------------------------------------------
   if (length(grpinfo$grps) != 0) {
     for (id in grpinfo$grps) {
