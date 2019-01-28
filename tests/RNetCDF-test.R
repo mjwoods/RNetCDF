@@ -28,21 +28,6 @@
 #  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 #===============================================================================#
-#  Implementation and Revisions
-#-------------------------------------------------------------------------------#
-#  Author   Date       Description
-#  ------   ----       -----------
-#  pm       29/12/10   First implementation
-#  mw       18/07/12   Test packed variables
-#  mw       02/09/14   Test 1D character arrays and character scalars
-#  mw       05/09/14   Test reading/writing NC_CHAR as raw bytes
-#  mw       26/01/16   Test utcal.nc and utinvcal.nc with POSIXct type
-#  mw       13/02/16   Test file operations in all supported on-disk formats
-#  mw       17/06/18   Test bit64 operations
-#  mw       14/07/18   Test type definition and inquiry functions
-#  mw       05/08/18   Test numeric type conversion functions
-#
-#===============================================================================#
 
 
 #===============================================================================#

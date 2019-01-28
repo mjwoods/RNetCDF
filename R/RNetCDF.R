@@ -1,60 +1,30 @@
 #===============================================================================
-#										
-#  Name:       RNetCDF.R							
-#										
-#  Version:    2.0-1								
-#										
-#  Purpose:    NetCDF interface for R.						
-#										
-#  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)				
-#              Milton Woods (miltonjwoods@gmail.com)                                
-#										
+#
+#  Name:       RNetCDF.R
+#
+#  Purpose:    NetCDF interface for R.
+#
+#  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
+#              Milton Woods (miltonjwoods@gmail.com)
+#
 #  Copyright:  (C) 2004-2017 Pavel Michna, Milton Woods
-#										
+#
 #===============================================================================
-#										
-#  This program is free software; you can redistribute it and/or modify 	
-#  it under the terms of the GNU General Public License as published by 	
-#  the Free Software Foundation; either version 2 of the License, or		
-#  (at your option) any later version.						
-#										
-#  This program is distributed in the hope that it will be useful,		
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of		
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the		
-#  GNU General Public License for more details. 				
-#										
-#  You should have received a copy of the GNU General Public License		
-#  along with this program; if not, write to the Free Software			
-#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA	
-#										
-#===============================================================================
-#  Implementation and Revisions 						
-#-------------------------------------------------------------------------------
-#  Author   Date       Description						
-#  ------   ----       -----------						
-#  pm       12/06/04   First implementation					
-#  pm       09/07/04   Support scalar variables	    		                
-#  pm       21/07/04   Changed error handling					
-#  pm       28/07/04   Minor modifications					
-#  pm       12/09/04   New na.mode=3 and collapse=TRUE/FALSE in var.get.nc()	
-#  pm       24/07/06   Handling dates in string form (udunits)           	
-#  mw       14/04/08   Added new modes (large, prefill, share)                  
-#                      to nc_open and nc_create                                 
-#  pm       24/11/10   Added new option enddef to att and dim/var definitions   
-#  pm       01/12/10   Removed option enddef, checking in C code for mode       
-#  pm       14/02/12   Corrected bug in att.delete.nc                           
-#  pm       02/06/12   Added function read.nc()                                 
-#  pm       16/07/12   Added packing/unpacking of data (code from mw)           
-#  mw       21/08/14   Allow reading of character vector or scalar              
-#  mw       05/09/14   Support reading and writing raw character arrays         
-#  mw       08/09/14   Handle reading and writing of zero-sized arrays          
-#  mw       24/01/16   Support conversion of timestamps to/from POSIXct         
-#  mw       24/02/16   Support creation of files in netcdf4 (hdf5) format       
-#  mw       21/05/16   Add functions for netcdf4 groups                         
-#  mw       29/07/17   Replace NA in count of var.get.nc and var.put.nc so that
-#                      corresponding dimensions are read/written to end
-#  mw       03/10/17   Use registered entry points for .Call functions
-#										
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
 #===============================================================================
 
 
@@ -937,9 +907,5 @@ utinvcal.nc <- function(unitstring, value) {
 }
 
 
-# ===============================================================================
-
-# ===============================================================================
-# SCRATCH
 # ===============================================================================
 
