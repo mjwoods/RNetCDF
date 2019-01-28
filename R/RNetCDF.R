@@ -306,7 +306,7 @@ print_grp <- function(x, level = 0) {
     cat(indent, "variables:\n", sep = "")
     for (id in grpinfo$varids) {
       varinfo <- var.inq.nc(x, id)
-      vartype <- substring(tolower(varinfo$type), 4)
+      vartype <- varinfo$type
       cat(indent, "        ", vartype, " ", varinfo$name, sep = "")
       if (varinfo$ndims > 0) {
         cat("(")
