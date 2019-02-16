@@ -5,7 +5,7 @@
 AC_INIT([RNetCDF], [2.0-1])
 
 #-------------------------------------------------------------------------------#
-#  Find the compiler and compiler options to use   	                 	#
+#  Find the compiler and compiler options to use for tests                   	#
 #-------------------------------------------------------------------------------#
 
 : ${R_HOME=`R RHOME`}
@@ -15,8 +15,6 @@ if test -z "${R_HOME}"; then
 fi
 CC=`"${R_HOME}/bin/R" CMD config CC`
 CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
-R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
-CPPFLAGS="$CPPFLAGS $R_CPPFLAGS"
 
 # Define a suitable value for the "restrict" keyword:
 AC_C_RESTRICT()
