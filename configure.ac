@@ -16,6 +16,10 @@ fi
 CC=`"${R_HOME}/bin/R" CMD config CC`
 CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 
+# Prepend user-specified CPPFLAGS to those from R:
+R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
+CPPFLAGS="$CPPFLAGS $R_CPPFLAGS"
+
 #-------------------------------------------------------------------------------#
 #  Find NetCDF library and header files                                         #
 #-------------------------------------------------------------------------------#
