@@ -1,20 +1,16 @@
 Package: RNetCDF
 Version: 2.0-1
-Date: 2017-04-08
+Date: 2019-03-03
 Title: Interface to NetCDF Datasets
 Author: Pavel Michna, with contributions from Milton Woods
 Maintainer: Milton Woods <miltonjwoods@gmail.com>
 Depends: R (>= 3.0.0)
-SystemRequirements: netcdf udunits-2
-Suggests: bit64
+SystemRequirements: netcdf
+Suggests: bit64,units
 Description: An interface to the NetCDF file format designed by Unidata
   for efficient storage of array-oriented scientific data and descriptions.
-  This R interface is closely based on the C API of the NetCDF library,
-  and it includes calendar conversions from the Unidata UDUNITS library.
-  The current implementation supports operations on NetCDF datasets
-  in classic, 64-bit offset and netcdf4-classic file formats.
+  This R interface is based on the C API of the NetCDF library.
 License: GPL (>= 2) | file LICENSE
 URL: https://github.com/mjwoods/RNetCDF
      http://www.unidata.ucar.edu/software/netcdf/
-     http://www.unidata.ucar.edu/software/udunits/
 NeedsCompilation: yes
