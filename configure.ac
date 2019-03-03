@@ -62,59 +62,10 @@ AS_IF([test "x$have_nc_config" == xyes],
 AC_CHECK_DECLS([nc_rename_grp], [], [], [[#include <netcdf.h>]])
 
 #-------------------------------------------------------------------------------#
-#  Find UDUNITS library and header files                                        #
-#-------------------------------------------------------------------------------#
-
-# Identify available version of udunits library (1 or 2),
-# prepend the library to LIBS if it is not already being linked,
-# and define preprocessor macro HAVE_LIBUDUNITS or HAVE_LIBUDUNITS2.
-# Also check for udunits.h in places that depend on the udunits version,
-# and define macro HAVE_UDUNITS_H or HAVE_UDUNITS2_UDUNITS_H accordingly.
-# Finally, check for optional function utIsInit,
-# defining macro HAVE_UTISINIT if available.
-udunits=0
-AC_SEARCH_LIBS(utFree, udunits2,
-  [
-    AC_CHECK_HEADERS(udunits2/udunits.h udunits.h, [udunits=2; break])
-    AC_DEFINE(HAVE_LIBUDUNITS2)
-    AC_SEARCH_LIBS(utIsInit, udunits2, [AC_DEFINE(HAVE_UTISINIT)])
-  ], [
-    AC_SEARCH_LIBS(utScan, udunits,
-      [
-        AC_CHECK_HEADERS(udunits.h, [udunits=1; break])
-        AC_DEFINE(HAVE_LIBUDUNITS)
-        AC_SEARCH_LIBS(utIsInit, udunits, [AC_DEFINE(HAVE_UTISINIT)])
-      ]
-    )
-  ]
-)
-
-# Define variables UDUNITS_LIB, UDUNITS_DBFILE and UDUNITS_DBVAR,
-# based on the version of udunits detected above:
-AS_IF([test $udunits == 2],
-  [
-    UDUNITS_LIB=udunits2
-    UDUNITS_DBFILE=udunits2.xml
-    UDUNITS_DBVAR="UDUNITS2_XML_PATH"
-  ],
-  [test $udunits == 1],
-  [
-    UDUNITS_LIB=udunits
-    UDUNITS_DBFILE=udunits.dat
-    UDUNITS_DBVAR="UDUNITS_PATH"
-  ],
-  [AC_MSG_ERROR("unable to use udunits2 or udunits")]
-)
-
-#-------------------------------------------------------------------------------#
 #  Do substitution                               	                 	#
 #-------------------------------------------------------------------------------#
 
-AC_SUBST(UDUNITS_LIB)
-AC_SUBST(UDUNITS_DBFILE)
-AC_SUBST(UDUNITS_DBVAR)
-AC_OUTPUT(R/load.R
-          src/Makevars)
+AC_OUTPUT(src/Makevars)
 
 #-------------------------------------------------------------------------------#
 #  Done                                                                         #
