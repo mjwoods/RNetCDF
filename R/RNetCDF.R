@@ -847,25 +847,29 @@ utcal.nc <- function(unitstring, value, type = "n") {
   stopifnot(is.numeric(value))
   stopifnot(type == "n" || type == "s" || type == "c")
   
-  #-- C function call to udunits calendar function -----------------------
-  ut <- .Call(R_nc_calendar, unitstring, value)
+  # Convert value to POSIXct with units package
+  loadNamespace("units")
+  ct <- as.POSIXct(units::as_units(value, unitstring))
   
-  #-- Return object if no error ------------------------------------------
+  # Prepare output of specified type
   if (isTRUE(type == "n")) {
-    colnames(ut) <- c("year", "month", "day", "hour", "minute", "second")
-    return(ut)
+    lt <- as.POSIXlt(ct)
+    out <- matrix(nrow=length(ct), ncol=6)
+    colnames(out) <- c("year", "month", "day", "hour", "minute", "second")
+    out[,1] <- lt$year + 1900
+    out[,2] <- lt$mon+1
+    out[,3] <- lt$mday
+    out[,4] <- lt$hour
+    out[,5] <- lt$min
+    out[,6] <- lt$sec
   } else if (isTRUE(type == "s")) {
-    x <- apply(ut, 1, function(x) {
-      paste(x[1], "-", sprintf("%02g", x[2]), "-", sprintf("%02g", 
-        x[3]), " ", sprintf("%02g", x[4]), ":", sprintf("%02g", x[5]), 
-        ":", sprintf("%02g", x[6]), sep = "")
-    })
-    return(x)
+    out <- format(ct, format="%Y-%m-%d %H:%M:%S")
   } else if (isTRUE(type == "c")) {
-    ct <- as.POSIXct(utinvcal.nc("seconds since 1970-01-01 00:00:00 +00:00", 
-      ut), tz = "UTC", origin = ISOdatetime(1970, 1, 1, 0, 0, 0, tz = "UTC"))
-    return(ct)
+    out <- ct
+  } else {
+    stop("Unknown type argument", call.=FALSE)
   }
+  return(out)
 }
 
 
@@ -874,8 +878,7 @@ utcal.nc <- function(unitstring, value, type = "n") {
 #-------------------------------------------------------------------------------
 
 utinit.nc <- function(path = "") {
-  ut <- .Call(R_nc_utinit, as.character(path))
-  
+  loadNamespace("units")
   return(invisible(NULL))
 }
 
@@ -889,20 +892,21 @@ utinvcal.nc <- function(unitstring, value) {
   stopifnot(is.character(unitstring))
   
   if (is.character(value)) {
-    stopifnot(isTRUE(all(nchar(value) == 19)))
-    value <- cbind(substr(value, 1, 4), substr(value, 6, 7), substr(value, 
-      9, 10), substr(value, 12, 13), substr(value, 15, 16), substr(value, 
-      18, 19))
-    
-    value <- matrix(as.numeric(value), ncol = 6)
+    ct <- as.POSIXct(value, tz="UTC")
   } else if (inherits(value, "POSIXct")) {
-    value <- utcal.nc("seconds since 1970-01-01 00:00:00 +00:00", as.vector(value), "n") 
+    ct <- value
+  } else if (is.numeric(value)) {
+    dim(value) <- c(length(value)/6, 6)
+    ct <- ISOdatetime(value[,1], value[,2], value[,3],
+                      value[,4], value[,5], value[,6], tz="UTC")
+  } else {
+    stop("Unhandled type of value", call.=FALSE)
   }
-  
-  stopifnot(is.numeric(value))
-  
-  #-- C function call --------------------------------------------------------
-  ut <- .Call(R_nc_inv_calendar, unitstring, value)
+
+  # Convert to time offset from unitstring with units package
+  loadNamespace("units")
+  ut <- as.numeric(units::as_units(ct, unitstring))
+
   return(ut)
 }
 
