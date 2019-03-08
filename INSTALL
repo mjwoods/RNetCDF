@@ -7,8 +7,6 @@ Software Requirements
 
 NetCDF library version 4.0.1 or greater.
 
-UDUNITS library either version 1 or 2.1 or greater.
-
 If using Fink on Mac OS X, be sure that the corresponding R version (either
 i386 or x86_64) is used (R32 or R64). Compiling with R64 against i386 will
 most likely lead to runtime errors.
@@ -33,8 +31,8 @@ Note that libraries may be specified in LIBS in a few different ways.
 The most common way is '-l<libname>' as shown above, and the compiler will
 typically search for a library called lib<libname>.so and then lib<libname>.a.
 But you can also specify the full pathname of a library if necessary,
-perhaps to force the use of a particular netcdf or udunits library
-on systems with multiple versions available.
+perhaps to force the use of a particular netcdf library on systems with
+multiple versions available.
 
 
 R CMD INSTALL Example
@@ -49,7 +47,7 @@ LD_LIBRARY_PATH
 
 If a runtime error occurs indicating that shared libraries cannot be found,
 you may need to set or modify the library search path to include directories
-where NetCDF, HDF5 and/or UDUNITS libraries are stored.
+where NetCDF and/or HDF5 libraries are stored.
 This is sometimes necessary for custom installations of the libraries.
 
 The library search path is typically influenced by the environment variable
@@ -71,13 +69,4 @@ R CMD check Example
 
 R CMD check --install-args="--configure-args='CPPFLAGS=-I/sw/include \
     LDFLAGS=-L/sw/lib'" RNetCDF_2.0-1.tar.gz
-
-
-Time units
-==========
-
-Common udunits databases are distributed with RNetCDF, and these are used
-by default when RNetCDF is loaded by R. However, a different units database
-may be used by specifying the appropriate file in environment variables
-UDUNITS2_XML_PATH (udunits2) or UDUNITS_PATH (udunits1).
 
