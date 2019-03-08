@@ -15,11 +15,9 @@
 
 \value{A vector containing the amount(s) of the temporal unit(s) corresponding to the given date(s).}
 
-\details{Uses the UDUNITS library to convert a UTC-referenced date and time into the amount, \code{value}, of the temporal unit, \code{unitstring}.
-       
-If the dates are given in string form, the structure must be exactly \code{"YYYY-MM-DD hh:mm:ss"}.
+\details{Uses the UDUNITS library via \code{\link[units]{as_units}} to convert a UTC-referenced date and time into the amount, \code{value}, of the temporal unit, \code{unitstring}.
 
-A vector of POSIXct values is also accepted as input. These are converted to the specified units by a linear transformation, without an intermediate separation into date components.
+Date-time values may be passed as a vector of \code{\link{POSIXct}}. Other supported formats are character vectors, with elements of the form \code{"YYYY-MM-DD hh:mm:ss"}, and numeric arrays, with rows of the form \code{c(year,month,day,hour,minute,second)}. All date-times are converted by R to \code{\link{POSIXct}} before converting to other time units with \code{\link[units]{as_units}}.
 }
 
 \seealso{\code{\link{utcal.nc}}}

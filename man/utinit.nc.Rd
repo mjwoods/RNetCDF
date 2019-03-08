@@ -12,9 +12,7 @@
   \item{path}{Path to a units file containing initializing unit definitions.}
 }
 
-\details{This function initializes the UDUNITS library. It is called by \code{.onLoad} when the package is loaded. Normally, the user does not need to call this function.
-
-If path is non-NULL and not empty, then it specifies a units file containing initializing unit definitions; otherwise, the environment variable \code{UDUNITS_PATH} (udunits1) or \code{UDUNITS2_XML_PATH} (udunits2) is checked and, if it exists and is not empty, then it is assumed to contain the pathname of the units file; otherwise, a compile-time default pathname is used.      
+\details{In previous versions of RNetCDF, this function initialized the UDUNITS library. It is longer used, and is provided purely for backward compatibility.
 }
 
 \references{\url{http://www.unidata.ucar.edu/software/udunits/}}
