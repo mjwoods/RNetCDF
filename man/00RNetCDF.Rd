@@ -33,6 +33,15 @@ The NetCDF4 interface supports additional external types, including:
 
 These types are called ``external'', because they correspond to the portable external representation for NetCDF data. When a program reads external NetCDF data into an internal variable, the data is converted, if necessary, into the specified internal type. Similarly, if you write internal data into a NetCDF variable, this may cause it to be converted to a different external type, if the external type for the NetCDF variable differs from the internal type. 
 
+NetCDF4 also supports user-defined types of the following classes:
+
+  \tabular{ll}{
+    compound \tab Combines atomic and user-defined types into C-like structs. \cr
+    enum     \tab Set of named integer values, similar to an R \code{factor}. \cr
+    opaque   \tab Blobs of arbitrary data with a given size. \cr
+    vlen     \tab Variable length vectors of a given base type. \cr
+  }
+
 First versions of the R and C code of this package were based on the \code{netCDF} package by Thomas Lumley and the \code{ncdf} package by David Pierce. Milton Woods added some enhancements of the NetCDF library versions 3.6 and 4.x.
 }
 
