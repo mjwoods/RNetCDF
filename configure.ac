@@ -5,7 +5,7 @@
 AC_INIT([RNetCDF], [2.0-1])
 
 #-------------------------------------------------------------------------------#
-#  Find the compiler and compiler options to use   	                 	#
+#  Find the compiler and compiler options to use for tests                   	#
 #-------------------------------------------------------------------------------#
 
 : ${R_HOME=`R RHOME`}
@@ -15,11 +15,10 @@ if test -z "${R_HOME}"; then
 fi
 CC=`"${R_HOME}/bin/R" CMD config CC`
 CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
+
+# Prepend user-specified CPPFLAGS to those from R:
 R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 CPPFLAGS="$CPPFLAGS $R_CPPFLAGS"
-
-# Define a suitable value for the "restrict" keyword:
-AC_C_RESTRICT()
 
 #-------------------------------------------------------------------------------#
 #  Find NetCDF library and header files                                         #
@@ -37,24 +36,27 @@ AS_IF([test "x$with_nc_config" != xno],
 
 AS_IF([test "x$have_nc_config" == xyes],
   [
-    # Find libraries and cflags used to build netcdf:
+    # Prepend linker flags to LDFLAGS:
     AC_MSG_CHECKING(netcdf linker flags)
     NETCDF_LIBS=`nc-config --libs`
     AC_MSG_RESULT($NETCDF_LIBS)
     LDFLAGS="$NETCDF_LIBS $LDFLAGS"
-    AC_MSG_CHECKING(netcdf compiler flags)
+    # Prepend preprocessor and compiler flags to CPPFLAGS:
+    AC_MSG_CHECKING(netcdf preprocessor and compiler flags)
     NETCDF_CFLAGS=`nc-config --cflags`
     AC_MSG_RESULT($NETCDF_CFLAGS)
-    CFLAGS="$NETCDF_CFLAGS $CFLAGS"
-  ], [
-    # Check that netcdf header files can be compiled:
-    AC_CHECK_HEADERS(netcdf.h, [],
-       AC_MSG_ERROR("netcdf.h was not compiled - defining CPPFLAGS may help"))
-    # Add netcdf library to LIBS if it can be linked (and is not already being linked):
-    AC_SEARCH_LIBS(nc_open, netcdf, [],
-        AC_MSG_ERROR("netcdf library was not linked - defining LDFLAGS may help"))
+    CPPFLAGS="$NETCDF_CFLAGS $CPPFLAGS"
   ]
 )
+
+# Check that netcdf header files can be compiled:
+AC_CHECK_HEADERS(netcdf.h, [],
+    AC_MSG_ERROR("netcdf.h was not compiled - defining CPPFLAGS may help"))
+
+# Check that netcdf library can be found.
+# Linker flags are prepended to LIBS if needed.
+AC_SEARCH_LIBS(nc_open, netcdf, [],
+    AC_MSG_ERROR("netcdf library was not linked - defining LDFLAGS may help"))
 
 # Check for the existence of optional netcdf routines.
 # Afterwards, C preprocessor macros HAVE_DECL_symbols are defined,
