@@ -44,10 +44,10 @@
 
 #include <netcdf.h>
 
-#ifdef HAVE_UDUNITS2_UDUNITS_H
-# include <udunits2/udunits.h>
+#ifdef HAVE_UDUNITS2_UDUNITS2_H
+# include <udunits2/udunits2.h>
 #else
-# include <udunits.h>
+# include <udunits2.h>
 #endif
 
 #include <R.h>
@@ -57,35 +57,50 @@
 #include "RNetCDF.h"
 
 
-/* Convert udunits error code to a string */
+/* Static variables */
+static ut_system *R_nc_units=NULL;
+
+
+/* Convert udunits2 error code to a string.
+   The udunits2 library allows us to define a global error handler,
+   but that could conflict with other R packages (e.g. units, udunits2).
+ */
 static const char *
-R_nc_uterror (int errcode)
+R_nc_uterror (ut_status errcode)
 {
   switch (errcode) {
-  case UT_EOF:
-    return "end-of-file encountered (udunits)";
-  case UT_ENOFILE:
-    return "no units-file (udunits)";
-  case UT_ESYNTAX:
-    return "syntax error (udunits)";
-  case UT_EUNKNOWN:
-    return "unknown specification (udunits)";
-  case UT_EIO:
-    return "I/O error (udunits)";
-  case UT_EINVALID:
-    return "invalid unit-structure (udunits)";
-  case UT_ENOINIT:
-    return "package not initialized (udunits)";
-  case UT_ECONVERT:
-    return "two units are not convertable (udunits)";
-  case UT_EALLOC:
-    return "memory allocation failure (udunits)";
-  case UT_ENOROOM:
-    return "insufficient room supplied (udunits)";
-  case UT_ENOTTIME:
-    return "not a unit of time (udunits)";
+  case UT_BAD_ARG:
+    return "Bad argument (udunits)";
+  case UT_EXISTS:
+    return "Unit, prefix, or identifier already exists (udunits)";
+  case UT_NO_UNIT:
+    return "No such unit exists (udunits)";
+  case UT_OS:
+    return "Operating-system error (udunits)";
+  case UT_NOT_SAME_SYSTEM:
+    return "Units belong to different unit-systems (udunits)";
+  case UT_MEANINGLESS:
+    return "Operation on the unit or units is meaningless (udunits)";
+  case UT_NO_SECOND:
+    return "Unit-system doesn't have a unit named 'second' (udunits)";
+  case UT_VISIT_ERROR:
+    return "Error occurred while visiting a unit (udunits)";
+  case UT_CANT_FORMAT:
+    return "Unit can't be formatted in the desired manner (udunits)";
+  case UT_SYNTAX:
+    return "String unit representation contains syntax error (udunits)";
+  case UT_UNKNOWN:
+    return "String unit representation contains unknown word (udunits)";
+  case UT_OPEN_ARG:
+    return "Can't open argument-specified unit database (udunits)";
+  case UT_OPEN_ENV:
+    return "Can't open environment-specified unit database (udunits)";
+  case UT_OPEN_DEFAULT:
+    return "Can't open installed, default, unit database (udunits)";
+  case UT_PARSE:
+    return "Error parsing unit database (udunits)";
   default:
-    return "unknown error (udunits)";
+    return "Unknown error (udunits)";
   }
 }
 
@@ -97,14 +112,15 @@ R_nc_uterror (int errcode)
 SEXP
 R_nc_calendar (SEXP unitstring, SEXP values)
 {
-  int year, month, day, hour, minute, status, isreal;
-  float second;
+  int year, month, day, hour, minute, isreal;
+  double second, res, din, dencode, *dout;
   const int *ivals=NULL;
   const double *dvals=NULL;
   const char *cstring;
-  double dtmp, *dout;
   size_t ii, count;
-  utUnit utunit;
+  ut_unit *inunit=NULL, *refunit=NULL, *secunit=NULL;
+  cv_converter *converter=NULL;
+  ut_status status;
   SEXP result;
 
   /* Handle arguments and initialise outputs */
@@ -120,40 +136,47 @@ R_nc_calendar (SEXP unitstring, SEXP values)
   result = R_nc_protect (allocMatrix (REALSXP, count, 6));
   dout = REAL (result);
 
-  /*-- Scan unitstring --------------------------------------------------------*/
-#ifdef HAVE_LIBUDUNITS2
-  utIni (&utunit);
-#endif
-
-  status = utScan (cstring, &utunit);
-  if (status != 0) {
+  /* Parse unitstring */
+if (!R_nc_units) {
+RERROR("R_nc_units is NULL");
+}
+if (ut_get_status () != UT_SUCCESS) {
+RERROR("ut_get_status is not UT_SUCCESS");
+}
+Rprintf("ut_parse %p %s %d\n", R_nc_units, cstring, UT_ASCII);
+  inunit = ut_parse (R_nc_units, cstring, UT_ASCII);
+  if (!inunit) {
+RERROR("Error in ut_parse");
     goto cleanup;
   }
 
-  /*-- Check if unit is time and has origin -----------------------------------*/
-  if (!utIsTime (&utunit)) {
-    status = UT_ENOTTIME;
+  /* Prepare for conversion to encoded time values used internally by udunits2 */
+  secunit = ut_get_unit_by_name (R_nc_units, "second");
+  if (!secunit) {
+RERROR("Error in ut_get_unit_by_name");
     goto cleanup;
   }
-
-  if (!utHasOrigin (&utunit)) {
-    status = UT_EINVALID;
+  refunit = ut_offset_by_time (secunit, 0.0);
+  if (!refunit) {
+RERROR("Error in ut_offset_by_time");
+    goto cleanup;
+  }
+  converter = ut_get_converter (inunit, refunit);
+  if (!converter) {
+RERROR("Error in ut_get_converter");
     goto cleanup;
   }
 
   /*-- Convert values ---------------------------------------------------------*/
   for (ii = 0; ii < count; ii++) {
     if (isreal) {
-      dtmp = dvals[ii];
+      din = dvals[ii];
     } else {
-      dtmp = (ivals[ii] == NA_INTEGER) ? NA_REAL : ((double) ivals[ii]);
+      din = (ivals[ii] == NA_INTEGER) ? NA_REAL : ((double) ivals[ii]);
     } 
-    if (R_FINITE (dtmp)) {
-      status = utCalendar (dtmp, &utunit, &year, &month, &day,
-                           &hour, &minute, &second);
-      if (status != 0) {
-	goto cleanup;
-      }
+    if (R_FINITE (din)) {
+      dencode = cv_convert_double (converter, din);
+      ut_decode_time (dencode, &year, &month, &day, &hour, &minute, &second, &res);
       dout[ii] = year;
       dout[ii + count] = month;
       dout[ii + 2 * count] = day;
@@ -172,12 +195,24 @@ R_nc_calendar (SEXP unitstring, SEXP values)
 
   /*-- Returning the array ----------------------------------------------------*/
 cleanup:
-#ifdef HAVE_LIBUDUNITS2
-  utFree (&utunit);
-#endif
-  if (status != 0) {
+  status = ut_get_status ();
+  if (inunit) {
+    ut_free (inunit);
+  }
+  if (refunit) {
+    ut_free (refunit);
+  }
+  if (secunit) {
+    ut_free (secunit);
+  }
+  if (converter) {
+    cv_free (converter); 
+  }
+
+  if (status != UT_SUCCESS) {
     RERROR (R_nc_uterror (status));
   }
+
   RRETURN(result);
 }
 
@@ -189,33 +224,19 @@ cleanup:
 SEXP
 R_nc_utinit (SEXP path)
 {
-  int status;
+  ut_status status;
   const char *pathp;
 
-  /*-- Terminate library if loaded previously ---------------------------------*/
-#ifdef HAVE_UTISINIT
-  if (utIsInit()) {
-    utTerm();
-  }
-#endif
+  /* Free units if initialised previously */
+  R_nc_utterm();
 
-  /*-- Avoid "overriding default" messages from UDUNITS-2 (1/2) ---------------*/
-#ifdef HAVE_LIBUDUNITS2
-  ut_set_error_message_handler (ut_ignore);
-#endif
-
-  /*-- Initialize udunits library ---------------------------------------------*/
+  /* Initialise a units system */
   pathp = R_nc_strarg (path);
-  status = utInit (R_ExpandFileName (pathp));
+Rprintf("ut_read_xml(%s)\n", pathp);
+  R_nc_units = ut_read_xml (pathp);
 
-  /*-- Avoid "overriding default" messages from UDUNITS-2 (2/2) ---------------*/
-#ifdef HAVE_LIBUDUNITS2
-  ut_set_error_message_handler (ut_write_to_stderr);
-#endif
-
-  /*-- Returning the list -----------------------------------------------------*/
-  if (status != 0) {
-    RERROR (R_nc_uterror (status));
+  if (!R_nc_units) {
+    RERROR (R_nc_uterror (ut_get_status ()));
   }
   RRETURN(R_NilValue);
 }
@@ -228,13 +249,16 @@ R_nc_utinit (SEXP path)
 SEXP
 R_nc_inv_calendar (SEXP unitstring, SEXP values)
 {
-  int status, itmp, isreal, isfinite;
+  int itmp, isreal, isfinite;
   const int *ivals=NULL;
   const double *dvals=NULL;
   const char *cstring;
-  double datetime[6], *dout, dtmp;
+  double datetime[6], dtmp, dencode, *dout;
   size_t ii, jj, count;
-  utUnit utunit;
+  ut_unit *outunit=NULL, *refunit=NULL, *secunit=NULL;
+  cv_converter *converter=NULL;
+  ut_status status;
+
   SEXP result;
 
   /* Handle arguments and initialise outputs */
@@ -250,24 +274,34 @@ R_nc_inv_calendar (SEXP unitstring, SEXP values)
   result = R_nc_protect (allocVector (REALSXP, count));
   dout = REAL (result);
 
-  /*-- Scan unitstring --------------------------------------------------------*/
-#ifdef HAVE_LIBUDUNITS2
-  utIni (&utunit);
-#endif
-
-  status = utScan (cstring, &utunit);
-  if (status != 0) {
+  /* Parse unitstring */
+if (!R_nc_units) {
+RERROR("R_nc_units is NULL");
+}
+if (ut_get_status () != UT_SUCCESS) {
+RERROR("ut_get_status is not UT_SUCCESS");
+}
+Rprintf("ut_parse %p %s %d\n", R_nc_units, cstring, UT_ASCII);
+  outunit = ut_parse (R_nc_units, cstring, UT_ASCII);
+  if (!outunit) {
+RERROR("Error in ut_parse");
     goto cleanup;
   }
 
-  /*-- Check if unit is time and has origin -----------------------------------*/
-  if (!utIsTime (&utunit)) {
-    status = UT_ENOTTIME;
+  /* Prepare for conversion to encoded time values used internally by udunits2 */
+  secunit = ut_get_unit_by_name (R_nc_units, "second");
+  if (!secunit) {
+RERROR("Error in ut_get_unit_by_name");
     goto cleanup;
   }
-
-  if (!utHasOrigin (&utunit)) {
-    status = UT_EINVALID;
+  refunit = ut_offset_by_time (secunit, 0.0);
+  if (!refunit) {
+RERROR("Error in ut_offset_by_time");
+    goto cleanup;
+  }
+  converter = ut_get_converter (refunit, outunit);
+  if (!converter) {
+RERROR("Error in ut_get_converter");
     goto cleanup;
   }
 
@@ -296,25 +330,34 @@ R_nc_inv_calendar (SEXP unitstring, SEXP values)
       }
     }
     if (isfinite) {
-      status = utInvCalendar (datetime[0], datetime[1], datetime[2],
-                              datetime[3], datetime[4], datetime[5],
-                              &utunit, &dout[ii]);
-      if (status != 0) {
-        goto cleanup;
-      }
+      dencode = ut_encode_time (datetime[0], datetime[1], datetime[2],
+                                datetime[3], datetime[4], datetime[5]);
+      dout[ii] = cv_convert_double (converter, dencode);
     } else {
       dout[ii] = NA_REAL;
     }
   }
 
-  /*-- Returning the list -----------------------------------------------------*/
+  /* Returning the array */
 cleanup:
-#ifdef HAVE_LIBUDUNITS2
-  utFree (&utunit);
-#endif
-  if (status != 0) {
+  status = ut_get_status ();
+  if (outunit) {
+    ut_free (outunit);
+  }
+  if (refunit) {
+    ut_free (refunit);
+  }
+  if (secunit) {
+    ut_free (secunit);
+  }
+  if (converter) {
+    cv_free (converter); 
+  }
+
+  if (status != UT_SUCCESS) {
     RERROR (R_nc_uterror (status));
   }
+
   RRETURN(result);
 }
 
@@ -326,8 +369,10 @@ cleanup:
 SEXP
 R_nc_utterm ()
 {
-  /*-- Terminate udunits library ----------------------------------------------*/
-  utTerm ();
-
+  if (R_nc_units) {
+    ut_free_system (R_nc_units);
+    R_nc_units = NULL;
+  }
   RRETURN(R_NilValue);
 }
+
