@@ -78,8 +78,7 @@ AC_CHECK_HEADERS(udunits2.h udunits2/udunits2.h, [break])
 #  Do substitution                               	                 	#
 #-------------------------------------------------------------------------------#
 
-AC_OUTPUT(R/load.R
-          src/Makevars)
+AC_OUTPUT(src/Makevars)
 
 #-------------------------------------------------------------------------------#
 #  Done                                                                         #
