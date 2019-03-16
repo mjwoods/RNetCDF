@@ -1,6 +1,6 @@
 VERSION=4.4.1.1-dap
 PKG_CPPFLAGS = -I../windows/netcdf-${VERSION}/include \
-	-DHAVE_LIBUDUNITS2 -DHAVE_DECL_NC_RENAME_GRP=1
+	-DHAVE_LIBUDUNITS2 -DHAVE_UDUNITS2_H -DHAVE_DECL_NC_RENAME_GRP=1
 
 PKG_LIBS = -L../windows/netcdf-${VERSION}/lib${R_ARCH} \
 	-lnetcdf -lcurl -lhdf5_hl -lhdf5 -ludunits2 -lexpat -lszip -lz \

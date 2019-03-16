@@ -4,7 +4,7 @@
  *
  *  Version:    2.0-1
  *
- *  Purpose:    udunits functions for RNetCDF.
+ *  Purpose:    udunits2 functions for RNetCDF.
  *
  *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
  *              Milton Woods (miltonjwoods@gmail.com)
@@ -44,18 +44,55 @@
 
 #include <netcdf.h>
 
-#ifdef HAVE_UDUNITS2_UDUNITS2_H
-# include <udunits2/udunits2.h>
-#else
-# include <udunits2.h>
-#endif
-
 #include <R.h>
 #include <Rinternals.h>
 
 #include "common.h"
 #include "RNetCDF.h"
 
+
+#if !(defined HAVE_LIBUDUNITS2 && \
+      (defined HAVE_UDUNITS2_H || defined HAVE_UDUNITS2_UDUNITS2_H))
+
+/*=============================================================================*\
+ *  UDUNITS2 is NOT installed
+\*=============================================================================*/
+
+SEXP
+R_nc_calendar (SEXP unitstring, SEXP values)
+{
+  RERROR ("RNetCDF was built without UDUNITS-2");
+}
+
+SEXP
+R_nc_utinit (SEXP path)
+{
+  RRETURN(R_NilValue);
+}
+
+SEXP
+R_nc_inv_calendar (SEXP unitstring, SEXP values)
+{
+  RERROR ("RNetCDF was built without UDUNITS-2");
+}
+
+SEXP
+R_nc_utterm ()
+{
+  RRETURN(R_NilValue);
+}
+
+#else
+
+/*=============================================================================*\
+ *  UDUNITS2 is installed
+\*=============================================================================*/
+
+#ifdef HAVE_UDUNITS2_UDUNITS2_H
+# include <udunits2/udunits2.h>
+#else
+# include <udunits2.h>
+#endif
 
 /* Static variables */
 static ut_system *R_nc_units=NULL;
@@ -353,3 +390,4 @@ R_nc_utterm ()
   RRETURN(R_NilValue);
 }
 
+#endif /* Conditional compilation with UDUNITS2 */
