@@ -137,33 +137,22 @@ R_nc_calendar (SEXP unitstring, SEXP values)
   dout = REAL (result);
 
   /* Parse unitstring */
-if (!R_nc_units) {
-RERROR("R_nc_units is NULL");
-}
-if (ut_get_status () != UT_SUCCESS) {
-RERROR("ut_get_status is not UT_SUCCESS");
-}
-Rprintf("ut_parse %p %s %d\n", R_nc_units, cstring, UT_ASCII);
   inunit = ut_parse (R_nc_units, cstring, UT_ASCII);
   if (!inunit) {
-RERROR("Error in ut_parse");
     goto cleanup;
   }
 
   /* Prepare for conversion to encoded time values used internally by udunits2 */
   secunit = ut_get_unit_by_name (R_nc_units, "second");
   if (!secunit) {
-RERROR("Error in ut_get_unit_by_name");
     goto cleanup;
   }
   refunit = ut_offset_by_time (secunit, 0.0);
   if (!refunit) {
-RERROR("Error in ut_offset_by_time");
     goto cleanup;
   }
   converter = ut_get_converter (inunit, refunit);
   if (!converter) {
-RERROR("Error in ut_get_converter");
     goto cleanup;
   }
 
@@ -232,7 +221,6 @@ R_nc_utinit (SEXP path)
 
   /* Initialise a units system */
   pathp = R_nc_strarg (path);
-Rprintf("ut_read_xml(%s)\n", pathp);
   R_nc_units = ut_read_xml (pathp);
 
   if (!R_nc_units) {
@@ -275,33 +263,22 @@ R_nc_inv_calendar (SEXP unitstring, SEXP values)
   dout = REAL (result);
 
   /* Parse unitstring */
-if (!R_nc_units) {
-RERROR("R_nc_units is NULL");
-}
-if (ut_get_status () != UT_SUCCESS) {
-RERROR("ut_get_status is not UT_SUCCESS");
-}
-Rprintf("ut_parse %p %s %d\n", R_nc_units, cstring, UT_ASCII);
   outunit = ut_parse (R_nc_units, cstring, UT_ASCII);
   if (!outunit) {
-RERROR("Error in ut_parse");
     goto cleanup;
   }
 
   /* Prepare for conversion to encoded time values used internally by udunits2 */
   secunit = ut_get_unit_by_name (R_nc_units, "second");
   if (!secunit) {
-RERROR("Error in ut_get_unit_by_name");
     goto cleanup;
   }
   refunit = ut_offset_by_time (secunit, 0.0);
   if (!refunit) {
-RERROR("Error in ut_offset_by_time");
     goto cleanup;
   }
   converter = ut_get_converter (refunit, outunit);
   if (!converter) {
-RERROR("Error in ut_get_converter");
     goto cleanup;
   }
 
