@@ -7,7 +7,7 @@ Software Requirements
 
 NetCDF library version 4.0.1 or greater.
 
-UDUNITS library either version 1 or 2.1 or greater.
+UDUNITS library version 2.1 or greater.
 
 If using Fink on Mac OS X, be sure that the corresponding R version (either
 i386 or x86_64) is used (R32 or R64). Compiling with R64 against i386 will
@@ -78,6 +78,6 @@ Time units
 
 Common udunits databases are distributed with RNetCDF, and these are used
 by default when RNetCDF is loaded by R. However, a different units database
-may be used by specifying the appropriate file in environment variables
-UDUNITS2_XML_PATH (udunits2) or UDUNITS_PATH (udunits1).
+may be used by specifying the appropriate file in environment variable
+UDUNITS2_XML_PATH.
 
