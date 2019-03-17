@@ -2,15 +2,258 @@
 <!--
 Copyright 2008, 2009 University Corporation for Atmospheric Research
 
-This file is part of the UDUNITS-2 package.  See the file COPYRIGHT
-in the top-level source-directory of the package for copying and
-redistribution conditions.
+This file is adapted from the UDUNITS-2 package.
+Unit definitions unrelated to calendar encoding have been removed.
+See the file LICENSE file in the top-level source-directory of RNetCDF
+for copying and redistribution conditions.
 -->
 
 <unit-system>
-    <import>udunits2-prefixes.xml</import>
-    <import>udunits2-base.xml</import>
-    <import>udunits2-derived.xml</import>
-    <import>udunits2-accepted.xml</import>
-    <import>udunits2-common.xml</import>
+
+<!--
+SI prefixes
+-->
+    <prefix>
+        <value>1e24</value> <name>yotta</name>	<symbol>Y</symbol>
+    </prefix>
+    <prefix>
+        <value>1e21</value> <name>zetta</name>	<symbol>Z</symbol>
+    </prefix>
+    <prefix>
+        <value>1e18</value> <name>exa</name>	<symbol>E</symbol>
+    </prefix>
+    <prefix>
+        <value>1e15</value> <name>peta</name>	<symbol>P</symbol>
+    </prefix>
+    <prefix>
+        <value>1e12</value> <name>tera</name>	<symbol>T</symbol>
+    </prefix>
+    <prefix>
+        <value>1e9</value> <name>giga</name>	<symbol>G</symbol>
+    </prefix>
+    <prefix>
+        <value>1e6</value> <name>mega</name>	<symbol>M</symbol>
+    </prefix>
+    <prefix>
+        <value>1e3</value> <name>kilo</name>	<symbol>k</symbol>
+    </prefix>
+    <prefix>
+        <value>100</value> <name>hecto</name>	<symbol>h</symbol>
+    </prefix>
+    <prefix>
+        <value>10</value> <name>deka</name>	<symbol>da</symbol>
+    </prefix>
+    <prefix>
+        <value>.1</value> <name>deci</name>	<symbol>d</symbol>
+    </prefix>
+    <prefix>
+        <value>.01</value> <name>centi</name>	<symbol>c</symbol>
+    </prefix>
+    <prefix>
+        <value>1e-3</value> <name>milli</name>	<symbol>m</symbol>
+    </prefix>
+    <prefix>
+        <value>1e-6</value>
+        <name>micro</name>
+        <symbol>&#xB5;</symbol>         <!-- MICRO SIGN -->
+        <symbol>&#x3BC;</symbol>	<!-- Greek small letter "mu" -->
+        <symbol>u</symbol>
+    </prefix>
+    <prefix>
+        <value>1e-9</value> <name>nano</name>	<symbol>n</symbol>
+    </prefix>
+    <prefix>
+        <value>1e-12</value> <name>pico</name>	<symbol>p</symbol>
+    </prefix>
+    <prefix>
+        <value>1e-15</value> <name>femto</name>	<symbol>f</symbol>
+    </prefix>
+    <prefix>
+        <value>1e-18</value> <name>atto</name>	<symbol>a</symbol>
+    </prefix>
+    <prefix>
+        <value>1e-21</value> <name>zepto</name>	<symbol>z</symbol>
+    </prefix>
+    <prefix>
+        <value>1e-24</value> <name>yocto</name>	<symbol>y</symbol>
+    </prefix>
+
+<!--
+SI base units.
+-->
+    <unit>
+        <!--
+            The second is the duration of 9 192 631 770 periods of the
+            radiation corresponding to the transition between the two hyperfine
+            levels of the ground state of the cesium 133 atom.
+        -->
+        <base/>
+        <name><singular>second</singular></name>
+        <symbol>s</symbol>
+    </unit>
+
+<!--
+Units accepted for use with the SI
+-->
+        <unit>
+            <def>60 s</def>
+            <name><singular>minute</singular></name>
+            <symbol>min</symbol>
+        </unit>
+        <unit>
+            <def>60 min</def>
+            <name><singular>hour</singular></name>
+            <symbol>h</symbol>
+            <aliases> <symbol>hr</symbol> </aliases>
+        </unit>
+        <unit>
+            <def>24 h</def>
+            <name><singular>day</singular></name>
+            <symbol>d</symbol>
+        </unit>
+
+<!--
+Units not accepted for use with the SI.  NB: <name> and <symbol>
+elements appear only within <aliases>.
+-->
+    <!-- Synonyms for SI Units -->
+        <unit>
+            <def>s</def>
+            <aliases> <name> <singular>sec</singular> </name> </aliases>
+        </unit>
+
+    <!-- Time -->
+        <unit>
+            <def>1e-8 s</def>
+            <aliases> <name> <singular>shake</singular> </name> </aliases>
+        </unit>
+        <unit>
+            <def>8.616409e4 s</def>
+            <aliases>
+                <name> <singular>sidereal_day</singular> </name>
+            </aliases>
+        </unit>
+        <unit>
+            <def>3.590170e3 s</def>
+            <aliases>
+                <name> <singular>sidereal_hour</singular> </name>
+            </aliases>
+        </unit>
+        <unit>
+            <def>5.983617e1 s</def>
+            <aliases>
+                <name> <singular>sidereal_minute</singular> </name>
+            </aliases>
+        </unit>
+        <unit>
+            <def>0.9972696 s</def>
+            <aliases>
+                <name> <singular>sidereal_second</singular> </name>
+            </aliases>
+        </unit>
+        <unit>
+            <def>3.155815e7 s</def>
+            <aliases>
+                <name> <singular>sidereal_year</singular> </name>
+            </aliases>
+        </unit>
+        <unit>
+            <!--
+                Interval between 2 successive passages of sun
+                through vernal equinox (365.242198781 days.  See
+                <http://www.ast.cam.ac.uk/pubinfo/leaflets/>,
+                <http://aa.usno.navy.mil/AA/>, and
+                <http://adswww.colorado.edu/adswww/astro_coord.html>):
+            -->
+            <def>3.15569259747e7 s</def>
+            <aliases>
+                <name> <singular>tropical_year</singular> </name>
+                <name> <singular>year</singular> </name>
+                <!-- The following is commented-out because "a" already
+                     maps to "are"
+                <symbol>a</symbol>
+                -->
+                <symbol>yr</symbol>
+            </aliases>
+        </unit>
+        <unit>
+            <def>29.530589 day</def>
+            <aliases>
+                <name> <singular>lunar_month</singular> </name>
+            </aliases>
+        </unit>
+        <unit>
+            <def>365 day</def>
+            <aliases>
+                <name> <singular>common_year</singular> </name>
+            </aliases>
+        </unit>
+        <unit>
+            <def>366 day</def>
+            <aliases>
+                <name> <singular>leap_year</singular> </name>
+            </aliases>
+        </unit>
+        <unit>
+            <def>365.25 day</def>
+            <aliases>
+                <name> <singular>Julian_year</singular> </name>
+            </aliases>
+        </unit>
+        <unit>
+            <def>365.2425 day</def>
+            <aliases>
+                <name> <singular>Gregorian_year</singular> </name>
+            </aliases>
+        </unit>
+        <unit>
+            <def>27.321661 day</def>
+            <aliases>
+                <name> <singular>sidereal_month</singular> </name>
+            </aliases>
+        </unit>
+        <unit>
+            <def>27.321582 day</def>
+            <aliases>
+                <name> <singular>tropical_month</singular> </name>
+            </aliases>
+        </unit>
+        <unit>
+            <def>14 day</def>
+            <aliases>
+                <name> <singular>fortnight</singular> </name>
+            </aliases>
+        </unit>
+        <unit>
+            <def>7 day</def>
+            <aliases> <name> <singular>week</singular> </name> </aliases>
+        </unit>
+        <unit>
+            <def>0.01 s</def>
+            <aliases> <name> <singular>jiffy</singular> </name> </aliases>
+        </unit>
+        <unit>
+            <def>1e9 year</def>
+            <aliases> <name> <singular>eon</singular> </name> </aliases>
+        </unit>
+        <unit>
+            <def>year/12</def>
+            <aliases> <name> <singular>month</singular> </name> </aliases>
+        </unit>
+
+    <!-- Miscellaneous -->
+        <unit>
+            <def>2056 hours</def>			<!-- exact -->
+            <aliases>
+                <name> <singular>work_year</singular> </name>
+            </aliases>
+        </unit>
+        <unit>
+            <def>work_year/12</def>			<!-- exact -->
+            <aliases>
+                <name> <singular>work_month</singular> </name>
+            </aliases>
+        </unit>
+
 </unit-system>
+
