@@ -250,7 +250,6 @@ cleanup:
 SEXP
 R_nc_utinit (SEXP path)
 {
-  ut_status status;
   const char *pathp;
 
   /* Free units if initialised previously */
