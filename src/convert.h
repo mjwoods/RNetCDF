@@ -113,8 +113,8 @@ R_nc_c2r (R_nc_buf *io);
 #define R_NC_REVERSE_H(FUN, TYPE) \
 void \
 FUN (TYPE *data, size_t cnt);
-R_NC_REVERSE_H(R_nc_rev_int, int);
-R_NC_REVERSE_H(R_nc_rev_size, size_t);
+R_NC_REVERSE_H(R_nc_rev_int, int)
+R_NC_REVERSE_H(R_nc_rev_size, size_t)
 /* Define R_nc_rev for other types as needed */
 
 
@@ -126,8 +126,8 @@ R_NC_REVERSE_H(R_nc_rev_size, size_t);
 TYPE * \
 FUN (SEXP rv, size_t nr, TYPE fillval);
 
-R_NC_DIM_R2C_H (R_nc_dim_r2c_int, int);
-R_NC_DIM_R2C_H (R_nc_dim_r2c_size, size_t);
+R_NC_DIM_R2C_H (R_nc_dim_r2c_int, int)
+R_NC_DIM_R2C_H (R_nc_dim_r2c_size, size_t)
 
 
 #endif /* RNC_CONVERT_H_INCLUDED */
