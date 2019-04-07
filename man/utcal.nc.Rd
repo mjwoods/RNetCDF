@@ -22,7 +22,7 @@ Functions \code{utcal.nc} and \code{utinvcal.nc} provide a convenient way to con
 
 The conversions of times between units are performed by the UDUNITS library using a mixed Gregorian/Julian calendar system. Dates prior to 1582-10-15 are assumed to use the Julian calendar, which was introduced by Julius Caesar in 46 BCE and is based on a year that is exactly 365.25 days long. Dates on and after 1582-10-15 are assumed to use the Gregorian calendar, which was introduced on that date and is based on a year that is exactly 365.2425 days long. (A year is actually approximately 365.242198781 days long.) Seemingly strange behavior of the UDUNITS package can result if a user-given time interval includes the changeover date.
 
-Conversions involving alternative calendars are not supported by UDUNITS, but they can be performed by several other R packages. 
+Conversions involving alternative calendars are not supported by UDUNITS, but they can be performed by other R packages. For example, \url{https://CRAN.R-project.org/package=PCICt} implements 360- and 365-day calendars.
 }
 
 \seealso{\code{\link{utinvcal.nc}}}
