@@ -874,7 +874,24 @@ utcal.nc <- function(unitstring, value, type = "n") {
 #-------------------------------------------------------------------------------
 
 utinit.nc <- function(path = "") {
-  ut <- .Call(R_nc_utinit, as.character(path))
+  stopifnot(is.character(path) && length(path) > 0)
+
+  if (nchar(path[1]) == 0) {
+
+    # Check environment for database requested by user:
+    envdb <- Sys.getenv("UDUNITS2_XML_PATH", unset=NA)
+
+    if (is.na(envdb)) {
+      # Initialise unit system with database packaged in RNetCDF:
+      path <- system.file("udunits", "udunits2.xml",
+                          package="RNetCDF", mustWork=TRUE)
+    } else {
+      # Initialise udunits2 library with user-specified database:
+      path <- envdb
+    }
+  }
+
+  ut <- .Call(R_nc_utinit, path)
   
   return(invisible(NULL))
 }

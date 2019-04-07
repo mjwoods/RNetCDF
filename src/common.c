@@ -37,12 +37,6 @@
 
 #include <netcdf.h>
 
-#ifdef HAVE_UDUNITS2_UDUNITS_H
-# include <udunits2/udunits.h>
-#else
-# include <udunits.h>
-#endif
-
 #include "common.h"
 
 static int R_nc_protect_count = 0;

@@ -649,49 +649,57 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 #  UDUNITS calendar functions
 #-------------------------------------------------------------------------------#
 
-cat("utcal.nc - numeric values ...")
-x <- matrix(data=c(1899, 1900, 1900, 1900, 1900, 1900,
-                     12,    1,    1,    1,    1,    1,
-		     31,    1,    1,    1,    1,    1,
-		     23,    0,    1,    2,    3,    4,
-		      0,    0,    0,    0,    0,    0,
-		      0,    0,    0,    0,    0,    0),
-	    ncol=6)
-colnames(x) <- c("year","month","day","hour","minute","second")
-y <- utcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(0:5))
-tally <- testfun(x,y,tally)
+# Test if udunits support is available:
+if (inherits(try(utcal.nc("seconds since 1970-01-01", 0)), "try-error")) {
+  warning("UDUNITS calendar conversions not supported by this build of RNetCDF")
 
-cat("utcal.nc - string values ...")
-x <- c("1899-12-31 23:00:00", "1900-01-01 00:00:00", "1900-01-01 01:00:00",
-       "1900-01-01 02:00:00", "1900-01-01 03:00:00", "1900-01-01 04:00:00")
-y <- utcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(0:5), type="s")
-tally <- testfun(x,y,tally)
+} else {
 
-cat("utcal.nc - POSIXct values ...")
-x <- ISOdatetime(c(1899,1900,1900,1900,1900,1900),
-                 c(  12,   1,   1,   1,   1,   1),
-                 c(  31,   1,   1,   1,   1,   1),
-                 c(  23,   0,   1,   2,   3,   4),
-                 c(   0,   0,   0,   0,   0,   0),
-                 c(   0,   0,   0,   0,   0,   0), tz="UTC")
-y <- utcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(0:5), type="c")
-tally <- testfun(x,y,tally)
+  cat("utcal.nc - numeric values ...")
+  x <- matrix(data=c(1899, 1900, 1900, 1900, 1900, 1900,
+		       12,    1,    1,    1,    1,    1,
+		       31,    1,    1,    1,    1,    1,
+		       23,    0,    1,    2,    3,    4,
+			0,    0,    0,    0,    0,    0,
+			0,    0,    0,    0,    0,    0),
+	      ncol=6)
+  colnames(x) <- c("year","month","day","hour","minute","second")
+  y <- utcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(0:5))
+  tally <- testfun(x,y,tally)
 
-cat("utinvcal.nc - numeric values ...")
-x <- 6.416667
-y <- utinvcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(1900,1,1,5,25,0))
-tally <- testfun(x,y,tally)
+  cat("utcal.nc - string values ...")
+  x <- c("1899-12-31 23:00:00", "1900-01-01 00:00:00", "1900-01-01 01:00:00",
+	 "1900-01-01 02:00:00", "1900-01-01 03:00:00", "1900-01-01 04:00:00")
+  y <- utcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(0:5), type="s")
+  tally <- testfun(x,y,tally)
 
-cat("utinvcal.nc - string values ...")
-x <- 6.416667
-y <- utinvcal.nc("hours since 1900-01-01 00:00:00 +01:00", "1900-01-01 05:25:00")
-tally <- testfun(x,y,tally)
+  cat("utcal.nc - POSIXct values ...")
+  x <- ISOdatetime(c(1899,1900,1900,1900,1900,1900),
+		   c(  12,   1,   1,   1,   1,   1),
+		   c(  31,   1,   1,   1,   1,   1),
+		   c(  23,   0,   1,   2,   3,   4),
+		   c(   0,   0,   0,   0,   0,   0),
+		   c(   0,   0,   0,   0,   0,   0), tz="UTC")
+  y <- utcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(0:5), type="c")
+  tally <- testfun(x,y,tally)
 
-cat("utinvcal.nc - POSIXct values ...")
-x <- 6.416667
-y <- utinvcal.nc("hours since 1900-01-01 00:00:00 +01:00",
-         ISOdatetime(1900,1,1,5,25,0,tz="UTC"))
-tally <- testfun(x,y,tally)
+  cat("utinvcal.nc - numeric values ...")
+  x <- 6.416667
+  y <- utinvcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(1900,1,1,5,25,0))
+  tally <- testfun(x,y,tally)
+
+  cat("utinvcal.nc - string values ...")
+  x <- 6.416667
+  y <- utinvcal.nc("hours since 1900-01-01 00:00:00 +01:00", "1900-01-01 05:25:00")
+  tally <- testfun(x,y,tally)
+
+  cat("utinvcal.nc - POSIXct values ...")
+  x <- 6.416667
+  y <- utinvcal.nc("hours since 1900-01-01 00:00:00 +01:00",
+	   ISOdatetime(1900,1,1,5,25,0,tz="UTC"))
+  tally <- testfun(x,y,tally)
+
+}
 
 # Check that package can be unloaded:
 cat("Unload RNetCDF ...")

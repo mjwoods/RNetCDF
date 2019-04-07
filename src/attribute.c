@@ -43,12 +43,6 @@
 
 #include <netcdf.h>
 
-#ifdef HAVE_UDUNITS2_UDUNITS_H
-# include <udunits2/udunits.h>
-#else
-# include <udunits.h>
-#endif
-
 #include "common.h"
 #include "convert.h"
 #include "RNetCDF.h"
