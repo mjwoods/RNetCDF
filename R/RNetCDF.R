@@ -301,6 +301,45 @@ print_grp <- function(x, level = 0) {
     }
   }
   
+  #-- Inquire about all types ------------------------------------------------
+  if (length(grpinfo$typeids) != 0) {
+    cat(indent, "types:\n", sep = "")
+    for (id in grpinfo$typeids) {
+      typeinfo <- type.inq.nc(x, id, fields=TRUE)
+      if (typeinfo$class == "compound") {
+        cat(indent, indent, "compound ", typeinfo$name, " {\n", sep="")
+        field_names = names(typeinfo$subtype)
+        field_types = unname(typeinfo$subtype)
+        field_sizes = unname(typeinfo$dimsizes)
+        for (item in seq_along(typeinfo$subtype)) {
+          cat(indent, indent, indent, field_types[item], " ",
+              field_names[item], sep="")
+          if (!is.null(field_sizes[[item]])) {
+            cat("(", paste(field_sizes[[item]], collapse=","), ")", sep="")
+          }
+          cat(" ;\n")
+        }
+        cat(indent, indent, "}; // ", typeinfo$name, "\n", sep="")
+      } else if (typeinfo$class == "enum") {
+        cat(indent, indent, typeinfo$basetype, " enum ", typeinfo$name,
+            " {\n", sep="")
+        member_names <- names(typeinfo$value)
+        member_values <- unname(typeinfo$value)
+        for (item in seq_along(typeinfo$value)) {
+          cat(indent, indent, indent, member_names[item],
+              " = ", member_values[item], ",\n", sep="")
+        }
+        cat(indent, indent, "} ; // ", typeinfo$name, "\n", sep="")
+      } else if (typeinfo$class == "opaque") {
+        cat(indent, indent, "opaque(", typeinfo$size, ") ", typeinfo$name,
+            " ;\n", sep="")
+      } else if (typeinfo$class == "vlen") {
+        cat(indent, indent, typeinfo$basetype, "(*) ", typeinfo$name,
+            " ;\n", sep="")
+      }
+    }
+  }
+
   #-- Inquire about all variables --------------------------------------------
   if (length(grpinfo$varids) != 0) {
     cat(indent, "variables:\n", sep = "")
