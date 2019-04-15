@@ -117,8 +117,9 @@ att.put.nc <- function(ncfile, variable, name, type, value) {
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.character(name))
   stopifnot(is.character(type) || is.numeric(type))
-  stopifnot(is.numeric(value) || is.character(value) ||
-            is.raw(value) || is.logical(value))
+  stopifnot(is.numeric(value) || is.character(value) || is.raw(value) ||
+            is.logical(value) || is.list(value) || is.factor(value))
+
   
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_put_att, ncfile, variable, name, type, value)
