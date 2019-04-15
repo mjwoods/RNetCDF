@@ -235,11 +235,13 @@ R_nc_inq_att (SEXP nc, SEXP var, SEXP att)
 SEXP
 R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
 {
-  int ncid, varid;
-  size_t cnt;
+  int ncid, varid, class, idim, ndimfld, *dimlenfld, ismatch;
+  size_t cnt, xsize, ilist, nlist, datalen, typelen;
   nc_type xtype;
   const char *attname;
   const void *buf;
+  char namefld[NC_MAX_NAME+1];
+  SEXP namelist;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -257,12 +259,63 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
   /*-- Enter define mode ------------------------------------------------------*/
   R_nc_check( R_nc_redef (ncid));
 
-  /*-- Write attribute to file ------------------------------------------------*/
-  if (xtype == NC_CHAR && isString (data)) {
+  /*-- Find number of input items of the specified type -----------------------*/
+  if (xtype > NC_MAX_ATOMIC_TYPE) {
+    R_nc_check (nc_inq_user_type (ncid, xtype, NULL, &xsize, NULL, NULL, &class));
+
+    if (class == NC_COMPOUND && TYPEOF(data) == VECSXP) {
+
+      /* Find number of elements in first field of compound type */
+      R_nc_check (nc_inq_compound_field (ncid, xtype, 0, namefld,
+                  NULL, NULL, &ndimfld, NULL));
+      if (ndimfld > 0) {
+        dimlenfld = (int *) R_alloc (ndimfld, sizeof(int));
+        R_nc_check (nc_inq_compound_fielddim_sizes (ncid, xtype, 0, dimlenfld));
+        typelen = 1;
+        for (idim=0; idim<ndimfld; idim++) {
+          typelen *= dimlenfld[idim];
+        }
+      } else {
+        typelen = 1;
+      }
+
+      /* Find the field by name in the R input list */
+      namelist = getAttrib (data, R_NamesSymbol);
+      if (!isString (namelist)) {
+	R_nc_error ("Named list required for conversion to compound type");
+      }
+      nlist = xlength (namelist);
+
+      ismatch = 0;
+      for (ilist=0; ilist<nlist; ilist++) {
+        if (strcmp (CHAR (STRING_ELT (namelist, ilist)), namefld) == 0) {
+          // ilist is the matching list index
+          ismatch = 1;
+          break;
+        }
+      }
+      if (!ismatch) {
+        R_nc_error ("Name of compound field not found in input list");
+      }
+
+      /* Find length of field in R input list */
+      datalen = xlength (VECTOR_ELT (data, ilist));
+
+      /* Number of compound elements in the R input list */
+      cnt = datalen / typelen;
+
+    } else if (class == NC_OPAQUE && xsize > 0) {
+      cnt = xlength(data) / xsize;
+    } else {
+      cnt = xlength(data);
+    }
+  } else if (xtype == NC_CHAR && isString (data)) {
     cnt = strlen (R_nc_strarg (data));
   } else {
     cnt = xlength (data);
   }
+
+  /* -- Write attribute to file -----------------------------------------------*/
   if (cnt > 0) {
     buf = R_nc_r2c (data, ncid, xtype, 1, &cnt, NULL, NULL, NULL);
     R_nc_check (nc_put_att (ncid, varid, attname, xtype, cnt, buf));
