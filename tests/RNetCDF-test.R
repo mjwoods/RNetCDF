@@ -247,6 +247,17 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
                    colour=array(rep(c(0,0,0,64,128,192),nstation), c(3,nstation,ntime)))
   }
 
+  ## Define some user-defined test attributes:
+  if (format == "netcdf4") {
+    person1 <- list(siteid=array(person$siteid[1:3,1], 3),
+                    height=array(person$height[1:3,1], 3),
+                    colour=array(person$colour[,1:3,1], c(3,3)))
+    att.put.nc(nc, "NC_GLOBAL", "compound_att", "struct", person1)
+    att.put.nc(nc, "NC_GLOBAL", "enum_att", "factor", snacks[1])
+    att.put.nc(nc, "NC_GLOBAL", "opaque_att", "blob", rawdata[,1,1])
+    att.put.nc(nc, "NC_GLOBAL", "vector_att", "vector", profiles[1])
+  }
+
   ##  Put the data
   cat("Writing variables ...\n")
   var.put.nc(nc, "time", mytime, 1, length(mytime))
@@ -624,6 +635,28 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     x <- person
     y <- var.get.nc(nc, "person")
     tally <- testfun(x,y,tally)
+
+    cat("Read compound attribute ...")
+    x <- person1
+    y <- att.get.nc(nc, "NC_GLOBAL", "compound_att")
+    tally <- testfun(x,y,tally)
+
+    cat("Read enum attribute ...")
+    x <- snacks[1]
+    y <- att.get.nc(nc, "NC_GLOBAL", "enum_att")
+    tally <- testfun(x,y,tally)
+
+    cat("Read opaque attribute ...")
+    x <- rawdata[,1,1]
+    dim(x) <- c(length(x),1)
+    y <- att.get.nc(nc, "NC_GLOBAL", "opaque_att")
+    tally <- testfun(x,y,tally)
+
+    cat("Read vlen attribute ...")
+    x <- profiles[1]
+    y <- att.get.nc(nc, "NC_GLOBAL", "vector_att")
+    tally <- testfun(x,y,tally)
+
   }
 
   cat("Read and unpack numeric array ... ")
