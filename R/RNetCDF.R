@@ -276,6 +276,34 @@ open.nc <- function(con, write = FALSE, share = FALSE, prefill = TRUE, ...) {
 # print.nc()
 #-------------------------------------------------------------------------------
 
+# Private function to print attributes,
+# given results from var.inq.nc and att.inq.nc:
+print_att <- function(grp, attinfo, indent, varinfo=NULL) {
+  if (is.null(varinfo)) {
+    varid <- "NC_GLOBAL"
+    varname <- ""
+  } else {
+    varid <- varinfo$id
+    varname <- varinfo$name
+  }
+  typeinfo <- type.inq.nc(grp, attinfo$type, fields=FALSE)
+  if (attinfo$type == "NC_CHAR" || attinfo$type == "NC_STRING") {
+    atttypestr <- attinfo$type
+    attvalstr <- paste("\"", att.get.nc(grp, varid, attinfo$id), "\"", 
+		       collapse=", ", sep="")
+  } else if (typeinfo$class != "builtin") {
+    atttypestr <- paste("//", attinfo$type, sep="");
+    attvalstr <- "..."
+  } else {
+    atttypestr <- attinfo$type
+    attvalstr <- paste(att.get.nc(grp, varid, attinfo$id),
+                       collapse=", ", sep="")
+  }
+  cat(indent, rep(" ", 16), atttypestr, " ",
+      varname, ":", attinfo$name,
+      " = ", attvalstr, " ;\n", sep="")
+}
+
 # Private function to print metadata of groups recursively:
 print_grp <- function(x, level = 0) {
   
@@ -362,14 +390,7 @@ print_grp <- function(x, level = 0) {
       if (varinfo$natts != 0) {
         for (jj in 0:(varinfo$natts - 1)) {
           attinfo <- att.inq.nc(x, id, jj)
-          if (attinfo$type == "NC_CHAR" || attinfo$type == "NC_STRING") {
-            attvalstr <- paste("\"", att.get.nc(x, id, jj), "\"", 
-                               collapse=", ", sep="")
-          } else {
-            attvalstr <- paste(att.get.nc(x, id, jj), collapse=", ", sep="")
-          }
-          cat(indent, rep(" ", 16), varinfo$name, ":", attinfo$name,
-              " = ", attvalstr, " ;\n", sep="")
+          print_att(x, attinfo, indent, varinfo)
         }
       }
     }
@@ -381,14 +402,7 @@ print_grp <- function(x, level = 0) {
     id <- "NC_GLOBAL"
     for (jj in 0:(grpinfo$ngatts - 1)) {
       attinfo <- att.inq.nc(x, id, jj)
-      if (attinfo$type == "NC_CHAR" || attinfo$type == "NC_STRING") {
-        attvalstr <- paste("\"", att.get.nc(x, id, jj), "\"", 
-                           collapse=", ", sep="")
-      } else {
-        attvalstr <- paste(att.get.nc(x, id, jj), collapse=", ", sep="")
-      }
-      cat(indent, rep(" ", 16), ":", attinfo$name,
-          " = ", attvalstr, " ;\n", sep="")
+      print_att(x, attinfo, indent)
     }
   }
 
