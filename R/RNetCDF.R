@@ -85,10 +85,6 @@ att.get.nc <- function(ncfile, variable, attribute,
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_get_att, ncfile, variable, attribute, rawchar, fitnum)
 
-  if (inherits(nc, "integer64")) {
-    require(bit64)
-  }
-
   return(nc)
 }
 
@@ -300,8 +296,14 @@ print_att <- function(grp, attinfo, indent, varinfo=NULL) {
     attvalstr <- "..."
   } else {
     atttypestr <- attinfo$type
-    attvalstr <- paste(att.get.nc(grp, varid, attinfo$id, fitnum=TRUE),
-                       collapse=", ", sep="")
+    attval <- att.get.nc(grp, varid, attinfo$id,
+                         fitnum=requireNamespace("bit64", quietly=TRUE))
+    if (inherits(attval, "integer64")) {
+      attvalchar <- bit64::as.character.integer64(attval)
+    } else {
+      attvalchar <- as.character(attval)
+    }
+    attvalstr <- paste(attvalchar, collapse=", ", sep="")
   }
   tab <- "\t"
   cat(indent, tab, tab, atttypestr, " ",
@@ -535,10 +537,6 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 4,
     }
   }
 
-  if (inherits(nc, "integer64")) {
-    require(bit64)
-  }
- 
   return(nc)
 }
 
