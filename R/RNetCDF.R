@@ -402,7 +402,11 @@ print_grp <- function(x, level = 0) {
   
   #-- Inquire about global attributes ----------------------------------------
   if (grpinfo$ngatts != 0) {
-    cat("\n", indent, "// global attributes:\n", sep = "")
+    if (level == 0) {
+      cat("\n", indent, "// global attributes:\n", sep = "")
+    } else {
+      cat("\n", indent, "// group attributes:\n", sep = "")
+    }
     id <- "NC_GLOBAL"
     for (jj in 0:(grpinfo$ngatts - 1)) {
       attinfo <- att.inq.nc(x, id, jj)
