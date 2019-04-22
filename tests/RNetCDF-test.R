@@ -323,7 +323,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   } else {
     close.nc(nc)
     nc <- open.nc(ncfile)
-  } 
+  }
+
+  ## Display file structure
+  print.nc(nc)
 
   ## Read tests
 
