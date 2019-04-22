@@ -428,9 +428,13 @@ print_grp <- function(x, level = 0) {
 print.nc <- function(x, ...) {
   #-- Check args -------------------------------------------------------------
   stopifnot(class(x) == "NetCDF")
-  
+
+  cat("netcdf ", file.inq.nc(x)$format, " {\n", sep="")
+
   # Display groups recursively:
   print_grp(x, level = 0)
+
+  cat("}\n")
 
   return(invisible(NULL))
 }
