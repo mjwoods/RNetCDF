@@ -300,7 +300,7 @@ print_att <- function(grp, attinfo, indent, varinfo=NULL) {
     attvalstr <- "..."
   } else {
     atttypestr <- attinfo$type
-    attvalstr <- paste(att.get.nc(grp, varid, attinfo$id),
+    attvalstr <- paste(att.get.nc(grp, varid, attinfo$id, fitnum=TRUE),
                        collapse=", ", sep="")
   }
   cat(indent, rep(" ", 16), atttypestr, " ",
