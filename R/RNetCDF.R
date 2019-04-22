@@ -303,16 +303,19 @@ print_att <- function(grp, attinfo, indent, varinfo=NULL) {
     attvalstr <- paste(att.get.nc(grp, varid, attinfo$id, fitnum=TRUE),
                        collapse=", ", sep="")
   }
-  cat(indent, rep(" ", 16), atttypestr, " ",
+  tab <- "\t"
+  cat(indent, tab, tab, atttypestr, " ",
       varname, ":", attinfo$name,
       " = ", attvalstr, " ;\n", sep="")
 }
 
 # Private function to print metadata of groups recursively:
 print_grp <- function(x, level = 0) {
-  
-  indent <- paste(rep("  ", level), collapse = "")
-  
+
+  gap <- "  "
+  indent <- paste(rep(gap, level), collapse = "")
+  tab <- "\t"
+
   #-- Inquire about the group ------------------------------------------------
   grpinfo <- try(grp.inq.nc(x, ancestors = FALSE), silent = TRUE)
   if (class(grpinfo) == "try-error" || is.null(grpinfo)) {
@@ -325,10 +328,10 @@ print_grp <- function(x, level = 0) {
     for (id in grpinfo$dimids) {
       diminfo <- dim.inq.nc(x, id)
       if (diminfo$unlim == FALSE) {
-        cat(indent, "        ", diminfo$name, " = ", diminfo$length, 
+        cat(indent, tab, diminfo$name, " = ", diminfo$length,
           " ;\n", sep = "")
       } else {
-        cat(indent, "        ", diminfo$name, " = UNLIMITED ; // (", 
+        cat(indent, tab, diminfo$name, " = UNLIMITED ; // (",
           diminfo$length, " currently)\n", sep = "")
       }
     }
@@ -340,34 +343,34 @@ print_grp <- function(x, level = 0) {
     for (id in grpinfo$typeids) {
       typeinfo <- type.inq.nc(x, id, fields=TRUE)
       if (typeinfo$class == "compound") {
-        cat(indent, indent, "compound ", typeinfo$name, " {\n", sep="")
+        cat(indent, gap, "compound ", typeinfo$name, " {\n", sep="")
         field_names = names(typeinfo$subtype)
         field_types = unname(typeinfo$subtype)
         field_sizes = unname(typeinfo$dimsizes)
         for (item in seq_along(typeinfo$subtype)) {
-          cat(indent, indent, indent, field_types[item], " ",
+          cat(indent, gap, gap, field_types[item], " ",
               field_names[item], sep="")
           if (!is.null(field_sizes[[item]])) {
             cat("(", paste(field_sizes[[item]], collapse=","), ")", sep="")
           }
           cat(" ;\n")
         }
-        cat(indent, indent, "}; // ", typeinfo$name, "\n", sep="")
+        cat(indent, gap, "}; // ", typeinfo$name, "\n", sep="")
       } else if (typeinfo$class == "enum") {
-        cat(indent, indent, typeinfo$basetype, " enum ", typeinfo$name,
+        cat(indent, gap, typeinfo$basetype, " enum ", typeinfo$name,
             " {\n", sep="")
         member_names <- names(typeinfo$value)
         member_values <- unname(typeinfo$value)
         for (item in seq_along(typeinfo$value)) {
-          cat(indent, indent, indent, member_names[item],
+          cat(indent, gap, gap, "\"", member_names[item], "\"",
               " = ", member_values[item], ",\n", sep="")
         }
-        cat(indent, indent, "} ; // ", typeinfo$name, "\n", sep="")
+        cat(indent, gap, "} ; // ", typeinfo$name, "\n", sep="")
       } else if (typeinfo$class == "opaque") {
-        cat(indent, indent, "opaque(", typeinfo$size, ") ", typeinfo$name,
+        cat(indent, gap, "opaque(", typeinfo$size, ") ", typeinfo$name,
             " ;\n", sep="")
       } else if (typeinfo$class == "vlen") {
-        cat(indent, indent, typeinfo$basetype, "(*) ", typeinfo$name,
+        cat(indent, gap, typeinfo$basetype, "(*) ", typeinfo$name,
             " ;\n", sep="")
       }
     }
@@ -379,7 +382,7 @@ print_grp <- function(x, level = 0) {
     for (id in grpinfo$varids) {
       varinfo <- var.inq.nc(x, id)
       vartype <- varinfo$type
-      cat(indent, "        ", vartype, " ", varinfo$name, sep = "")
+      cat(indent, tab, vartype, " ", varinfo$name, sep = "")
       if (varinfo$ndims > 0) {
         cat("(")
         for (jj in seq_len(varinfo$ndims - 1)) {
@@ -420,9 +423,10 @@ print_grp <- function(x, level = 0) {
       subgrpinfo <- grp.inq.nc(id, ancestors = FALSE)
       cat("\n", indent, "group: ", subgrpinfo$name, " {\n", sep = "")
       print_grp(id, level = (level + 1))
-      cat(indent, "  } // group ", subgrpinfo$name, "\n", sep = "")
+      cat(indent, gap, "} // group ", subgrpinfo$name, "\n", sep = "")
     }
   }
+
 }
 
 print.nc <- function(x, ...) {
