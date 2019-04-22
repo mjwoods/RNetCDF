@@ -81,9 +81,13 @@ att.get.nc <- function(ncfile, variable, attribute,
   stopifnot(is.character(attribute) || is.numeric(attribute))
   stopifnot(is.logical(rawchar))
   stopifnot(is.logical(fitnum))
-  
+
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_get_att, ncfile, variable, attribute, rawchar, fitnum)
+
+  if (inherits(nc, "integer64")) {
+    require(bit64)
+  }
 
   return(nc)
 }
@@ -517,6 +521,10 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 4,
     if (any(keepdim)) {
       dim(nc) <- datadim[keepdim]
     }
+  }
+
+  if (inherits(nc, "integer64")) {
+    require(bit64)
   }
  
   return(nc)
