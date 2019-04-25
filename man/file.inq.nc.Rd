@@ -19,9 +19,8 @@
   \item{ngatts}{Number of global attributes for this NetCDF dataset.}
   \item{unlimdimid}{ID of the unlimited dimension, if there is one for this NetCDF dataset. Otherwise \code{NA} will be returned.} 
   \item{format}{Format of file, typically "classic", "offset64", "classic4" or "netcdf4".}
+  \item{libvers}{Version string of the NetCDF library in the current R session.}
 }
-
-\details{This function returns values for the number of dimensions, the number of variables, the number of global attributes, the dimension ID of the dimension defined with unlimited length (if any), and the format of the file.}
 
 \references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 

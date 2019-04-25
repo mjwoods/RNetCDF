@@ -180,6 +180,7 @@ SEXP
 R_nc_inq_file (SEXP nc)
 {
   int ncid, ndims, nvars, ngatts, unlimdimid, format;
+  const char *libvers;
   SEXP result;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
@@ -191,16 +192,18 @@ R_nc_inq_file (SEXP nc)
     unlimdimid = NA_INTEGER;
   }
 
-  /*-- Inquire about the NetCDF format ----------------------------------------*/
+  /*-- Inquire about the NetCDF format and library version --------------------*/
   R_nc_check (nc_inq_format (ncid, &format));
+  libvers = nc_inq_libvers ();
 
   /*-- Returning the list -----------------------------------------------------*/
-  result = R_nc_protect (allocVector (VECSXP, 5)); 
+  result = R_nc_protect (allocVector (VECSXP, 6)); 
   SET_VECTOR_ELT (result, 0, ScalarInteger (ndims));
   SET_VECTOR_ELT (result, 1, ScalarInteger (nvars));
   SET_VECTOR_ELT (result, 2, ScalarInteger (ngatts));
   SET_VECTOR_ELT (result, 3, ScalarInteger (unlimdimid));
   SET_VECTOR_ELT (result, 4, mkString (R_nc_format2str (format)));
+  SET_VECTOR_ELT (result, 5, mkString (libvers));
 
   RRETURN(result);
 }
