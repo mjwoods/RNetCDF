@@ -325,6 +325,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     nc <- open.nc(ncfile)
   }
 
+  cat("Check file format ...")
+  x <- file.inq.nc(nc)$format
+  y <- format
+  tally <- testfun(x,y,tally)
+
   ## Display file structure
   print.nc(nc)
 
