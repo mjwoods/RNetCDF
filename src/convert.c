@@ -1203,6 +1203,14 @@ R_nc_compound_vecsxp (R_nc_buf *io)
 
     /* Append field dimensions to the variable dimensions */
     ndim = io->ndim;
+    if (ndim < 0) {
+      /* Special case to drop dimensions of a vector,
+         but dimensions are needed for a compound vector.
+       */
+      ndim = 1;
+    }
+
+    ndim = io->ndim < 0 ? 1 : io->ndim ;
     ndimslice = ndim + ndimfld;
     dimslice = (size_t *) R_alloc (ndimslice, sizeof(size_t));
     for (idim=0; idim<ndim; idim++) {

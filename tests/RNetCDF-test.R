@@ -247,6 +247,24 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
                    colour=array(rep(c(0,0,0,64,128,192),nstation), c(3,nstation,ntime)))
   }
 
+  ## Define some user-defined test attributes:
+  if (format == "netcdf4") {
+    person1 <- list(siteid=array(person$siteid[1,1], 1),
+                    height=array(person$height[1,1], 1),
+                    colour=array(person$colour[,1,1], c(3,1)))
+    person3 <- list(siteid=array(person$siteid[1:3,1], 3),
+                    height=array(person$height[1:3,1], 3),
+                    colour=array(person$colour[,1:3,1], c(3,3)))
+    att.put.nc(nc, "NC_GLOBAL", "compound_scal_att", "struct", person1)
+    att.put.nc(nc, "NC_GLOBAL", "compound_vect_att", "struct", person3)
+    att.put.nc(nc, "NC_GLOBAL", "enum_scal_att", "factor", snacks[1])
+    att.put.nc(nc, "NC_GLOBAL", "enum_vect_att", "factor", snacks[1:3])
+    att.put.nc(nc, "NC_GLOBAL", "opaque_scal_att", "blob", rawdata[,1,1])
+    att.put.nc(nc, "NC_GLOBAL", "opaque_vect_att", "blob", rawdata[,1,])
+    att.put.nc(nc, "NC_GLOBAL", "vector_scal_att", "vector", profiles[1])
+    att.put.nc(nc, "NC_GLOBAL", "vector_vect_att", "vector", profiles[1:3])
+  }
+
   ##  Put the data
   cat("Writing variables ...\n")
   var.put.nc(nc, "time", mytime, 1, length(mytime))
@@ -305,7 +323,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   } else {
     close.nc(nc)
     nc <- open.nc(ncfile)
-  } 
+  }
+
+  ## Display file structure
+  print.nc(nc)
 
   ## Read tests
 
@@ -624,6 +645,48 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     x <- person
     y <- var.get.nc(nc, "person")
     tally <- testfun(x,y,tally)
+
+    cat("Read compound scalar attribute ...")
+    x <- person1
+    y <- att.get.nc(nc, "NC_GLOBAL", "compound_scal_att")
+    tally <- testfun(x,y,tally)
+
+    cat("Read compound vector attribute ...")
+    x <- person3
+    y <- att.get.nc(nc, "NC_GLOBAL", "compound_vect_att")
+    tally <- testfun(x,y,tally)
+
+    cat("Read enum scalar attribute ...")
+    x <- snacks[1]
+    y <- att.get.nc(nc, "NC_GLOBAL", "enum_scal_att")
+    tally <- testfun(x,y,tally)
+
+    cat("Read enum vector attribute ...")
+    x <- snacks[1:3]
+    y <- att.get.nc(nc, "NC_GLOBAL", "enum_vect_att")
+    tally <- testfun(x,y,tally)
+
+    cat("Read opaque scalar attribute ...")
+    x <- rawdata[,1,1]
+    dim(x) <- c(length(x),1)
+    y <- att.get.nc(nc, "NC_GLOBAL", "opaque_scal_att")
+    tally <- testfun(x,y,tally)
+
+    cat("Read opaque vector attribute ...")
+    x <- rawdata[,1,]
+    y <- att.get.nc(nc, "NC_GLOBAL", "opaque_vect_att")
+    tally <- testfun(x,y,tally)
+
+    cat("Read vlen scalar attribute ...")
+    x <- profiles[1]
+    y <- att.get.nc(nc, "NC_GLOBAL", "vector_scal_att")
+    tally <- testfun(x,y,tally)
+
+    cat("Read vlen vector attribute ...")
+    x <- profiles[1:3]
+    y <- att.get.nc(nc, "NC_GLOBAL", "vector_vect_att")
+    tally <- testfun(x,y,tally)
+
   }
 
   cat("Read and unpack numeric array ... ")
