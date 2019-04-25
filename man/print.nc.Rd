@@ -13,9 +13,9 @@
   \item{...}{Arguments passed to or from other methods (not used).}
 }
 
-\details{This function prints information about a NetCDF dataset. This includes a list of all dimensions and their length, a list of all variables and their attributes (including their values) and a list of all global attributes (including their values).
+\details{This function prints information about the structure of a NetCDF dataset, including lists of all groups, dimensions, user-defined types, variables and attributes.
 
-The output of this function is almost identical with a \code{"ncdump -h"} call. Because arrays in R have their leftmost subscript varying fastest, the fastest varying dimensions are printed first.
+The output of this function is similar to the \code{ncdump -h} command supplied with the NetCDF C library. One important difference is that array dimensions are shown by \code{print.nc} in the order used by R, where the leftmost subscript varies fastest.
 }
 
 \references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
