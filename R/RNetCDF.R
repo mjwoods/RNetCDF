@@ -85,6 +85,11 @@ att.get.nc <- function(ncfile, variable, attribute,
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_get_att, ncfile, variable, attribute, rawchar, fitnum)
 
+  if (inherits(nc, "integer64") &&
+      !requireNamespace("bit64", quietly=TRUE)) {
+    stop("Package 'bit64' required for class 'integer64'")
+  }
+
   return(nc)
 }
 
@@ -527,7 +532,12 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 4,
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_get_var, ncfile, variable, start, count,
               rawchar, fitnum, na.mode, unpack)
-  
+
+  if (inherits(nc, "integer64") &&
+      !requireNamespace("bit64", quietly=TRUE)) {
+    stop("Package 'bit64' required for class 'integer64'")
+  }
+
   #-- Collapse singleton dimensions --------------------------------------
   if (isTRUE(collapse) && !is.null(dim(nc))) {
     datadim <- dim(nc)
