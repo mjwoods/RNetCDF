@@ -252,7 +252,7 @@ file.inq.nc <- function(ncfile) {
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_inq_file, ncfile)
   
-  names(nc) <- c("ndims", "nvars", "ngatts", "unlimdimid", "format")
+  names(nc) <- c("ndims", "nvars", "ngatts", "unlimdimid", "format", "libvers")
   
   return(nc)
 }
