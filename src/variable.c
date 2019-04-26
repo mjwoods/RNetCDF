@@ -432,10 +432,12 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
 SEXP
 R_nc_inq_var (SEXP nc, SEXP var)
 {
-  int ncid, varid, ndims, natts, *dimids;
+  int ncid, varid, idim, ndims, natts, *dimids, storeprop;
+  size_t *chunksize_t;
+  double *chunkdbl;
   char varname[NC_MAX_NAME + 1], vartype[NC_MAX_NAME+1];
   nc_type xtype;
-  SEXP result, rdimids;
+  SEXP result, rdimids, rchunks;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -451,22 +453,40 @@ R_nc_inq_var (SEXP nc, SEXP var)
     R_nc_check (nc_inq_vardimid (ncid, varid, dimids));
     /* Return dimension ids in reverse (Fortran) order */
     R_nc_rev_int (dimids, ndims);
+
+    R_nc_check (nc_inq_var_chunking (ncid, varid, &storeprop, NULL));
+    if (storeprop == NC_CHUNKED) {
+      rchunks = R_nc_protect (allocVector (REALSXP, ndims));
+      chunkdbl = REAL (rchunks);
+      chunksize_t = (size_t *) R_alloc (ndims, sizeof(size_t));
+      R_nc_check (nc_inq_var_chunking (ncid, varid, NULL, chunksize_t));
+      /* Return chunk sizes as double precision in reverse (Fortran) order */
+      R_nc_rev_size (chunksize_t, ndims);
+      for (idim=0; idim<ndims; idim++) {
+        chunkdbl[idim] = chunksize_t[idim];
+      }
+    } else {
+      rchunks = R_NilValue;
+    }
+
   } else {
     /* Return single NA for scalars */
     rdimids = R_nc_protect (ScalarInteger (NA_INTEGER));
+    rchunks = R_nc_protect (ScalarReal (NA_REAL));
   }
 
   /*-- Convert nc_type to char ------------------------------------------------*/
   R_nc_check (R_nc_type2str (ncid, xtype, vartype));
 
   /*-- Construct the output list ----------------------------------------------*/
-  result = R_nc_protect (allocVector (VECSXP, 6));
+  result = R_nc_protect (allocVector (VECSXP, 7));
   SET_VECTOR_ELT (result, 0, ScalarInteger (varid));
   SET_VECTOR_ELT (result, 1, mkString (varname));
   SET_VECTOR_ELT (result, 2, mkString (vartype));
   SET_VECTOR_ELT (result, 3, ScalarInteger (ndims));
   SET_VECTOR_ELT (result, 4, rdimids);
   SET_VECTOR_ELT (result, 5, ScalarInteger (natts));
+  SET_VECTOR_ELT (result, 6, rchunks);
 
   RRETURN(result);
 }
