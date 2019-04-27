@@ -129,7 +129,14 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   ##  Define variables
   var.def.nc(nc, "time", "NC_INT", "time")
-  var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1))
+
+  inq_temperature <- list()
+  inq_temperature$id <- var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1))
+  inq_temperature$name <- "temperature"
+  inq_temperature$type <- "NC_DOUBLE"
+  inq_temperature$ndims <- 2
+  inq_temperature$dimids <- c(0,1)
+
   var.def.nc(nc, "packvar", "NC_BYTE", c("station"))
   var.def.nc(nc, "name", "NC_CHAR", c("max_string_length", "station"))
   var.def.nc(nc, "qcflag", "NC_CHAR", c("station"))
@@ -183,6 +190,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   ##  Set a _FillValue attribute for temperature
   att.put.nc(nc, "temperature", "_FillValue", "NC_DOUBLE", -99999.9)
+  inq_temperature$natts <- 1
 
   ## Define the packing used by packvar
   id_double <- type.inq.nc(nc, "NC_DOUBLE")$id
@@ -197,9 +205,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   att.put.nc(nc, "name", "raw_att", "NC_CHAR", charToRaw(att_text))
   if (format == "netcdf4") {
     att.put.nc(nc, "temperature", "string_att", "NC_STRING", att_text2)
+    inq_temperature$natts <- inq_temperature$natts + 1
     if (has_bit64) {
       hugeint <- as.integer64("-1234567890123456789")
       att.put.nc(nc, "temperature", "int64_att", "NC_INT64", hugeint)
+      inq_temperature$natts <- inq_temperature$natts + 1
     }
   }
 
@@ -465,6 +475,12 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
                      any(numtype==c("NC_BYTE","NC_UBYTE","NC_SHORT","NC_USHORT","NC_INT")),
                      tally)
   }
+
+  cat("Inquire about numeric variable ...")
+  x <- inq_temperature
+  y <- var.inq.nc(nc, "temperature")
+  str(y)
+  tally <- testfun(x,y[1:6])
 
   cat("Read numeric matrix ... ")
   x <- mytemperature
