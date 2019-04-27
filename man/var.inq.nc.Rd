@@ -21,7 +21,13 @@
   \item{ndims}{Number of dimensions the variable was defined as using.}
   \item{dimids}{Vector of dimension IDs corresponding to the variable dimensions (\code{NA} for scalar variables). Order is leftmost varying fastest.}
   \item{natts}{Number of variable attributes assigned to this variable.}
-  \item{chunksizes}{("netcdf4" only) Chunk size expressed as the number of elements along each dimension, in the same order as \code{dimids}. \code{NULL} implies contiguous storage.}
+
+The arguments below apply only to datasets in "netcdf4" format:
+
+  \item{chunksizes}{Chunk size expressed as the number of elements along each dimension, in the same order as \code{dimids}. \code{NULL} implies contiguous storage.}
+  \item{cache_bytes}{Size of chunk cache in bytes (\code{NA} if undefined).}
+  \item{cache_slots}{The number of slots in the chunk cache (\code{NA} if undefined).}
+  \item{cache_preemption}{A value between 0 and 1 (inclusive) that biases the cache scheme towards eviction of chunks that have been fully read (\code{NA} if undefined).}
 }
 
 \details{This function returns information about a NetCDF variable. Information about a variable include its name, its ID, its type, its number of dimensions, a vector of the dimension IDs of this variable and the number of attributes.}

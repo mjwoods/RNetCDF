@@ -62,6 +62,7 @@ AC_SEARCH_LIBS(nc_open, netcdf, [],
 # Afterwards, C preprocessor macros HAVE_DECL_symbols are defined,
 # with value 1 if routine is declared or 0 if not.
 AC_CHECK_DECLS([nc_rename_grp], [], [], [[#include <netcdf.h>]])
+AC_CHECK_DECLS([nc_get_var_chunk_cache], [], [], [[#include <netcdf.h>]])
 
 #-------------------------------------------------------------------------------#
 #  Find UDUNITS2 library and header files                                       #

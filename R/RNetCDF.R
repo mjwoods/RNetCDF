@@ -567,7 +567,8 @@ var.inq.nc <- function(ncfile, variable) {
     names(nc) <- c("id", "name", "type", "ndims", "dimids", "natts")
   } else {
     names(nc) <- c("id", "name", "type", "ndims", "dimids", "natts",
-                   "chunksizes")
+                   "chunksizes", "cache_bytes", "cache_slots",
+                   "cache_preemption")
   }
   
   return(nc)
