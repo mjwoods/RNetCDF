@@ -432,7 +432,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
 SEXP
 R_nc_inq_var (SEXP nc, SEXP var)
 {
-  int ncid, varid, idim, ndims, natts, *dimids, storeprop;
+  int ncid, varid, idim, ndims, natts, *dimids, storeprop, format, withnc4;
   size_t *chunksize_t;
   double *chunkdbl;
   char varname[NC_MAX_NAME + 1], vartype[NC_MAX_NAME+1];
@@ -445,6 +445,9 @@ R_nc_inq_var (SEXP nc, SEXP var)
   R_nc_check (R_nc_var_id (var, ncid, &varid));
 
   /*-- Inquire the variable ---------------------------------------------------*/
+  R_nc_check (nc_inq_format (ncid, &format));
+  withnc4 = (format == NC_FORMAT_NETCDF4);
+
   R_nc_check (nc_inq_var (ncid, varid, varname, &xtype, &ndims, NULL, &natts));
 
   if (ndims > 0) {
@@ -454,39 +457,50 @@ R_nc_inq_var (SEXP nc, SEXP var)
     /* Return dimension ids in reverse (Fortran) order */
     R_nc_rev_int (dimids, ndims);
 
-    R_nc_check (nc_inq_var_chunking (ncid, varid, &storeprop, NULL));
-    if (storeprop == NC_CHUNKED) {
-      rchunks = R_nc_protect (allocVector (REALSXP, ndims));
-      chunkdbl = REAL (rchunks);
-      chunksize_t = (size_t *) R_alloc (ndims, sizeof(size_t));
-      R_nc_check (nc_inq_var_chunking (ncid, varid, NULL, chunksize_t));
-      /* Return chunk sizes as double precision in reverse (Fortran) order */
-      R_nc_rev_size (chunksize_t, ndims);
-      for (idim=0; idim<ndims; idim++) {
-        chunkdbl[idim] = chunksize_t[idim];
+    rchunks = R_NilValue;
+    if (withnc4) {
+      R_nc_check (nc_inq_var_chunking (ncid, varid, &storeprop, NULL));
+      if (storeprop == NC_CHUNKED) {
+	rchunks = R_nc_protect (allocVector (REALSXP, ndims));
+	chunkdbl = REAL (rchunks);
+	chunksize_t = (size_t *) R_alloc (ndims, sizeof(size_t));
+	R_nc_check (nc_inq_var_chunking (ncid, varid, NULL, chunksize_t));
+	/* Return chunk sizes as double precision in reverse (Fortran) order */
+	R_nc_rev_size (chunksize_t, ndims);
+	for (idim=0; idim<ndims; idim++) {
+	  chunkdbl[idim] = chunksize_t[idim];
+	}
       }
-    } else {
-      rchunks = R_NilValue;
     }
 
   } else {
     /* Return single NA for scalars */
     rdimids = R_nc_protect (ScalarInteger (NA_INTEGER));
-    rchunks = R_nc_protect (ScalarReal (NA_REAL));
+
+    /* Chunks not defined for scalars */
+    rchunks = R_NilValue;
   }
 
   /*-- Convert nc_type to char ------------------------------------------------*/
   R_nc_check (R_nc_type2str (ncid, xtype, vartype));
 
   /*-- Construct the output list ----------------------------------------------*/
-  result = R_nc_protect (allocVector (VECSXP, 7));
+  if (withnc4) {
+    result = R_nc_protect (allocVector (VECSXP, 7));
+  } else {
+    result = R_nc_protect (allocVector (VECSXP, 6));
+  }
+
   SET_VECTOR_ELT (result, 0, ScalarInteger (varid));
   SET_VECTOR_ELT (result, 1, mkString (varname));
   SET_VECTOR_ELT (result, 2, mkString (vartype));
   SET_VECTOR_ELT (result, 3, ScalarInteger (ndims));
   SET_VECTOR_ELT (result, 4, rdimids);
   SET_VECTOR_ELT (result, 5, ScalarInteger (natts));
-  SET_VECTOR_ELT (result, 6, rchunks);
+
+  if (withnc4) {
+    SET_VECTOR_ELT (result, 6, rchunks);
+  }
 
   RRETURN(result);
 }

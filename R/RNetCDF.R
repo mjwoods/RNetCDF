@@ -562,9 +562,13 @@ var.inq.nc <- function(ncfile, variable) {
   
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_inq_var, ncfile, variable)
-  
-  names(nc) <- c("id", "name", "type", "ndims", "dimids", "natts",
-                 "chunksizes")
+
+  if (length(nc) == 6) {
+    names(nc) <- c("id", "name", "type", "ndims", "dimids", "natts")
+  } else {
+    names(nc) <- c("id", "name", "type", "ndims", "dimids", "natts",
+                   "chunksizes")
+  }
   
   return(nc)
 }
