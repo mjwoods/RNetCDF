@@ -470,7 +470,8 @@ sync.nc <- function(ncfile) {
 # var.def.nc()
 #-------------------------------------------------------------------------------
 
-var.def.nc <- function(ncfile, varname, vartype, dimensions) {
+var.def.nc <- function(ncfile, varname, vartype, dimensions,
+                       chunking=NA, chunksizes=NULL) {
   #-- Check args -------------------------------------------------------------
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(varname))
@@ -481,9 +482,12 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions) {
   }
 
   stopifnot(is.character(dimensions) || is.numeric(dimensions))
+  stopifnot(is.logical(chunking))
+  stopifnot(is.null(chunksizes) || is.numeric(chunksizes))
 
   #-- C function call --------------------------------------------------------
-  nc <- .Call(R_nc_def_var, ncfile, varname, vartype, dimensions)
+  nc <- .Call(R_nc_def_var, ncfile, varname, vartype, dimensions,
+              chunking, chunksizes)
   
   return(invisible(nc))
 }

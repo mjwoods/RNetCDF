@@ -131,11 +131,14 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   var.def.nc(nc, "time", "NC_INT", "time")
 
   inq_temperature <- list()
-  inq_temperature$id <- var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1))
+  inq_temperature$id <- var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1),
+                                   chunking=TRUE, chunksizes=c(5,1))
   inq_temperature$name <- "temperature"
   inq_temperature$type <- "NC_DOUBLE"
   inq_temperature$ndims <- 2
   inq_temperature$dimids <- c(0,1)
+  inq_temperature$natts <- 0
+  inq_temperature$chunksizes <- c(5,1)
 
   var.def.nc(nc, "packvar", "NC_BYTE", c("station"))
   var.def.nc(nc, "name", "NC_CHAR", c("max_string_length", "station"))
@@ -190,7 +193,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   ##  Set a _FillValue attribute for temperature
   att.put.nc(nc, "temperature", "_FillValue", "NC_DOUBLE", -99999.9)
-  inq_temperature$natts <- 1
+  inq_temperature$natts <- inq_temperature$natts + 1
 
   ## Define the packing used by packvar
   id_double <- type.inq.nc(nc, "NC_DOUBLE")$id
@@ -480,7 +483,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   x <- inq_temperature
   y <- var.inq.nc(nc, "temperature")
   str(y)
-  tally <- testfun(x,y[1:6])
+  if (format == "netcdf4") {
+    tally <- testfun(x,y[1:7])
+  } else {
+    tally <- testfun(x,y[1:6])
+  }
 
   cat("Read numeric matrix ... ")
   x <- mytemperature

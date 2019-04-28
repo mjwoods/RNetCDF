@@ -53,9 +53,11 @@
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
+R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
+              SEXP chunking, SEXP chunksizes)
 {
-  int ncid, ii, jj, *dimids, ndims, varid;
+  int ncid, ii, jj, *dimids, ndims, varid, chunkmode, format, withnc4;
+  size_t *chunksize_t;
   nc_type xtype;
   const char *varnamep;
   SEXP result;
@@ -75,12 +77,38 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
     R_nc_check (R_nc_dim_id (dims, ncid, &dimids[jj], ii));
   }
 
+  R_nc_check (nc_inq_format (ncid, &format));
+  withnc4 = (format == NC_FORMAT_NETCDF4);
+
+  if (withnc4) {
+    chunkmode = asLogical (chunking);
+    if (ndims == 0) {
+      /* Chunking is not relevant to scalar variables */
+      chunkmode = NA_LOGICAL;
+    }
+    if (chunkmode == TRUE) {
+      if (isNull (chunksizes)) {
+        chunksize_t = NULL;
+      } else {
+        chunksize_t = R_nc_dim_r2c_size (chunksizes, ndims, 0);
+      }
+    }
+  }
+
   /*-- Enter define mode ------------------------------------------------------*/
   R_nc_check( R_nc_redef (ncid));
 
-  /*-- Define the variable ----------------------------------------------------*/
+  /*-- Define the variable and details of storage -----------------------------*/
   R_nc_check (nc_def_var (
             ncid, varnamep, xtype, ndims, dimids, &varid));
+
+  if (withnc4) {
+    if (chunkmode == FALSE) {
+      R_nc_check (nc_def_var_chunking (ncid, varid, NC_CONTIGUOUS, NULL));
+    } else if (chunkmode == TRUE) {
+      R_nc_check (nc_def_var_chunking (ncid, varid, NC_CHUNKED, chunksize_t));
+    }
+  }
 
   result = R_nc_protect (ScalarInteger (varid));
   RRETURN(result);

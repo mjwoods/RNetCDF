@@ -6,13 +6,17 @@
 
 \description{Define a new NetCDF variable.}
 
-\usage{var.def.nc(ncfile, varname, vartype, dimensions)}
+\usage{var.def.nc(ncfile, varname, vartype, dimensions,
+                  chunking=NA, chunksizes=NULL)}
 
 \arguments{
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{varname}{Variable name. Must begin with an alphabetic character, followed by zero or more alphanumeric characters including the underscore ("\code{_}"). Case is significant.}
   \item{vartype}{External NetCDF data type as one of the following labels: \code{NC_BYTE}, \code{NC_UBYTE}, \code{NC_CHAR}, \code{NC_SHORT}, \code{NC_USHORT}, \code{NC_INT}, \code{NC_UINT}, \code{NC_INT64}, \code{NC_UINT64}, \code{NC_FLOAT}, \code{NC_DOUBLE}, \code{NC_STRING}, or a user-defined type name.}
   \item{dimensions}{Vector of \code{ndims} dimension IDs or their names corresponding to the variable dimensions or \code{NA} if a scalar variable should be created. If the ID (or name) of the unlimited dimension is included, it must be last.}
+  The following arguments are optional for datasets in "netcdf4" format (and ignored for other formats):
+  \item{chunking}{\code{TRUE} selects chunking, \code{FALSE} implies contiguous storage, \code{NA} allows the NetCDF library to choose a storage layout.}
+  \item{chunksizes}{Chunk size expressed as the number of elements along each dimension, in the same order as \code{dimensions}. If \code{NULL}, the NetCDF library uses a default chunking strategy, which is intended to give reasonable performance in typical applications. Ignored unless \code{chunking} is \code{TRUE}.}
 }
 
 \value{NetCDF variable identifier, returned invisibly.}
