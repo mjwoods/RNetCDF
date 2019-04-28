@@ -177,12 +177,14 @@ create.nc <- function(filename, clobber = TRUE, share = FALSE, prefill = TRUE,
   stopifnot(is.logical(clobber))
   stopifnot(is.logical(share))
   stopifnot(is.logical(prefill))
-  stopifnot(is.character(format))
+  stopifnot(is.character(format) &&
+            format[1] %in% c("classic", "offset64", "netcdf4", "classic4"))
   stopifnot(is.logical(large))
 
   # Handle deprecated argument:
-  if (isTRUE(large) && format == "classic") {
+  if (isTRUE(large) && format[1] == "classic") {
     format <- "offset64"
+    warning("Argument 'large' is deprecated; please specify 'format' instead")
   }
   
   #-- C function call --------------------------------------------------------
