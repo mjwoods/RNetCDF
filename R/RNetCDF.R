@@ -179,6 +179,11 @@ create.nc <- function(filename, clobber = TRUE, share = FALSE, prefill = TRUE,
   stopifnot(is.logical(prefill))
   stopifnot(is.character(format))
   stopifnot(is.logical(large))
+
+  # Handle deprecated argument:
+  if (isTRUE(large) && format == "classic") {
+    format <- "offset64"
+  }
   
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_create, filename, clobber, share, prefill, format)
