@@ -7,7 +7,8 @@
 \description{Read the contents of a NetCDF variable.}
 
 \usage{var.get.nc(ncfile, variable, start=NA, count=NA,
-        na.mode=4, collapse=TRUE, unpack=FALSE, rawchar=FALSE, fitnum=FALSE)}
+  na.mode=4, collapse=TRUE, unpack=FALSE, rawchar=FALSE, fitnum=FALSE,
+  cache_bytes=NA, cache_slots=NA, cache_preemption=NA)}
 
 \arguments{
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
@@ -31,6 +32,12 @@
     \code{NC_INT64}      \tab \code{\link[bit64]{integer64}} \cr
     \code{NC_UINT64}     \tab \code{\link[bit64]{integer64}} \cr
   }}
+
+The arguments below apply only to datasets in "netcdf4" format. Reading and writing of variables involves a "chunk cache", and default cache settings are defined by the NetCDF library. Performance may be improved in some applications by adjusting the cache settings through the following options:
+
+  \item{cache_bytes}{Size of chunk cache in bytes. Value of \code{NA} (default) implies no change.}
+  \item{cache_slots}{Number of slots in chunk cache. Value of \code{NA} (default) implies no change.}
+  \item{cache_preemption}{Value between 0 and 1 (inclusive) that biases the cache scheme towards eviction of chunks that have been fully read. Value of \code{NA} (default) implies no change.}
 }
 
 \details{

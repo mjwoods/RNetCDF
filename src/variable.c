@@ -394,7 +394,8 @@ R_nc_pack_att (int ncid, int varid, double **scale, double **add)
 
 SEXP
 R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
-              SEXP rawchar, SEXP fitnum, SEXP namode, SEXP unpack)
+              SEXP rawchar, SEXP fitnum, SEXP namode, SEXP unpack,
+              SEXP cache_bytes, SEXP cache_slots, SEXP cache_preemption)
 {
   int ncid, varid, ndims, ii, israw, isfit, inamode, isunpack;
   size_t *cstart=NULL, *ccount=NULL;
@@ -404,6 +405,9 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   R_nc_buf io;
   double add, scale, *addp=NULL, *scalep=NULL;
   void *fillp=NULL, *minp=NULL, *maxp=NULL;
+  size_t bytes, slots;
+  float preemption;
+  double bytes_in, slots_in, preempt_in;
 
   /*-- Convert arguments ------------------------------------------------------*/
   ncid = asInteger (nc);
@@ -414,6 +418,29 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   isfit = (asLogical (fitnum) == TRUE);
   inamode = asInteger (namode);
   isunpack = (asLogical (unpack) == TRUE);
+
+  /*-- Chunk cache options for netcdf4 files ----------------------------------*/
+#if defined HAVE_DECL_NC_GET_VAR_CHUNK_CACHE
+  if (nc_get_var_chunk_cache(ncid, varid,
+                             &bytes, &slots, &preemption) == NC_NOERR) {
+    bytes_in = asReal (cache_bytes);
+    slots_in = asReal (cache_slots);
+    preempt_in = asReal (cache_preemption);
+    if (R_FINITE(bytes_in) || R_FINITE(slots_in) || R_FINITE(preempt_in)) {
+      if (R_FINITE(bytes_in)) {
+	bytes = bytes_in;
+      }
+      if (R_FINITE(slots_in)) {
+	slots = slots_in;
+      }
+      if (R_FINITE(preempt_in)) {
+	preemption = preempt_in;
+      }
+      R_nc_check (nc_set_var_chunk_cache(ncid, varid,
+                                         bytes, slots, preemption));
+    }
+  }
+#endif
 
   /*-- Get type and rank of the variable --------------------------------------*/
   R_nc_check (nc_inq_var (ncid, varid, NULL, &xtype, &ndims, NULL, NULL));
@@ -559,7 +586,8 @@ R_nc_inq_var (SEXP nc, SEXP var)
 
 SEXP
 R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
-              SEXP namode, SEXP pack)
+              SEXP namode, SEXP pack,
+              SEXP cache_bytes, SEXP cache_slots, SEXP cache_preemption)
 {
   int ncid, varid, ndims, ii, inamode, ispack;
   size_t *cstart=NULL, *ccount=NULL;
@@ -567,6 +595,9 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
   const void *buf;
   double scale, add, *scalep=NULL, *addp=NULL;
   void *fillp=NULL, *minp=NULL, *maxp=NULL;
+  size_t bytes, slots;
+  float preemption;
+  double bytes_in, slots_in, preempt_in;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -575,6 +606,29 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
 
   inamode = asInteger (namode);
   ispack = (asLogical (pack) == TRUE);
+
+  /*-- Chunk cache options for netcdf4 files ----------------------------------*/
+#if defined HAVE_DECL_NC_GET_VAR_CHUNK_CACHE
+  if (nc_get_var_chunk_cache(ncid, varid,
+                             &bytes, &slots, &preemption) == NC_NOERR) {
+    bytes_in = asReal (cache_bytes);
+    slots_in = asReal (cache_slots);
+    preempt_in = asReal (cache_preemption);
+    if (R_FINITE(bytes_in) || R_FINITE(slots_in) || R_FINITE(preempt_in)) {
+      if (R_FINITE(bytes_in)) {
+	bytes = bytes_in;
+      }
+      if (R_FINITE(slots_in)) {
+	slots = slots_in;
+      }
+      if (R_FINITE(preempt_in)) {
+	preemption = preempt_in;
+      }
+      R_nc_check (nc_set_var_chunk_cache(ncid, varid,
+                                         bytes, slots, preemption));
+    }
+  }
+#endif
 
   /*-- Get type and rank of the variable --------------------------------------*/
   R_nc_check (nc_inq_var (ncid, varid, NULL, &xtype, &ndims, NULL, NULL));

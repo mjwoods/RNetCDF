@@ -281,7 +281,8 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   ##  Put the data
   cat("Writing variables ...\n")
   var.put.nc(nc, "time", mytime, 1, length(mytime))
-  var.put.nc(nc, "temperature", mytemperature, c(1,1), c(nstation,ntime))
+  var.put.nc(nc, "temperature", mytemperature, c(1,1), c(nstation,ntime),
+             cache_preemption=0.5)
   var.put.nc(nc, "packvar", mypackvar, pack=TRUE)
   var.put.nc(nc, "name", myname, c(1,1), c(nstring,nstation))
   var.put.nc(nc, "qcflag", charToRaw(myqcflag))
@@ -326,6 +327,18 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.put.nc(nc, paste(numtype,"_intfill",sep=""), as.integer(mysmallfill))
     var.put.nc(nc, paste(numtype,"_pack",sep=""), mypack, pack=TRUE)
     var.put.nc(nc, paste(numtype,"_intpack",sep=""), as.integer(mypack), pack=TRUE)
+  }
+
+  if (format == "netcdf4") {
+    # Check chunk cache settings for temperature:
+    cat("Check chunk cache settings after writing temperature ...")
+    x <- var.inq.nc(nc, "temperature")$cache_preemption
+    if (is.na(x)) {
+      cat("Feature not available in this NetCDF library version.\n")
+    } else {
+      y <- 0.5
+    }
+    tally <- testfun(x,y,tally)
   }
 
 #  sync.nc(nc)
@@ -479,20 +492,24 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
                      tally)
   }
 
+  cat("Read numeric matrix ... ")
+  x <- mytemperature
+  y <- var.get.nc(nc, "temperature", cache_preemption=0.4)
+  tally <- testfun(x,y,tally)
+
   cat("Inquire about numeric variable ...")
   x <- inq_temperature
   y <- var.inq.nc(nc, "temperature")
   str(y)
   if (format == "netcdf4") {
     tally <- testfun(x,y[1:7])
+    preempt <- y$cache_preemption
+    if (!is.na(preempt)) {
+      tally <- testfun(0.4, preempt)
+    }
   } else {
     tally <- testfun(x,y[1:6])
   }
-
-  cat("Read numeric matrix ... ")
-  x <- mytemperature
-  y <- var.get.nc(nc, "temperature")
-  tally <- testfun(x,y,tally)
 
   cat("Read numeric matrix slice ... ")
   x <- mytemperature[,2]

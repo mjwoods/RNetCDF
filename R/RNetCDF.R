@@ -504,7 +504,8 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions,
 #-------------------------------------------------------------------------------
 
 var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 4, 
-  collapse = TRUE, unpack = FALSE, rawchar = FALSE, fitnum = FALSE) {
+  collapse = TRUE, unpack = FALSE, rawchar = FALSE, fitnum = FALSE,
+  cache_bytes=NA, cache_slots=NA, cache_preemption=NA) {
   #-- Check args -------------------------------------------------------------
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(variable) || is.numeric(variable))
@@ -514,6 +515,9 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 4,
   stopifnot(is.logical(unpack))
   stopifnot(is.logical(rawchar))
   stopifnot(is.logical(fitnum))
+  stopifnot(is.logical(cache_bytes) || is.numeric(cache_bytes))
+  stopifnot(is.logical(cache_slots) || is.numeric(cache_slots))
+  stopifnot(is.logical(cache_preemption) || is.numeric(cache_preemption))
   
   # Truncate start & count and replace NA as described in the man page:
   varinfo <- var.inq.nc(ncfile, variable)
@@ -542,7 +546,8 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 4,
 
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_get_var, ncfile, variable, start, count,
-              rawchar, fitnum, na.mode, unpack)
+              rawchar, fitnum, na.mode, unpack,
+              cache_bytes, cache_slots, cache_preemption)
 
   if (inherits(nc, "integer64") &&
       !requireNamespace("bit64", quietly=TRUE)) {
@@ -591,7 +596,8 @@ var.inq.nc <- function(ncfile, variable) {
 #-------------------------------------------------------------------------------
 
 var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
-  na.mode = 4, pack = FALSE) {
+  na.mode = 4, pack = FALSE,
+  cache_bytes=NA, cache_slots=NA, cache_preemption=NA) {
   #-- Check args -------------------------------------------------------------
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(variable) || is.numeric(variable))
@@ -600,6 +606,9 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
   stopifnot(is.numeric(start) || is.logical(start))
   stopifnot(is.numeric(count) || is.logical(count))
   stopifnot(is.logical(pack))
+  stopifnot(is.logical(cache_bytes) || is.numeric(cache_bytes))
+  stopifnot(is.logical(cache_slots) || is.numeric(cache_slots))
+  stopifnot(is.logical(cache_preemption) || is.numeric(cache_preemption))
   
   # Determine type and dimensions of variable:
   varinfo <- var.inq.nc(ncfile, variable)
@@ -700,7 +709,8 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
 
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_put_var, ncfile, variable, start, count, data,
-              na.mode, pack)
+              na.mode, pack,
+              cache_bytes, cache_slots, cache_preemption)
  
   return(invisible(NULL))
 }
