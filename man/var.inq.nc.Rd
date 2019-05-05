@@ -31,6 +31,7 @@ The arguments below apply only to datasets in "netcdf4" format:
   \item{deflate}{Integer indicating level of compression, from 0 (minimum) to 9 (maximum), or \code{NA} if compression is not enabled.}
   \item{shuffle}{\code{TRUE} if byte shuffling is enabled for the variable, \code{FALSE} otherwise.}
   \item{big_endian}{Byte order of the variable. \code{TRUE} for big-endian, \code{FALSE} for little-endian, \code{NA} for not yet determined.}
+  \item{fletcher32}{\code{TRUE} if the fletcher32 checksum is enabled for this variable, \code{FALSE} otherwise.}
 }
 
 \details{This function returns information about a NetCDF variable. Information about a variable include its name, its ID, its type, its number of dimensions, a vector of the dimension IDs of this variable and the number of attributes.}
