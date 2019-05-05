@@ -28,6 +28,8 @@ The arguments below apply only to datasets in "netcdf4" format:
   \item{cache_bytes}{Size of chunk cache in bytes (\code{NA} if undefined).}
   \item{cache_slots}{The number of slots in the chunk cache (\code{NA} if undefined).}
   \item{cache_preemption}{A value between 0 and 1 (inclusive) that biases the cache scheme towards eviction of chunks that have been fully read (\code{NA} if undefined).}
+  \item{deflate}{Integer indicating level of compression, from 0 (minimum) to 9 (maximum), or \code{NA} if compression is not enabled.}
+  \item{shuffle}{\code{TRUE} if byte shuffling is enabled for the variable, \code{FALSE} otherwise.}
 }
 
 \details{This function returns information about a NetCDF variable. Information about a variable include its name, its ID, its type, its number of dimensions, a vector of the dimension IDs of this variable and the number of attributes.}

@@ -488,12 +488,14 @@ SEXP
 R_nc_inq_var (SEXP nc, SEXP var)
 {
   int ncid, varid, idim, ndims, natts, *dimids, storeprop, format, withnc4;
+  int shuffle, deflate, deflate_level;
   size_t *chunksize_t, cache_bytes, cache_slots;
   float cache_preemption;
   double *chunkdbl;
   char varname[NC_MAX_NAME + 1], vartype[NC_MAX_NAME+1];
   nc_type xtype;
-  SEXP result, rdimids, rchunks, rbytes, rslots, rpreempt;
+  SEXP result, rdimids, rchunks, rbytes, rslots, rpreempt,
+       rshuffle, rdeflate;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -552,12 +554,23 @@ R_nc_inq_var (SEXP nc, SEXP var)
     rpreempt = R_nc_protect (ScalarReal (NA_REAL));
   }
 
+  if (withnc4) {
+    R_nc_check (nc_inq_var_deflate (ncid, varid, &shuffle,
+                                    &deflate, &deflate_level));
+    if (deflate) {
+      rdeflate = R_nc_protect (ScalarInteger (deflate_level));
+    } else {
+      rdeflate = R_nc_protect (ScalarInteger (NA_INTEGER));
+    }
+    rshuffle = R_nc_protect (ScalarLogical (shuffle));
+  }
+
   /*-- Convert nc_type to char ------------------------------------------------*/
   R_nc_check (R_nc_type2str (ncid, xtype, vartype));
 
   /*-- Construct the output list ----------------------------------------------*/
   if (withnc4) {
-    result = R_nc_protect (allocVector (VECSXP, 10));
+    result = R_nc_protect (allocVector (VECSXP, 12));
   } else {
     result = R_nc_protect (allocVector (VECSXP, 6));
   }
@@ -574,6 +587,8 @@ R_nc_inq_var (SEXP nc, SEXP var)
     SET_VECTOR_ELT (result, 7, rbytes);
     SET_VECTOR_ELT (result, 8, rslots);
     SET_VECTOR_ELT (result, 9, rpreempt);
+    SET_VECTOR_ELT (result, 10, rdeflate);
+    SET_VECTOR_ELT (result, 11, rshuffle);
   }
 
   RRETURN(result);
