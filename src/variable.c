@@ -489,13 +489,15 @@ R_nc_inq_var (SEXP nc, SEXP var)
 {
   int ncid, varid, idim, ndims, natts, *dimids, storeprop, format, withnc4;
   int shuffle, deflate, deflate_level, endian, fletcher;
+  int status, szip_options, szip_bits;
   size_t *chunksize_t, cache_bytes, cache_slots;
   float cache_preemption;
   double *chunkdbl;
   char varname[NC_MAX_NAME + 1], vartype[NC_MAX_NAME+1];
   nc_type xtype;
   SEXP result, rdimids, rchunks, rbytes, rslots, rpreempt,
-       rshuffle, rdeflate, rendian, rfletcher;
+       rshuffle, rdeflate, rendian, rfletcher,
+       rszip_options, rszip_bits;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -578,6 +580,23 @@ R_nc_inq_var (SEXP nc, SEXP var)
     /* fletcher32 */
     R_nc_check (nc_inq_var_fletcher32 (ncid, varid, &fletcher));
     rfletcher = R_nc_protect (ScalarLogical (fletcher == NC_FLETCHER32));
+
+    /* szip */
+#if defined HAVE_DECL_NC_INQ_VAR_SZIP
+    status = nc_inq_var_szip (ncid, varid, &szip_options, &szip_bits);
+    if (status == NC_NOERR) {
+      rszip_options = R_nc_protect (ScalarInteger (szip_options));
+      rszip_bits = R_nc_protect (ScalarInteger (szip_bits));
+    } else if (status == NC_EFILTER) {
+      rszip_options = R_nc_protect (ScalarInteger (NA_INTEGER));
+      rszip_bits = R_nc_protect (ScalarInteger (NA_INTEGER));
+    } else {
+      R_nc_check (status);
+    }
+#else
+    rszip_options = R_NilValue;
+    rszip_bits = R_NilValue;
+#endif
   }
 
   /*-- Convert nc_type to char ------------------------------------------------*/
@@ -585,7 +604,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
 
   /*-- Construct the output list ----------------------------------------------*/
   if (withnc4) {
-    result = R_nc_protect (allocVector (VECSXP, 14));
+    result = R_nc_protect (allocVector (VECSXP, 16));
   } else {
     result = R_nc_protect (allocVector (VECSXP, 6));
   }
@@ -606,6 +625,8 @@ R_nc_inq_var (SEXP nc, SEXP var)
     SET_VECTOR_ELT (result, 11, rshuffle);
     SET_VECTOR_ELT (result, 12, rendian);
     SET_VECTOR_ELT (result, 13, rfletcher);
+    SET_VECTOR_ELT (result, 14, rszip_options);
+    SET_VECTOR_ELT (result, 15, rszip_bits);
   }
 
   RRETURN(result);
