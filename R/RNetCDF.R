@@ -585,7 +585,8 @@ var.inq.nc <- function(ncfile, variable) {
     names(nc) <- c("id", "name", "type", "ndims", "dimids", "natts",
                    "chunksizes", "cache_bytes", "cache_slots",
                    "cache_preemption", "deflate", "shuffle", "big_endian",
-                   "fletcher32", "szip_options", "szip_bits")
+                   "fletcher32", "szip_options", "szip_bits",
+                   "filter_id", "filter_params")
   }
   
   return(nc)

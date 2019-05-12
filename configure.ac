@@ -64,6 +64,7 @@ AC_SEARCH_LIBS(nc_open, netcdf, [],
 AC_CHECK_DECLS([nc_rename_grp], [], [], [[#include <netcdf.h>]])
 AC_CHECK_DECLS([nc_get_var_chunk_cache], [], [], [[#include <netcdf.h>]])
 AC_CHECK_DECLS([nc_inq_var_szip], [], [], [[#include <netcdf.h>]])
+AC_CHECK_DECLS([nc_inq_var_filter], [], [], [[#include <netcdf.h>]])
 
 #-------------------------------------------------------------------------------#
 #  Find UDUNITS2 library and header files                                       #
