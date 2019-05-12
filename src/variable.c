@@ -589,9 +589,11 @@ R_nc_inq_var (SEXP nc, SEXP var)
     if (status == NC_NOERR) {
       rszip_options = R_nc_protect (ScalarInteger (szip_options));
       rszip_bits = R_nc_protect (ScalarInteger (szip_bits));
+#  if defined NC_EFILTER
     } else if (status == NC_EFILTER) {
       rszip_options = R_nc_protect (ScalarInteger (NA_INTEGER));
       rszip_bits = R_nc_protect (ScalarInteger (NA_INTEGER));
+#  endif
     } else {
       R_nc_check (status);
     }
