@@ -420,7 +420,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   isunpack = (asLogical (unpack) == TRUE);
 
   /*-- Chunk cache options for netcdf4 files ----------------------------------*/
-#if defined HAVE_DECL_NC_GET_VAR_CHUNK_CACHE
+#if defined HAVE_DECL_NC_GET_VAR_CHUNK_CACHE && HAVE_DECL_NC_GET_VAR_CHUNK_CACHE
   if (nc_get_var_chunk_cache(ncid, varid,
                              &bytes, &slots, &preemption) == NC_NOERR) {
     bytes_in = asReal (cache_bytes);
@@ -534,7 +534,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
 	}
       }
 
-#if defined HAVE_DECL_NC_GET_VAR_CHUNK_CACHE
+#if defined HAVE_DECL_NC_GET_VAR_CHUNK_CACHE && HAVE_DECL_NC_GET_VAR_CHUNK_CACHE
       R_nc_check (nc_get_var_chunk_cache (ncid, varid, &cache_bytes,
                                           &cache_slots, &cache_preemption));
       rbytes = R_nc_protect (ScalarReal (cache_bytes));
@@ -584,7 +584,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
     rfletcher = R_nc_protect (ScalarLogical (fletcher == NC_FLETCHER32));
 
     /* szip */
-#if defined HAVE_DECL_NC_INQ_VAR_SZIP
+#if defined HAVE_DECL_NC_INQ_VAR_SZIP && HAVE_DECL_NC_INQ_VAR_SZIP
     status = nc_inq_var_szip (ncid, varid, &szip_options, &szip_bits);
     if (status == NC_NOERR) {
       rszip_options = R_nc_protect (ScalarInteger (szip_options));
@@ -603,7 +603,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
 #endif
 
     /* filter */
-#if defined HAVE_DECL_NC_INQ_VAR_FILTER
+#if defined HAVE_DECL_NC_INQ_VAR_FILTER && HAVE_DECL_NC_INQ_VAR_FILTER
     status = nc_inq_var_filter (ncid, varid,
                                 (unsigned int *) &filter_id,
                                 &filter_nparams, NULL);
@@ -691,7 +691,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
   ispack = (asLogical (pack) == TRUE);
 
   /*-- Chunk cache options for netcdf4 files ----------------------------------*/
-#if defined HAVE_DECL_NC_GET_VAR_CHUNK_CACHE
+#if defined HAVE_DECL_NC_GET_VAR_CHUNK_CACHE && HAVE_DECL_NC_GET_VAR_CHUNK_CACHE
   if (nc_get_var_chunk_cache(ncid, varid,
                              &bytes, &slots, &preemption) == NC_NOERR) {
     bytes_in = asReal (cache_bytes);
