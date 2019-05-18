@@ -132,13 +132,16 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   inq_temperature <- list()
   inq_temperature$id <- var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1),
-                                   chunking=TRUE, chunksizes=c(5,1))
+                                   chunking=TRUE, chunksizes=c(5,1),
+                                   deflate=5, shuffle=TRUE)
   inq_temperature$name <- "temperature"
   inq_temperature$type <- "NC_DOUBLE"
   inq_temperature$ndims <- 2
   inq_temperature$dimids <- c(0,1)
   inq_temperature$natts <- 0
   inq_temperature$chunksizes <- c(5,1)
+  inq_temperature$deflate <- 5
+  inq_temperature$shuffle <- TRUE
 
   var.def.nc(nc, "packvar", "NC_BYTE", c("station"))
   var.def.nc(nc, "name", "NC_CHAR", c("max_string_length", "station"))
@@ -501,14 +504,16 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   x <- inq_temperature
   y <- var.inq.nc(nc, "temperature")
   str(y)
+  var_inq_names <- c("id", "name", "type", "ndims", "dimids", "natts")
   if (format == "netcdf4") {
-    tally <- testfun(x,y[1:7])
+    var_inq_names_nc4 <- c(var_inq_names, "chunksizes", "deflate", "shuffle")
+    tally <- testfun(x[var_inq_names_nc4],y[var_inq_names_nc4])
     preempt <- y$cache_preemption
     if (!is.na(preempt)) {
       tally <- testfun(0.4, preempt)
     }
   } else {
-    tally <- testfun(x,y[1:6])
+    tally <- testfun(x[var_inq_names],y[var_inq_names])
   }
 
   cat("Read numeric matrix slice ... ")

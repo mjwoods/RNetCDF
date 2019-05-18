@@ -151,7 +151,7 @@ R_nc_utterm ();
 
 SEXP
 R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
-              SEXP chunking, SEXP chunksizes);
+              SEXP chunking, SEXP chunksizes, SEXP deflate, SEXP shuffle);
 
 SEXP
 R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,

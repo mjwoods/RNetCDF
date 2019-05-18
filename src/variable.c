@@ -54,9 +54,10 @@
 
 SEXP
 R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
-              SEXP chunking, SEXP chunksizes)
+              SEXP chunking, SEXP chunksizes, SEXP deflate, SEXP shuffle)
 {
   int ncid, ii, jj, *dimids, ndims, varid, chunkmode, format, withnc4;
+  int deflate_mode, deflate_level, shuffle_mode;
   size_t *chunksize_t;
   nc_type xtype;
   const char *varnamep;
@@ -93,6 +94,11 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
         chunksize_t = R_nc_dim_r2c_size (chunksizes, ndims, 0);
       }
     }
+
+    deflate_level = asInteger (deflate);
+    deflate_mode = (deflate_level != NA_INTEGER);
+
+    shuffle_mode = (asLogical (shuffle) == TRUE);
   }
 
   /*-- Enter define mode ------------------------------------------------------*/
@@ -107,6 +113,11 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
       R_nc_check (nc_def_var_chunking (ncid, varid, NC_CONTIGUOUS, NULL));
     } else if (chunkmode == TRUE) {
       R_nc_check (nc_def_var_chunking (ncid, varid, NC_CHUNKED, chunksize_t));
+    } // If NA, use storage format chosen by NetCDF
+
+    if (deflate_mode || shuffle_mode) {
+      R_nc_check (nc_def_var_deflate (ncid, varid, shuffle_mode,
+                                      deflate_mode, deflate_level));
     }
   }
 
