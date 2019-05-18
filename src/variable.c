@@ -54,10 +54,11 @@
 
 SEXP
 R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
-              SEXP chunking, SEXP chunksizes, SEXP deflate, SEXP shuffle)
+              SEXP chunking, SEXP chunksizes, SEXP deflate, SEXP shuffle,
+              SEXP big_endian)
 {
   int ncid, ii, jj, *dimids, ndims, varid, chunkmode, format, withnc4;
-  int deflate_mode, deflate_level, shuffle_mode;
+  int deflate_mode, deflate_level, shuffle_mode, endian_mode;
   size_t *chunksize_t;
   nc_type xtype;
   const char *varnamep;
@@ -99,6 +100,19 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
     deflate_mode = (deflate_level != NA_INTEGER);
 
     shuffle_mode = (asLogical (shuffle) == TRUE);
+
+    switch (asLogical (big_endian)) {
+    case TRUE:
+      endian_mode = NC_ENDIAN_BIG;
+      break;
+    case FALSE:
+      endian_mode = NC_ENDIAN_LITTLE;
+      break;
+    default:
+      endian_mode = NC_ENDIAN_NATIVE;
+      break;
+    }
+
   }
 
   /*-- Enter define mode ------------------------------------------------------*/
@@ -118,6 +132,10 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
     if (deflate_mode || shuffle_mode) {
       R_nc_check (nc_def_var_deflate (ncid, varid, shuffle_mode,
                                       deflate_mode, deflate_level));
+    }
+
+    if (endian_mode != NC_ENDIAN_NATIVE) {
+      R_nc_check (nc_def_var_endian (ncid, varid, endian_mode));
     }
   }
 

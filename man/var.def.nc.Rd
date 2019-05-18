@@ -7,7 +7,8 @@
 \description{Define a new NetCDF variable.}
 
 \usage{var.def.nc(ncfile, varname, vartype, dimensions,
-                  chunking=NA, chunksizes=NULL, deflate=NA, shuffle=FALSE)}
+                  chunking=NA, chunksizes=NULL, deflate=NA, shuffle=FALSE,
+                  big_endian=NA)}
 
 \arguments{
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
@@ -19,6 +20,7 @@
   \item{chunksizes}{Chunk size expressed as the number of elements along each dimension, in the same order as \code{dimensions}. If \code{NULL}, the NetCDF library uses a default chunking strategy, which is intended to give reasonable performance in typical applications. Ignored unless \code{chunking} is \code{TRUE}.}
   \item{deflate}{Integer indicating level of compression for a chunked variable, from 0 (minimum) to 9 (maximum), or \code{NA} for no compression.}
   \item{shuffle}{\code{TRUE} to enable byte shuffling for a chunked variable, which may improve compression with \code{deflate}.}
+  \item{big_endian}{Byte order of the variable. \code{TRUE} for big-endian, \code{FALSE} for little-endian, \code{NA} for native endianness of the platform.}
 }
 
 \value{NetCDF variable identifier, returned invisibly.}

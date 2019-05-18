@@ -133,7 +133,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   inq_temperature <- list()
   inq_temperature$id <- var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1),
                                    chunking=TRUE, chunksizes=c(5,1),
-                                   deflate=5, shuffle=TRUE)
+                                   deflate=5, shuffle=TRUE, big_endian=TRUE)
   inq_temperature$name <- "temperature"
   inq_temperature$type <- "NC_DOUBLE"
   inq_temperature$ndims <- 2
@@ -142,6 +142,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   inq_temperature$chunksizes <- c(5,1)
   inq_temperature$deflate <- 5
   inq_temperature$shuffle <- TRUE
+  inq_temperature$big_endian <- TRUE
 
   var.def.nc(nc, "packvar", "NC_BYTE", c("station"))
   var.def.nc(nc, "name", "NC_CHAR", c("max_string_length", "station"))
@@ -506,7 +507,8 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   str(y)
   var_inq_names <- c("id", "name", "type", "ndims", "dimids", "natts")
   if (format == "netcdf4") {
-    var_inq_names_nc4 <- c(var_inq_names, "chunksizes", "deflate", "shuffle")
+    var_inq_names_nc4 <- c(var_inq_names, "chunksizes", "deflate", "shuffle",
+                           "big_endian")
     tally <- testfun(x[var_inq_names_nc4],y[var_inq_names_nc4])
     preempt <- y$cache_preemption
     if (!is.na(preempt)) {
