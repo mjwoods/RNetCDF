@@ -55,10 +55,10 @@
 SEXP
 R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
               SEXP chunking, SEXP chunksizes, SEXP deflate, SEXP shuffle,
-              SEXP big_endian)
+              SEXP big_endian, SEXP fletcher32)
 {
   int ncid, ii, jj, *dimids, ndims, varid, chunkmode, format, withnc4;
-  int deflate_mode, deflate_level, shuffle_mode, endian_mode;
+  int deflate_mode, deflate_level, shuffle_mode, endian_mode, fletcher_mode;
   size_t *chunksize_t;
   nc_type xtype;
   const char *varnamep;
@@ -113,6 +113,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
       break;
     }
 
+    fletcher_mode = (asLogical (fletcher32) == TRUE);
   }
 
   /*-- Enter define mode ------------------------------------------------------*/
@@ -136,6 +137,10 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 
     if (endian_mode != NC_ENDIAN_NATIVE) {
       R_nc_check (nc_def_var_endian (ncid, varid, endian_mode));
+    }
+
+    if (fletcher_mode) {
+      R_nc_check (nc_def_var_fletcher32 (ncid, varid, fletcher_mode));
     }
   }
 

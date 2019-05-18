@@ -8,7 +8,7 @@
 
 \usage{var.def.nc(ncfile, varname, vartype, dimensions,
                   chunking=NA, chunksizes=NULL, deflate=NA, shuffle=FALSE,
-                  big_endian=NA)}
+                  big_endian=NA, fletcher32=FALSE)}
 
 \arguments{
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
@@ -21,6 +21,7 @@
   \item{deflate}{Integer indicating level of compression, from 0 (minimum) to 9 (maximum), or \code{NA} for no compression.}
   \item{shuffle}{\code{TRUE} to enable byte shuffling, which may improve compression with \code{deflate}.}
   \item{big_endian}{Byte order of the variable. \code{TRUE} for big-endian, \code{FALSE} for little-endian, \code{NA} for native endianness of the platform.}
+  \item{fletcher32}{\code{TRUE} to enable the fletcher32 checksum.}
 }
 
 \value{NetCDF variable identifier, returned invisibly.}
