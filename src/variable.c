@@ -55,10 +55,12 @@
 SEXP
 R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
               SEXP chunking, SEXP chunksizes, SEXP deflate, SEXP shuffle,
-              SEXP big_endian, SEXP fletcher32)
+              SEXP big_endian, SEXP fletcher32, SEXP filter_id,
+              SEXP filter_params)
 {
   int ncid, ii, jj, *dimids, ndims, varid, chunkmode, format, withnc4;
   int deflate_mode, deflate_level, shuffle_mode, endian_mode, fletcher_mode;
+  int filter_mode, filtid, *filtparm;
   size_t *chunksize_t;
   nc_type xtype;
   const char *varnamep;
@@ -114,6 +116,10 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
     }
 
     fletcher_mode = (asLogical (fletcher32) == TRUE);
+
+    filtid = asInteger (filter_id);
+    filter_mode = (filtid != NA_INTEGER);
+    filtparm = INTEGER (filter_params);
   }
 
   /*-- Enter define mode ------------------------------------------------------*/
@@ -142,6 +148,14 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
     if (fletcher_mode) {
       R_nc_check (nc_def_var_fletcher32 (ncid, varid, fletcher_mode));
     }
+
+#if defined HAVE_DECL_NC_INQ_VAR_FILTER && HAVE_DECL_NC_INQ_VAR_FILTER
+    if (filter_mode) {
+      R_nc_check (nc_def_var_filter (ncid, varid, (unsigned int) filtid,
+        xlength (filter_params), (const unsigned int*) filtparm));
+    }
+#endif
+
   }
 
   result = R_nc_protect (ScalarInteger (varid));
