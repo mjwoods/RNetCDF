@@ -199,7 +199,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   ##  Set a _FillValue attribute for temperature
   att.put.nc(nc, "temperature", "_FillValue", "NC_DOUBLE", -99999.9)
-  inq_temperature$natts <- inq_temperature$natts + 1
+  inq_temperature$natts <- inq_temperature$natts + as.integer(1)
 
   ## Define the packing used by packvar
   id_double <- type.inq.nc(nc, "NC_DOUBLE")$id
@@ -214,11 +214,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   att.put.nc(nc, "name", "raw_att", "NC_CHAR", charToRaw(att_text))
   if (format == "netcdf4") {
     att.put.nc(nc, "temperature", "string_att", "NC_STRING", att_text2)
-    inq_temperature$natts <- inq_temperature$natts + 1
+    inq_temperature$natts <- inq_temperature$natts + as.integer(1)
     if (has_bit64) {
       hugeint <- as.integer64("-1234567890123456789")
       att.put.nc(nc, "temperature", "int64_att", "NC_INT64", hugeint)
-      inq_temperature$natts <- inq_temperature$natts + 1
+      inq_temperature$natts <- inq_temperature$natts + as.integer(1)
     }
   }
 
