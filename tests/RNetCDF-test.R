@@ -511,13 +511,13 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   if (format == "netcdf4") {
     var_inq_names_nc4 <- c(var_inq_names, "chunksizes", "deflate", "shuffle",
                            "big_endian", "fletcher32")
-    tally <- testfun(x[var_inq_names_nc4],y[var_inq_names_nc4])
+    tally <- testfun(x[var_inq_names_nc4], y[var_inq_names_nc4], tally)
     preempt <- y$cache_preemption
     if (!is.na(preempt)) {
-      tally <- testfun(0.4, preempt)
+      tally <- testfun(0.4, preempt, tally)
     }
   } else {
-    tally <- testfun(x[var_inq_names],y[var_inq_names])
+    tally <- testfun(x[var_inq_names], y[var_inq_names], tally)
   }
 
   cat("Read numeric matrix slice ... ")
