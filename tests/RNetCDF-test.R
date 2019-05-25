@@ -137,11 +137,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
                                    fletcher32=TRUE)
   inq_temperature$name <- "temperature"
   inq_temperature$type <- "NC_DOUBLE"
-  inq_temperature$ndims <- 2
-  inq_temperature$dimids <- c(0,1)
-  inq_temperature$natts <- 0
-  inq_temperature$chunksizes <- c(5,1)
-  inq_temperature$deflate <- 5
+  inq_temperature$ndims <- as.integer(2)
+  inq_temperature$dimids <- as.integer(c(0,1))
+  inq_temperature$natts <- as.integer(0)
+  inq_temperature$chunksizes <- as.numeric(c(5,1))
+  inq_temperature$deflate <- as.integer(5)
   inq_temperature$shuffle <- TRUE
   inq_temperature$big_endian <- TRUE
   inq_temperature$fletcher32 <- TRUE
