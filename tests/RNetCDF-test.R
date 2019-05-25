@@ -506,7 +506,6 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   cat("Inquire about numeric variable ...")
   x <- inq_temperature
   y <- var.inq.nc(nc, "temperature")
-  str(y)
   var_inq_names <- c("id", "name", "type", "ndims", "dimids", "natts")
   if (format == "netcdf4") {
     var_inq_names_nc4 <- c(var_inq_names, "chunksizes", "deflate", "shuffle",
