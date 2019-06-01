@@ -77,6 +77,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   ncfile <- paste("test_", format, ".nc", sep="")
   nc <- create.nc(ncfile, format=format)
 
+  # Show library version:
+  libvers <- file.inq.nc(nc)$libvers
+  cat("Version of netcdf library ... ", libvers, "\n")
+
   nstation <- 5
   ntime <- 2
   nstring <- 32
