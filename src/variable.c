@@ -593,9 +593,9 @@ R_nc_inq_var (SEXP nc, SEXP var)
       rslots = R_nc_protect (ScalarReal (cache_slots));
       rpreempt = R_nc_protect (ScalarReal (cache_preemption));
 #else
-      rbytes = R_nc_protect (ScalarReal (NA_REAL));
-      rslots = R_nc_protect (ScalarReal (NA_REAL));
-      rpreempt = R_nc_protect (ScalarReal (NA_REAL));
+      rbytes = R_NilValue;
+      rslots = R_NilValue;
+      rpreempt = R_NilValue;
 #endif
     }
 

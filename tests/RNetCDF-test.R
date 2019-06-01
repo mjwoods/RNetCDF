@@ -513,10 +513,16 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   var_inq_names <- c("id", "name", "type", "ndims", "dimids", "natts")
   if (format == "netcdf4") {
     var_inq_names_nc4 <- c(var_inq_names, "chunksizes", "deflate", "shuffle",
-                           "big_endian", "fletcher32")
+                           "fletcher32")
     tally <- testfun(x[var_inq_names_nc4], y[var_inq_names_nc4], tally)
+    big_endian <- y$big_endian
+    # May be NULL or NA for older netcdf libraries, TRUE otherwise.
+    if (!is.null(big_endian) && !isTRUE(is.na(big_endian))) {
+      tally <- testfun(TRUE, big_endian, tally)
+    }
     preempt <- y$cache_preemption
-    if (!is.na(preempt)) {
+    # May be NULL for older netcdf libraries, numeric otherwise.
+    if (!is.null(preempt)) {
       tally <- testfun(0.4, preempt, tally)
     }
   } else {

@@ -25,17 +25,17 @@
 The arguments below apply only to datasets in "netcdf4" format:
 
   \item{chunksizes}{Chunk size expressed as the number of elements along each dimension, in the same order as \code{dimids}. \code{NULL} implies contiguous storage.}
-  \item{cache_bytes}{Size of chunk cache in bytes (\code{NA} if undefined).}
-  \item{cache_slots}{The number of slots in the chunk cache (\code{NA} if undefined).}
-  \item{cache_preemption}{A value between 0 and 1 (inclusive) that biases the cache scheme towards eviction of chunks that have been fully read (\code{NA} if undefined).}
+  \item{cache_bytes}{Size of chunk cache in bytes (\code{NULL} if unsupported).}
+  \item{cache_slots}{The number of slots in the chunk cache (\code{NULL} if unsupported).}
+  \item{cache_preemption}{A value between 0 and 1 (inclusive) that biases the cache scheme towards eviction of chunks that have been fully read (\code{NULL} if unsupported).}
   \item{deflate}{Integer indicating level of compression, from 0 (minimum) to 9 (maximum), or \code{NA} if compression is not enabled.}
   \item{shuffle}{\code{TRUE} if byte shuffling is enabled for the variable, \code{FALSE} otherwise.}
-  \item{big_endian}{Byte order of the variable. \code{TRUE} for big-endian, \code{FALSE} for little-endian, \code{NA} for not yet determined, or \code{NULL} if the information is not provided by this version of NetCDF.}
+  \item{big_endian}{Byte order of the variable. \code{TRUE} for big-endian, \code{FALSE} for little-endian, \code{NA} for not yet determined, or \code{NULL} if unsupported.}
   \item{fletcher32}{\code{TRUE} if the fletcher32 checksum is enabled for this variable, \code{FALSE} otherwise.}
-  \item{szip_options}{Integer containing a bitmask of szip options. \code{NA} if szip is not used, or \code{NULL} if the information is not provided by this version of NetCDF.}
-  \item{szip_bits}{Number of bits per pixel for szip. \code{NA} if szip is not used, or \code{NULL} if the information is not provided by this version of NetCDF.}
-  \item{filter_id}{Identifier of filter associated with the variable. \code{NA} if no filter is defined, or \code{NULL} if the information is not provided by this version of NetCDF.}
-  \item{filter_params}{Vector of integer parameters for the filter associated with the variable. \code{NA} if no filter is defined, or \code{NULL} if the information is not provided by this version of NetCDF.}
+  \item{szip_options}{Integer containing a bitmask of szip options. \code{NA} if szip is not used, or \code{NULL} if unsupported.}
+  \item{szip_bits}{Number of bits per pixel for szip. \code{NA} if szip is not used, or \code{NULL} if unsupported.}
+  \item{filter_id}{Identifier of filter associated with the variable. \code{NA} if no filter is defined, or \code{NULL} if unsupported.}
+  \item{filter_params}{Vector of integer parameters for the filter associated with the variable. \code{NA} if no filter is defined, or \code{NULL} if unsupported.}
 }
 
 \details{This function returns information about a NetCDF variable. Information about a variable include its name, its ID, its type, its number of dimensions, a vector of the dimension IDs of this variable and the number of attributes.}
