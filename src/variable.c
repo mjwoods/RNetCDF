@@ -103,6 +103,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 
     shuffle_mode = (asLogical (shuffle) == TRUE);
 
+#ifdef HAVE_NC_INQ_VAR_ENDIAN
     switch (asLogical (big_endian)) {
     case TRUE:
       endian_mode = NC_ENDIAN_BIG;
@@ -114,6 +115,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
       endian_mode = NC_ENDIAN_NATIVE;
       break;
     }
+#endif
 
     fletcher_mode = (asLogical (fletcher32) == TRUE);
 
@@ -141,15 +143,17 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
                                       deflate_mode, deflate_level));
     }
 
+#ifdef HAVE_NC_INQ_VAR_ENDIAN
     if (endian_mode != NC_ENDIAN_NATIVE) {
       R_nc_check (nc_def_var_endian (ncid, varid, endian_mode));
     }
+#endif
 
     if (fletcher_mode) {
       R_nc_check (nc_def_var_fletcher32 (ncid, varid, fletcher_mode));
     }
 
-#if defined HAVE_DECL_NC_INQ_VAR_FILTER && HAVE_DECL_NC_INQ_VAR_FILTER
+#ifdef HAVE_NC_INQ_VAR_FILTER
     if (filter_mode) {
       R_nc_check (nc_def_var_filter (ncid, varid, (unsigned int) filtid,
         xlength (filter_params), (const unsigned int*) filtparm));
@@ -468,7 +472,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   isunpack = (asLogical (unpack) == TRUE);
 
   /*-- Chunk cache options for netcdf4 files ----------------------------------*/
-#if defined HAVE_DECL_NC_GET_VAR_CHUNK_CACHE && HAVE_DECL_NC_GET_VAR_CHUNK_CACHE
+#ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
   if (nc_get_var_chunk_cache(ncid, varid,
                              &bytes, &slots, &preemption) == NC_NOERR) {
     bytes_in = asReal (cache_bytes);
@@ -582,7 +586,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
 	}
       }
 
-#if defined HAVE_DECL_NC_GET_VAR_CHUNK_CACHE && HAVE_DECL_NC_GET_VAR_CHUNK_CACHE
+#ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
       R_nc_check (nc_get_var_chunk_cache (ncid, varid, &cache_bytes,
                                           &cache_slots, &cache_preemption));
       rbytes = R_nc_protect (ScalarReal (cache_bytes));
@@ -618,6 +622,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
     rshuffle = R_nc_protect (ScalarLogical (shuffle));
 
     /* endian */
+#ifdef HAVE_NC_INQ_VAR_ENDIAN
     R_nc_check (nc_inq_var_endian (ncid, varid, &endian));
     if (endian == NC_ENDIAN_LITTLE) {
       rendian = R_nc_protect (ScalarLogical (0));
@@ -626,13 +631,16 @@ R_nc_inq_var (SEXP nc, SEXP var)
     } else {
       rendian = R_nc_protect (ScalarLogical (NA_LOGICAL));
     }
+#else
+    rendian = R_NilValue;
+#endif
 
     /* fletcher32 */
     R_nc_check (nc_inq_var_fletcher32 (ncid, varid, &fletcher));
     rfletcher = R_nc_protect (ScalarLogical (fletcher == NC_FLETCHER32));
 
     /* szip */
-#if defined HAVE_DECL_NC_INQ_VAR_SZIP && HAVE_DECL_NC_INQ_VAR_SZIP
+#ifdef HAVE_NC_INQ_VAR_SZIP
     status = nc_inq_var_szip (ncid, varid, &szip_options, &szip_bits);
     if (status == NC_NOERR) {
       rszip_options = R_nc_protect (ScalarInteger (szip_options));
@@ -651,7 +659,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
 #endif
 
     /* filter */
-#if defined HAVE_DECL_NC_INQ_VAR_FILTER && HAVE_DECL_NC_INQ_VAR_FILTER
+#ifdef HAVE_NC_INQ_VAR_FILTER
     status = nc_inq_var_filter (ncid, varid,
                                 (unsigned int *) &filter_id,
                                 &filter_nparams, NULL);
@@ -739,7 +747,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
   ispack = (asLogical (pack) == TRUE);
 
   /*-- Chunk cache options for netcdf4 files ----------------------------------*/
-#if defined HAVE_DECL_NC_GET_VAR_CHUNK_CACHE && HAVE_DECL_NC_GET_VAR_CHUNK_CACHE
+#ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
   if (nc_get_var_chunk_cache(ncid, varid,
                              &bytes, &slots, &preemption) == NC_NOERR) {
     bytes_in = asReal (cache_bytes);

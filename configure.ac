@@ -59,12 +59,8 @@ AC_SEARCH_LIBS(nc_open, netcdf, [],
     AC_MSG_ERROR("netcdf library was not linked - defining LDFLAGS may help"))
 
 # Check for the existence of optional netcdf routines.
-# Afterwards, C preprocessor macros HAVE_DECL_symbols are defined,
-# with value 1 if routine is declared or 0 if not.
-AC_CHECK_DECLS([nc_rename_grp], [], [], [[#include <netcdf.h>]])
-AC_CHECK_DECLS([nc_get_var_chunk_cache], [], [], [[#include <netcdf.h>]])
-AC_CHECK_DECLS([nc_inq_var_szip], [], [], [[#include <netcdf.h>]])
-AC_CHECK_DECLS([nc_inq_var_filter], [], [], [[#include <netcdf.h>]])
+# C preprocessor macros HAVE_routine are defined for existing routines.
+AC_CHECK_FUNCS([nc_rename_grp nc_get_var_chunk_cache nc_inq_var_szip nc_inq_var_endian nc_inq_var_filter])
 
 #-------------------------------------------------------------------------------#
 #  Find UDUNITS2 library and header files                                       #
