@@ -826,7 +826,10 @@ R_nc_opaque_raw_init (R_nc_buf *io)
     ndim = 1;
   }
   xdim = (size_t *) R_alloc (ndim + 1, sizeof(size_t));
-  memcpy (xdim, io->xdim, ndim * sizeof(size_t));
+  if (ndim != 0) {
+    /* Scalar has no dimensions to copy */
+    memcpy (xdim, io->xdim, ndim * sizeof(size_t));
+  }
   xdim[ndim] = size;
 
   io->rxp = R_nc_allocArray (RAWSXP, ndim + 1, xdim);
