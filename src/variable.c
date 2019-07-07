@@ -652,6 +652,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
 #  endif
     } else {
       R_nc_check (status);
+      return R_NilValue;
     }
 #else
     rszip_options = R_NilValue;
@@ -675,12 +676,22 @@ R_nc_inq_var (SEXP nc, SEXP var)
       rfilter_params = R_nc_protect (ScalarInteger (NA_INTEGER));
     } else {
       R_nc_check (status);
+      return R_NilValue;
     }
 #else
     rfilter_id = R_NilValue;
     rfilter_params = R_NilValue;
 #endif
 
+  } else {
+    rdeflate = R_NilValue;
+    rshuffle = R_NilValue;
+    rendian = R_NilValue;
+    rfletcher = R_NilValue;
+    rszip_bits = R_NilValue;
+    rszip_options = R_NilValue;
+    rfilter_id = R_NilValue;
+    rfilter_params = R_NilValue;
   }
 
   /*-- Convert nc_type to char ------------------------------------------------*/
