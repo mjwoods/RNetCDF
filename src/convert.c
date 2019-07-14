@@ -967,7 +967,7 @@ R_nc_char_symbol (char *in, size_t size, char *work)
 static void
 R_nc_enum_factor (R_nc_buf *io)
 {
-  SEXP levels, classname, env, symbol, value;
+  SEXP levels, classname, env, cmd, symbol, value;
   size_t size, nmem, ifac, nfac;
   char *memname, *memval, *work, *inval, *fill;
   int ncid, imem, imemmax, *out;
@@ -984,7 +984,8 @@ R_nc_enum_factor (R_nc_buf *io)
   ncid = io->ncid;
   xtype = io->xtype;
   R_nc_check (nc_inq_enum(ncid, xtype, NULL, NULL, &size, &nmem));
-  env = R_nc_protect (eval(lang1(install("new.env")),R_BaseEnv));
+  cmd = R_nc_protect (lang1 (install ("new.env")));
+  env = R_nc_protect (eval (cmd, R_BaseEnv));
 
   levels = R_nc_allocArray (STRSXP, -1, &nmem);
   memname = R_alloc (nmem, NC_MAX_NAME+1);
