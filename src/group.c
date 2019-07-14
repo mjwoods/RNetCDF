@@ -212,7 +212,7 @@ R_nc_inq_dimids (SEXP nc, SEXP ancestors)
 SEXP
 R_nc_rename_grp (SEXP nc, SEXP grpname)
 {
-#if defined HAVE_DECL_NC_RENAME_GRP && HAVE_DECL_NC_RENAME_GRP
+#ifdef HAVE_NC_RENAME_GRP
   int ncid;
   const char *cgrpname;
 

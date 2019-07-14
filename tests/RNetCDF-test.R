@@ -77,6 +77,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   ncfile <- paste("test_", format, ".nc", sep="")
   nc <- create.nc(ncfile, format=format)
 
+  # Show library version:
+  libvers <- file.inq.nc(nc)$libvers
+  cat("Version of netcdf library ... ", libvers, "\n")
+
   nstation <- 5
   ntime <- 2
   nstring <- 32
@@ -129,7 +133,23 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   ##  Define variables
   var.def.nc(nc, "time", "NC_INT", "time")
-  var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1))
+
+  inq_temperature <- list()
+  inq_temperature$id <- var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1),
+                                   chunking=TRUE, chunksizes=c(5,1),
+                                   deflate=5, shuffle=TRUE, big_endian=TRUE,
+                                   fletcher32=TRUE)
+  inq_temperature$name <- "temperature"
+  inq_temperature$type <- "NC_DOUBLE"
+  inq_temperature$ndims <- as.integer(2)
+  inq_temperature$dimids <- as.integer(c(0,1))
+  inq_temperature$natts <- as.integer(0)
+  inq_temperature$chunksizes <- as.numeric(c(5,1))
+  inq_temperature$deflate <- as.integer(5)
+  inq_temperature$shuffle <- TRUE
+  inq_temperature$big_endian <- TRUE
+  inq_temperature$fletcher32 <- TRUE
+
   var.def.nc(nc, "packvar", "NC_BYTE", c("station"))
   var.def.nc(nc, "name", "NC_CHAR", c("max_string_length", "station"))
   var.def.nc(nc, "qcflag", "NC_CHAR", c("station"))
@@ -183,6 +203,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   ##  Set a _FillValue attribute for temperature
   att.put.nc(nc, "temperature", "_FillValue", "NC_DOUBLE", -99999.9)
+  inq_temperature$natts <- inq_temperature$natts + as.integer(1)
 
   ## Define the packing used by packvar
   id_double <- type.inq.nc(nc, "NC_DOUBLE")$id
@@ -197,9 +218,11 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   att.put.nc(nc, "name", "raw_att", "NC_CHAR", charToRaw(att_text))
   if (format == "netcdf4") {
     att.put.nc(nc, "temperature", "string_att", "NC_STRING", att_text2)
+    inq_temperature$natts <- inq_temperature$natts + as.integer(1)
     if (has_bit64) {
       hugeint <- as.integer64("-1234567890123456789")
       att.put.nc(nc, "temperature", "int64_att", "NC_INT64", hugeint)
+      inq_temperature$natts <- inq_temperature$natts + as.integer(1)
     }
   }
 
@@ -268,7 +291,8 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   ##  Put the data
   cat("Writing variables ...\n")
   var.put.nc(nc, "time", mytime, 1, length(mytime))
-  var.put.nc(nc, "temperature", mytemperature, c(1,1), c(nstation,ntime))
+  var.put.nc(nc, "temperature", mytemperature, c(1,1), c(nstation,ntime),
+             cache_preemption=0.5)
   var.put.nc(nc, "packvar", mypackvar, pack=TRUE)
   var.put.nc(nc, "name", myname, c(1,1), c(nstring,nstation))
   var.put.nc(nc, "qcflag", charToRaw(myqcflag))
@@ -313,6 +337,18 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
     var.put.nc(nc, paste(numtype,"_intfill",sep=""), as.integer(mysmallfill))
     var.put.nc(nc, paste(numtype,"_pack",sep=""), mypack, pack=TRUE)
     var.put.nc(nc, paste(numtype,"_intpack",sep=""), as.integer(mypack), pack=TRUE)
+  }
+
+  if (format == "netcdf4") {
+    # Check chunk cache settings for temperature:
+    cat("Check chunk cache settings after writing temperature ...")
+    x <- var.inq.nc(nc, "temperature")$cache_preemption
+    if (is.na(x)) {
+      cat("Feature not available in this NetCDF library version.\n")
+    } else {
+      y <- 0.5
+    }
+    tally <- testfun(x,y,tally)
   }
 
 #  sync.nc(nc)
@@ -468,8 +504,30 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
 
   cat("Read numeric matrix ... ")
   x <- mytemperature
-  y <- var.get.nc(nc, "temperature")
+  y <- var.get.nc(nc, "temperature", cache_preemption=0.4)
   tally <- testfun(x,y,tally)
+
+  cat("Inquire about numeric variable ...")
+  x <- inq_temperature
+  y <- var.inq.nc(nc, "temperature")
+  var_inq_names <- c("id", "name", "type", "ndims", "dimids", "natts")
+  if (format == "netcdf4") {
+    var_inq_names_nc4 <- c(var_inq_names, "chunksizes", "deflate", "shuffle",
+                           "fletcher32")
+    tally <- testfun(x[var_inq_names_nc4], y[var_inq_names_nc4], tally)
+    big_endian <- y$big_endian
+    # May be NULL or NA for older netcdf libraries, TRUE otherwise.
+    if (!is.null(big_endian) && !isTRUE(is.na(big_endian))) {
+      tally <- testfun(TRUE, big_endian, tally)
+    }
+    preempt <- y$cache_preemption
+    # May be NULL for older netcdf libraries, numeric otherwise.
+    if (!is.null(preempt)) {
+      tally <- testfun(0.4, preempt, tally)
+    }
+  } else {
+    tally <- testfun(x[var_inq_names], y[var_inq_names], tally)
+  }
 
   cat("Read numeric matrix slice ... ")
   x <- mytemperature[,2]

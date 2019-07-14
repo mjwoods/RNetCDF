@@ -150,18 +150,23 @@ R_nc_utterm ();
 /* Variables */
 
 SEXP
-R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims);
+R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
+              SEXP chunking, SEXP chunksizes, SEXP deflate, SEXP shuffle,
+              SEXP big_endian, SEXP fletcher32, SEXP filter_id,
+              SEXP filter_params);
 
 SEXP
 R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
-              SEXP rawchar, SEXP fitnum, SEXP namode, SEXP unpack);
+              SEXP rawchar, SEXP fitnum, SEXP namode, SEXP unpack,
+              SEXP cache_bytes, SEXP cache_slots, SEXP cache_preemption);
 
 SEXP
 R_nc_inq_var (SEXP nc, SEXP var);
 
 SEXP
 R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
-              SEXP namode, SEXP pack);
+              SEXP namode, SEXP pack,
+              SEXP cache_bytes, SEXP cache_slots, SEXP cache_preemption);
 
 SEXP
 R_nc_rename_var (SEXP nc, SEXP var, SEXP newname);

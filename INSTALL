@@ -5,9 +5,9 @@ installation of the RNetCDF package and gives some further hints.
 Software Requirements
 =====================
 
-NetCDF library version 4.0.1 or greater.
+NetCDF library version 4.1.3 or greater.
 
-UDUNITS library version 2.1 or greater.
+UDUNITS library version 2.0.4 or greater.
 
 If using Fink on Mac OS X, be sure that the corresponding R version (either
 i386 or x86_64) is used (R32 or R64). Compiling with R64 against i386 will

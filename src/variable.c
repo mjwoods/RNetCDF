@@ -53,9 +53,15 @@
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
+R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
+              SEXP chunking, SEXP chunksizes, SEXP deflate, SEXP shuffle,
+              SEXP big_endian, SEXP fletcher32, SEXP filter_id,
+              SEXP filter_params)
 {
-  int ncid, ii, jj, *dimids, ndims, varid;
+  int ncid, ii, jj, *dimids, ndims, varid, chunkmode, format, withnc4;
+  int deflate_mode, deflate_level, shuffle_mode, endian_mode, fletcher_mode;
+  int filter_mode, filtid, *filtparm;
+  size_t *chunksize_t;
   nc_type xtype;
   const char *varnamep;
   SEXP result;
@@ -75,12 +81,86 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims)
     R_nc_check (R_nc_dim_id (dims, ncid, &dimids[jj], ii));
   }
 
+  R_nc_check (nc_inq_format (ncid, &format));
+  withnc4 = (format == NC_FORMAT_NETCDF4);
+
+  if (withnc4) {
+    chunkmode = asLogical (chunking);
+    if (ndims == 0) {
+      /* Chunking is not relevant to scalar variables */
+      chunkmode = NA_LOGICAL;
+    }
+    if (chunkmode == TRUE) {
+      if (isNull (chunksizes)) {
+        chunksize_t = NULL;
+      } else {
+        chunksize_t = R_nc_dim_r2c_size (chunksizes, ndims, 0);
+      }
+    }
+
+    deflate_level = asInteger (deflate);
+    deflate_mode = (deflate_level != NA_INTEGER);
+
+    shuffle_mode = (asLogical (shuffle) == TRUE);
+
+#ifdef HAVE_NC_INQ_VAR_ENDIAN
+    switch (asLogical (big_endian)) {
+    case TRUE:
+      endian_mode = NC_ENDIAN_BIG;
+      break;
+    case FALSE:
+      endian_mode = NC_ENDIAN_LITTLE;
+      break;
+    default:
+      endian_mode = NC_ENDIAN_NATIVE;
+      break;
+    }
+#endif
+
+    fletcher_mode = (asLogical (fletcher32) == TRUE);
+
+    filtid = asInteger (filter_id);
+    filter_mode = (filtid != NA_INTEGER);
+    filtparm = INTEGER (filter_params);
+  }
+
   /*-- Enter define mode ------------------------------------------------------*/
   R_nc_check( R_nc_redef (ncid));
 
-  /*-- Define the variable ----------------------------------------------------*/
+  /*-- Define the variable and details of storage -----------------------------*/
   R_nc_check (nc_def_var (
             ncid, varnamep, xtype, ndims, dimids, &varid));
+
+  if (withnc4) {
+    if (chunkmode == FALSE) {
+      R_nc_check (nc_def_var_chunking (ncid, varid, NC_CONTIGUOUS, NULL));
+    } else if (chunkmode == TRUE) {
+      R_nc_check (nc_def_var_chunking (ncid, varid, NC_CHUNKED, chunksize_t));
+    } // If NA, use storage format chosen by NetCDF
+
+    if (deflate_mode || shuffle_mode) {
+      R_nc_check (nc_def_var_deflate (ncid, varid, shuffle_mode,
+                                      deflate_mode, deflate_level));
+    }
+
+#ifdef HAVE_NC_INQ_VAR_ENDIAN
+    if (endian_mode != NC_ENDIAN_NATIVE) {
+      R_nc_check (nc_def_var_endian (ncid, varid, endian_mode));
+    }
+#endif
+
+    if (fletcher_mode) {
+      R_nc_check (nc_def_var_fletcher32 (ncid, varid, fletcher_mode));
+    }
+
+#ifdef HAVE_NC_INQ_VAR_FILTER
+    if (filter_mode) {
+      R_nc_check (nc_def_var_filter (ncid, varid, (unsigned int) filtid,
+        xlength (filter_params), (const unsigned int*) filtparm));
+    }
+#endif
+
+  }
 
   result = R_nc_protect (ScalarInteger (varid));
   RRETURN(result);
@@ -366,7 +446,8 @@ R_nc_pack_att (int ncid, int varid, double **scale, double **add)
 
 SEXP
 R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
-              SEXP rawchar, SEXP fitnum, SEXP namode, SEXP unpack)
+              SEXP rawchar, SEXP fitnum, SEXP namode, SEXP unpack,
+              SEXP cache_bytes, SEXP cache_slots, SEXP cache_preemption)
 {
   int ncid, varid, ndims, ii, israw, isfit, inamode, isunpack;
   size_t *cstart=NULL, *ccount=NULL;
@@ -376,6 +457,9 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   R_nc_buf io;
   double add, scale, *addp=NULL, *scalep=NULL;
   void *fillp=NULL, *minp=NULL, *maxp=NULL;
+  size_t bytes, slots;
+  float preemption;
+  double bytes_in, slots_in, preempt_in;
 
   /*-- Convert arguments ------------------------------------------------------*/
   ncid = asInteger (nc);
@@ -386,6 +470,29 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   isfit = (asLogical (fitnum) == TRUE);
   inamode = asInteger (namode);
   isunpack = (asLogical (unpack) == TRUE);
+
+  /*-- Chunk cache options for netcdf4 files ----------------------------------*/
+#ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
+  if (nc_get_var_chunk_cache(ncid, varid,
+                             &bytes, &slots, &preemption) == NC_NOERR) {
+    bytes_in = asReal (cache_bytes);
+    slots_in = asReal (cache_slots);
+    preempt_in = asReal (cache_preemption);
+    if (R_FINITE(bytes_in) || R_FINITE(slots_in) || R_FINITE(preempt_in)) {
+      if (R_FINITE(bytes_in)) {
+	bytes = bytes_in;
+      }
+      if (R_FINITE(slots_in)) {
+	slots = slots_in;
+      }
+      if (R_FINITE(preempt_in)) {
+	preemption = preempt_in;
+      }
+      R_nc_check (nc_set_var_chunk_cache(ncid, varid,
+                                         bytes, slots, preemption));
+    }
+  }
+#endif
 
   /*-- Get type and rank of the variable --------------------------------------*/
   R_nc_check (nc_inq_var (ncid, varid, NULL, &xtype, &ndims, NULL, NULL));
@@ -432,10 +539,19 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
 SEXP
 R_nc_inq_var (SEXP nc, SEXP var)
 {
-  int ncid, varid, ndims, natts, *dimids;
+  int ncid, varid, idim, ndims, natts, *dimids, storeprop, format, withnc4;
+  int shuffle, deflate, deflate_level, endian, fletcher;
+  int status, szip_options, szip_bits;
+  int filter_id;
+  size_t filter_nparams;
+  size_t *chunksize_t, cache_bytes, cache_slots;
+  float cache_preemption;
+  double *chunkdbl;
   char varname[NC_MAX_NAME + 1], vartype[NC_MAX_NAME+1];
   nc_type xtype;
-  SEXP result, rdimids;
+  SEXP result, rdimids, rchunks, rbytes, rslots, rpreempt,
+       rshuffle, rdeflate, rendian, rfletcher,
+       rszip_options, rszip_bits, rfilter_id, rfilter_params;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -443,6 +559,9 @@ R_nc_inq_var (SEXP nc, SEXP var)
   R_nc_check (R_nc_var_id (var, ncid, &varid));
 
   /*-- Inquire the variable ---------------------------------------------------*/
+  R_nc_check (nc_inq_format (ncid, &format));
+  withnc4 = (format == NC_FORMAT_NETCDF4);
+
   R_nc_check (nc_inq_var (ncid, varid, varname, &xtype, &ndims, NULL, &natts));
 
   if (ndims > 0) {
@@ -451,22 +570,161 @@ R_nc_inq_var (SEXP nc, SEXP var)
     R_nc_check (nc_inq_vardimid (ncid, varid, dimids));
     /* Return dimension ids in reverse (Fortran) order */
     R_nc_rev_int (dimids, ndims);
+
+    rchunks = R_NilValue;
+    if (withnc4) {
+      R_nc_check (nc_inq_var_chunking (ncid, varid, &storeprop, NULL));
+      if (storeprop == NC_CHUNKED) {
+	rchunks = R_nc_protect (allocVector (REALSXP, ndims));
+	chunkdbl = REAL (rchunks);
+	chunksize_t = (size_t *) R_alloc (ndims, sizeof(size_t));
+	R_nc_check (nc_inq_var_chunking (ncid, varid, NULL, chunksize_t));
+	/* Return chunk sizes as double precision in reverse (Fortran) order */
+	R_nc_rev_size (chunksize_t, ndims);
+	for (idim=0; idim<ndims; idim++) {
+	  chunkdbl[idim] = chunksize_t[idim];
+	}
+      }
+
+#ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
+      R_nc_check (nc_get_var_chunk_cache (ncid, varid, &cache_bytes,
+                                          &cache_slots, &cache_preemption));
+      rbytes = R_nc_protect (ScalarReal (cache_bytes));
+      rslots = R_nc_protect (ScalarReal (cache_slots));
+      rpreempt = R_nc_protect (ScalarReal (cache_preemption));
+#else
+      rbytes = R_NilValue;
+      rslots = R_NilValue;
+      rpreempt = R_NilValue;
+#endif
+    }
+
   } else {
     /* Return single NA for scalars */
     rdimids = R_nc_protect (ScalarInteger (NA_INTEGER));
+
+    /* Chunks not defined for scalars */
+    rchunks = R_NilValue;
+    rbytes = R_nc_protect (ScalarReal (NA_REAL));
+    rslots = R_nc_protect (ScalarReal (NA_REAL));
+    rpreempt = R_nc_protect (ScalarReal (NA_REAL));
+  }
+
+  if (withnc4) {
+    /* deflate and shuffle */
+    R_nc_check (nc_inq_var_deflate (ncid, varid, &shuffle,
+                                    &deflate, &deflate_level));
+    if (deflate) {
+      rdeflate = R_nc_protect (ScalarInteger (deflate_level));
+    } else {
+      rdeflate = R_nc_protect (ScalarInteger (NA_INTEGER));
+    }
+    rshuffle = R_nc_protect (ScalarLogical (shuffle));
+
+    /* endian */
+#ifdef HAVE_NC_INQ_VAR_ENDIAN
+    R_nc_check (nc_inq_var_endian (ncid, varid, &endian));
+    if (endian == NC_ENDIAN_LITTLE) {
+      rendian = R_nc_protect (ScalarLogical (0));
+    } else if (endian == NC_ENDIAN_BIG) {
+      rendian = R_nc_protect (ScalarLogical (1));
+    } else {
+      rendian = R_nc_protect (ScalarLogical (NA_LOGICAL));
+    }
+#else
+    rendian = R_NilValue;
+#endif
+
+    /* fletcher32 */
+    R_nc_check (nc_inq_var_fletcher32 (ncid, varid, &fletcher));
+    rfletcher = R_nc_protect (ScalarLogical (fletcher == NC_FLETCHER32));
+
+    /* szip */
+#ifdef HAVE_NC_INQ_VAR_SZIP
+    status = nc_inq_var_szip (ncid, varid, &szip_options, &szip_bits);
+    if (status == NC_NOERR) {
+      rszip_options = R_nc_protect (ScalarInteger (szip_options));
+      rszip_bits = R_nc_protect (ScalarInteger (szip_bits));
+#  if defined NC_EFILTER
+    } else if (status == NC_EFILTER) {
+      rszip_options = R_nc_protect (ScalarInteger (NA_INTEGER));
+      rszip_bits = R_nc_protect (ScalarInteger (NA_INTEGER));
+#  endif
+    } else {
+      R_nc_check (status);
+      return R_NilValue;
+    }
+#else
+    rszip_options = R_NilValue;
+    rszip_bits = R_NilValue;
+#endif
+
+    /* filter */
+#ifdef HAVE_NC_INQ_VAR_FILTER
+    status = nc_inq_var_filter (ncid, varid,
+                                (unsigned int *) &filter_id,
+                                &filter_nparams, NULL);
+    if (status == NC_NOERR) {
+      rfilter_id = R_nc_protect (ScalarInteger (filter_id));
+      rfilter_params = R_nc_protect (allocVector (INTSXP, filter_nparams));
+      if (filter_nparams > 0) {
+        R_nc_check (nc_inq_var_filter (ncid, varid, NULL, NULL,
+                      (unsigned int *) INTEGER (rfilter_params)));
+      }
+    } else if (status == NC_EFILTER) {
+      rfilter_id = R_nc_protect (ScalarInteger (NA_INTEGER));
+      rfilter_params = R_nc_protect (ScalarInteger (NA_INTEGER));
+    } else {
+      R_nc_check (status);
+      return R_NilValue;
+    }
+#else
+    rfilter_id = R_NilValue;
+    rfilter_params = R_NilValue;
+#endif
+
+  } else {
+    rdeflate = R_NilValue;
+    rshuffle = R_NilValue;
+    rendian = R_NilValue;
+    rfletcher = R_NilValue;
+    rszip_bits = R_NilValue;
+    rszip_options = R_NilValue;
+    rfilter_id = R_NilValue;
+    rfilter_params = R_NilValue;
   }
 
   /*-- Convert nc_type to char ------------------------------------------------*/
   R_nc_check (R_nc_type2str (ncid, xtype, vartype));
 
   /*-- Construct the output list ----------------------------------------------*/
-  result = R_nc_protect (allocVector (VECSXP, 6));
+  if (withnc4) {
+    result = R_nc_protect (allocVector (VECSXP, 18));
+  } else {
+    result = R_nc_protect (allocVector (VECSXP, 6));
+  }
+
   SET_VECTOR_ELT (result, 0, ScalarInteger (varid));
   SET_VECTOR_ELT (result, 1, mkString (varname));
   SET_VECTOR_ELT (result, 2, mkString (vartype));
   SET_VECTOR_ELT (result, 3, ScalarInteger (ndims));
   SET_VECTOR_ELT (result, 4, rdimids);
   SET_VECTOR_ELT (result, 5, ScalarInteger (natts));
+
+  if (withnc4) {
+    SET_VECTOR_ELT (result, 6, rchunks);
+    SET_VECTOR_ELT (result, 7, rbytes);
+    SET_VECTOR_ELT (result, 8, rslots);
+    SET_VECTOR_ELT (result, 9, rpreempt);
+    SET_VECTOR_ELT (result, 10, rdeflate);
+    SET_VECTOR_ELT (result, 11, rshuffle);
+    SET_VECTOR_ELT (result, 12, rendian);
+    SET_VECTOR_ELT (result, 13, rfletcher);
+    SET_VECTOR_ELT (result, 14, rszip_options);
+    SET_VECTOR_ELT (result, 15, rszip_bits);
+    SET_VECTOR_ELT (result, 16, rfilter_id);
+    SET_VECTOR_ELT (result, 17, rfilter_params);
+  }
 
   RRETURN(result);
 }
@@ -478,7 +736,8 @@ R_nc_inq_var (SEXP nc, SEXP var)
 
 SEXP
 R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
-              SEXP namode, SEXP pack)
+              SEXP namode, SEXP pack,
+              SEXP cache_bytes, SEXP cache_slots, SEXP cache_preemption)
 {
   int ncid, varid, ndims, ii, inamode, ispack;
   size_t *cstart=NULL, *ccount=NULL;
@@ -486,6 +745,9 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
   const void *buf;
   double scale, add, *scalep=NULL, *addp=NULL;
   void *fillp=NULL, *minp=NULL, *maxp=NULL;
+  size_t bytes, slots;
+  float preemption;
+  double bytes_in, slots_in, preempt_in;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -494,6 +756,29 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
 
   inamode = asInteger (namode);
   ispack = (asLogical (pack) == TRUE);
+
+  /*-- Chunk cache options for netcdf4 files ----------------------------------*/
+#ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
+  if (nc_get_var_chunk_cache(ncid, varid,
+                             &bytes, &slots, &preemption) == NC_NOERR) {
+    bytes_in = asReal (cache_bytes);
+    slots_in = asReal (cache_slots);
+    preempt_in = asReal (cache_preemption);
+    if (R_FINITE(bytes_in) || R_FINITE(slots_in) || R_FINITE(preempt_in)) {
+      if (R_FINITE(bytes_in)) {
+	bytes = bytes_in;
+      }
+      if (R_FINITE(slots_in)) {
+	slots = slots_in;
+      }
+      if (R_FINITE(preempt_in)) {
+	preemption = preempt_in;
+      }
+      R_nc_check (nc_set_var_chunk_cache(ncid, varid,
+                                         bytes, slots, preemption));
+    }
+  }
+#endif
 
   /*-- Get type and rank of the variable --------------------------------------*/
   R_nc_check (nc_inq_var (ncid, varid, NULL, &xtype, &ndims, NULL, NULL));
