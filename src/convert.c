@@ -1058,7 +1058,7 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
   R_nc_check (nc_inq_compound(ncid, xtype, NULL, &size, &nfld));
 
   /* Check names attribute of R list */
-  namelist = getAttrib (rv, R_NamesSymbol);
+  namelist = R_nc_protect (getAttrib (rv, R_NamesSymbol));
   if (!isString (namelist)) {
     R_nc_error ("Named list required for conversion to compound type");
   }
