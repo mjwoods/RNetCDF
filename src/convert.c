@@ -826,7 +826,10 @@ R_nc_opaque_raw_init (R_nc_buf *io)
     ndim = 1;
   }
   xdim = (size_t *) R_alloc (ndim + 1, sizeof(size_t));
-  memcpy (xdim, io->xdim, ndim * sizeof(size_t));
+  if (ndim != 0) {
+    /* Scalar has no dimensions to copy */
+    memcpy (xdim, io->xdim, ndim * sizeof(size_t));
+  }
   xdim[ndim] = size;
 
   io->rxp = R_nc_allocArray (RAWSXP, ndim + 1, xdim);
@@ -964,7 +967,7 @@ R_nc_char_symbol (char *in, size_t size, char *work)
 static void
 R_nc_enum_factor (R_nc_buf *io)
 {
-  SEXP levels, classname, env, symbol, value;
+  SEXP levels, classname, env, cmd, symbol, value;
   size_t size, nmem, ifac, nfac;
   char *memname, *memval, *work, *inval, *fill;
   int ncid, imem, imemmax, *out;
@@ -981,7 +984,8 @@ R_nc_enum_factor (R_nc_buf *io)
   ncid = io->ncid;
   xtype = io->xtype;
   R_nc_check (nc_inq_enum(ncid, xtype, NULL, NULL, &size, &nmem));
-  env = R_nc_protect (eval(lang1(install("new.env")),R_BaseEnv));
+  cmd = R_nc_protect (lang1 (install ("new.env")));
+  env = R_nc_protect (eval (cmd, R_BaseEnv));
 
   levels = R_nc_allocArray (STRSXP, -1, &nmem);
   memname = R_alloc (nmem, NC_MAX_NAME+1);
@@ -1054,7 +1058,7 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
   R_nc_check (nc_inq_compound(ncid, xtype, NULL, &size, &nfld));
 
   /* Check names attribute of R list */
-  namelist = getAttrib (rv, R_NamesSymbol);
+  namelist = R_nc_protect (getAttrib (rv, R_NamesSymbol));
   if (!isString (namelist)) {
     R_nc_error ("Named list required for conversion to compound type");
   }
