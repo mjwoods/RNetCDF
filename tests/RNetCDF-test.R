@@ -530,16 +530,20 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   }
 
   cat("Read numeric matrix slice ... ")
+  x <- mytemperature[,2,drop=FALSE]
+  y <- var.get.nc(nc, "temperature", c(NA,2), c(NA,1), collapse=FALSE)
+  tally <- testfun(x,y,tally)
   x <- mytemperature[,2]
-  dim(x) <- length(x)
-  y <- var.get.nc(nc, "temperature", c(NA,2), c(NA,1))
+  y <- var.get.nc(nc, "temperature", c(NA,2), c(NA,1), collapse=TRUE)
   tally <- testfun(x,y,tally)
 
   cat("Read numeric matrix empty slice ... ")
   x <- numeric(0)
   dim(x) <- c(0,1)
-  y <- var.get.nc(nc, "temperature", c(NA,2), c(0,1),collapse=FALSE)
+  y <- var.get.nc(nc, "temperature", c(NA,2), c(0,1), collapse=FALSE)
   tally <- testfun(x,y,tally)
+  y <- var.get.nc(nc, "temperature", c(NA,2), c(0,1), collapse=TRUE)
+  tally <- testfun(drop(x),y,tally)
 
   cat("Read numeric scalar ... ")
   x <- myint0
@@ -580,8 +584,10 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   cat("Read empty 2D char array ... ")
   x <- character(0)
   dim(x) <- 0
-  y <- var.get.nc(nc, "name", NA, c(0,0),collapse=FALSE)
+  y <- var.get.nc(nc, "name", NA, c(0,0), collapse=FALSE)
   tally <- testfun(x,y,tally)
+  y <- var.get.nc(nc, "name", NA, c(0,0), collapse=TRUE)
+  tally <- testfun(drop(x),y,tally)
 
   cat("Read 1D char slice ... ")
   x <- substring(myqcflag,2,3)

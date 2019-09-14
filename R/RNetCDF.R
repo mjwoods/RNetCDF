@@ -566,11 +566,7 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 4,
 
   #-- Collapse singleton dimensions --------------------------------------
   if (isTRUE(collapse) && !is.null(dim(nc))) {
-    datadim <- dim(nc)
-    keepdim <- (datadim != 1)
-    if (any(keepdim)) {
-      dim(nc) <- datadim[keepdim]
-    }
+    nc <- drop(nc)
   }
 
   return(nc)
