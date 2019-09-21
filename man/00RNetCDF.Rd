@@ -5,7 +5,7 @@
 \title{R Interface to NetCDF Datasets}
 
 \description{
-This package provides an interface to Unidata's NetCDF library functions (version 3) and furthermore access to Unidata's UDUNITS calendar conversions. The routines and the documentation follow the NetCDF and UDUNITS C interface, so the corresponding manuals can be consulted for more detailed information.
+This package provides an interface to Unidata's NetCDF library functions (version 4) and furthermore access to Unidata's UDUNITS (version 2) calendar conversions. The routines and the documentation follow the NetCDF and UDUNITS C interface, so the corresponding manuals can be consulted for more detailed information.
 
 NetCDF is an abstraction that supports a view of data as a collection of self-describing, portable objects that can be accessed through a simple interface. Array values may be accessed directly, without knowing details of how the data are stored. Auxiliary information about the data, such as what units are used, may be stored with the data. Generic utilities and application programs can access NetCDF datasets and transform, combine, analyze, or display specified fields of the data.
 
