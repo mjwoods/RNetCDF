@@ -13,6 +13,43 @@ NetCDF is an abstraction that supports a view of data as a collection of self-de
 First versions of the R and C code of this package were based on the \code{netCDF} package by Thomas Lumley and the \code{ncdf} package by David Pierce. Milton Woods added some enhancements of the NetCDF library versions 3.6 and 4.x.
 }
 
+\section{Functions}{
+Help pages are available for the following RNetCDF functions:
+
+  \tabular{ll}{
+    \bold{Category} \tab \bold{Function} \cr
+    Dataset   \tab \code{\link{close.nc}} \cr
+              \tab \code{\link{create.nc}} \cr
+              \tab \code{\link{file.inq.nc}} \cr
+              \tab \code{\link{open.nc}} \cr
+              \tab \code{\link{print.nc}} \cr
+              \tab \code{\link{read.nc}} \cr
+              \tab \code{\link{sync.nc}} \cr
+    Group     \tab \code{\link{grp.def.nc}} \cr
+              \tab \code{\link{grp.inq.nc}} \cr
+              \tab \code{\link{grp.rename.nc}} \cr
+    Attribute \tab \code{\link{att.copy.nc}} \cr
+              \tab \code{\link{att.delete.nc}} \cr
+              \tab \code{\link{att.get.nc}} \cr
+              \tab \code{\link{att.inq.nc}} \cr
+              \tab \code{\link{att.put.nc}} \cr
+              \tab \code{\link{att.rename.nc}} \cr
+    Dimension \tab \code{\link{dim.def.nc}} \cr
+              \tab \code{\link{dim.inq.nc}} \cr
+              \tab \code{\link{dim.rename.nc}} \cr
+    Data type \tab \code{\link{type.def.nc}} \cr
+              \tab \code{\link{type.inq.nc}} \cr
+    Variable  \tab \code{\link{var.def.nc}} \cr
+              \tab \code{\link{var.get.nc}} \cr
+              \tab \code{\link{var.inq.nc}} \cr
+              \tab \code{\link{var.put.nc}} \cr
+              \tab \code{\link{var.rename.nc}} \cr
+    Calendar  \tab \code{\link{utcal.nc}} \cr
+              \tab \code{\link{utinit.nc}} \cr
+              \tab \code{\link{utinvcal.nc}}
+  }
+}
+
 \section{Data Types}{
 The external types supported by all NetCDF datasets are:
 
