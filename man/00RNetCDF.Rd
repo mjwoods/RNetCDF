@@ -1,6 +1,7 @@
 \name{RNetCDF}
 
 \alias{RNetCDF}
+\alias{RNetCDF-package}
 
 \title{R Interface to NetCDF Datasets}
 
