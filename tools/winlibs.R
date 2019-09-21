@@ -1,4 +1,4 @@
-# Build against imagemagick static website.
+# Download netcdf library and headers from rwinlib project
 VERSION <- commandArgs(TRUE)
 if(!file.exists(sprintf("../windows/netcdf-%s/include/netcdf.h", VERSION))){
   if(getRversion() < "3.3.0") setInternet2()
