@@ -47,6 +47,6 @@ These types are called ``external'', because they correspond to the portable ext
 
 \note{When installing RNetCDF from source code, the netcdf4 library and header files must be installed on the system. Calendar functions will only be enabled in RNetCDF if the udunits2 library and header files are detected during the build process.}
 
-\author{Pavel Michna}
+\author{Pavel Michna, Milton Woods}
 
 \keyword{file}
