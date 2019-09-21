@@ -24,7 +24,7 @@
 
 \references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 
-\author{Pavel Michna}
+\author{Pavel Michna, Milton Woods}
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
