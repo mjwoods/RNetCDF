@@ -34,8 +34,6 @@ The NetCDF4 interface supports additional external types, including:
 These types are called ``external'', because they correspond to the portable external representation for NetCDF data. When a program reads external NetCDF data into an internal variable, the data is converted, if necessary, into the specified internal type. Similarly, if you write internal data into a NetCDF variable, this may cause it to be converted to a different external type, if the external type for the NetCDF variable differs from the internal type. 
 
 First versions of the R and C code of this package were based on the \code{netCDF} package by Thomas Lumley and the \code{ncdf} package by David Pierce. Milton Woods added some enhancements of the NetCDF library versions 3.6 and 4.x.
-
-A high-level interface based on this library is the \code{ncvar} package by Juerg Schmidli. It simplifies the handling of datasets which contain lots of metadata. Different metadata conventions are supported including the CF metadata conventions used by the climate modeling and forecasting community.
 }
 
 \references{
