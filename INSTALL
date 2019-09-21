@@ -9,9 +9,7 @@ NetCDF library version 4.1.3 or greater.
 
 UDUNITS library version 2.0.4 or greater (optional, for calendar functions).
 
-If using Fink on Mac OS X, be sure that the corresponding R version (either
-i386 or x86_64) is used (R32 or R64). Compiling with R64 against i386 will
-most likely lead to runtime errors.
+On platforms that support both 32- and 64-bit executables, ensure that the above libraries and the R executable are compatible. Mixing 32-bit and 64-bit software will generally not work.
 
 
 R CMD INSTALL Options
