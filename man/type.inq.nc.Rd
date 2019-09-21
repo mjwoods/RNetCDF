@@ -33,7 +33,7 @@
 
 \references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 
-\author{Milton Woods}
+\author{Pavel Michna, Milton Woods}
 
 \seealso{
   \code{\link{grp.inq.nc}} - get a list of NetCDF types defined in a dataset or group.
