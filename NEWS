@@ -1,8 +1,9 @@
-Version 2.0-1, 2016-05-??
+Version 2.0-1, 2019-09-??
+  * Support NetCDF-4 features for reading and writing of datasets.
+  * Suggest bit64 package for NC_INT64 and NC_UINT64 types.
   * Drop support for netcdf-3.x library, require netcdf-4.x.
-  * Drop support for udunits-1 library, require udunits-2.x.
-  * Support creation of files in netcdf4 (hdf5) format.
-  * Add functions for netcdf4 groups.
+  * Drop support for udunits-1 library.
+  * Disable calendar functions if udunits-2.x is not found during build.
 
 Version 1.9-1, 2017-10-04
   * Allow multiple NA values in count argument of var.get.nc/var.put.nc,
