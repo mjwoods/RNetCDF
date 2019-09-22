@@ -1,4 +1,5 @@
 \name{RNetCDF}
+\docType{package}
 
 \alias{RNetCDF}
 \alias{RNetCDF-package}
