@@ -27,7 +27,7 @@ R \code{numeric} and \code{integer} variables can be written to NetCDF numeric t
 
 \note{\code{NC_BYTE} is always interpreted as signed.}
 
-\author{Pavel Michna}
+\author{Pavel Michna, Milton Woods}
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions

@@ -21,7 +21,7 @@ Most NetCDF object types, including groups, variables and "global" attributes, a
 
 \references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
 
-\author{Milton Woods}
+\author{Pavel Michna, Milton Woods}
 
 \examples{
 ##  Create a new NetCDF4 dataset
