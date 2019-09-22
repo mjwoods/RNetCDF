@@ -7,7 +7,7 @@
 #  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
 #              Milton Woods (miltonjwoods@gmail.com)
 #
-#  Copyright:  (C) 2004-2017 Pavel Michna, Milton Woods
+#  Copyright:  (C) 2004-2019 Pavel Michna, Milton Woods
 #
 #===============================================================================
 #
