@@ -2,7 +2,7 @@
  *
  *  Name:       convert.c
  *
- *  Version:    2.0-1
+ *  Version:    2.0-2
  *
  *  Purpose:    Type conversions for RNetCDF
  *

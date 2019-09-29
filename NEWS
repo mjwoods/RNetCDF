@@ -1,4 +1,4 @@
-Version 2.0-1, 2019-09-30
+Version 2.0-2, 2019-09-30
   * Support NetCDF-4 features for reading and writing of datasets.
   * Suggest bit64 package for NC_INT64 and NC_UINT64 types.
   * Drop support for netcdf-3.x library, require netcdf-4.x.
