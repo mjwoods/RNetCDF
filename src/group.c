@@ -2,7 +2,7 @@
  *
  *  Name:       group.c
  *
- *  Version:    2.0-1
+ *  Version:    2.0-2
  *
  *  Purpose:    NetCDF group functions for RNetCDF.
  *
