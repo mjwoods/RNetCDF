@@ -43,7 +43,8 @@ Attributes may be associated with a variable to specify such properties as units
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("var.def.nc")
+file1 <- tempfile("var.def_", fileext=".nc")
+nc <- create.nc(file1)
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -53,6 +54,7 @@ var.def.nc(nc, "time", "NC_INT", "time")
 var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1))
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

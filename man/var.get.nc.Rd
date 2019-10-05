@@ -67,7 +67,8 @@ Arrays of type \code{character} drop the fastest-varying dimension of the corres
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("var.get.nc")
+file1 <- tempfile("var.get_", fileext=".nc")
+nc <- create.nc(file1)
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -104,6 +105,7 @@ var.get.nc(nc, "name", c(1,2), c(4,2))
 var.get.nc(nc, "name", c(1,2), c(NA,2))
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

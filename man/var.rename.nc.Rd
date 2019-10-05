@@ -22,7 +22,8 @@
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("var.rename.nc")
+file1 <- tempfile("var.rename_", fileext=".nc")
+nc <- create.nc(file1)
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -36,6 +37,7 @@ var.rename.nc(nc, 0, "mytime")
 var.rename.nc(nc, "temperature", "mytemperature")
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

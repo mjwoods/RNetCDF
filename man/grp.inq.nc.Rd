@@ -36,7 +36,8 @@
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("grp.inq.nc")
+file1 <- tempfile("grp.inq_", fileext=".nc")
+nc <- create.nc(file1)
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -53,6 +54,7 @@ att.put.nc(nc, "NC_GLOBAL", "history", "NC_CHAR", paste("Created on", date()))
 grp.inq.nc(nc)
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

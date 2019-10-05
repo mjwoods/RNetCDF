@@ -49,7 +49,8 @@ Awkwardness arises mainly from one thing: NetCDF data are written with the last 
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("var.put.nc")
+file1 <- tempfile("var.put_", fileext=".nc")
+nc <- create.nc(file1)
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -82,6 +83,7 @@ var.put.nc(nc, "temperature", mytemperature)
 var.put.nc(nc, "name", myname)
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

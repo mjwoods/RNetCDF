@@ -24,7 +24,8 @@ The output of this function is similar to the \code{ncdump -h} command supplied 
 
 \examples{
 ##  Create a new NetCDF dataset
-nc <- create.nc("print.nc", format="netcdf4")
+file1 <- tempfile("print_", fileext=".nc")
+nc <- create.nc(file1, format="netcdf4")
 
 ## Create a group (just because we can!):
 grp <- grp.def.nc(nc, "data")
@@ -47,6 +48,7 @@ att.put.nc(grp, "NC_GLOBAL", "title", "NC_CHAR", "Data from Foo")
 print.nc(nc)
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

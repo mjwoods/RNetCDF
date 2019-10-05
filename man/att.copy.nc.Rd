@@ -24,8 +24,10 @@
 
 \examples{
 ##  Create two new NetCDF datasets and define two dimensions
-nc.1 <- create.nc("att.copy_1.nc")
-nc.2 <- create.nc("att.copy_2.nc")
+file1 <- tempfile("att.copy_", fileext=".nc")
+file2 <- tempfile("att.copy_", fileext=".nc")
+nc.1 <- create.nc(file1)
+nc.2 <- create.nc(file2)
 
 dim.def.nc(nc.1, "station", 5)
 dim.def.nc(nc.1, "time", unlim=TRUE)
@@ -50,6 +52,8 @@ att.copy.nc(nc.1, "NC_GLOBAL", "title", nc.2, "NC_GLOBAL")
 
 close.nc(nc.1)
 close.nc(nc.2)
+unlink(file1)
+unlink(file2)
 }
 
 \keyword{file}

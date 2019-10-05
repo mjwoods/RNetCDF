@@ -25,7 +25,8 @@ Most NetCDF object types, including groups, variables and "global" attributes, a
 
 \examples{
 ##  Create a new NetCDF4 dataset
-nc <- create.nc("grp.def.nc", format="netcdf4")
+file1 <- tempfile("grp.def_", fileext=".nc")
+nc <- create.nc(file1, format="netcdf4")
 
 ## Define dimensions, variables and attributes in the root group
 dim.def.nc(nc, "station", 5)
@@ -42,6 +43,7 @@ var.def.nc(grp, "temperature", "NC_DOUBLE", c("station","time"))
 att.put.nc(nc, "NC_GLOBAL", "Description", "NC_CHAR", "Time-series at sites")
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

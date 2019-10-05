@@ -31,7 +31,8 @@ R \code{numeric} and \code{integer} variables can be written to NetCDF numeric t
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("att.put.nc")
+file1 <- tempfile("att.put_", fileext=".nc")
+nc <- create.nc(file1)
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -47,6 +48,7 @@ att.put.nc(nc, "NC_GLOBAL", "title", "NC_CHAR", "Data from Foo")
 att.put.nc(nc, "NC_GLOBAL", "history", "NC_CHAR", paste("Created on", date()))
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

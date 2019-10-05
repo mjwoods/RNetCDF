@@ -28,12 +28,14 @@
 
 \examples{
 ##  Create a void NetCDF dataset
-nc <- create.nc("open.nc")
+file1 <- tempfile("open_", fileext=".nc")
+nc <- create.nc(file1)
 close.nc(nc)
 
 ##  Open the NetCDF dataset for writing
-nc <- open.nc("open.nc", write=TRUE)
+nc <- open.nc(file1, write=TRUE)
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

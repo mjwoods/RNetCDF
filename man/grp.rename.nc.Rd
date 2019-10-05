@@ -22,7 +22,8 @@
 
 \examples{
 ##  Create a new NetCDF dataset and define a group
-nc <- create.nc("grp.rename.nc", format="netcdf4")
+file1 <- tempfile("grp.rename_", fileext=".nc")
+nc <- create.nc(file1, format="netcdf4")
 
 grp <- grp.def.nc(nc, "oldgroup")
 
@@ -30,6 +31,7 @@ grp <- grp.def.nc(nc, "oldgroup")
 try(grp.rename.nc(grp, "newgroup"))
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

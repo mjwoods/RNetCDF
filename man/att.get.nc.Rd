@@ -40,7 +40,8 @@
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("att.get.nc")
+file1 <- tempfile("att.get_", fileext=".nc")
+nc <- create.nc(file1)
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -62,6 +63,7 @@ att.get.nc(nc, "NC_GLOBAL", "title")
 att.get.nc(nc, "NC_GLOBAL", "history")
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

@@ -29,7 +29,8 @@
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("dim.inq.nc")
+file1 <- tempfile("dim.inq_", fileext=".nc")
+nc <- create.nc(file1)
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -39,6 +40,7 @@ dim.inq.nc(nc, 0)
 dim.inq.nc(nc, "time")
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

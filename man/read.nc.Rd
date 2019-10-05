@@ -29,7 +29,8 @@ Groups in the dataset may optionally be read recursively and returned as nested 
 
 \examples{
 ##  Create a new NetCDF dataset
-nc <- create.nc("read.nc", format="netcdf4")
+file1 <- tempfile("read_", fileext=".nc")
+nc <- create.nc(file1, format="netcdf4")
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -65,6 +66,7 @@ sync.nc(nc)
 read.nc(nc, recursive=TRUE)
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}
