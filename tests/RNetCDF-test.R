@@ -72,9 +72,10 @@ tally <- NULL
 
 ##  Create a new NetCDF dataset and define dimensions
 for (format in c("classic","offset64","classic4","netcdf4")) {
-  cat("Test",format,"file format ...\n")
+  ncfile <- tempfile(paste("RNetCDF-test", format, "", sep="_"),
+                     fileext=".nc")
+  cat("Test", format, "file format in", ncfile, "...\n")
 
-  ncfile <- paste("test_", format, ".nc", sep="")
   nc <- create.nc(ncfile, format=format)
 
   # Show library version:
@@ -775,6 +776,9 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   gc()
   y <- try(file.inq.nc(nc), silent=TRUE)
   tally <- testfun(inherits(y, "try-error"), TRUE, tally)
+
+  unlink(ncfile)
+  cat("Removed test file", ncfile, "\n")
 }
 
 #-------------------------------------------------------------------------------#
