@@ -23,8 +23,8 @@
     \code{NC_UINT}       \tab \code{\link[base]{double}} \cr
     \code{NC_FLOAT}      \tab \code{\link[base]{double}} \cr
     \code{NC_DOUBLE}     \tab \code{\link[base]{double}} \cr
-    \code{NC_INT64}      \tab \code{\link[bit64]{integer64}} \cr
-    \code{NC_UINT64}     \tab \code{\link[bit64]{integer64}} \cr
+    \code{NC_INT64}      \tab \code{\link[bit64:bit64-package]{integer64}} \cr
+    \code{NC_UINT64}     \tab \code{\link[bit64:bit64-package]{integer64}} \cr
   }}
 }
 

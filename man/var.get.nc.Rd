@@ -29,8 +29,8 @@
     \code{NC_UINT}       \tab \code{\link[base]{double}} \cr
     \code{NC_FLOAT}      \tab \code{\link[base]{double}} \cr
     \code{NC_DOUBLE}     \tab \code{\link[base]{double}} \cr
-    \code{NC_INT64}      \tab \code{\link[bit64]{integer64}} \cr
-    \code{NC_UINT64}     \tab \code{\link[bit64]{integer64}} \cr
+    \code{NC_INT64}      \tab \code{\link[bit64:bit64-package]{integer64}} \cr
+    \code{NC_UINT64}     \tab \code{\link[bit64:bit64-package]{integer64}} \cr
   }}
 
 The arguments below apply only to datasets in "netcdf4" format. Reading and writing of variables involves a "chunk cache", and default cache settings are defined by the NetCDF library. Performance may be improved in some applications by adjusting the cache settings through the following options:
