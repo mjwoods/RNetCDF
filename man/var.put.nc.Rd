@@ -29,7 +29,7 @@ The arguments below apply only to datasets in "netcdf4" format. Reading and writ
 
 Text represented by R type \code{character} can be written to NetCDF types \code{NC_CHAR} and \code{NC_STRING}, and R type \code{raw} can be written to NetCDF type \code{NC_CHAR}. When writing to \code{NC_CHAR} variables, \code{character} variables have an implied dimension corresponding to the string length. This implied dimension must be defined explicitly as the fastest-varying dimension of the \code{NC_CHAR} variable, and it must be included as the first element of arguments \code{start} and \code{count} taken by this function.
 
-Due to the lack of native support for 64-bit integers in R, NetCDF types \code{NC_INT64} and \code{NC_UINT64} require special attention. This function accepts the usual R \code{integer} (signed 32-bit) and \code{numeric} (double precision) types, but to represent integers larger than about 53-bits without truncation, \\code{\link[bit64]{integer64}} vectors are also supported.
+Due to the lack of native support for 64-bit integers in R, NetCDF types \code{NC_INT64} and \code{NC_UINT64} require special attention. This function accepts the usual R \code{integer} (signed 32-bit) and \code{numeric} (double precision) types, but to represent integers larger than about 53-bits without truncation, \\code{\link[bit64:bit64-package]{integer64}} vectors are also supported.
 
 NetCDF numeric variables cannot portably represent \code{NA} values from R. NetCDF does allow attributes to be defined for variables, and several conventions exist for attributes that define missing values and valid ranges. The convention in use can be specified by argument \code{na.mode}. Values of \code{NA} in argument \code{data} are converted to a missing or fill value before writing to the NetCDF variable. Unusual cases can be handled directly in user code by setting \code{na.mode=3}.
 
@@ -49,7 +49,8 @@ Awkwardness arises mainly from one thing: NetCDF data are written with the last 
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("var.put.nc")
+file1 <- tempfile("var.put_", fileext=".nc")
+nc <- create.nc(file1)
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -82,6 +83,7 @@ var.put.nc(nc, "temperature", mytemperature)
 var.put.nc(nc, "name", myname)
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

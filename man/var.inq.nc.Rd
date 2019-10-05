@@ -46,7 +46,8 @@ The arguments below apply only to datasets in "netcdf4" format:
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("var.inq.nc")
+file1 <- tempfile("var.inq_", fileext=".nc")
+nc <- create.nc(file1)
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -60,6 +61,7 @@ var.inq.nc(nc, 0)
 var.inq.nc(nc, "temperature")
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

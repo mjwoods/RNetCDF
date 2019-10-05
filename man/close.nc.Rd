@@ -21,8 +21,10 @@
 
 \examples{
 ##  Create a void NetCDF dataset
-nc <- create.nc("close.nc")
+file1 <- tempfile("close_", fileext=".nc")
+nc <- create.nc(file1)
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

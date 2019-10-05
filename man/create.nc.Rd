@@ -37,12 +37,20 @@ The file format is specified by the \code{format} argument, which may take the f
 
 \examples{
 ##  Create empty NetCDF datasets with different formats
-nc <- create.nc("create3.nc")
+file1 <- tempfile("create3_", fileext=".nc")
+nc <- create.nc(file1)
 close.nc(nc)
-nc2 <- create.nc("create64.nc",format="offset64")
+unlink(file1)
+
+file2 <- tempfile("create64_", fileext=".nc")
+nc2 <- create.nc(file2,format="offset64")
 close.nc(nc2)
-nc3 <- create.nc("create4.nc",format="netcdf4")
+unlink(file2)
+
+file3 <- tempfile("create4_", fileext=".nc")
+nc3 <- create.nc(file3,format="netcdf4")
 close.nc(nc3)
+unlink(file3)
 }
 
 \keyword{file}

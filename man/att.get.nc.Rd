@@ -15,16 +15,16 @@
   \item{rawchar}{This option only relates to NetCDF attributes of type \code{NC_CHAR}. When \code{rawchar} is \code{FALSE} (default), a NetCDF attribute of type \code{NC_CHAR} is converted to a \code{character} string in R. If \code{rawchar} is \code{TRUE}, the bytes of \code{NC_CHAR} data are read into an R \code{raw} vector.}
   \item{fitnum}{By default, all numeric variables are read into R as double precision values. When \code{fitnum==TRUE}, the smallest R numeric type that can exactly represent each external type is used, as follows:
   \tabular{ll}{
-    \code{NC_BYTE}       \tab \code{\link[base]{integer}} \cr
-    \code{NC_UBYTE}      \tab \code{\link[base]{integer}} \cr
-    \code{NC_SHORT}      \tab \code{\link[base]{integer}} \cr
-    \code{NC_USHORT}     \tab \code{\link[base]{integer}} \cr
-    \code{NC_INT}        \tab \code{\link[base]{integer}} \cr
-    \code{NC_UINT}       \tab \code{\link[base]{double}} \cr
-    \code{NC_FLOAT}      \tab \code{\link[base]{double}} \cr
-    \code{NC_DOUBLE}     \tab \code{\link[base]{double}} \cr
-    \code{NC_INT64}      \tab \code{\link[bit64]{integer64}} \cr
-    \code{NC_UINT64}     \tab \code{\link[bit64]{integer64}} \cr
+    \code{NC_BYTE}       \tab \code{\link{integer}} \cr
+    \code{NC_UBYTE}      \tab \code{\link{integer}} \cr
+    \code{NC_SHORT}      \tab \code{\link{integer}} \cr
+    \code{NC_USHORT}     \tab \code{\link{integer}} \cr
+    \code{NC_INT}        \tab \code{\link{integer}} \cr
+    \code{NC_UINT}       \tab \code{\link{double}} \cr
+    \code{NC_FLOAT}      \tab \code{\link{double}} \cr
+    \code{NC_DOUBLE}     \tab \code{\link{double}} \cr
+    \code{NC_INT64}      \tab \code{\link[bit64:bit64-package]{integer64}} \cr
+    \code{NC_UINT64}     \tab \code{\link[bit64:bit64-package]{integer64}} \cr
   }}
 }
 
@@ -40,7 +40,8 @@
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("att.get.nc")
+file1 <- tempfile("att.get_", fileext=".nc")
+nc <- create.nc(file1)
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -62,6 +63,7 @@ att.get.nc(nc, "NC_GLOBAL", "title")
 att.get.nc(nc, "NC_GLOBAL", "history")
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

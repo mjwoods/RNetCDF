@@ -55,7 +55,8 @@ if (inherits(try(utcal.nc("seconds since 1970-01-01", 0)), "try-error")) {
   time_coord <- utinvcal.nc(time_unit, time_posixct)
 
   # Create a netcdf file:
-  nc <- create.nc("utcal.nc")
+  file1 <- tempfile("utcal_", fileext=".nc")
+  nc <- create.nc(file1)
 
   # Global attributes:
   att.put.nc(nc, "NC_GLOBAL", "Conventions", "NC_CHAR", "CF-1.6")
@@ -86,7 +87,7 @@ if (inherits(try(utcal.nc("seconds since 1970-01-01", 0)), "try-error")) {
   ## Read time coordinate from netcdf file:
 
   # Open the file prepared earlier:
-  nc <- open.nc("utcal.nc")
+  nc <- open.nc(file1)
 
   # Read time coordinate and attributes:
   time_coord2 <- var.get.nc(nc, "time")
@@ -99,6 +100,8 @@ if (inherits(try(utcal.nc("seconds since 1970-01-01", 0)), "try-error")) {
 
   # Compare with original POSIXct variable:
   stopifnot(all.equal(time_posixct, time_posixct2))
+
+  unlink(file1)
 }
 }
 

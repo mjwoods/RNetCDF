@@ -21,16 +21,16 @@
   \item{rawchar}{This option only relates to NetCDF variables of type \code{NC_CHAR}. When \code{rawchar} is \code{FALSE} (default), a NetCDF variable of type \code{NC_CHAR} is converted to a \code{character} array in R. The \code{character} values are from the fastest-varying dimension of the NetCDF variable, so that the R \code{character} array has one fewer dimensions than the \code{NC_CHAR} array. If \code{rawchar} is \code{TRUE}, the bytes of \code{NC_CHAR} data are read into an R \code{raw} array of the same shape.}
   \item{fitnum}{By default, all numeric variables are read into R as double precision values. When \code{fitnum==TRUE}, the smallest R numeric type that can exactly represent each external type is used, as follows:
   \tabular{ll}{
-    \code{NC_BYTE}       \tab \code{\link[base]{integer}} \cr
-    \code{NC_UBYTE}      \tab \code{\link[base]{integer}} \cr
-    \code{NC_SHORT}      \tab \code{\link[base]{integer}} \cr
-    \code{NC_USHORT}     \tab \code{\link[base]{integer}} \cr
-    \code{NC_INT}        \tab \code{\link[base]{integer}} \cr
-    \code{NC_UINT}       \tab \code{\link[base]{double}} \cr
-    \code{NC_FLOAT}      \tab \code{\link[base]{double}} \cr
-    \code{NC_DOUBLE}     \tab \code{\link[base]{double}} \cr
-    \code{NC_INT64}      \tab \code{\link[bit64]{integer64}} \cr
-    \code{NC_UINT64}     \tab \code{\link[bit64]{integer64}} \cr
+    \code{NC_BYTE}       \tab \code{\link{integer}} \cr
+    \code{NC_UBYTE}      \tab \code{\link{integer}} \cr
+    \code{NC_SHORT}      \tab \code{\link{integer}} \cr
+    \code{NC_USHORT}     \tab \code{\link{integer}} \cr
+    \code{NC_INT}        \tab \code{\link{integer}} \cr
+    \code{NC_UINT}       \tab \code{\link{double}} \cr
+    \code{NC_FLOAT}      \tab \code{\link{double}} \cr
+    \code{NC_DOUBLE}     \tab \code{\link{double}} \cr
+    \code{NC_INT64}      \tab \code{\link[bit64:bit64-package]{integer64}} \cr
+    \code{NC_UINT64}     \tab \code{\link[bit64:bit64-package]{integer64}} \cr
   }}
 
 The arguments below apply only to datasets in "netcdf4" format. Reading and writing of variables involves a "chunk cache", and default cache settings are defined by the NetCDF library. Performance may be improved in some applications by adjusting the cache settings through the following options:
@@ -67,7 +67,8 @@ Arrays of type \code{character} drop the fastest-varying dimension of the corres
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("var.get.nc")
+file1 <- tempfile("var.get_", fileext=".nc")
+nc <- create.nc(file1)
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -104,6 +105,7 @@ var.get.nc(nc, "name", c(1,2), c(4,2))
 var.get.nc(nc, "name", c(1,2), c(NA,2))
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

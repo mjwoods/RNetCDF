@@ -20,7 +20,8 @@
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("sync.nc")
+file1 <- tempfile("sync_", fileext=".nc")
+nc <- create.nc(file1)
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -43,7 +44,7 @@ var.put.nc(nc, "temperature", mytemp)
 sync.nc(nc)
 
 ##  Open a new connection to the dataset and read data:
-nc2 <- open.nc("sync.nc")
+nc2 <- open.nc(file1)
 newtime <- var.get.nc(nc2, 0)
 newtemp <- var.get.nc(nc2, "temperature")
 stopifnot(all.equal(newtime,mytime))
@@ -51,6 +52,7 @@ stopifnot(all.equal(newtemp,mytemp))
 
 close.nc(nc)
 close.nc(nc2)
+unlink(file1)
 }
 
 \keyword{file}

@@ -45,7 +45,8 @@ Several varieties of data type are supported, as specified by argument \code{cla
 
 \examples{
 ##  Create a new NetCDF4 dataset and define types
-nc <- create.nc("type.def.nc", format="netcdf4")
+file1 <- tempfile("type.def_", fileext=".nc")
+nc <- create.nc(file1, format="netcdf4")
 
 # Compound type:
 type.def.nc(nc, "astruct", "compound",
@@ -65,6 +66,7 @@ type.def.nc(nc, "ablob", "opaque", size=128)
 type.def.nc(nc, "avector", "vlen", basetype="NC_FLOAT")
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

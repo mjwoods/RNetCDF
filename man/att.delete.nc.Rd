@@ -22,7 +22,8 @@
 
 \examples{
 ##  Create a new NetCDF dataset and define two dimensions
-nc <- create.nc("att.delete.nc")
+file1 <- tempfile("att.delete_", fileext=".nc")
+nc <- create.nc(file1)
 
 dim.def.nc(nc, "station", 5)
 dim.def.nc(nc, "time", unlim=TRUE)
@@ -40,6 +41,7 @@ att.delete.nc(nc, "temperature", "_FillValue")
 att.delete.nc(nc, "NC_GLOBAL", "title")
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}

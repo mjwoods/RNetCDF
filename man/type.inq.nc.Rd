@@ -43,7 +43,8 @@
 
 \examples{
 ##  Create a new NetCDF4 dataset and define types
-nc <- create.nc("type.inq.nc", format="netcdf4")
+file1 <- tempfile("type.inq_", fileext=".nc")
+nc <- create.nc(file1, format="netcdf4")
 
 # Define a type of each class:
 type.def.nc(nc, "blob", "opaque", size=128)
@@ -66,6 +67,7 @@ for (typeid in typeids) {
 }
 
 close.nc(nc)
+unlink(file1)
 }
 
 \keyword{file}
