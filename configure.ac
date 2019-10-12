@@ -65,14 +65,25 @@ AC_CHECK_FUNCS([nc_rename_grp nc_get_var_chunk_cache nc_inq_var_szip nc_inq_var_
 #-------------------------------------------------------------------------------#
 #  Find UDUNITS2 library and header files                                       #
 #-------------------------------------------------------------------------------#
-# Expat is required by udunits2:
+
+# The udunits2 library depends on expat, which may need to be linked explicitly:
 AC_SEARCH_LIBS(XML_ErrorString, expat)
 
-# Prepend the library to LIBS if it is not already being linked,
-# and define preprocessor macro HAVE_LIBUDUNITS2.
-# Also search for udunits2.h,
+# Check that selected routines from udunits2 can be used in programs,
+# and define macro HAVE_LIBUDUNITS2 if all succeed.
+AC_SEARCH_LIBS(ut_read_xml, udunits2,
+  AC_CHECK_FUNC(ut_offset_by_time,
+    AC_CHECK_FUNC(ut_decode_time,
+      AC_CHECK_FUNC(ut_encode_time,
+        AC_DEFINE(HAVE_LIBUDUNITS2)
+      )
+    )
+  )
+)
+
+# Package maintainers sometimes put udunits2.h in a subdirectory,
+# so search for the location on this system
 # and define macro HAVE_UDUNITS2_H or HAVE_UDUNITS2_UDUNITS2_H accordingly.
-AC_SEARCH_LIBS(ut_decode_time, udunits2, AC_DEFINE(HAVE_LIBUDUNITS2))
 AC_CHECK_HEADERS(udunits2.h udunits2/udunits2.h, [break])
 
 #-------------------------------------------------------------------------------#
