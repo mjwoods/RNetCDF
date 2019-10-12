@@ -1,3 +1,6 @@
+Version 2.0-4, 2019-10-12
+  * Fix OSX packages by linking expat library
+
 Version 2.0-3, 2019-10-05
   * Support NetCDF-4 features for reading and writing of datasets.
   * Suggest bit64 package for NC_INT64 and NC_UINT64 types.

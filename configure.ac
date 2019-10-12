@@ -2,7 +2,7 @@
 #  Initialize                                                    		#
 #-------------------------------------------------------------------------------#
 
-AC_INIT([RNetCDF], [2.0-3])
+AC_INIT([RNetCDF], [2.0-4])
 
 #-------------------------------------------------------------------------------#
 #  Find the compiler and compiler options to use for tests                   	#
@@ -65,6 +65,8 @@ AC_CHECK_FUNCS([nc_rename_grp nc_get_var_chunk_cache nc_inq_var_szip nc_inq_var_
 #-------------------------------------------------------------------------------#
 #  Find UDUNITS2 library and header files                                       #
 #-------------------------------------------------------------------------------#
+# Expat is required by udunits2:
+AC_SEARCH_LIBS(XML_ErrorString, expat)
 
 # Prepend the library to LIBS if it is not already being linked,
 # and define preprocessor macro HAVE_LIBUDUNITS2.

@@ -2,7 +2,7 @@
  *
  *  Name:       variable.c
  *
- *  Version:    2.0-3
+ *  Version:    2.0-4
  *
  *  Purpose:    NetCDF variable functions for RNetCDF
  *
