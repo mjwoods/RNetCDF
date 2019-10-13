@@ -9,10 +9,9 @@ AC_INIT([RNetCDF], [2.0-4])
 #-------------------------------------------------------------------------------#
 
 : ${R_HOME=`R RHOME`}
-if test -z "${R_HOME}"; then
-  echo "could not determine R_HOME"
-  exit 1
-fi
+AS_IF([test -z "${R_HOME}"],
+  AC_MSG_ERROR([could not determine R_HOME])
+)
 CC=`"${R_HOME}/bin/R" CMD config CC`
 CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 
