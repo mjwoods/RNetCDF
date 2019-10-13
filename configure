@@ -2088,9 +2088,9 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 #-------------------------------------------------------------------------------#
 
 : ${R_HOME=`R RHOME`}
-if test -z "${R_HOME}"; then
-  echo "could not determine R_HOME"
-  exit 1
+if test -z "${R_HOME}"; then :
+  as_fn_error $? "could not determine R_HOME" "$LINENO" 5
+
 fi
 CC=`"${R_HOME}/bin/R" CMD config CC`
 CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
@@ -3371,7 +3371,7 @@ if test "x$ac_cv_header_netcdf_h" = xyes; then :
 _ACEOF
 
 else
-  as_fn_error $? "\"netcdf.h was not compiled - defining CPPFLAGS may help\"" "$LINENO" 5
+  as_fn_error $? "netcdf.h was not compiled - defining CPPFLAGS may help" "$LINENO" 5
 fi
 
 done
@@ -3434,7 +3434,7 @@ if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
 else
-  as_fn_error $? "\"netcdf library was not linked - defining LDFLAGS may help\"" "$LINENO" 5
+  as_fn_error $? "netcdf library was not linked - defining LDFLAGS may help" "$LINENO" 5
 fi
 
 
@@ -3456,7 +3456,8 @@ done
 #-------------------------------------------------------------------------------#
 #  Find UDUNITS2 library and header files                                       #
 #-------------------------------------------------------------------------------#
-# Expat is required by udunits2:
+
+# The udunits2 library depends on expat, which may need to be linked explicitly:
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing XML_ErrorString" >&5
 $as_echo_n "checking for library containing XML_ErrorString... " >&6; }
 if ${ac_cv_search_XML_ErrorString+:} false; then :
@@ -3514,13 +3515,13 @@ if test "$ac_res" != no; then :
 fi
 
 
-# Prepend the library to LIBS if it is not already being linked,
-# and define preprocessor macro HAVE_LIBUDUNITS2.
-# Also search for udunits2.h,
+# Check that selected routines from udunits2 can be used in programs,
+# including udunits2 in LIBS if needed.
+# Also search for udunits2.h on its own or in a subdirectory,
 # and define macro HAVE_UDUNITS2_H or HAVE_UDUNITS2_UDUNITS2_H accordingly.
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing ut_decode_time" >&5
-$as_echo_n "checking for library containing ut_decode_time... " >&6; }
-if ${ac_cv_search_ut_decode_time+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing ut_read_xml" >&5
+$as_echo_n "checking for library containing ut_read_xml... " >&6; }
+if ${ac_cv_search_ut_read_xml+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_func_search_save_LIBS=$LIBS
@@ -3533,11 +3534,11 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char ut_decode_time ();
+char ut_read_xml ();
 int
 main ()
 {
-return ut_decode_time ();
+return ut_read_xml ();
   ;
   return 0;
 }
@@ -3550,32 +3551,34 @@ for ac_lib in '' udunits2; do
     LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
   fi
   if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_ut_decode_time=$ac_res
+  ac_cv_search_ut_read_xml=$ac_res
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext
-  if ${ac_cv_search_ut_decode_time+:} false; then :
+  if ${ac_cv_search_ut_read_xml+:} false; then :
   break
 fi
 done
-if ${ac_cv_search_ut_decode_time+:} false; then :
+if ${ac_cv_search_ut_read_xml+:} false; then :
 
 else
-  ac_cv_search_ut_decode_time=no
+  ac_cv_search_ut_read_xml=no
 fi
 rm conftest.$ac_ext
 LIBS=$ac_func_search_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_ut_decode_time" >&5
-$as_echo "$ac_cv_search_ut_decode_time" >&6; }
-ac_res=$ac_cv_search_ut_decode_time
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_ut_read_xml" >&5
+$as_echo "$ac_cv_search_ut_read_xml" >&6; }
+ac_res=$ac_cv_search_ut_read_xml
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-  $as_echo "#define HAVE_LIBUDUNITS2 1" >>confdefs.h
-
-fi
-
-for ac_header in udunits2.h udunits2/udunits2.h
+  ac_fn_c_check_func "$LINENO" "ut_offset_by_time" "ac_cv_func_ut_offset_by_time"
+if test "x$ac_cv_func_ut_offset_by_time" = xyes; then :
+  ac_fn_c_check_func "$LINENO" "ut_decode_time" "ac_cv_func_ut_decode_time"
+if test "x$ac_cv_func_ut_decode_time" = xyes; then :
+  ac_fn_c_check_func "$LINENO" "ut_encode_time" "ac_cv_func_ut_encode_time"
+if test "x$ac_cv_func_ut_encode_time" = xyes; then :
+  for ac_header in udunits2.h udunits2/udunits2.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -3583,11 +3586,34 @@ if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
   cat >>confdefs.h <<_ACEOF
 #define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
 _ACEOF
- break
+ enable_calendar=yes; break
+
 fi
 
 done
 
+
+fi
+
+
+fi
+
+
+fi
+
+
+fi
+
+
+# Define HAVE_LIBUDUNITS2 if all udunits2 checks were successful:
+if test "x$enable_calendar" == xyes; then :
+  $as_echo "#define HAVE_LIBUDUNITS2 1" >>confdefs.h
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: disabling calendar functions in RNetCDF" >&5
+$as_echo "$as_me: WARNING: disabling calendar functions in RNetCDF" >&2;}
+
+fi
 
 #-------------------------------------------------------------------------------#
 #  Do substitution                               	                 	#

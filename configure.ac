@@ -9,10 +9,9 @@ AC_INIT([RNetCDF], [2.0-4])
 #-------------------------------------------------------------------------------#
 
 : ${R_HOME=`R RHOME`}
-if test -z "${R_HOME}"; then
-  echo "could not determine R_HOME"
-  exit 1
-fi
+AS_IF([test -z "${R_HOME}"],
+  AC_MSG_ERROR([could not determine R_HOME])
+)
 CC=`"${R_HOME}/bin/R" CMD config CC`
 CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 
@@ -51,12 +50,12 @@ AS_IF([test "x$have_nc_config" == xyes],
 
 # Check that netcdf header files can be compiled:
 AC_CHECK_HEADERS(netcdf.h, [],
-    AC_MSG_ERROR("netcdf.h was not compiled - defining CPPFLAGS may help"))
+    AC_MSG_ERROR([netcdf.h was not compiled - defining CPPFLAGS may help]))
 
 # Check that netcdf library can be found.
 # Linker flags are prepended to LIBS if needed.
 AC_SEARCH_LIBS(nc_open, netcdf, [],
-    AC_MSG_ERROR("netcdf library was not linked - defining LDFLAGS may help"))
+    AC_MSG_ERROR([netcdf library was not linked - defining LDFLAGS may help]))
 
 # Check for the existence of optional netcdf routines.
 # C preprocessor macros HAVE_routine are defined for existing routines.
@@ -65,15 +64,31 @@ AC_CHECK_FUNCS([nc_rename_grp nc_get_var_chunk_cache nc_inq_var_szip nc_inq_var_
 #-------------------------------------------------------------------------------#
 #  Find UDUNITS2 library and header files                                       #
 #-------------------------------------------------------------------------------#
-# Expat is required by udunits2:
+
+# The udunits2 library depends on expat, which may need to be linked explicitly:
 AC_SEARCH_LIBS(XML_ErrorString, expat)
 
-# Prepend the library to LIBS if it is not already being linked,
-# and define preprocessor macro HAVE_LIBUDUNITS2.
-# Also search for udunits2.h,
+# Check that selected routines from udunits2 can be used in programs,
+# including udunits2 in LIBS if needed.
+# Also search for udunits2.h on its own or in a subdirectory,
 # and define macro HAVE_UDUNITS2_H or HAVE_UDUNITS2_UDUNITS2_H accordingly.
-AC_SEARCH_LIBS(ut_decode_time, udunits2, AC_DEFINE(HAVE_LIBUDUNITS2))
-AC_CHECK_HEADERS(udunits2.h udunits2/udunits2.h, [break])
+AC_SEARCH_LIBS(ut_read_xml, udunits2,
+  AC_CHECK_FUNC(ut_offset_by_time,
+    AC_CHECK_FUNC(ut_decode_time,
+      AC_CHECK_FUNC(ut_encode_time,
+        AC_CHECK_HEADERS(udunits2.h udunits2/udunits2.h,
+          [enable_calendar=yes; break]
+        )
+      )
+    )
+  )
+)
+
+# Define HAVE_LIBUDUNITS2 if all udunits2 checks were successful:
+AS_IF([test "x$enable_calendar" == xyes],
+  AC_DEFINE(HAVE_LIBUDUNITS2),
+  AC_MSG_WARN([disabling calendar functions in RNetCDF])
+)
 
 #-------------------------------------------------------------------------------#
 #  Do substitution                               	                 	#
