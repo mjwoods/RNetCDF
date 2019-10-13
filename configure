@@ -3516,7 +3516,9 @@ fi
 
 
 # Check that selected routines from udunits2 can be used in programs,
-# and define macro HAVE_LIBUDUNITS2 if all succeed.
+# including udunits2 in LIBS if needed.
+# Also search for udunits2.h on its own or in a subdirectory,
+# and define macro HAVE_UDUNITS2_H or HAVE_UDUNITS2_UDUNITS2_H accordingly.
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing ut_read_xml" >&5
 $as_echo_n "checking for library containing ut_read_xml... " >&6; }
 if ${ac_cv_search_ut_read_xml+:} false; then :
@@ -3576,25 +3578,7 @@ if test "x$ac_cv_func_ut_offset_by_time" = xyes; then :
 if test "x$ac_cv_func_ut_decode_time" = xyes; then :
   ac_fn_c_check_func "$LINENO" "ut_encode_time" "ac_cv_func_ut_encode_time"
 if test "x$ac_cv_func_ut_encode_time" = xyes; then :
-  $as_echo "#define HAVE_LIBUDUNITS2 1" >>confdefs.h
-
-
-fi
-
-
-fi
-
-
-fi
-
-
-fi
-
-
-# Package maintainers sometimes put udunits2.h in a subdirectory,
-# so search for the location on this system
-# and define macro HAVE_UDUNITS2_H or HAVE_UDUNITS2_UDUNITS2_H accordingly.
-for ac_header in udunits2.h udunits2/udunits2.h
+  for ac_header in udunits2.h udunits2/udunits2.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -3602,11 +3586,34 @@ if eval test \"x\$"$as_ac_Header"\" = x"yes"; then :
   cat >>confdefs.h <<_ACEOF
 #define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
 _ACEOF
- break
+ enable_calendar=yes; break
+
 fi
 
 done
 
+
+fi
+
+
+fi
+
+
+fi
+
+
+fi
+
+
+# Define HAVE_LIBUDUNITS2 if all udunits2 checks were successful:
+if test "x$enable_calendar" == xyes; then :
+  $as_echo "#define HAVE_LIBUDUNITS2 1" >>confdefs.h
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: disabling calendar functions in RNetCDF" >&5
+$as_echo "$as_me: WARNING: disabling calendar functions in RNetCDF" >&2;}
+
+fi
 
 #-------------------------------------------------------------------------------#
 #  Do substitution                               	                 	#

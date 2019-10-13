@@ -70,21 +70,26 @@ AC_CHECK_FUNCS([nc_rename_grp nc_get_var_chunk_cache nc_inq_var_szip nc_inq_var_
 AC_SEARCH_LIBS(XML_ErrorString, expat)
 
 # Check that selected routines from udunits2 can be used in programs,
-# and define macro HAVE_LIBUDUNITS2 if all succeed.
+# including udunits2 in LIBS if needed.
+# Also search for udunits2.h on its own or in a subdirectory,
+# and define macro HAVE_UDUNITS2_H or HAVE_UDUNITS2_UDUNITS2_H accordingly.
 AC_SEARCH_LIBS(ut_read_xml, udunits2,
   AC_CHECK_FUNC(ut_offset_by_time,
     AC_CHECK_FUNC(ut_decode_time,
       AC_CHECK_FUNC(ut_encode_time,
-        AC_DEFINE(HAVE_LIBUDUNITS2)
+        AC_CHECK_HEADERS(udunits2.h udunits2/udunits2.h,
+          [enable_calendar=yes; break]
+        )
       )
     )
   )
 )
 
-# Package maintainers sometimes put udunits2.h in a subdirectory,
-# so search for the location on this system
-# and define macro HAVE_UDUNITS2_H or HAVE_UDUNITS2_UDUNITS2_H accordingly.
-AC_CHECK_HEADERS(udunits2.h udunits2/udunits2.h, [break])
+# Define HAVE_LIBUDUNITS2 if all udunits2 checks were successful:
+AS_IF([test "x$enable_calendar" == xyes],
+  AC_DEFINE(HAVE_LIBUDUNITS2),
+  AC_MSG_WARN([disabling calendar functions in RNetCDF])
+)
 
 #-------------------------------------------------------------------------------#
 #  Do substitution                               	                 	#
