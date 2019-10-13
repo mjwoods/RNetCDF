@@ -51,12 +51,12 @@ AS_IF([test "x$have_nc_config" == xyes],
 
 # Check that netcdf header files can be compiled:
 AC_CHECK_HEADERS(netcdf.h, [],
-    AC_MSG_ERROR("netcdf.h was not compiled - defining CPPFLAGS may help"))
+    AC_MSG_ERROR([netcdf.h was not compiled - defining CPPFLAGS may help]))
 
 # Check that netcdf library can be found.
 # Linker flags are prepended to LIBS if needed.
 AC_SEARCH_LIBS(nc_open, netcdf, [],
-    AC_MSG_ERROR("netcdf library was not linked - defining LDFLAGS may help"))
+    AC_MSG_ERROR([netcdf library was not linked - defining LDFLAGS may help]))
 
 # Check for the existence of optional netcdf routines.
 # C preprocessor macros HAVE_routine are defined for existing routines.

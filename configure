@@ -3371,7 +3371,7 @@ if test "x$ac_cv_header_netcdf_h" = xyes; then :
 _ACEOF
 
 else
-  as_fn_error $? "\"netcdf.h was not compiled - defining CPPFLAGS may help\"" "$LINENO" 5
+  as_fn_error $? "netcdf.h was not compiled - defining CPPFLAGS may help" "$LINENO" 5
 fi
 
 done
@@ -3434,7 +3434,7 @@ if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
 else
-  as_fn_error $? "\"netcdf library was not linked - defining LDFLAGS may help\"" "$LINENO" 5
+  as_fn_error $? "netcdf library was not linked - defining LDFLAGS may help" "$LINENO" 5
 fi
 
 
