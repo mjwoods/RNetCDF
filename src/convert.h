@@ -61,7 +61,7 @@ typedef struct {
   void *cbuf, *rbuf;
   nc_type xtype;
   int ncid, ndim, rawchar, fitnum;
-  size_t *xdim;
+  size_t *xdim, fillsize;
   void *fill, *min, *max;
   double *scale, *add;
   } R_nc_buf;
@@ -78,7 +78,8 @@ typedef struct {
  */
 const void *
 R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
-          const void *fill, const double *scale, const double *add);
+          size_t fillsize, const void *fill,
+          const double *scale, const double *add);
 
 
 /* Convert an array of netcdf external type (xtype) to R.
@@ -99,7 +100,7 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
 void * \
 R_nc_c2r_init (R_nc_buf *io, void *cbuf,
                int ncid, nc_type xtype, int ndim, const size_t *xdim,
-               int rawchar, int fitnum,
+               int rawchar, int fitnum, size_t fillsize,
                const void *fill, const void *min, const void *max,
                const double *scale, const double *add);
 
