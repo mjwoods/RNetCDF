@@ -1,3 +1,8 @@
+Version 2.1-1, 2019-10-18
+  * Remove automatic handling of fill values in user-defined types
+  * Link rwinlib libraries by pathname to fix r-hub Windows builds
+  * Correct quoting of external software names in DESCRIPTION
+
 Version 2.0-4, 2019-10-13
   * Fix OSX packages by linking expat library
 
