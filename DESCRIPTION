@@ -11,8 +11,8 @@ SystemRequirements: netcdf udunits-2
 Suggests: bit64
 Description: An interface to the 'NetCDF' file format designed by Unidata
   for efficient storage of array-oriented scientific data and descriptions.
-  This R interface is closely based on the C API of the 'NetCDF4' library,
-  and it includes calendar conversions from the Unidata 'UDUNITS2' library.
+  Supports most capabilities of 'NetCDF' version 4,
+  along with calendar conversions from 'UDUNITS' version 2.
 License: GPL (>= 2) | file LICENSE
 URL: https://github.com/mjwoods/RNetCDF
      http://www.unidata.ucar.edu/software/netcdf/
