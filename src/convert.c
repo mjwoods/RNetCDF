@@ -357,7 +357,8 @@ R_nc_str_strsxp (R_nc_buf *io)
   NATEST, MINTEST, MINVAL, MAXTEST, MAXVAL) \
 static const OTYPE* \
 FUN (SEXP rv, int ndim, const size_t *xdim, \
-     const OTYPE *fill, const double *scale, const double *add) \
+     size_t fillsize, const OTYPE *fill, \
+     const double *scale, const double *add) \
 { \
   size_t ii, cnt; \
   int erange=0, efill=0; \
@@ -385,6 +386,9 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
     offset = 0.0; \
   } \
   if (fill) { \
+    if (fillsize != sizeof(OTYPE)) { \
+      R_nc_error ("Size of fill value does not match output type"); \
+    } \
     fillval = *fill; \
   } \
   for (ii=0; ii<cnt; ii++) { \
@@ -536,6 +540,9 @@ FUN (R_nc_buf *io) \
   ii = xlength (io->rxp); \
   in = (ITYPE *) io->cbuf; \
   out = (OTYPE *) io->rbuf; \
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(ITYPE)) { \
+    R_nc_error ("Size of fill value does not match input type"); \
+  } \
   if (io->fill) { \
     fillval = *((ITYPE *) io->fill); \
   } \
@@ -639,6 +646,9 @@ FUN (R_nc_buf *io) \
   } else { \
     offset = 0.0; \
   } \
+  if ((io->fill || io->min || io->max) && io->fillsize != sizeof(ITYPE)) { \
+    R_nc_error ("Size of fill value does not match input type"); \
+  } \
   if (io->fill) { \
     fillval = *((ITYPE *) io->fill); \
   } \
@@ -735,7 +745,7 @@ R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
     vbuf[ii].len = len;
     if (len > 0) {
       vbuf[ii].p = (void *) R_nc_r2c (item, ncid, basetype,
-                                      -1, &len, fill, scale, add);
+                                      -1, &len, 0, fill, scale, add);
     } else {
       vbuf[ii].p = NULL;
     }
@@ -780,7 +790,7 @@ R_nc_vlen_vecsxp (R_nc_buf *io)
 
   for (ii=0; ii<cnt; ii++) {
     R_nc_c2r_init (&tmpio, vbuf[ii].p, io->ncid, basetype, -1, &(vbuf[ii].len),
-                   io->rawchar, io->fitnum, io->fill, io->min, io->max,
+                   io->rawchar, io->fitnum, 0, io->fill, io->min, io->max,
                    io->scale, io->add);
     SET_VECTOR_ELT (io->rxp, ii, R_nc_c2r (&tmpio));
     nc_free_vlen(&(vbuf[ii]));
@@ -1113,7 +1123,7 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
       dimsizefld[idimfld+1] = dimlenfld[idimfld];
     }
     buffld = R_nc_r2c (VECTOR_ELT (rv, ilist), ncid, typefld, ndimfld+1, dimsizefld,
-                       NULL, NULL, NULL);
+                       0, NULL, NULL, NULL);
 
     /* Copy elements from the field array into the compound array */
     fldcnt = R_nc_length (ndimfld, dimsizefld+1);
@@ -1227,7 +1237,7 @@ R_nc_compound_vecsxp (R_nc_buf *io)
 
     /* Prepare to convert field data from C to R */
     buffld = R_nc_c2r_init (&iofld, NULL, ncid, typefld, ndimslice, dimslice,
-               io->rawchar, io->fitnum, NULL, NULL, NULL, NULL, NULL);
+               io->rawchar, io->fitnum, 0, NULL, NULL, NULL, NULL, NULL);
 
     /* Copy elements from the compound array into the field array */
     fldlen = fldsize * fldcnt;
@@ -1253,7 +1263,8 @@ R_nc_compound_vecsxp (R_nc_buf *io)
 
 const void *
 R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
-          const void *fill, const double *scale, const double *add)
+          size_t fillsize, const void *fill,
+          const double *scale, const double *add)
 {
   int class;
 
@@ -1265,25 +1276,25 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
   case INTSXP:
     switch (xtype) {
     case NC_BYTE:
-      return R_nc_r2c_int_schar (rv, ndim, xdim, fill, scale, add);
+      return R_nc_r2c_int_schar (rv, ndim, xdim, fillsize, fill, scale, add);
     case NC_UBYTE:
-      return R_nc_r2c_int_uchar (rv, ndim, xdim, fill, scale, add);
+      return R_nc_r2c_int_uchar (rv, ndim, xdim, fillsize, fill, scale, add);
     case NC_SHORT:
-      return R_nc_r2c_int_short (rv, ndim, xdim, fill, scale, add);
+      return R_nc_r2c_int_short (rv, ndim, xdim, fillsize, fill, scale, add);
     case NC_USHORT:
-      return R_nc_r2c_int_ushort (rv, ndim, xdim, fill, scale, add);
+      return R_nc_r2c_int_ushort (rv, ndim, xdim, fillsize, fill, scale, add);
     case NC_INT:
-      return R_nc_r2c_int_int (rv, ndim, xdim, fill, scale, add);
+      return R_nc_r2c_int_int (rv, ndim, xdim, fillsize, fill, scale, add);
     case NC_UINT:
-      return R_nc_r2c_int_uint (rv, ndim, xdim, fill, scale, add);
+      return R_nc_r2c_int_uint (rv, ndim, xdim, fillsize, fill, scale, add);
     case NC_INT64:
-      return R_nc_r2c_int_ll (rv, ndim, xdim, fill, scale, add);
+      return R_nc_r2c_int_ll (rv, ndim, xdim, fillsize, fill, scale, add);
     case NC_UINT64:
-      return R_nc_r2c_int_ull (rv, ndim, xdim, fill, scale, add);
+      return R_nc_r2c_int_ull (rv, ndim, xdim, fillsize, fill, scale, add);
     case NC_FLOAT:
-      return R_nc_r2c_int_float (rv, ndim, xdim, fill, scale, add);
+      return R_nc_r2c_int_float (rv, ndim, xdim, fillsize, fill, scale, add);
     case NC_DOUBLE:
-      return R_nc_r2c_int_dbl (rv, ndim, xdim, fill, scale, add);
+      return R_nc_r2c_int_dbl (rv, ndim, xdim, fillsize, fill, scale, add);
     }
     if (xtype > NC_MAX_ATOMIC_TYPE &&
         class == NC_ENUM &&
@@ -1295,48 +1306,48 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
     if (R_nc_inherits (rv, "integer64")) {
       switch (xtype) {
       case NC_BYTE:
-	return R_nc_r2c_bit64_schar (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_bit64_schar (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_UBYTE:
-	return R_nc_r2c_bit64_uchar (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_bit64_uchar (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_SHORT:
-	return R_nc_r2c_bit64_short (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_bit64_short (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_USHORT:
-	return R_nc_r2c_bit64_ushort (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_bit64_ushort (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_INT:
-	return R_nc_r2c_bit64_int (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_bit64_int (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_UINT:
-	return R_nc_r2c_bit64_uint (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_bit64_uint (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_INT64:
-	return R_nc_r2c_bit64_ll (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_bit64_ll (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_UINT64:
-	return R_nc_r2c_bit64_ull (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_bit64_ull (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_FLOAT:
-	return R_nc_r2c_bit64_float (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_bit64_float (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_DOUBLE:
-	return R_nc_r2c_bit64_dbl (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_bit64_dbl (rv, ndim, xdim, fillsize, fill, scale, add);
       }
     } else {
       switch (xtype) {
       case NC_BYTE:
-	return R_nc_r2c_dbl_schar (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_dbl_schar (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_UBYTE:
-	return R_nc_r2c_dbl_uchar (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_dbl_uchar (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_SHORT:
-	return R_nc_r2c_dbl_short (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_dbl_short (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_USHORT:
-	return R_nc_r2c_dbl_ushort (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_dbl_ushort (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_INT:
-	return R_nc_r2c_dbl_int (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_dbl_int (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_UINT:
-	return R_nc_r2c_dbl_uint (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_dbl_uint (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_INT64:
-	return R_nc_r2c_dbl_ll (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_dbl_ll (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_UINT64:
-	return R_nc_r2c_dbl_ull (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_dbl_ull (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_FLOAT:
-	return R_nc_r2c_dbl_float (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_dbl_float (rv, ndim, xdim, fillsize, fill, scale, add);
       case NC_DOUBLE:
-	return R_nc_r2c_dbl_dbl (rv, ndim, xdim, fill, scale, add);
+	return R_nc_r2c_dbl_dbl (rv, ndim, xdim, fillsize, fill, scale, add);
       }
     }
     break;
@@ -1372,12 +1383,11 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
 void * \
 R_nc_c2r_init (R_nc_buf *io, void *cbuf,
                int ncid, nc_type xtype, int ndim, const size_t *xdim,
-               int rawchar, int fitnum,
+               int rawchar, int fitnum, size_t fillsize,
                const void *fill, const void *min, const void *max,
                const double *scale, const double *add)
 {
   int class;
-  size_t size;
 
   if (!io) {
     RERROR ("Pointer to R_nc_buf must not be NULL in R_nc_c2r_init");
@@ -1393,6 +1403,7 @@ R_nc_c2r_init (R_nc_buf *io, void *cbuf,
   io->rawchar = rawchar;
   io->fitnum = fitnum;
   io->xdim = NULL;
+  io->fillsize = fillsize;
   io->fill = NULL;
   io->min = NULL;
   io->max = NULL;
@@ -1411,23 +1422,19 @@ R_nc_c2r_init (R_nc_buf *io, void *cbuf,
     /* Scalar has no dimensions */
   }
 
-  if (fill || min || max) {
-    R_nc_check (nc_inq_type (ncid, xtype, NULL, &size));
-  }
-
   if (fill) {
-    io->fill = R_alloc (1, size);
-    memcpy (io->fill, fill, size);
+    io->fill = R_alloc (1, fillsize);
+    memcpy (io->fill, fill, fillsize);
   }
 
   if (min) {
-    io->min = R_alloc (1, size);
-    memcpy (io->min, min, size);
+    io->min = R_alloc (1, fillsize);
+    memcpy (io->min, min, fillsize);
   }
 
   if (max) {
-    io->max = R_alloc (1, size);
-    memcpy (io->max, max, size);
+    io->max = R_alloc (1, fillsize);
+    memcpy (io->max, max, fillsize);
   }
 
   if (scale) {
@@ -1679,12 +1686,12 @@ FUN (SEXP rv, size_t N, TYPE fillval) \
   /* Copy R elements to cv */ \
   if (isReal (rv)) { \
     if (R_nc_inherits (rv, "integer64")) { \
-      voidbuf = R_nc_r2c_bit64_##TYPENAME (rv, 1, &nr, &fillval, NULL, NULL); \
+      voidbuf = R_nc_r2c_bit64_##TYPENAME (rv, 1, &nr, sizeof(TYPE), &fillval, NULL, NULL); \
     } else { \
-      voidbuf = R_nc_r2c_dbl_##TYPENAME (rv, 1, &nr, &fillval, NULL, NULL); \
+      voidbuf = R_nc_r2c_dbl_##TYPENAME (rv, 1, &nr, sizeof(TYPE), &fillval, NULL, NULL); \
     } \
   } else if (isInteger (rv)) { \
-    voidbuf = R_nc_r2c_int_##TYPENAME (rv, 1, &nr, &fillval, NULL, NULL); \
+    voidbuf = R_nc_r2c_int_##TYPENAME (rv, 1, &nr, sizeof(TYPE), &fillval, NULL, NULL); \
   } else { \
     RERROR ("Unsupported R type in R_NC_DIM_R2C"); \
   } \
