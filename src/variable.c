@@ -209,8 +209,7 @@ R_nc_miss_att (int ncid, int varid, int mode,
                void **fill, void **min, void **max)
 {
   size_t cnt, size;
-  int class;
-  nc_type atype, xtype, basetype;
+  nc_type atype, xtype;
   char *range;
   *fill = NULL;
   *min = NULL;
