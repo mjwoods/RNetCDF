@@ -1,6 +1,6 @@
 Package: RNetCDF
-Version: 2.0-4
-Date: 2019-10-13
+Version: 2.1-1
+Date: 2019-10-18
 Title: Interface to 'NetCDF' Datasets
 Authors@R: c(person("Pavel", "Michna", role = "aut",
                     email = "rnetcdf-devel@bluewin.ch"),

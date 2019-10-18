@@ -2,7 +2,7 @@
 #
 #  Name:       RNetCDF-test.R
 #
-#  Version:    2.0-4
+#  Version:    2.1-1
 #
 #  Purpose:    Test functions to the NetCDF interface for R.
 #
