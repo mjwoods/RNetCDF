@@ -216,19 +216,15 @@ R_nc_miss_att (int ncid, int varid, int mode,
   *min = NULL;
   *max = NULL;
 
-  /* Get details about type of netcdf variable */
+  /* Get details about type and size of netcdf variable */
   R_nc_check (nc_inq_vartype (ncid, varid, &xtype));
-  if (xtype > NC_MAX_ATOMIC_TYPE) {
-    /* Use base type of vlen or enum type */
-    R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, NULL, &class));
-    if (class == NC_ENUM || class == NC_VLEN) {
-      xtype = basetype;
-    } else {
-      /* Other user-defined types can be handled by users,
-         based on any convention they choose.
-       */
-      return 0;
-    }
+  if (xtype == NC_CHAR ||
+      xtype == NC_STRING ||
+      xtype > NC_MAX_ATOMIC_TYPE) {
+    /* NetCDF attribute conventions describe the handling of missing values
+       in atomic numeric types. Let users handle other types as needed.
+     */
+    return 0;
   }
   R_nc_check (nc_inq_type (ncid, xtype, NULL, &size));
 
@@ -373,7 +369,7 @@ R_nc_miss_att (int ncid, int varid, int mode,
             **(unsigned long long **) fill = NC_FILL_UINT64;
             break;
           default:
-            return 0;
+            R_nc_error ("Default fill value not implemented");
         }
       }
 
@@ -407,7 +403,7 @@ R_nc_miss_att (int ncid, int varid, int mode,
             FILL2RANGE_REAL(double, DBL_EPSILON);
             break;
           default:
-            return 0;
+            R_nc_error ("Default valid range not implemented");
         }
       }
 
