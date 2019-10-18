@@ -59,12 +59,18 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
               SEXP filter_params)
 {
   int ncid, ii, jj, *dimids, ndims, varid, chunkmode, format, withnc4;
-  int deflate_mode, deflate_level, shuffle_mode, endian_mode, fletcher_mode;
-  int filter_mode, filtid, *filtparm;
+  int deflate_mode, deflate_level, shuffle_mode, fletcher_mode;
   size_t *chunksize_t;
   nc_type xtype;
   const char *varnamep;
   SEXP result;
+
+#ifdef HAVE_NC_INQ_VAR_ENDIAN
+  int endian_mode;
+#endif
+#ifdef HAVE_NC_INQ_VAR_FILTER
+  int filter_mode, filtid, *filtparm;
+#endif
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -119,9 +125,11 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 
     fletcher_mode = (asLogical (fletcher32) == TRUE);
 
+#ifdef HAVE_NC_INQ_VAR_FILTER
     filtid = asInteger (filter_id);
     filter_mode = (filtid != NA_INTEGER);
     filtparm = INTEGER (filter_params);
+#endif
   }
 
   /*-- Enter define mode ------------------------------------------------------*/
@@ -454,9 +462,13 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   R_nc_buf io;
   double add, scale, *addp=NULL, *scalep=NULL;
   void *fillp=NULL, *minp=NULL, *maxp=NULL;
-  size_t fillsize, bytes, slots;
+  size_t fillsize;
+
+#ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
+  size_t bytes, slots;
   float preemption;
   double bytes_in, slots_in, preempt_in;
+#endif
 
   /*-- Convert arguments ------------------------------------------------------*/
   ncid = asInteger (nc);
@@ -537,18 +549,30 @@ SEXP
 R_nc_inq_var (SEXP nc, SEXP var)
 {
   int ncid, varid, idim, ndims, natts, *dimids, storeprop, format, withnc4;
-  int shuffle, deflate, deflate_level, endian, fletcher;
-  int status, szip_options, szip_bits;
-  int filter_id;
-  size_t filter_nparams;
-  size_t *chunksize_t, cache_bytes, cache_slots;
-  float cache_preemption;
+  int shuffle, deflate, deflate_level, fletcher;
+  int status;
+  size_t *chunksize_t;
   double *chunkdbl;
   char varname[NC_MAX_NAME + 1], vartype[NC_MAX_NAME+1];
   nc_type xtype;
   SEXP result, rdimids, rchunks, rbytes, rslots, rpreempt,
        rshuffle, rdeflate, rendian, rfletcher,
        rszip_options, rszip_bits, rfilter_id, rfilter_params;
+
+#ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
+  size_t cache_bytes, cache_slots;
+  float cache_preemption;
+#endif
+#ifdef HAVE_NC_INQ_VAR_ENDIAN
+  int endian;
+#endif
+#ifdef HAVE_NC_INQ_VAR_SZIP
+  int szip_options, szip_bits;
+#endif
+#ifdef HAVE_NC_INQ_VAR_FILTER
+  int filter_id;
+  size_t filter_nparams;
+#endif
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -742,9 +766,13 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
   const void *buf;
   double scale, add, *scalep=NULL, *addp=NULL;
   void *fillp=NULL, *minp=NULL, *maxp=NULL;
-  size_t fillsize, bytes, slots;
+  size_t fillsize;
+
+#ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
+  size_t bytes, slots;
   float preemption;
   double bytes_in, slots_in, preempt_in;
+#endif
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
