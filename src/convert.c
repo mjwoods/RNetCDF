@@ -706,8 +706,7 @@ R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint64, unsigned long long, 0, ULLONG_MAX)
    An error is raised if input values cannot be converted to the vlen base type.
  */
 static nc_vlen_t *
-R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
-                  const void *fill, const double *scale, const double *add)
+R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim)
 {
   size_t ii, cnt, len, size;
   int baseclass;
@@ -745,7 +744,7 @@ R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
     vbuf[ii].len = len;
     if (len > 0) {
       vbuf[ii].p = (void *) R_nc_r2c (item, ncid, basetype,
-                                      -1, &len, 0, fill, scale, add);
+                                      -1, &len, 0, NULL, NULL, NULL);
     } else {
       vbuf[ii].p = NULL;
     }
@@ -790,8 +789,7 @@ R_nc_vlen_vecsxp (R_nc_buf *io)
 
   for (ii=0; ii<cnt; ii++) {
     R_nc_c2r_init (&tmpio, vbuf[ii].p, io->ncid, basetype, -1, &(vbuf[ii].len),
-                   io->rawchar, io->fitnum, 0, io->fill, io->min, io->max,
-                   io->scale, io->add);
+                   io->rawchar, io->fitnum, 0, NULL, NULL, NULL, NULL, NULL);
     SET_VECTOR_ELT (io->rxp, ii, R_nc_c2r (&tmpio));
     nc_free_vlen(&(vbuf[ii]));
   }
@@ -867,8 +865,7 @@ R_nc_opaque_raw (R_nc_buf *io)
    Memory for the result is allocated if necessary (and freed by R).
  */
 static void *
-R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
-                  const void *fill)
+R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim)
 {
   SEXP levels;
   size_t size, imem, nmem, ilev, nlev, *ilev2mem, ifac, nfac;
@@ -927,9 +924,7 @@ R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
 
   for (ifac=0; ifac<nfac; ifac++) {
     inval = in[ifac];
-    if (inval==NA_INTEGER && fill) {
-      memcpy(out + ifac*size, fill, size);
-    } else if (0 < inval && inval <= nlev) {
+    if (0 < inval && inval <= nlev) {
       imem = ilev2mem[inval-1];
       memcpy(out + ifac*size, memvals + imem*size, size);
     } else {
@@ -979,7 +974,7 @@ R_nc_enum_factor (R_nc_buf *io)
 {
   SEXP levels, classname, env, cmd, symbol, value;
   size_t size, nmem, ifac, nfac;
-  char *memname, *memval, *work, *inval, *fill;
+  char *memname, *memval, *work, *inval;
   int ncid, imem, imemmax, *out;
   nc_type xtype;
 
@@ -1008,16 +1003,6 @@ R_nc_enum_factor (R_nc_buf *io)
     SET_STRING_ELT (levels, imem, mkChar (memname));
     symbol = PROTECT (R_nc_char_symbol (memval, size, work));
     value = PROTECT (ScalarInteger (imem+1));
-    defineVar (symbol, value, env);
-    UNPROTECT(2);
-  }
-
-  /* Add fill value (if defined) to the hashed environment.
-   */
-  fill = io->fill;
-  if (fill) {
-    symbol = PROTECT (R_nc_char_symbol (fill, size, work));
-    value = PROTECT (ScalarInteger (NA_INTEGER));
     defineVar (symbol, value, env);
     UNPROTECT(2);
   }
@@ -1299,7 +1284,7 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
     if (xtype > NC_MAX_ATOMIC_TYPE &&
         class == NC_ENUM &&
         R_nc_inherits (rv, "factor")) {
-      return R_nc_factor_enum (rv, ncid, xtype, ndim, xdim, fill);
+      return R_nc_factor_enum (rv, ncid, xtype, ndim, xdim);
     }
     break;
   case REALSXP:  
@@ -1370,7 +1355,7 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
     if (xtype > NC_MAX_ATOMIC_TYPE) {
       switch (class) {
       case NC_VLEN:
-        return R_nc_vecsxp_vlen (rv, ncid, xtype, ndim, xdim, fill, scale, add);
+        return R_nc_vecsxp_vlen (rv, ncid, xtype, ndim, xdim);
       case NC_COMPOUND:
         return R_nc_vecsxp_compound (rv, ncid, xtype, ndim, xdim);
       }
