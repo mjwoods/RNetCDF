@@ -169,7 +169,7 @@ R_nc_def_enum (int ncid, const char *typename, SEXP basetype,
     R_nc_error ("Lengths of names and values must match");
   }
 
-  cvals = R_nc_r2c (values, ncid, xtype, 1, &nval, NULL, NULL, NULL);
+  cvals = R_nc_r2c (values, ncid, xtype, 1, &nval, 0, NULL, NULL, NULL);
 
   /*-- Enter define mode ------------------------------------------------------*/
   R_nc_check (R_nc_redef (ncid));
@@ -272,7 +272,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
 
   if (class == NC_ENUM) {
     if (!isNull (value)) {
-      tmpval = R_nc_r2c (value, ncid, xtype, 0, NULL, NULL, NULL, NULL);
+      tmpval = R_nc_r2c (value, ncid, xtype, 0, NULL, 0, NULL, NULL, NULL);
     } else {
       RERROR ("No value given for enumerated type");
     }
@@ -413,7 +413,7 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
 	/* Read named vector of member values */
 	fieldnames = R_nc_protect (allocVector (STRSXP, nfields));
         cval = R_nc_c2r_init (&io, NULL, ncid, basetype, -1, &nfields,
-                              0, 1, NULL, NULL, NULL, NULL, NULL);
+                              0, 1, 0, NULL, NULL, NULL, NULL, NULL);
 
 	imax = nfields; // netcdf member index is int
 	for (ii=0; ii < imax; ii++, cval+=size) {

@@ -174,7 +174,7 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
 
   /*-- Allocate memory and read attribute from file ---------------------------*/
   buf = R_nc_c2r_init (&io, NULL, ncid, xtype, -1, &cnt,
-                       israw, isfit, NULL, NULL, NULL, NULL, NULL);
+                       israw, isfit, 0, NULL, NULL, NULL, NULL, NULL);
   if (cnt > 0) {
     R_nc_check (nc_get_att (ncid, varid, attname, buf));
   }
@@ -317,7 +317,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
 
   /* -- Write attribute to file -----------------------------------------------*/
   if (cnt > 0) {
-    buf = R_nc_r2c (data, ncid, xtype, 1, &cnt, NULL, NULL, NULL);
+    buf = R_nc_r2c (data, ncid, xtype, 1, &cnt, 0, NULL, NULL, NULL);
     R_nc_check (nc_put_att (ncid, varid, attname, xtype, cnt, buf));
   }
 
