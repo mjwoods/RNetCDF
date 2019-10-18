@@ -194,6 +194,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 /* Find attributes related to missing values for a netcdf variable.
    On exit, relevant parameters are returned via double pointers to
      fill, min and max, which are either NULL or allocated by R_alloc.
+     The function returns the in-memory size (bytes) of a missing value.
    Argument mode specifies the attributes used for missing values:
      0 - _FillValue, or missing_value
      1 - _FillValue only
@@ -203,7 +204,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
          http://www.unidata.ucar.edu/software/netcdf/docs/attribute_conventions.html
    Example: R_nc_miss_att (ncid, varid, mode, &fill, &min, &max);
   */
-static void
+static size_t
 R_nc_miss_att (int ncid, int varid, int mode,
                void **fill, void **min, void **max)
 {
@@ -226,7 +227,7 @@ R_nc_miss_att (int ncid, int varid, int mode,
       /* Other user-defined types can be handled by users,
          based on any convention they choose.
        */
-      return;
+      return 0;
     }
   }
   R_nc_check (nc_inq_type (ncid, xtype, NULL, &size));
@@ -247,7 +248,7 @@ R_nc_miss_att (int ncid, int varid, int mode,
 
   } else if (mode == 3) {
     /* Let user code handle missing values */
-    return;
+    return 0;
 
   } else if (mode == 4) {
 
@@ -372,7 +373,7 @@ R_nc_miss_att (int ncid, int varid, int mode,
             **(unsigned long long **) fill = NC_FILL_UINT64;
             break;
           default:
-            return;
+            return 0;
         }
       }
 
@@ -406,7 +407,7 @@ R_nc_miss_att (int ncid, int varid, int mode,
             FILL2RANGE_REAL(double, DBL_EPSILON);
             break;
           default:
-            return;
+            return 0;
         }
       }
 
@@ -415,6 +416,7 @@ R_nc_miss_att (int ncid, int varid, int mode,
     R_nc_error ("Unknown mode for handling missing values");
 
   }
+  return size;
 }
 
 
@@ -457,7 +459,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   R_nc_buf io;
   double add, scale, *addp=NULL, *scalep=NULL;
   void *fillp=NULL, *minp=NULL, *maxp=NULL;
-  size_t bytes, slots;
+  size_t fillsize, bytes, slots;
   float preemption;
   double bytes_in, slots_in, preempt_in;
 
@@ -507,7 +509,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   }
 
   /*-- Get fill attributes (if any) -------------------------------------------*/
-  R_nc_miss_att (ncid, varid, inamode, &fillp, &minp, &maxp);
+  fillsize = R_nc_miss_att (ncid, varid, inamode, &fillp, &minp, &maxp);
 
   /*-- Get packing attributes (if any) ----------------------------------------*/
   if (isunpack) {
@@ -745,7 +747,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
   const void *buf;
   double scale, add, *scalep=NULL, *addp=NULL;
   void *fillp=NULL, *minp=NULL, *maxp=NULL;
-  size_t bytes, slots;
+  size_t fillsize, bytes, slots;
   float preemption;
   double bytes_in, slots_in, preempt_in;
 
@@ -793,7 +795,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
   }
 
   /*-- Get fill attributes (if any) -------------------------------------------*/
-  R_nc_miss_att (ncid, varid, inamode, &fillp, &minp, &maxp);
+  fillsize = R_nc_miss_att (ncid, varid, inamode, &fillp, &minp, &maxp);
 
   /*-- Get packing attributes (if any) ----------------------------------------*/
   if (ispack) {
