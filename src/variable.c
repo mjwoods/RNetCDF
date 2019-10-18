@@ -519,7 +519,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
 
   /*-- Allocate memory and read variable from file ----------------------------*/
   buf = R_nc_c2r_init (&io, NULL, ncid, xtype, ndims, ccount,
-                       israw, isfit, fillp, minp, maxp, scalep, addp);
+                       israw, isfit, fillsize, fillp, minp, maxp, scalep, addp);
 
   if (R_nc_length (ndims, ccount) > 0) {
     R_nc_check (nc_get_vara (ncid, varid, cstart, ccount, buf));
@@ -805,7 +805,8 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
 
   /*-- Write variable to file -------------------------------------------------*/
   if (R_nc_length (ndims, ccount) > 0) {
-    buf = R_nc_r2c (data, ncid, xtype, ndims, ccount, fillp, scalep, addp);
+    buf = R_nc_r2c (data, ncid, xtype, ndims, ccount,
+                    fillsize, fillp, scalep, addp);
     R_nc_check (nc_put_vara (ncid, varid, cstart, ccount, buf));
   }
 
