@@ -362,7 +362,6 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
     case NC_COMPOUND:
       if (extend) {
         result = PROTECT(allocVector (VECSXP, 7));
-        SET_VECTOR_ELT (result, 2, mkString ("compound"));
 
         resultnames = PROTECT(allocVector (STRSXP, 7));
         setAttrib (result, R_NamesSymbol, resultnames);
@@ -410,19 +409,17 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
         UNPROTECT(1);
       }
 
+      SET_VECTOR_ELT (result, 2, mkString ("compound"));
       break;
     case NC_ENUM:
       R_nc_check (R_nc_type2str (ncid, basetype, basename));
 
       if (extend) {
 	result = PROTECT(allocVector (VECSXP, 6));
-        SET_VECTOR_ELT (result, 2, mkString ("enum"));
-        SET_VECTOR_ELT (result, 4, mkString (basename));
 
 	resultnames = PROTECT(allocVector (STRSXP, 6));
         setAttrib (result, R_NamesSymbol, resultnames);
         UNPROTECT(1);
-        SET_STRING_ELT (resultnames, 4, mkChar ("basetype"));
 	SET_STRING_ELT (resultnames, 5, mkChar ("value"));
 
 	/* Read named vector of member values */
@@ -447,6 +444,9 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
         UNPROTECT(1);
       }
 
+      SET_VECTOR_ELT (result, 2, mkString ("enum"));
+      SET_VECTOR_ELT (result, 4, mkString (basename));
+      SET_STRING_ELT (resultnames, 4, mkChar ("basetype"));
       break;
     case NC_OPAQUE:
 
