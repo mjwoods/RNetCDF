@@ -56,7 +56,6 @@ R_nc_def_grp (SEXP nc, SEXP grpname)
 {
   int ncid, grpid;
   const char *cgrpname;
-  SEXP result;
 
   /* Convert arguments to netcdf ids */
   ncid = asInteger (nc);
@@ -69,8 +68,7 @@ R_nc_def_grp (SEXP nc, SEXP grpname)
   /* Define the group */
   R_nc_check (nc_def_grp (ncid, cgrpname, &grpid));
 
-  result = R_nc_protect (ScalarInteger (grpid));
-  RRETURN(result);
+  return ScalarInteger (grpid);
 }
 
 
@@ -81,14 +79,12 @@ SEXP
 R_nc_inq_grp_parent (SEXP nc)
 {
   int ncid, grpid;
-  SEXP result;
 
   /* Get parent group */
   ncid = asInteger (nc);
   R_nc_check (nc_inq_grp_parent (ncid, &grpid));
 
-  result = R_nc_protect (ScalarInteger (grpid));
-  RRETURN(result);
+  return ScalarInteger (grpid);
 }
 
 
@@ -99,14 +95,12 @@ SEXP
 R_nc_inq_natts (SEXP nc)
 {
   int ncid, natts;
-  SEXP result;
 
   /* Get number of attributes in group */
   ncid = asInteger (nc);
   R_nc_check (nc_inq_natts (ncid, &natts));
 
-  result = R_nc_protect (ScalarInteger (natts));
-  RRETURN(result);
+  return ScalarInteger (natts);
 }
 
 
@@ -134,8 +128,7 @@ R_nc_inq_grpname (SEXP nc, SEXP full)
     name = namebuf;
   }
 
-  result = R_nc_protect (mkString (name));
-  RRETURN(result);
+  return mkString (name);
 }
 
 
@@ -158,8 +151,7 @@ R_nc_inq_grp_ncid (SEXP nc, SEXP grpname, SEXP full)
     R_nc_check (nc_inq_grp_ncid (ncid, cgrpname, &grpid));
   }
 
-  result = R_nc_protect (ScalarInteger (grpid));
-  RRETURN(result);
+  return ScalarInteger (grpid);
 }
 
 
@@ -175,9 +167,10 @@ SEXP RFUN (SEXP nc) \
   SEXP result; \
   ncid = asInteger (nc); \
   R_nc_check(NCFUN(ncid, &count, NULL)); \
-  result = R_nc_protect (allocVector (INTSXP, count)); \
+  result = PROTECT(allocVector (INTSXP, count)); \
   R_nc_check(NCFUN(ncid, NULL, INTEGER(result))); \
-  RRETURN(result); \
+  UNPROTECT(1); \
+  return result; \
 }
 
 INQGRPIDS (R_nc_inq_grps, nc_inq_grps)
@@ -199,10 +192,10 @@ R_nc_inq_dimids (SEXP nc, SEXP ancestors)
   full = (asLogical (ancestors) == TRUE);
 
   R_nc_check (nc_inq_dimids (ncid, &count, NULL, full));
-  result = R_nc_protect (allocVector (INTSXP, count));
+  result = PROTECT(allocVector (INTSXP, count));
   R_nc_check (nc_inq_dimids (ncid, NULL, INTEGER (result), full));
-
-  RRETURN(result);
+  UNPROTECT(1);
+  return result;
 }
 
 
@@ -225,7 +218,7 @@ R_nc_rename_grp (SEXP nc, SEXP grpname)
   /* Rename the group */
   R_nc_check (nc_rename_grp (ncid, cgrpname));
 
-  RRETURN(R_NilValue);
+  return R_NilValue;
 
 #else
   RERROR ("nc_rename_grp not supported by netcdf library");

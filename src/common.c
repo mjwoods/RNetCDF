@@ -39,31 +39,9 @@
 
 #include "common.h"
 
-static int R_nc_protect_count = 0;
-
-SEXP
-R_nc_protect (SEXP obj)
-{
-  PROTECT(obj);
-  R_nc_protect_count++;
-  return obj;
-}
-
-
-void
-R_nc_unprotect (void)
-{
-  if (R_nc_protect_count > 0) {
-    UNPROTECT (R_nc_protect_count);
-    R_nc_protect_count = 0;
-  }
-}
-
-
 void
 R_nc_error(const char *msg)
 {
-  R_nc_unprotect ();
   error (msg);
 }
 

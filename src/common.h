@@ -40,8 +40,6 @@
   #define NC_MAX_ATOMIC_TYPE NC_STRING
 #endif
 
-#define RRETURN(object) { R_nc_unprotect (); return (object); }
-
 #define RERROR(msg) { R_nc_error (msg); return NULL; }
 
 #define NA_SIZE SIZE_MAX
@@ -53,14 +51,6 @@
 static const char RNC_EDATALEN[]="Not enough data", \
   RNC_EDATATYPE[]="Incompatible data for external type", \
   RNC_ETYPEDROP[]="Unsupported external type";
-
-/* Protect an object from garbage collection by R */
-SEXP
-R_nc_protect (SEXP obj);
-
-/* Unprotect all objects to enable garbage collection by R */
-void
-R_nc_unprotect (void);
 
 /* Raise an error in R */
 void

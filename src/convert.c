@@ -149,22 +149,23 @@ R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount) {
   SEXP result, rdim;
   int *intp, ii, jj;
   if (ndims > 0) {
-    rdim = R_nc_protect( allocVector (INTSXP, ndims));
+    rdim = PROTECT( allocVector (INTSXP, ndims));
     intp = INTEGER (rdim);
     for ( ii=0, jj=ndims-1; ii<ndims; ii++, jj-- ) {
       if (ccount[jj] <= INT_MAX) {
         intp[ii] = ccount[jj];
       } else {
-        RERROR ("R array dimension cannot exceed range of type int");
+        error ("R array dimension cannot exceed range of type int");
       }
     }
-    result = R_nc_protect (allocArray (type, rdim));
+    result = allocArray (type, rdim);
+    UNPROTECT(1);
   } else if (ndims == 0) {
     /* R scalar with no dimensions */
-    result = R_nc_protect (allocVector (type, 1));
+    result = allocVector (type, 1);
   } else {
     /* R vector of length ccount[0] without a dimension attribute */
-    result = R_nc_protect (allocVector (type, ccount[0]));
+    result = allocVector (type, ccount[0]);
   }
   return result;
 }
@@ -989,8 +990,8 @@ R_nc_enum_factor (R_nc_buf *io)
   ncid = io->ncid;
   xtype = io->xtype;
   R_nc_check (nc_inq_enum(ncid, xtype, NULL, NULL, &size, &nmem));
-  cmd = R_nc_protect (lang1 (install ("new.env")));
-  env = R_nc_protect (eval (cmd, R_BaseEnv));
+  cmd = PROTECT(lang1 (install ("new.env")));
+  env = PROTECT(eval (cmd, R_BaseEnv));
 
   levels = R_nc_allocArray (STRSXP, -1, &nmem);
   memname = R_alloc (nmem, NC_MAX_NAME+1);
@@ -1014,7 +1015,7 @@ R_nc_enum_factor (R_nc_buf *io)
 
   out = io->rbuf;
   for (ifac=0, inval=io->cbuf; ifac<nfac; ifac++, inval+=size) {
-    symbol = PROTECT (R_nc_char_symbol (inval, size, work));
+    symbol = PROTECT(R_nc_char_symbol (inval, size, work));
     value = findVarInFrame3 (env, symbol, TRUE);
     UNPROTECT(1);
     if (value == R_UnboundValue) {
@@ -1026,9 +1027,13 @@ R_nc_enum_factor (R_nc_buf *io)
 
   /* Set attributes for R factor */
   setAttrib(io->rxp, R_LevelsSymbol, levels);
-  classname = R_nc_protect (allocVector (STRSXP, 1));
+  classname = PROTECT(allocVector (STRSXP, 1));
   SET_STRING_ELT(classname, 0, mkChar("factor"));
   setAttrib(io->rxp, R_ClassSymbol, classname);
+  UNPROTECT(1);
+
+  /* Allow garbage collection of env */
+  UNPROTECT(2);
 }
 
 
@@ -1053,7 +1058,7 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
   R_nc_check (nc_inq_compound(ncid, xtype, NULL, &size, &nfld));
 
   /* Check names attribute of R list */
-  namelist = R_nc_protect (getAttrib (rv, R_NamesSymbol));
+  namelist = PROTECT(getAttrib (rv, R_NamesSymbol));
   if (!isString (namelist)) {
     R_nc_error ("Named list required for conversion to compound type");
   }
@@ -1121,6 +1126,7 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
     vmaxset (highwater);
   }
 
+  UNPROTECT(1);
   return bufout;
 }
 
