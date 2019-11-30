@@ -205,18 +205,20 @@ R_nc_strsxp_char (SEXP rstr, int ndim, const size_t *xdim)
 }
 
 
-static void
+static SEXP
 R_nc_char_strsxp_init (R_nc_buf *io)
 {
   if (io->ndim > 0) {
-    io->rxp = R_nc_allocArray (STRSXP, (io->ndim)-1, io->xdim);
+    io->rxp = PROTECT(R_nc_allocArray (STRSXP, (io->ndim)-1, io->xdim));
   } else {
     /* Single character or string */
-    io->rxp = R_nc_allocArray (STRSXP, 0, io->xdim);
+    io->rxp = PROTECT(R_nc_allocArray (STRSXP, 0, io->xdim));
   }
   if (!io->cbuf) {
     io->cbuf = R_alloc (R_nc_length (io->ndim, io->xdim), sizeof (char));
   }
+  UNPROTECT(1);
+  return io->rxp;
 }
 
 
@@ -261,14 +263,16 @@ R_nc_raw_char (SEXP rarr, int ndim, const size_t *xdim)
 }
 
 
-static void
+static SEXP
 R_nc_char_raw_init (R_nc_buf *io)
 {
-  io->rxp = R_nc_allocArray (RAWSXP, io->ndim, io->xdim);
+  io->rxp = PROTECT(R_nc_allocArray (RAWSXP, io->ndim, io->xdim));
   io->rbuf = RAW (io->rxp);
   if (!io->cbuf) {
     io->cbuf = io->rbuf;
   }
+  UNPROTECT(1);
+  return io->rxp;
 }
 
 
@@ -299,13 +303,15 @@ R_nc_strsxp_str (SEXP rstr, int ndim, const size_t *xdim)
 }
 
 
-static void
+static SEXP
 R_nc_str_strsxp_init (R_nc_buf *io)
 {
-  io->rxp = R_nc_allocArray (STRSXP, io->ndim, io->xdim);
+  io->rxp = PROTECT(R_nc_allocArray (STRSXP, io->ndim, io->xdim));
   if (!io->cbuf) {
     io->cbuf = R_alloc (xlength (io->rxp), sizeof(size_t));
   }
+  UNPROTECT(1);
+  return io->rxp;
 }
 
 
@@ -508,14 +514,16 @@ R_NC_R2C_NUM(R_nc_r2c_bit64_size, NC_INT64, long long, REAL, NC_NAT, size_t, \
    On output, the R_nc_buf structure contains an allocated SEXP and a pointer to its data.
  */
 #define R_NC_C2R_NUM_INIT(FUN, SEXPTYPE, OFUN) \
-static void \
+static SEXP \
 FUN (R_nc_buf *io) \
 { \
-  io->rxp = R_nc_allocArray (SEXPTYPE, io->ndim, io->xdim); \
+  io->rxp = PROTECT(R_nc_allocArray (SEXPTYPE, io->ndim, io->xdim)); \
   io->rbuf = OFUN (io->rxp); \
   if (!io->cbuf) { \
     io->cbuf = io->rbuf; \
   } \
+  UNPROTECT(1); \
+  return io->rxp; \
 }
 
 R_NC_C2R_NUM_INIT(R_nc_c2r_int_init, INTSXP, INTEGER)
@@ -761,13 +769,15 @@ R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
      and the C buffer is an array of pointers which are allocated by netcdf
      when reading from the variable (and which must be freed later by netcdf).
  */
-static void
+static SEXP
 R_nc_vlen_vecsxp_init (R_nc_buf *io)
 {
-  io->rxp = R_nc_allocArray (VECSXP, io->ndim, io->xdim);
+  io->rxp = PROTECT(R_nc_allocArray (VECSXP, io->ndim, io->xdim));
   if (!io->cbuf) {
     io->cbuf = R_alloc (xlength (io->rxp), sizeof(nc_vlen_t));
   }
+  UNPROTECT(1);
+  return io->rxp;
 }
 
 
@@ -783,16 +793,20 @@ R_nc_vlen_vecsxp (R_nc_buf *io)
   nc_type basetype;
   nc_vlen_t *vbuf;
   R_nc_buf tmpio;
+  SEXP tmprxp;
 
   vbuf = io->cbuf;
   cnt = xlength (io->rxp);
   R_nc_check (nc_inq_user_type (io->ncid, io->xtype, NULL, NULL, &basetype, NULL, NULL));
 
   for (ii=0; ii<cnt; ii++) {
-    R_nc_c2r_init (&tmpio, vbuf[ii].p, io->ncid, basetype, -1, &(vbuf[ii].len),
-                   io->rawchar, io->fitnum, 0, NULL, NULL, NULL, NULL, NULL);
-    SET_VECTOR_ELT (io->rxp, ii, R_nc_c2r (&tmpio));
+    tmprxp = PROTECT(R_nc_c2r_init (&tmpio, &(vbuf[ii].p), io->ncid, basetype, -1,
+                       &(vbuf[ii].len), io->rawchar, io->fitnum,
+                       0, NULL, NULL, NULL, NULL, NULL));
+    R_nc_c2r (&tmpio);
+    SET_VECTOR_ELT (io->rxp, ii, tmprxp);
     nc_free_vlen(&(vbuf[ii]));
+    UNPROTECT(1);
   }
 }
 
@@ -818,7 +832,7 @@ R_nc_raw_opaque (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim)
 }
 
 
-static void
+static SEXP
 R_nc_opaque_raw_init (R_nc_buf *io)
 {
   int ndim;
@@ -841,11 +855,13 @@ R_nc_opaque_raw_init (R_nc_buf *io)
   }
   xdim[ndim] = size;
 
-  io->rxp = R_nc_allocArray (RAWSXP, ndim + 1, xdim);
+  io->rxp = PROTECT(R_nc_allocArray (RAWSXP, ndim + 1, xdim));
   io->rbuf = RAW (io->rxp);
   if (!io->cbuf) {
     io->cbuf = io->rbuf;
   }
+  UNPROTECT(1);
+  return io->rxp;
 }
 
 
@@ -937,16 +953,18 @@ R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
 }
 
 
-static void
+static SEXP
 R_nc_enum_factor_init (R_nc_buf *io)
 {
   size_t size;
-  io->rxp = R_nc_allocArray (INTSXP, io->ndim, io->xdim);
+  io->rxp = PROTECT(R_nc_allocArray (INTSXP, io->ndim, io->xdim));
   io->rbuf = INTEGER (io->rxp);
   if (!io->cbuf) {
     R_nc_check (nc_inq_type (io->ncid, io->xtype, NULL, &size));
     io->cbuf = R_alloc (xlength (io->rxp), size);
   }
+  UNPROTECT(1);
+  return io->rxp;
 }
 
 
@@ -1131,7 +1149,7 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
 }
 
 
-static void
+static SEXP
 R_nc_compound_vecsxp_init (R_nc_buf *io)
 {
   size_t size, nfld, cnt;
@@ -1152,13 +1170,16 @@ R_nc_compound_vecsxp_init (R_nc_buf *io)
   R_nc_check (nc_inq_compound(io->ncid, io->xtype, NULL, &size, &nfld));
 
   /* Allocate memory for output list */
-  io->rxp = R_nc_allocArray (VECSXP, -1, &nfld);
+  io->rxp = PROTECT(R_nc_allocArray (VECSXP, -1, &nfld));
 
   /* Allocate memory for compound array */
   if (!io->cbuf) {
     cnt = R_nc_length (io->ndim, io->xdim);
     io->cbuf = R_alloc (cnt, size);
   }
+
+  UNPROTECT(1);
+  return io->rxp;
 }
 
 
@@ -1227,8 +1248,10 @@ R_nc_compound_vecsxp (R_nc_buf *io)
     fldcnt = R_nc_length (ndimfld, dimslice+ndim);
 
     /* Prepare to convert field data from C to R */
-    buffld = R_nc_c2r_init (&iofld, NULL, ncid, typefld, ndimslice, dimslice,
-               io->rawchar, io->fitnum, 0, NULL, NULL, NULL, NULL, NULL);
+    buffld = NULL;
+    rxpfld = PROTECT(R_nc_c2r_init (&iofld, (void **) &buffld, ncid, typefld,
+               ndimslice, dimslice, io->rawchar, io->fitnum,
+               0, NULL, NULL, NULL, NULL, NULL));
 
     /* Copy elements from the compound array into the field array */
     fldlen = fldsize * fldcnt;
@@ -1237,12 +1260,13 @@ R_nc_compound_vecsxp (R_nc_buf *io)
     }
 
     /* Convert field data from C to R */
-    rxpfld = R_nc_c2r (&iofld);
+    R_nc_c2r (&iofld);
 
     /* Insert field data into R list */
     SET_VECTOR_ELT (io->rxp, ifld, rxpfld);
 
     /* Allow memory from R_alloc since vmaxget to be reclaimed */
+    UNPROTECT(1);
     vmaxset (highwater);
   }
 }
@@ -1371,8 +1395,8 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
   RERROR (RNC_EDATATYPE);
 }
 
-void * \
-R_nc_c2r_init (R_nc_buf *io, void *cbuf,
+SEXP \
+R_nc_c2r_init (R_nc_buf *io, void **cbuf,
                int ncid, nc_type xtype, int ndim, const size_t *xdim,
                int rawchar, int fitnum, size_t fillsize,
                const void *fill, const void *min, const void *max,
@@ -1386,7 +1410,7 @@ R_nc_c2r_init (R_nc_buf *io, void *cbuf,
 
   /* Initialise the R_nc_buf, making copies of pointer arguments */
   io->rxp = NULL;
-  io->cbuf = cbuf;
+  io->cbuf = NULL;
   io->rbuf = NULL;
   io->xtype = xtype;
   io->ncid = ncid;
@@ -1400,6 +1424,10 @@ R_nc_c2r_init (R_nc_buf *io, void *cbuf,
   io->max = NULL;
   io->scale = NULL;
   io->add = NULL;
+
+  if (cbuf) {
+    io->cbuf = *cbuf;
+  }
 
   if (xdim) {
     if (ndim > 0) {
@@ -1446,46 +1474,46 @@ R_nc_c2r_init (R_nc_buf *io, void *cbuf,
     case NC_USHORT:
     case NC_INT:
       if (fitnum && !scale && !add) {
-        R_nc_c2r_int_init (io);
+        PROTECT(R_nc_c2r_int_init (io));
         break;
       }
     case NC_INT64:
     case NC_UINT64:
       if (fitnum && !scale && !add) {
-        R_nc_c2r_bit64_init (io);
+        PROTECT(R_nc_c2r_bit64_init (io));
         classgets(io->rxp, mkString("integer64"));
         break;
       }
     case NC_UINT:
     case NC_FLOAT:
     case NC_DOUBLE:
-      R_nc_c2r_dbl_init (io);
+      PROTECT(R_nc_c2r_dbl_init (io));
       break;
     case NC_CHAR:
       if (rawchar) {
-        R_nc_char_raw_init (io);
+        PROTECT(R_nc_char_raw_init (io));
       } else {
-        R_nc_char_strsxp_init (io);
+        PROTECT(R_nc_char_strsxp_init (io));
       }
       break;
     case NC_STRING:
-      R_nc_str_strsxp_init (io);
+      PROTECT(R_nc_str_strsxp_init (io));
       break;
     default:
       if (xtype > NC_MAX_ATOMIC_TYPE) {
         R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, NULL, NULL, &class));
         switch (class) {
         case NC_COMPOUND:
-          R_nc_compound_vecsxp_init (io);
+          PROTECT(R_nc_compound_vecsxp_init (io));
           break;
         case NC_ENUM:
-          R_nc_enum_factor_init (io);
+          PROTECT(R_nc_enum_factor_init (io));
           break;
         case NC_VLEN:
-          R_nc_vlen_vecsxp_init (io);
+          PROTECT(R_nc_vlen_vecsxp_init (io));
           break;
         case NC_OPAQUE:
-          R_nc_opaque_raw_init (io);
+          PROTECT(R_nc_opaque_raw_init (io));
           break;
         default:
           RERROR (RNC_ETYPEDROP);
@@ -1494,11 +1522,16 @@ R_nc_c2r_init (R_nc_buf *io, void *cbuf,
         RERROR (RNC_ETYPEDROP);
       }
   }
-  return io->cbuf;
+
+  if (cbuf) {
+    *cbuf = io->cbuf;
+  }
+  UNPROTECT(1);
+  return io->rxp;
 }
 
 
-SEXP
+void
 R_nc_c2r (R_nc_buf *io)
 {
   int unpack, class;
@@ -1619,13 +1652,12 @@ R_nc_c2r (R_nc_buf *io)
           R_nc_opaque_raw (io);
           break;
         default:
-          RERROR (RNC_ETYPEDROP);
+          error (RNC_ETYPEDROP);
         }
       } else {
-        RERROR (RNC_ETYPEDROP);
+        error (RNC_ETYPEDROP);
       }
   }
-  return io->rxp;
 }
 
 

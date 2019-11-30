@@ -173,13 +173,15 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
   R_nc_check (R_nc_enddef (ncid));
 
   /*-- Allocate memory and read attribute from file ---------------------------*/
-  buf = R_nc_c2r_init (&io, NULL, ncid, xtype, -1, &cnt,
-                       israw, isfit, 0, NULL, NULL, NULL, NULL, NULL);
+  buf = NULL;
+  result = PROTECT(R_nc_c2r_init (&io, &buf, ncid, xtype, -1, &cnt,
+                   israw, isfit, 0, NULL, NULL, NULL, NULL, NULL));
   if (cnt > 0) {
     R_nc_check (nc_get_att (ncid, varid, attname, buf));
   }
-  result = R_nc_c2r (&io);
+  R_nc_c2r (&io);
 
+  UNPROTECT(1);
   return result;
 }
 
