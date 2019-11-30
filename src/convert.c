@@ -991,27 +991,32 @@ R_nc_char_symbol (char *in, size_t size, char *work)
 static void
 R_nc_enum_factor (R_nc_buf *io)
 {
-  SEXP levels, classname, env, cmd, symbol, value;
+  SEXP levels, env, cmd, symbol, index;
   size_t size, nmem, ifac, nfac;
   char *memname, *memval, *work, *inval;
   int ncid, imem, imemmax, *out;
   nc_type xtype;
 
-  /* Read values and names of netcdf enum members.
-     Store names in an R character vector for use as R factor levels.
-     Store values and their R indices (1-based) in a hashed environment.
-     The env is PROTECTed, so individual variables need not be.
-     But values do need PROTECTing before assignment to env, 
-     otherwise gctorture reveals problems.
-     I'm not sure if symbols need PROTECTing, but better safe than sorry.
-   */
+  /* Get size and number of enum members */
   ncid = io->ncid;
   xtype = io->xtype;
   R_nc_check (nc_inq_enum(ncid, xtype, NULL, NULL, &size, &nmem));
+
+  /* Set attributes for R factor */
+  levels = PROTECT(R_nc_allocArray (STRSXP, -1, &nmem));
+  setAttrib(io->rxp, R_LevelsSymbol, levels);
+  setAttrib(io->rxp, R_ClassSymbol, mkString("factor"));
+
+  /* Create a hashed environment for value-index pairs.
+     Members inherit PROTECTion from the env.
+   */
   cmd = PROTECT(lang1 (install ("new.env")));
   env = PROTECT(eval (cmd, R_BaseEnv));
 
-  levels = R_nc_allocArray (STRSXP, -1, &nmem);
+  /* Read values and names of netcdf enum members.
+     Store names as R factor levels.
+     Store values and their R indices (1-based) in hashed environment.
+   */
   memname = R_alloc (nmem, NC_MAX_NAME+1);
   memval = R_alloc (1, size);
   work = R_alloc (2*size+2, 1);
@@ -1021,8 +1026,8 @@ R_nc_enum_factor (R_nc_buf *io)
     R_nc_check (nc_inq_enum_member (ncid, xtype, imem, memname, memval));
     SET_STRING_ELT (levels, imem, mkChar (memname));
     symbol = PROTECT (R_nc_char_symbol (memval, size, work));
-    value = PROTECT (ScalarInteger (imem+1));
-    defineVar (symbol, value, env);
+    index = PROTECT (ScalarInteger (imem+1));
+    defineVar (symbol, index, env);
     UNPROTECT(2);
   }
 
@@ -1034,24 +1039,17 @@ R_nc_enum_factor (R_nc_buf *io)
   out = io->rbuf;
   for (ifac=0, inval=io->cbuf; ifac<nfac; ifac++, inval+=size) {
     symbol = PROTECT(R_nc_char_symbol (inval, size, work));
-    value = findVarInFrame3 (env, symbol, TRUE);
+    index = findVarInFrame3 (env, symbol, TRUE);
     UNPROTECT(1);
-    if (value == R_UnboundValue) {
+    if (index == R_UnboundValue) {
       R_nc_error ("Unknown enum value in variable");
     } else {
-      out[ifac] = INTEGER (value)[0];
+      out[ifac] = INTEGER (index)[0];
     }
   }
 
-  /* Set attributes for R factor */
-  setAttrib(io->rxp, R_LevelsSymbol, levels);
-  classname = PROTECT(allocVector (STRSXP, 1));
-  SET_STRING_ELT(classname, 0, mkChar("factor"));
-  setAttrib(io->rxp, R_ClassSymbol, classname);
-  UNPROTECT(1);
-
-  /* Allow garbage collection of env */
-  UNPROTECT(2);
+  /* Allow garbage collection of env and levels */
+  UNPROTECT(3);
 }
 
 
@@ -1204,7 +1202,7 @@ R_nc_compound_vecsxp (R_nc_buf *io)
   cnt = R_nc_length (io->ndim, io->xdim);
 
   /* Set names attribute of R list */
-  namelist = R_nc_allocArray (STRSXP, -1, &nfld);
+  namelist = PROTECT(R_nc_allocArray (STRSXP, -1, &nfld));
   setAttrib(io->rxp, R_NamesSymbol, namelist);
 
   /* Convert each field in turn */
@@ -1269,6 +1267,7 @@ R_nc_compound_vecsxp (R_nc_buf *io)
     UNPROTECT(1);
     vmaxset (highwater);
   }
+  UNPROTECT(1);
 }
 
 

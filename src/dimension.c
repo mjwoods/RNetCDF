@@ -184,6 +184,7 @@ R_nc_inq_dim (SEXP nc, SEXP dim)
   SET_VECTOR_ELT (result, 2, ScalarReal (dimlen));
   SET_VECTOR_ELT (result, 3, ScalarLogical (isunlim));
 
+  UNPROTECT(1);
   return result;
 }
 

@@ -639,9 +639,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
 
   } else {
     /* Return single NA for scalar dimensions */
-    rdimids = PROTECT(ScalarInteger (NA_INTEGER));
-    SET_VECTOR_ELT (result, 4, rdimids);
-    UNPROTECT(1);
+    SET_VECTOR_ELT (result, 4, ScalarInteger (NA_INTEGER));
 
     if (withnc4) {
       /* Chunks not defined for scalars */
@@ -693,8 +691,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
       SET_VECTOR_ELT (result, 15, ScalarInteger (NA_INTEGER));
 #  endif
     } else {
-      R_nc_check (status);
-      return R_NilValue;
+      R_nc_error (nc_strerror (status));
     }
 #else
     SET_VECTOR_ELT (result, 14, R_NilValue);
@@ -717,12 +714,9 @@ R_nc_inq_var (SEXP nc, SEXP var)
       }
     } else if (status == NC_EFILTER) {
       SET_VECTOR_ELT (result, 16, ScalarInteger (NA_INTEGER));
-      rfilter_params = PROTECT(ScalarInteger (NA_INTEGER));
-      SET_VECTOR_ELT (result, 17, rfilter_params);
-      UNPROTECT(1);
+      SET_VECTOR_ELT (result, 17, ScalarInteger (NA_INTEGER));
     } else {
-      R_nc_check (status);
-      return R_NilValue;
+      R_nc_error (nc_strerror (status));
     }
 #else
     SET_VECTOR_ELT (result, 16, R_NilValue);
