@@ -113,7 +113,6 @@ R_nc_inq_grpname (SEXP nc, SEXP full)
   int ncid;
   size_t namelen;
   char *name, *fullname, namebuf[NC_MAX_NAME+1];
-  SEXP result;
 
   ncid = asInteger (nc);
 
@@ -140,7 +139,6 @@ R_nc_inq_grp_ncid (SEXP nc, SEXP grpname, SEXP full)
 {
   int ncid, grpid;
   const char *cgrpname;
-  SEXP result;
 
   ncid = asInteger (nc);
   cgrpname = R_nc_strarg (grpname);

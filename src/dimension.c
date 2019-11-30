@@ -57,7 +57,6 @@ R_nc_def_dim (SEXP nc, SEXP dimname, SEXP size, SEXP unlim)
   int ncid, dimid;
   const char *dimnamep;
   size_t nccnt;
-  SEXP result;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);

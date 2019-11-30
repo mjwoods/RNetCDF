@@ -63,7 +63,6 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
   size_t *chunksize_t;
   nc_type xtype;
   const char *varnamep;
-  SEXP result;
 
 #ifdef HAVE_NC_INQ_VAR_ENDIAN
   int endian_mode;
