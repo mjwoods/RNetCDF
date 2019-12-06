@@ -50,10 +50,6 @@ static const char RNC_EDATALEN[]="Not enough data", \
   RNC_EDATATYPE[]="Incompatible data for external type", \
   RNC_ETYPEDROP[]="Unsupported external type";
 
-/* Raise an error in R */
-void
-R_nc_error(const char *msg);
-
 /* If status is a netcdf error, raise an R error with a suitable message,
    otherwise return to caller. */
 int

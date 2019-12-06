@@ -39,18 +39,12 @@
 
 #include "common.h"
 
-void
-R_nc_error(const char *msg)
-{
-  error (msg);
-}
-
 
 int
 R_nc_check(int status)
 {
   if (status != NC_NOERR) {
-    R_nc_error (nc_strerror (status));
+    error (nc_strerror (status));
   }
   return status;
 }
@@ -335,13 +329,13 @@ R_nc_sizearg (SEXP size)
         result = dval;
       }
     } else {
-      R_nc_error ("Size argument has unsupported R type");
+      error ("Size argument has unsupported R type");
     }
   } else {
-    R_nc_error ("Size argument must contain at least one numeric value");
+    error ("Size argument must contain at least one numeric value");
   }
   if (erange) {
-    R_nc_error ("Size argument is outside valid range");
+    error ("Size argument is outside valid range");
   }
   return result;
 }

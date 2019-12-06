@@ -125,7 +125,7 @@ R_nc_length_sexp (SEXP count)
       length *= rcount[ii]; 
     }
     if (!R_FINITE (length)) {
-      R_nc_error ("Non-finite length in R_nc_length_sexp");
+      error ("Non-finite length in R_nc_length_sexp");
     }
   } else if (isInteger (count)) {
     icount = INTEGER (count);
@@ -133,11 +133,11 @@ R_nc_length_sexp (SEXP count)
       if (icount[ii] != NA_INTEGER) {
         length *= icount[ii];
       } else {
-        R_nc_error ("Missing value in R_nc_length_sexp");
+        error ("Missing value in R_nc_length_sexp");
       }
     }
   } else if (!isNull (count)) {
-    R_nc_error ("Unsupported type in R_nc_length_sexp");
+    error ("Unsupported type in R_nc_length_sexp");
   }
 
   return (length);
@@ -394,7 +394,7 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
   } \
   if (fill) { \
     if (fillsize != sizeof(OTYPE)) { \
-      R_nc_error ("Size of fill value does not match output type"); \
+      error ("Size of fill value does not match output type"); \
     } \
     fillval = *fill; \
   } \
@@ -417,9 +417,9 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
     } \
   } \
   if ( erange ) { \
-    R_nc_error (nc_strerror (NC_ERANGE)); \
+    error (nc_strerror (NC_ERANGE)); \
   } else if ( efill ) { \
-    R_nc_error ("NA values sent to netcdf without conversion to fill value"); \
+    error ("NA values sent to netcdf without conversion to fill value"); \
   } \
   return out; \
 }
@@ -550,7 +550,7 @@ FUN (R_nc_buf *io) \
   in = (ITYPE *) io->cbuf; \
   out = (OTYPE *) io->rbuf; \
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(ITYPE)) { \
-    R_nc_error ("Size of fill value does not match input type"); \
+    error ("Size of fill value does not match input type"); \
   } \
   if (io->fill) { \
     fillval = *((ITYPE *) io->fill); \
@@ -656,7 +656,7 @@ FUN (R_nc_buf *io) \
     offset = 0.0; \
   } \
   if ((io->fill || io->min || io->max) && io->fillsize != sizeof(ITYPE)) { \
-    R_nc_error ("Size of fill value does not match input type"); \
+    error ("Size of fill value does not match input type"); \
   } \
   if (io->fill) { \
     fillval = *((ITYPE *) io->fill); \
@@ -1042,7 +1042,7 @@ R_nc_enum_factor (R_nc_buf *io)
     index = findVarInFrame3 (env, symbol, TRUE);
     UNPROTECT(1);
     if (index == R_UnboundValue) {
-      R_nc_error ("Unknown enum value in variable");
+      error ("Unknown enum value in variable");
     } else {
       out[ifac] = INTEGER (index)[0];
     }
@@ -1076,11 +1076,11 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
   /* Check names attribute of R list */
   namelist = PROTECT(getAttrib (rv, R_NamesSymbol));
   if (!isString (namelist)) {
-    R_nc_error ("Named list required for conversion to compound type");
+    error ("Named list required for conversion to compound type");
   }
   nlist = xlength (namelist);
   if (nlist < nfld) {
-    R_nc_error ("Not enough fields in list for conversion to compound type");
+    error ("Not enough fields in list for conversion to compound type");
   }
 
   /* Allocate memory for compound array,
@@ -1116,7 +1116,7 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
       }
     }
     if (!ismatch) {
-      R_nc_error ("Name of compound field not found in input list");
+      error ("Name of compound field not found in input list");
     }
 
     /* Convert the field from R to C.
@@ -1161,7 +1161,7 @@ R_nc_compound_vecsxp_init (R_nc_buf *io)
    */
   if (R_nc_redef (io->ncid) == NC_NOERR) {
     /* Dataset must be writable because it is now in define mode */
-    R_nc_error ("Please read compound type from a read-only dataset");
+    error ("Please read compound type from a read-only dataset");
   }
 
   /* Get number of fields in compound type */

@@ -285,7 +285,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
       /* Find the field by name in the R input list */
       namelist = getAttrib (data, R_NamesSymbol);
       if (!isString (namelist)) {
-	R_nc_error ("Named list required for conversion to compound type");
+	error ("Named list required for conversion to compound type");
       }
       nlist = xlength (namelist);
 
@@ -298,7 +298,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
         }
       }
       if (!ismatch) {
-        R_nc_error ("Name of compound field not found in input list");
+        error ("Name of compound field not found in input list");
       }
 
       /* Find length of field in R input list */

@@ -67,9 +67,9 @@ R_nc_def_compound (int ncid, const char *typename,
   /*-- Check arguments -------------------------------------------------------*/
   nfld = xlength (names);
   if (xlength (subtypes) != nfld || xlength (dimsizes) != nfld) {
-    R_nc_error ("Lengths of names, subtypes and dimsizes must match");
+    error ("Lengths of names, subtypes and dimsizes must match");
   } else if (nfld < 1) {
-    R_nc_error ("Compound type must have at least one field");
+    error ("Compound type must have at least one field");
   }
 
   /*-- Calculate field offsets with suitable alignment for each native subtype,
@@ -111,7 +111,7 @@ R_nc_def_compound (int ncid, const char *typename,
     R_nc_check (nc_inq_user_type (ncid, typeid, NULL, &xsize,
                                   NULL, NULL, &class));
     if (class != NC_COMPOUND || xsize != typesize) {
-      R_nc_error ("Existing type has same name but different class or size");
+      error ("Existing type has same name but different class or size");
     }
     warning("Inserting fields in existing type %s", typename);
   } else {
@@ -132,7 +132,7 @@ R_nc_def_compound (int ncid, const char *typename,
 	csizes = R_nc_dim_r2c_int(shape, ndims, 0);
       }
     } else {
-      R_nc_error ("Dimensions of field must be numeric or null");
+      error ("Dimensions of field must be numeric or null");
       return NC_NAT;
     }
 
@@ -166,7 +166,7 @@ R_nc_def_enum (int ncid, const char *typename, SEXP basetype,
   R_nc_check (R_nc_type_id (basetype, ncid, &xtype, 0));
   nval = xlength (values);
   if (xlength (names) != nval) {
-    R_nc_error ("Lengths of names and values must match");
+    error ("Lengths of names and values must match");
   }
 
   cvals = R_nc_r2c (values, ncid, xtype, 1, &nval, 0, NULL, NULL, NULL);
@@ -181,7 +181,7 @@ R_nc_def_enum (int ncid, const char *typename, SEXP basetype,
     R_nc_check (nc_inq_user_type (ncid, typeid, NULL, NULL,
                                   &xtype2, NULL, &class));
     if (class != NC_ENUM || xtype != xtype2) {
-      R_nc_error ("Existing type has same name but different class or basetype");
+      error ("Existing type has same name but different class or basetype");
     }
     warning("Inserting members in existing type %s", typename);
   } else {
@@ -473,7 +473,7 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
 
       break;
     default:
-      R_nc_error ("Unknown class of user defined type");
+      error ("Unknown class of user defined type");
     }
 
   } else {
