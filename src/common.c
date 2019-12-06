@@ -293,7 +293,7 @@ R_nc_strarg (SEXP str)
   if (xlength (str) > 0 && isString (str)) {
     return CHAR (STRING_ELT (str, 0));
   } else {
-    RERROR ("Expected character string as argument");
+    error ("Expected character string as argument");
   }
 }
 

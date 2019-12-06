@@ -219,7 +219,7 @@ R_nc_rename_grp (SEXP nc, SEXP grpname)
   return R_NilValue;
 
 #else
-  RERROR ("nc_rename_grp not supported by netcdf library");
+  error ("nc_rename_grp not supported by netcdf library");
 #endif
 }
 

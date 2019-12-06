@@ -237,7 +237,7 @@ R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP size, SEXP basetype,
     R_nc_check (R_nc_type_id (basetype, ncid, &xtype, 0));
     R_nc_check (nc_def_vlen (ncid, typenamep, xtype, &typeid));
   } else {
-    RERROR ("Unknown class for type definition");
+    error ("Unknown class for type definition");
   }
 
   return ScalarInteger (typeid);
@@ -272,7 +272,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
     if (!isNull (value)) {
       tmpval = R_nc_r2c (value, ncid, xtype, 0, NULL, 0, NULL, NULL, NULL);
     } else {
-      RERROR ("No value given for enumerated type");
+      error ("No value given for enumerated type");
     }
   } else if (class == NC_COMPOUND) {
     if (!isNull (offset) && !isNull (subtype)) {
@@ -296,14 +296,14 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
       }
 
       if ( (coffset + subsize*nelem) > xsize) {
-        RERROR("Field exceeds size of compound type")
+        error("Field exceeds size of compound type");
       }
 // Keep size checks; allow repeat definition with same details.
     } else {
-      RERROR ("Missing offset or subtype for compound type");
+      error ("Missing offset or subtype for compound type");
     }
   } else {
-    RERROR ("Expected enumerated or compound type");
+    error ("Expected enumerated or compound type");
   }
 
   /*-- Enter define mode ------------------------------------------------------*/

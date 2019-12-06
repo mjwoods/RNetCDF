@@ -61,7 +61,7 @@
 SEXP
 R_nc_calendar (SEXP unitstring, SEXP values)
 {
-  RERROR ("RNetCDF was built without UDUNITS-2");
+  error ("RNetCDF was built without UDUNITS-2");
 }
 
 SEXP
@@ -73,7 +73,7 @@ R_nc_utinit (SEXP path)
 SEXP
 R_nc_inv_calendar (SEXP unitstring, SEXP values)
 {
-  RERROR ("RNetCDF was built without UDUNITS-2");
+  error ("RNetCDF was built without UDUNITS-2");
 }
 
 SEXP
@@ -236,7 +236,7 @@ cleanup:
   }
 
   if (status != UT_SUCCESS) {
-    RERROR (R_nc_uterror (status));
+    error (R_nc_uterror (status));
   }
 
   UNPROTECT(1);
@@ -261,7 +261,7 @@ R_nc_utinit (SEXP path)
   R_nc_units = ut_read_xml (pathp);
 
   if (!R_nc_units) {
-    RERROR (R_nc_uterror (ut_get_status ()));
+    error (R_nc_uterror (ut_get_status ()));
   }
   return R_NilValue;
 }
@@ -369,7 +369,7 @@ cleanup:
   }
 
   if (status != UT_SUCCESS) {
-    RERROR (R_nc_uterror (status));
+    error (R_nc_uterror (status));
   }
 
   UNPROTECT(1);

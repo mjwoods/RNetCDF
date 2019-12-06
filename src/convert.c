@@ -195,7 +195,7 @@ R_nc_strsxp_char (SEXP rstr, int ndim, const size_t *xdim)
     cnt = 1;
   }
   if (xlength (rstr) < cnt) {
-    RERROR (RNC_EDATALEN);
+    error (RNC_EDATALEN);
   }
   carr = R_alloc (cnt*strlen, sizeof (char));
   for (ii=0, thisstr=carr; ii<cnt; ii++, thisstr+=strlen) {
@@ -257,7 +257,7 @@ R_nc_raw_char (SEXP rarr, int ndim, const size_t *xdim)
   size_t cnt;
   cnt = R_nc_length (ndim, xdim);
   if (xlength (rarr) < cnt) {
-    RERROR (RNC_EDATALEN);
+    error (RNC_EDATALEN);
   }
   return (const char *) RAW (rarr);
 }
@@ -293,7 +293,7 @@ R_nc_strsxp_str (SEXP rstr, int ndim, const size_t *xdim)
   const char **cstr;
   cnt = R_nc_length (ndim, xdim);
   if (xlength (rstr) < cnt) {
-    RERROR (RNC_EDATALEN);
+    error (RNC_EDATALEN);
   }
   cstr = (const char **) R_alloc (cnt, sizeof(size_t));
   for (ii=0; ii<cnt; ii++) {
@@ -375,7 +375,7 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
   in = (ITYPE *) IFUN (rv); \
   cnt = R_nc_length (ndim, xdim); \
   if (xlength (rv) < cnt) { \
-    RERROR (RNC_EDATALEN); \
+    error (RNC_EDATALEN); \
   } \
   if (fill || scale || add || (NCITYPE != NCOTYPE)) { \
     out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE)); \
@@ -725,7 +725,7 @@ R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
 
   cnt = R_nc_length (ndim, xdim);
   if (xlength (rv) < cnt) {
-    RERROR (RNC_EDATALEN);
+    error (RNC_EDATALEN);
   }
 
   R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, NULL, NULL));
@@ -826,7 +826,7 @@ R_nc_raw_opaque (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim)
   R_nc_check (nc_inq_user_type (ncid, xtype, NULL, &size, NULL, NULL, NULL));
   cnt = R_nc_length (ndim, xdim);
   if (xlength (rv) < (cnt * size)) {
-    RERROR (RNC_EDATALEN);
+    error (RNC_EDATALEN);
   }
   return (const char *) RAW (rv);
 }
@@ -895,7 +895,7 @@ R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
 
   levels = getAttrib (rv, R_LevelsSymbol);
   if (!isString (levels)) {
-    RERROR ("Expected character vector for levels of factor array")
+    error ("Expected character vector for levels of factor array");
   }
 
   nlev = xlength (levels);
@@ -931,7 +931,7 @@ R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
       }
     }
     if (!ismatch) {
-      RERROR ("Level has no matching member in enum type")
+      error ("Level has no matching member in enum type");
     }
   }
 
@@ -945,7 +945,7 @@ R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
       imem = ilev2mem[inval-1];
       memcpy(out + ifac*size, memvals + imem*size, size);
     } else {
-      RERROR ("Invalid index in factor")
+      error ("Invalid index in factor");
     }
   }
 
@@ -1391,7 +1391,7 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
     }
     break;
   }
-  RERROR (RNC_EDATATYPE);
+  error (RNC_EDATATYPE);
 }
 
 SEXP \
@@ -1404,7 +1404,7 @@ R_nc_c2r_init (R_nc_buf *io, void **cbuf,
   int class;
 
   if (!io) {
-    RERROR ("Pointer to R_nc_buf must not be NULL in R_nc_c2r_init");
+    error ("Pointer to R_nc_buf must not be NULL in R_nc_c2r_init");
   }
 
   /* Initialise the R_nc_buf, making copies of pointer arguments */
@@ -1515,10 +1515,10 @@ R_nc_c2r_init (R_nc_buf *io, void **cbuf,
           PROTECT(R_nc_opaque_raw_init (io));
           break;
         default:
-          RERROR (RNC_ETYPEDROP);
+          error (RNC_ETYPEDROP);
         }
       } else {
-        RERROR (RNC_ETYPEDROP);
+        error (RNC_ETYPEDROP);
       }
   }
 
@@ -1715,7 +1715,7 @@ FUN (SEXP rv, size_t N, TYPE fillval) \
   } else if (isInteger (rv)) { \
     voidbuf = R_nc_r2c_int_##TYPENAME (rv, 1, &nr, sizeof(TYPE), &fillval, NULL, NULL); \
   } else { \
-    RERROR ("Unsupported R type in R_NC_DIM_R2C"); \
+    error ("Unsupported R type in R_NC_DIM_R2C"); \
   } \
   memcpy (cv, voidbuf, nr*sizeof (TYPE)); \
 \

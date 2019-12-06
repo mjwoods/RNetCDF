@@ -40,8 +40,6 @@
   #define NC_MAX_ATOMIC_TYPE NC_STRING
 #endif
 
-#define RERROR(msg) { R_nc_error (msg); return NULL; }
-
 #define NA_SIZE SIZE_MAX
 
 /* Definition of missing value used by bit64 package */

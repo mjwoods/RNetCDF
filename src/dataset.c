@@ -85,7 +85,7 @@ R_nc_close (SEXP ptr)
   int *fileid;
 
   if (TYPEOF (ptr) != EXTPTRSXP) {
-    RERROR ("Not a valid NetCDF object");
+    error ("Not a valid NetCDF object");
   }
 
   fileid = R_ExternalPtrAddr (ptr);
@@ -154,7 +154,7 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
   if (strlen (filep) > 0) {
     R_nc_check (nc_create (R_ExpandFileName (filep), cmode, &ncid));
   } else {
-    RERROR ("Filename must be a non-empty string");
+    error ("Filename must be a non-empty string");
   }
   result = PROTECT(ScalarInteger (ncid));
 
@@ -245,7 +245,7 @@ R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
   if (strlen (filep) > 0) {
     R_nc_check (nc_open (R_ExpandFileName (filep), omode, &ncid));
   } else {
-    RERROR ("Filename must be a non-empty string");
+    error ("Filename must be a non-empty string");
   }
   result = PROTECT(ScalarInteger (ncid));
 
