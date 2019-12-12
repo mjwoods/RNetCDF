@@ -39,40 +39,12 @@
 
 #include "common.h"
 
-static int R_nc_protect_count = 0;
-
-SEXP
-R_nc_protect (SEXP obj)
-{
-  PROTECT(obj);
-  R_nc_protect_count++;
-  return obj;
-}
-
-
-void
-R_nc_unprotect (void)
-{
-  if (R_nc_protect_count > 0) {
-    UNPROTECT (R_nc_protect_count);
-    R_nc_protect_count = 0;
-  }
-}
-
-
-void
-R_nc_error(const char *msg)
-{
-  R_nc_unprotect ();
-  error (msg);
-}
-
 
 int
 R_nc_check(int status)
 {
   if (status != NC_NOERR) {
-    R_nc_error (nc_strerror (status));
+    error (nc_strerror (status));
   }
   return status;
 }
@@ -315,7 +287,7 @@ R_nc_strarg (SEXP str)
   if (xlength (str) > 0 && isString (str)) {
     return CHAR (STRING_ELT (str, 0));
   } else {
-    RERROR ("Expected character string as argument");
+    error ("Expected character string as argument");
   }
 }
 
@@ -357,13 +329,13 @@ R_nc_sizearg (SEXP size)
         result = dval;
       }
     } else {
-      R_nc_error ("Size argument has unsupported R type");
+      error ("Size argument has unsupported R type");
     }
   } else {
-    R_nc_error ("Size argument must contain at least one numeric value");
+    error ("Size argument must contain at least one numeric value");
   }
   if (erange) {
-    R_nc_error ("Size argument is outside valid range");
+    error ("Size argument is outside valid range");
   }
   return result;
 }

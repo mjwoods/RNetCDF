@@ -85,19 +85,19 @@ R_nc_close (SEXP ptr)
   int *fileid;
 
   if (TYPEOF (ptr) != EXTPTRSXP) {
-    RERROR ("Not a valid NetCDF object");
+    error ("Not a valid NetCDF object");
   }
 
   fileid = R_ExternalPtrAddr (ptr);
   if (!fileid) {
-    RRETURN(R_NilValue);
+    return R_NilValue;
   }
 
   R_nc_check (nc_close (*fileid));
   R_Free (fileid);
   R_ClearExternalPtr (ptr);
 
-  RRETURN(R_NilValue);
+  return R_NilValue;
 }
 
 /* Private function used as finalizer during garbage collection.
@@ -154,21 +154,22 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
   if (strlen (filep) > 0) {
     R_nc_check (nc_create (R_ExpandFileName (filep), cmode, &ncid));
   } else {
-    RERROR ("Filename must be a non-empty string");
+    error ("Filename must be a non-empty string");
   }
-  result = R_nc_protect (ScalarInteger (ncid));
+  result = PROTECT(ScalarInteger (ncid));
 
   /*-- Arrange for file to be closed if handle is garbage collected -----------*/
   fileid = R_Calloc (1, int);
   *fileid = ncid;
-  Rptr = R_nc_protect (R_MakeExternalPtr (fileid, R_NilValue, R_NilValue));
+  Rptr = PROTECT(R_MakeExternalPtr (fileid, R_NilValue, R_NilValue));
   R_RegisterCFinalizerEx (Rptr, &R_nc_finalizer, TRUE);
   setAttrib (result, install ("handle_ptr"), Rptr);
 
   /*-- Set the fill mode ------------------------------------------------------*/
   R_nc_check (nc_set_fill (ncid, fillmode, &old_fillmode));
 
-  RRETURN(result);
+  UNPROTECT(2);
+  return result;
 }
 
 
@@ -197,7 +198,7 @@ R_nc_inq_file (SEXP nc)
   libvers = nc_inq_libvers ();
 
   /*-- Returning the list -----------------------------------------------------*/
-  result = R_nc_protect (allocVector (VECSXP, 6)); 
+  result = PROTECT(allocVector (VECSXP, 6)); 
   SET_VECTOR_ELT (result, 0, ScalarInteger (ndims));
   SET_VECTOR_ELT (result, 1, ScalarInteger (nvars));
   SET_VECTOR_ELT (result, 2, ScalarInteger (ngatts));
@@ -205,7 +206,8 @@ R_nc_inq_file (SEXP nc)
   SET_VECTOR_ELT (result, 4, mkString (R_nc_format2str (format)));
   SET_VECTOR_ELT (result, 5, mkString (libvers));
 
-  RRETURN(result);
+  UNPROTECT(1);
+  return result;
 }
 
 
@@ -243,14 +245,14 @@ R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
   if (strlen (filep) > 0) {
     R_nc_check (nc_open (R_ExpandFileName (filep), omode, &ncid));
   } else {
-    RERROR ("Filename must be a non-empty string");
+    error ("Filename must be a non-empty string");
   }
-  result = R_nc_protect (ScalarInteger (ncid));
+  result = PROTECT(ScalarInteger (ncid));
 
   /*-- Arrange for file to be closed if handle is garbage collected -----------*/
   fileid = R_Calloc (1, int);
   *fileid = ncid;
-  Rptr = R_nc_protect (R_MakeExternalPtr (fileid, R_NilValue, R_NilValue));
+  Rptr = PROTECT(R_MakeExternalPtr (fileid, R_NilValue, R_NilValue));
   R_RegisterCFinalizerEx (Rptr, &R_nc_finalizer, TRUE);
   setAttrib (result, install ("handle_ptr"), Rptr);
 
@@ -259,7 +261,8 @@ R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
     R_nc_check (nc_set_fill (ncid, fillmode, &old_fillmode));
   }
 
-  RRETURN(result);
+  UNPROTECT(2);
+  return result;
 }
 
 
@@ -279,6 +282,6 @@ R_nc_sync (SEXP nc)
   /*-- Sync the file ----------------------------------------------------------*/
   R_nc_check (nc_sync (ncid));
 
-  RRETURN(R_NilValue);
+  return R_NilValue;
 }
 

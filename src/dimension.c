@@ -57,7 +57,6 @@ R_nc_def_dim (SEXP nc, SEXP dimname, SEXP size, SEXP unlim)
   int ncid, dimid;
   const char *dimnamep;
   size_t nccnt;
-  SEXP result;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
   ncid = asInteger (nc);
@@ -76,8 +75,7 @@ R_nc_def_dim (SEXP nc, SEXP dimname, SEXP size, SEXP unlim)
 
   R_nc_check (nc_def_dim (ncid, dimnamep, nccnt, &dimid));
 
-  result = R_nc_protect (ScalarInteger (dimid));
-  RRETURN(result);
+  return ScalarInteger (dimid);
 }
 
 
@@ -134,7 +132,7 @@ R_nc_inq_unlimids (SEXP nc)
 
   R_nc_check (R_nc_unlimdims (ncid, &nunlim, &unlimids));
 
-  result = R_nc_protect (allocVector (INTSXP, nunlim));
+  result = PROTECT(allocVector (INTSXP, nunlim));
 
   /* Sort temporary results and copy to output structure */
   if (nunlim > 0) {
@@ -142,7 +140,8 @@ R_nc_inq_unlimids (SEXP nc)
     memcpy (INTEGER (result), unlimids, nunlim * sizeof (int));
   }
 
-  RRETURN(result);
+  UNPROTECT(1);
+  return result;
 }
 
 
@@ -178,14 +177,15 @@ R_nc_inq_dim (SEXP nc, SEXP dim)
   }
 
   /*-- Returning the list -----------------------------------------------------*/
-  result = R_nc_protect (allocVector (VECSXP, 4));
+  result = PROTECT(allocVector (VECSXP, 4));
   SET_VECTOR_ELT (result, 0, ScalarInteger (dimid));
   SET_VECTOR_ELT (result, 1, mkString (dimname));
   /* Dimension length may be larger than integer, so return as double */
   SET_VECTOR_ELT (result, 2, ScalarReal (dimlen));
   SET_VECTOR_ELT (result, 3, ScalarLogical (isunlim));
 
-  RRETURN(result);
+  UNPROTECT(1);
+  return result;
 }
 
 
@@ -212,7 +212,7 @@ R_nc_rename_dim (SEXP nc, SEXP dim, SEXP newname)
   /*-- Rename the dimension ---------------------------------------------------*/
   R_nc_check (nc_rename_dim (ncid, dimid, newnamep));
 
-  RRETURN(R_NilValue);
+  return R_NilValue;
 }
 
 

@@ -61,25 +61,25 @@
 SEXP
 R_nc_calendar (SEXP unitstring, SEXP values)
 {
-  RERROR ("RNetCDF was built without UDUNITS-2");
+  error ("RNetCDF was built without UDUNITS-2");
 }
 
 SEXP
 R_nc_utinit (SEXP path)
 {
-  RRETURN(R_NilValue);
+  return R_NilValue;
 }
 
 SEXP
 R_nc_inv_calendar (SEXP unitstring, SEXP values)
 {
-  RERROR ("RNetCDF was built without UDUNITS-2");
+  error ("RNetCDF was built without UDUNITS-2");
 }
 
 SEXP
 R_nc_utterm ()
 {
-  RRETURN(R_NilValue);
+  return R_NilValue;
 }
 
 #else
@@ -170,7 +170,7 @@ R_nc_calendar (SEXP unitstring, SEXP values)
   }
   count = xlength (values);
 
-  result = R_nc_protect (allocMatrix (REALSXP, count, 6));
+  result = PROTECT(allocMatrix (REALSXP, count, 6));
   dout = REAL (result);
 
   /* Parse unitstring */
@@ -236,10 +236,11 @@ cleanup:
   }
 
   if (status != UT_SUCCESS) {
-    RERROR (R_nc_uterror (status));
+    error (R_nc_uterror (status));
   }
 
-  RRETURN(result);
+  UNPROTECT(1);
+  return result;
 }
 
 
@@ -260,9 +261,9 @@ R_nc_utinit (SEXP path)
   R_nc_units = ut_read_xml (pathp);
 
   if (!R_nc_units) {
-    RERROR (R_nc_uterror (ut_get_status ()));
+    error (R_nc_uterror (ut_get_status ()));
   }
-  RRETURN(R_NilValue);
+  return R_NilValue;
 }
 
 
@@ -295,7 +296,7 @@ R_nc_inv_calendar (SEXP unitstring, SEXP values)
   }
   count = xlength (values) / 6;
 
-  result = R_nc_protect (allocVector (REALSXP, count));
+  result = PROTECT(allocVector (REALSXP, count));
   dout = REAL (result);
 
   /* Parse unitstring */
@@ -368,10 +369,11 @@ cleanup:
   }
 
   if (status != UT_SUCCESS) {
-    RERROR (R_nc_uterror (status));
+    error (R_nc_uterror (status));
   }
 
-  RRETURN(result);
+  UNPROTECT(1);
+  return result;
 }
 
 
@@ -386,7 +388,7 @@ R_nc_utterm ()
     ut_free_system (R_nc_units);
     R_nc_units = NULL;
   }
-  RRETURN(R_NilValue);
+  return R_NilValue;
 }
 
 #endif /* Conditional compilation with UDUNITS2 */

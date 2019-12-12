@@ -67,9 +67,9 @@ R_nc_def_compound (int ncid, const char *typename,
   /*-- Check arguments -------------------------------------------------------*/
   nfld = xlength (names);
   if (xlength (subtypes) != nfld || xlength (dimsizes) != nfld) {
-    R_nc_error ("Lengths of names, subtypes and dimsizes must match");
+    error ("Lengths of names, subtypes and dimsizes must match");
   } else if (nfld < 1) {
-    R_nc_error ("Compound type must have at least one field");
+    error ("Compound type must have at least one field");
   }
 
   /*-- Calculate field offsets with suitable alignment for each native subtype,
@@ -111,7 +111,7 @@ R_nc_def_compound (int ncid, const char *typename,
     R_nc_check (nc_inq_user_type (ncid, typeid, NULL, &xsize,
                                   NULL, NULL, &class));
     if (class != NC_COMPOUND || xsize != typesize) {
-      R_nc_error ("Existing type has same name but different class or size");
+      error ("Existing type has same name but different class or size");
     }
     warning("Inserting fields in existing type %s", typename);
   } else {
@@ -132,7 +132,7 @@ R_nc_def_compound (int ncid, const char *typename,
 	csizes = R_nc_dim_r2c_int(shape, ndims, 0);
       }
     } else {
-      R_nc_error ("Dimensions of field must be numeric or null");
+      error ("Dimensions of field must be numeric or null");
       return NC_NAT;
     }
 
@@ -166,7 +166,7 @@ R_nc_def_enum (int ncid, const char *typename, SEXP basetype,
   R_nc_check (R_nc_type_id (basetype, ncid, &xtype, 0));
   nval = xlength (values);
   if (xlength (names) != nval) {
-    R_nc_error ("Lengths of names and values must match");
+    error ("Lengths of names and values must match");
   }
 
   cvals = R_nc_r2c (values, ncid, xtype, 1, &nval, 0, NULL, NULL, NULL);
@@ -181,7 +181,7 @@ R_nc_def_enum (int ncid, const char *typename, SEXP basetype,
     R_nc_check (nc_inq_user_type (ncid, typeid, NULL, NULL,
                                   &xtype2, NULL, &class));
     if (class != NC_ENUM || xtype != xtype2) {
-      R_nc_error ("Existing type has same name but different class or basetype");
+      error ("Existing type has same name but different class or basetype");
     }
     warning("Inserting members in existing type %s", typename);
   } else {
@@ -216,7 +216,6 @@ R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP size, SEXP basetype,
   const char *typenamep;
   nc_type typeid=0, xtype=0;
   size_t xsize=0;
-  SEXP result;
 
   /*-- Decode arguments -------------------------------------------------------*/
   ncid = asInteger (nc);
@@ -238,11 +237,10 @@ R_nc_def_type (SEXP nc, SEXP typename, SEXP class, SEXP size, SEXP basetype,
     R_nc_check (R_nc_type_id (basetype, ncid, &xtype, 0));
     R_nc_check (nc_def_vlen (ncid, typenamep, xtype, &typeid));
   } else {
-    RERROR ("Unknown class for type definition");
+    error ("Unknown class for type definition");
   }
 
-  result = R_nc_protect (ScalarInteger (typeid));
-  RRETURN(result);
+  return ScalarInteger (typeid);
 }
 
 
@@ -274,7 +272,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
     if (!isNull (value)) {
       tmpval = R_nc_r2c (value, ncid, xtype, 0, NULL, 0, NULL, NULL, NULL);
     } else {
-      RERROR ("No value given for enumerated type");
+      error ("No value given for enumerated type");
     }
   } else if (class == NC_COMPOUND) {
     if (!isNull (offset) && !isNull (subtype)) {
@@ -298,14 +296,14 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
       }
 
       if ( (coffset + subsize*nelem) > xsize) {
-        RERROR("Field exceeds size of compound type")
+        error("Field exceeds size of compound type");
       }
 // Keep size checks; allow repeat definition with same details.
     } else {
-      RERROR ("Missing offset or subtype for compound type");
+      error ("Missing offset or subtype for compound type");
     }
   } else {
-    RERROR ("Expected enumerated or compound type");
+    error ("Expected enumerated or compound type");
   }
 
   /*-- Enter define mode ------------------------------------------------------*/
@@ -323,7 +321,7 @@ R_nc_insert_type (SEXP nc, SEXP type, SEXP name, SEXP value,
     }
   }
 
-  RRETURN(R_NilValue);
+  return R_NilValue;
 }
 
 
@@ -362,11 +360,29 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
     switch (class) {
     case NC_COMPOUND:
       if (extend) {
+        result = PROTECT(allocVector (VECSXP, 7));
+
+        resultnames = PROTECT(allocVector (STRSXP, 7));
+        setAttrib (result, R_NamesSymbol, resultnames);
+        UNPROTECT(1);
+        SET_STRING_ELT (resultnames, 4, mkChar ("offset"));
+        SET_STRING_ELT (resultnames, 5, mkChar ("subtype"));
+        SET_STRING_ELT (resultnames, 6, mkChar ("dimsizes"));
+
 	/* Read named vectors of offsets, typenames, list of array dimensions */
-	fieldnames = R_nc_protect (allocVector (STRSXP, nfields));
-	offsets = R_nc_protect (allocVector (REALSXP, nfields));
-	subnames = R_nc_protect (allocVector (STRSXP, nfields));
-	dimsizes = R_nc_protect (allocVector (VECSXP, nfields));
+	offsets = PROTECT(allocVector (REALSXP, nfields));
+	subnames = PROTECT(allocVector (STRSXP, nfields));
+	dimsizes = PROTECT(allocVector (VECSXP, nfields));
+        SET_VECTOR_ELT (result, 4, offsets);
+        SET_VECTOR_ELT (result, 5, subnames);
+        SET_VECTOR_ELT (result, 6, dimsizes);
+        UNPROTECT(3);
+
+	fieldnames = PROTECT(allocVector (STRSXP, nfields));
+        setAttrib (offsets, R_NamesSymbol, fieldnames);
+        setAttrib (subnames, R_NamesSymbol, fieldnames);
+        setAttrib (dimsizes, R_NamesSymbol, fieldnames);
+        UNPROTECT(1);
 
 	imax = nfields; // netcdf field index is int
 	for (ii=0; ii < imax; ii++) {
@@ -377,97 +393,98 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
 	  R_nc_check (R_nc_type2str (ncid, subtype, subname));
 	  SET_STRING_ELT (subnames, ii, mkChar (subname));
 	  if (ndims > 0) {
-	    dimsize = R_nc_protect (allocVector (INTSXP, ndims));
+	    dimsize = PROTECT(allocVector (INTSXP, ndims));
 	    R_nc_check (nc_inq_compound_fielddim_sizes (
 			ncid, xtype, ii, INTEGER (dimsize)));
 	    SET_VECTOR_ELT (dimsizes, ii, dimsize);
+            UNPROTECT(1);
 	  }
 	}
 
-        setAttrib (offsets, R_NamesSymbol, fieldnames);
-        setAttrib (subnames, R_NamesSymbol, fieldnames);
-        setAttrib (dimsizes, R_NamesSymbol, fieldnames);
-
-        result = R_nc_protect (allocVector (VECSXP, 7));
-        SET_VECTOR_ELT (result, 4, offsets);
-        SET_VECTOR_ELT (result, 5, subnames);
-        SET_VECTOR_ELT (result, 6, dimsizes);
-
-        resultnames = R_nc_protect (allocVector (STRSXP, 7));
-        SET_STRING_ELT (resultnames, 4, mkChar ("offset"));
-        SET_STRING_ELT (resultnames, 5, mkChar ("subtype"));
-        SET_STRING_ELT (resultnames, 6, mkChar ("dimsizes"));
-
       } else {
-        result = R_nc_protect (allocVector (VECSXP, 4));
-        resultnames = R_nc_protect (allocVector (STRSXP, 4));
+        result = PROTECT(allocVector (VECSXP, 4));
+        resultnames = PROTECT(allocVector (STRSXP, 4));
+        setAttrib (result, R_NamesSymbol, resultnames);
+        UNPROTECT(1);
       }
 
       SET_VECTOR_ELT (result, 2, mkString ("compound"));
-
       break;
     case NC_ENUM:
       R_nc_check (R_nc_type2str (ncid, basetype, basename));
 
       if (extend) {
+	result = PROTECT(allocVector (VECSXP, 6));
+
+	resultnames = PROTECT(allocVector (STRSXP, 6));
+        setAttrib (result, R_NamesSymbol, resultnames);
+        UNPROTECT(1);
+	SET_STRING_ELT (resultnames, 5, mkChar ("value"));
+
 	/* Read named vector of member values */
-	fieldnames = R_nc_protect (allocVector (STRSXP, nfields));
-        cval = R_nc_c2r_init (&io, NULL, ncid, basetype, -1, &nfields,
-                              0, 1, 0, NULL, NULL, NULL, NULL, NULL);
+	fieldnames = PROTECT(allocVector (STRSXP, nfields));
+        cval = NULL;
+        values = PROTECT(R_nc_c2r_init (&io, (void **) &cval, ncid, basetype,
+                           -1, &nfields, 0, 1,
+                           0, NULL, NULL, NULL, NULL, NULL));
 
 	imax = nfields; // netcdf member index is int
 	for (ii=0; ii < imax; ii++, cval+=size) {
 	  R_nc_check (nc_inq_enum_member (ncid, xtype, ii, fieldname, cval));
 	  SET_STRING_ELT (fieldnames, ii, mkChar (fieldname));
 	}
-	values = R_nc_c2r (&io);
-	setAttrib (values, R_NamesSymbol, fieldnames);
-
-	result = R_nc_protect (allocVector (VECSXP, 6));
+	R_nc_c2r (&io);
 	SET_VECTOR_ELT (result, 5, values);
-
-	resultnames = R_nc_protect (allocVector (STRSXP, 6));
-	SET_STRING_ELT (resultnames, 5, mkChar ("value"));
+	setAttrib (values, R_NamesSymbol, fieldnames);
+        UNPROTECT(2);
 
       } else {
-	result = R_nc_protect (allocVector (VECSXP, 5));
-	resultnames = R_nc_protect (allocVector (STRSXP, 5));
+	result = PROTECT(allocVector (VECSXP, 5));
+	resultnames = PROTECT(allocVector (STRSXP, 5));
+        setAttrib (result, R_NamesSymbol, resultnames);
+        UNPROTECT(1);
       }
+
       SET_VECTOR_ELT (result, 2, mkString ("enum"));
       SET_VECTOR_ELT (result, 4, mkString (basename));
       SET_STRING_ELT (resultnames, 4, mkChar ("basetype"));
-
       break;
     case NC_OPAQUE:
 
-      result = R_nc_protect (allocVector (VECSXP, 4));
+      result = PROTECT(allocVector (VECSXP, 4));
       SET_VECTOR_ELT (result, 2, mkString ("opaque"));
 
-      resultnames = R_nc_protect (allocVector (STRSXP, 4));
+      resultnames = PROTECT(allocVector (STRSXP, 4));
+      setAttrib (result, R_NamesSymbol, resultnames);
+      UNPROTECT(1);
 
       break;
     case NC_VLEN:
       R_nc_check (R_nc_type2str (ncid, basetype, basename));
 
-      result = R_nc_protect (allocVector (VECSXP, 5));
+      result = PROTECT(allocVector (VECSXP, 5));
       SET_VECTOR_ELT (result, 2, mkString ("vlen"));
       SET_VECTOR_ELT (result, 4, mkString (basename));
 
-      resultnames = R_nc_protect (allocVector (STRSXP, 5));
+      resultnames = PROTECT(allocVector (STRSXP, 5));
+      setAttrib (result, R_NamesSymbol, resultnames);
+      UNPROTECT(1);
       SET_STRING_ELT (resultnames, 4, mkChar ("basetype"));
 
       break;
     default:
-      R_nc_error ("Unknown class of user defined type");
+      error ("Unknown class of user defined type");
     }
 
   } else {
   /*-- Built-in types ---------------------------------------------------------*/
 
-      result = R_nc_protect (allocVector (VECSXP, 4));
+      result = PROTECT(allocVector (VECSXP, 4));
       SET_VECTOR_ELT (result, 2, mkString ("builtin"));
 
-      resultnames = R_nc_protect (allocVector (STRSXP, 4));
+      resultnames = PROTECT(allocVector (STRSXP, 4));
+      setAttrib (result, R_NamesSymbol, resultnames);
+      UNPROTECT(1);
   }
 
   /*-- Common components of output list ----------------------------------------------*/
@@ -479,7 +496,7 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
   SET_STRING_ELT (resultnames, 1, mkChar ("name"));
   SET_STRING_ELT (resultnames, 2, mkChar ("class"));
   SET_STRING_ELT (resultnames, 3, mkChar ("size"));
-  setAttrib (result, R_NamesSymbol, resultnames);
 
-  RRETURN(result);
+  UNPROTECT(1);
+  return result;
 }

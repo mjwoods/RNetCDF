@@ -102,7 +102,7 @@ R_nc_copy_att (SEXP nc_in, SEXP var_in, SEXP att, SEXP nc_out, SEXP var_out)
   R_nc_check (nc_copy_att (ncid_in, varid_in, attname,
                            ncid_out, varid_out));
 
-  RRETURN(R_NilValue);
+  return R_NilValue;
 }
 
 
@@ -133,7 +133,7 @@ R_nc_delete_att (SEXP nc, SEXP var, SEXP att)
   /*-- Delete the attribute ---------------------------------------------------*/
   R_nc_check (nc_del_att (ncid, varid, attname));
 
-  RRETURN(R_NilValue);
+  return R_NilValue;
 }
 
 
@@ -173,14 +173,16 @@ R_nc_get_att (SEXP nc, SEXP var, SEXP att, SEXP rawchar, SEXP fitnum)
   R_nc_check (R_nc_enddef (ncid));
 
   /*-- Allocate memory and read attribute from file ---------------------------*/
-  buf = R_nc_c2r_init (&io, NULL, ncid, xtype, -1, &cnt,
-                       israw, isfit, 0, NULL, NULL, NULL, NULL, NULL);
+  buf = NULL;
+  result = PROTECT(R_nc_c2r_init (&io, &buf, ncid, xtype, -1, &cnt,
+                   israw, isfit, 0, NULL, NULL, NULL, NULL, NULL));
   if (cnt > 0) {
     R_nc_check (nc_get_att (ncid, varid, attname, buf));
   }
-  result = R_nc_c2r (&io);
+  R_nc_c2r (&io);
 
-  RRETURN (result);
+  UNPROTECT(1);
+  return result;
 }
 
 
@@ -217,14 +219,15 @@ R_nc_inq_att (SEXP nc, SEXP var, SEXP att)
   R_nc_check (R_nc_type2str (ncid, type, atttype));
 
   /*-- Returning the list -----------------------------------------------------*/
-  result = R_nc_protect (allocVector (VECSXP, 4));
+  result = PROTECT(allocVector (VECSXP, 4));
   SET_VECTOR_ELT (result, 0, ScalarInteger (attid));
   SET_VECTOR_ELT (result, 1, mkString (attname));
   SET_VECTOR_ELT (result, 2, mkString (atttype));
   /* cnt may not fit in integer, so return as double */
   SET_VECTOR_ELT (result, 3, ScalarReal (cnt));
 
-  RRETURN(result);
+  UNPROTECT(1);
+  return result;
 }
 
 
@@ -282,7 +285,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
       /* Find the field by name in the R input list */
       namelist = getAttrib (data, R_NamesSymbol);
       if (!isString (namelist)) {
-	R_nc_error ("Named list required for conversion to compound type");
+	error ("Named list required for conversion to compound type");
       }
       nlist = xlength (namelist);
 
@@ -295,7 +298,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
         }
       }
       if (!ismatch) {
-        R_nc_error ("Name of compound field not found in input list");
+        error ("Name of compound field not found in input list");
       }
 
       /* Find length of field in R input list */
@@ -321,7 +324,7 @@ R_nc_put_att (SEXP nc, SEXP var, SEXP att, SEXP type, SEXP data)
     R_nc_check (nc_put_att (ncid, varid, attname, xtype, cnt, buf));
   }
 
-  RRETURN (R_NilValue);
+  return R_NilValue;
 }
 
 
@@ -354,7 +357,7 @@ R_nc_rename_att (SEXP nc, SEXP var, SEXP att, SEXP newname)
   /*-- Rename the attribute ---------------------------------------------------*/
   R_nc_check (nc_rename_att (ncid, varid, attname, newattname));
 
-  RRETURN(R_NilValue);
+  return R_NilValue;
 }
 
 
