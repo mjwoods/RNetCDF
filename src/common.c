@@ -300,33 +300,41 @@ R_nc_sizearg (SEXP size)
   if (xlength (size) > 0) {
     if (TYPEOF (size) == INTSXP) {
       int ival;
+      unsigned int uival;
       ival = INTEGER (size)[0];
-      erange = (ival < 0 || ival > SIZE_MAX || ival == NA_INTEGER);
+      uival = ival;
+#if UINT_MAX > SIZE_MAX
+      erange = (ival == NA_INTEGER || ival < 0 || uival > SIZE_MAX);
+#else
+      erange = (ival == NA_INTEGER || ival < 0);
+#endif
       if (!erange) {
-        result = ival;
+        result = uival;
       }
     } else if (TYPEOF (size) == REALSXP) {
       if (R_nc_inherits (size, "integer64")) {
         long long llval;
+        unsigned long long ullval;
         llval = *(long long *) REAL (size);
-        /* Allow wrapping of negative to positive values
-           by converting from signed to unsigned long long
+        ullval = llval;
+        /* Allow wrapping of negative to positive values,
+           so that integer64 can store full unsigned range
          */
-        if (sizeof (long long) > sizeof (size_t)) {
-          erange = (llval < 0 || llval > SIZE_MAX || llval == NA_INTEGER64);
-        } else {
-          /* Allow wrapping of negative to positive values
-             in conversion from signed long long to (unsigned) size_t */
-          erange = (llval == NA_INTEGER64);
-        }
+#if ULONG_MAX > SIZE_MAX
+        erange = (llval == NA_INTEGER64 || ullval > SIZE_MAX);
+#else
+        erange = (llval == NA_INTEGER64);
+#endif
         if (!erange) {
-          result = llval;
+          result = ullval;
         }
       } else {
         double dval;
         dval = REAL (size)[0];
-        erange = (dval < 0 || dval > SIZE_MAX || ! R_FINITE (dval));
-        result = dval;
+        erange = (! R_FINITE (dval) || dval < 0 || dval > SIZE_MAX);
+        if (!erange) {
+          result = dval;
+        }
       }
     } else {
       error ("Size argument has unsupported R type");
