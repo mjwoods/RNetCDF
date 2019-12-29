@@ -885,7 +885,7 @@ static void *
 R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim)
 {
   SEXP levels;
-  size_t size, imem, nmem, ilev, nlev, *ilev2mem, ifac, nfac;
+  size_t size, imem, nmem, ilev, nlev, *ilev2mem, ifac, nfac, cnt;
   char *memnames, *memname, *memvals, *memval, *out;
   const char **levnames;
   int ismatch, *in, inval;
@@ -937,6 +937,10 @@ R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
 
   /* Convert factor indices to enum values */
   nfac = xlength (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if (nfac < cnt) {
+    error (RNC_EDATALEN);
+  }
   out = R_alloc (nfac, size);
 
   for (ifac=0; ifac<nfac; ifac++) {
