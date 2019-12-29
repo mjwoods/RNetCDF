@@ -66,7 +66,8 @@ R_nc_def_compound (int ncid, const char *typename,
 
   /*-- Check arguments -------------------------------------------------------*/
   nfld = xlength (names);
-  if (xlength (subtypes) != nfld || xlength (dimsizes) != nfld) {
+  if ((size_t) xlength (subtypes) != nfld ||
+      (size_t) xlength (dimsizes) != nfld) {
     error ("Lengths of names, subtypes and dimsizes must match");
   } else if (nfld < 1) {
     error ("Compound type must have at least one field");
@@ -165,7 +166,7 @@ R_nc_def_enum (int ncid, const char *typename, SEXP basetype,
   /*-- Decode arguments -------------------------------------------------------*/
   R_nc_check (R_nc_type_id (basetype, ncid, &xtype, 0));
   nval = xlength (values);
-  if (xlength (names) != nval) {
+  if ((size_t) xlength (names) != nval) {
     error ("Lengths of names and values must match");
   }
 

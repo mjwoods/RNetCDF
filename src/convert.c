@@ -194,7 +194,7 @@ R_nc_strsxp_char (SEXP rstr, int ndim, const size_t *xdim)
     strlen = xdim[0];
     cnt = 1;
   }
-  if (xlength (rstr) < cnt) {
+  if ((size_t) xlength (rstr) < cnt) {
     error (RNC_EDATALEN);
   }
   carr = R_alloc (cnt*strlen, sizeof (char));
@@ -256,7 +256,7 @@ R_nc_raw_char (SEXP rarr, int ndim, const size_t *xdim)
 {
   size_t cnt;
   cnt = R_nc_length (ndim, xdim);
-  if (xlength (rarr) < cnt) {
+  if ((size_t) xlength (rarr) < cnt) {
     error (RNC_EDATALEN);
   }
   return (const char *) RAW (rarr);
@@ -292,7 +292,7 @@ R_nc_strsxp_str (SEXP rstr, int ndim, const size_t *xdim)
   size_t ii, cnt;
   const char **cstr;
   cnt = R_nc_length (ndim, xdim);
-  if (xlength (rstr) < cnt) {
+  if ((size_t) xlength (rstr) < cnt) {
     error (RNC_EDATALEN);
   }
   cstr = (const char **) R_alloc (cnt, sizeof(size_t));
@@ -374,7 +374,7 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
   OTYPE fillval, *out; \
   in = (ITYPE *) IFUN (rv); \
   cnt = R_nc_length (ndim, xdim); \
-  if (xlength (rv) < cnt) { \
+  if ((size_t) xlength (rv) < cnt) { \
     error (RNC_EDATALEN); \
   } \
   if (fill || scale || add || (NCITYPE != NCOTYPE)) { \
@@ -724,7 +724,7 @@ R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
   SEXP item;
 
   cnt = R_nc_length (ndim, xdim);
-  if (xlength (rv) < cnt) {
+  if ((size_t) xlength (rv) < cnt) {
     error (RNC_EDATALEN);
   }
 
@@ -825,7 +825,7 @@ R_nc_raw_opaque (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim)
   size_t cnt, size;
   R_nc_check (nc_inq_user_type (ncid, xtype, NULL, &size, NULL, NULL, NULL));
   cnt = R_nc_length (ndim, xdim);
-  if (xlength (rv) < (cnt * size)) {
+  if ((size_t) xlength (rv) < (cnt * size)) {
     error (RNC_EDATALEN);
   }
   return (const char *) RAW (rv);
@@ -941,7 +941,7 @@ R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
 
   for (ifac=0; ifac<nfac; ifac++) {
     inval = in[ifac];
-    if (0 < inval && inval <= nlev) {
+    if (0 < inval && (size_t) inval <= nlev) {
       imem = ilev2mem[inval-1];
       memcpy(out + ifac*size, memvals + imem*size, size);
     } else {
