@@ -303,11 +303,11 @@ R_nc_sizearg (SEXP size)
       unsigned int uival;
       ival = INTEGER (size)[0];
       uival = ival;
-      if (sizeof(unsigned int) > sizeof(size_t)) {
-        erange = (ival == NA_INTEGER || ival < 0 || uival > SIZE_MAX);
-      } else {
-        erange = (ival == NA_INTEGER || ival < 0);
-      }
+#if SIZEOF_INT > SIZEOF_SIZE_T
+      erange = (ival == NA_INTEGER || ival < 0 || uival > SIZE_MAX);
+#else
+      erange = (ival == NA_INTEGER || ival < 0);
+#endif
       if (!erange) {
         result = uival;
       }
@@ -317,14 +317,12 @@ R_nc_sizearg (SEXP size)
         unsigned long long ullval;
         llval = *(long long *) REAL (size);
         ullval = llval;
-        /* Allow wrapping of negative to positive values,
-           so that integer64 can store full unsigned range
-         */
-        if (sizeof(unsigned long long) > sizeof(size_t)) {
-          erange = (llval == NA_INTEGER64 || ullval > SIZE_MAX);
-        } else {
-          erange = (llval == NA_INTEGER64);
-        }
+        /* Assume integer64 can represent size of any object without wrapping */
+#if SIZEOF_LONG_LONG > SIZEOF_SIZE_T
+        erange = (llval == NA_INTEGER64 || llval < 0 || ullval > SIZE_MAX);
+#else
+        erange = (llval == NA_INTEGER64 || llval < 0);
+#endif
         if (!erange) {
           result = ullval;
         }
