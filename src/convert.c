@@ -397,6 +397,8 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
       error ("Size of fill value does not match output type"); \
     } \
     fillval = *fill; \
+  } else { \
+    fillval = 0; \
   } \
   for (ii=0; ii<cnt; ii++) { \
     if (NATEST(in[ii])) { \
@@ -554,6 +556,8 @@ FUN (R_nc_buf *io) \
   } \
   if (io->fill) { \
     fillval = *((ITYPE *) io->fill); \
+  } else { \
+    fillval = 0; \
   } \
   if (io->min) { \
     minval = *((ITYPE *) io->min); \
@@ -660,6 +664,8 @@ FUN (R_nc_buf *io) \
   } \
   if (io->fill) { \
     fillval = *((ITYPE *) io->fill); \
+  } else { \
+    fillval = 0; \
   } \
   if (io->min) { \
     minval = *((ITYPE *) io->min); \
