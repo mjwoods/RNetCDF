@@ -20,6 +20,14 @@ R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 CPPFLAGS="$CPPFLAGS $R_CPPFLAGS"
 
 #-------------------------------------------------------------------------------#
+#  Find sizes of selected data types                                            #
+#-------------------------------------------------------------------------------#
+
+AC_CHECK_SIZEOF([int])
+AC_CHECK_SIZEOF([long long])
+AC_CHECK_SIZEOF([size_t])
+
+#-------------------------------------------------------------------------------#
 #  Find NetCDF library and header files                                         #
 #-------------------------------------------------------------------------------#
 
