@@ -1,12 +1,10 @@
-VERSION=4.4.1.1-dap
-
 ifeq "$(WIN)" "64"
 PKG_SIZE_T = 8
 else
 PKG_SIZE_T = 4
 endif
 
-PKG_CPPFLAGS = -I../windows/netcdf-${VERSION}/include \
+PKG_CPPFLAGS = \
         -DSIZEOF_INT=4 -DSIZEOF_LONG_LONG=8 -DSIZEOF_SIZE_T=$(PKG_SIZE_T) \
 	-DHAVE_LIBUDUNITS2 -DHAVE_UDUNITS2_H \
 	-DHAVE_NC_RENAME_GRP \
@@ -14,22 +12,11 @@ PKG_CPPFLAGS = -I../windows/netcdf-${VERSION}/include \
 	-DHAVE_NC_INQ_VAR_SZIP \
 	-DHAVE_NC_INQ_VAR_ENDIAN \
 
-WINLIBS = ../windows/netcdf-${VERSION}/lib${R_ARCH}
+PKG_LIBS = -lnetcdf4 -L$(LIB_HDF5)/lib${R_ARCH} -lhdf5_hl -lhdf5 -ludunits2 -lexpat -lz
 
-PKG_LIBS = $(WINLIBS)/libnetcdf.a $(WINLIBS)/libcurl.a \
-  $(WINLIBS)/libhdf5_hl.a $(WINLIBS)/libhdf5.a $(WINLIBS)/libszip.a \
-  $(WINLIBS)/libudunits2.a $(WINLIBS)/libexpat.a \
-  -lz -lws2_32 -lcrypt32 -lwldap32
-
-all: clean winlibs
-
-winlibs:
-	"${R_HOME}/bin${R_ARCH_BIN}/Rscript.exe" "../tools/winlibs.R" ${VERSION}
-	mkdir -p ../inst
-	rm -Rf ../inst/share
-	cp -r ../windows/netcdf-${VERSION}/share ../inst/
+all: clean
 
 clean:
 	rm -Rf $(SHLIB) $(OBJECTS)
 
-.PHONY: all winlibs clean
+.PHONY: all clean
