@@ -1,3 +1,8 @@
+Version 2.2-1, 2019-01-07 (custom build)
+  * Fix warnings from rchk
+  * Fix warnings from pedantic compiler
+  * Build without rwinlib packages on winbuilder
+
 Version 2.1-1, 2019-10-18
   * Remove automatic handling of fill values in user-defined types
   * Link rwinlib libraries by pathname to fix r-hub Windows builds
