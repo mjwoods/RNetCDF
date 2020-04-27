@@ -9,6 +9,7 @@
 \usage{var.def.nc(ncfile, varname, vartype, dimensions,
                   chunking=NA, chunksizes=NULL, deflate=NA, shuffle=FALSE,
                   big_endian=NA, fletcher32=FALSE,
+                  szip_options=NA, szip_pixels=NA,
                   filter_id=NA, filter_params=integer(0))}
 
 \arguments{
@@ -23,6 +24,8 @@
   \item{shuffle}{\code{TRUE} to enable byte shuffling, which may improve compression with \code{deflate}.}
   \item{big_endian}{Byte order of the variable. \code{TRUE} for big-endian, \code{FALSE} for little-endian, \code{NA} for native endianness of the platform.}
   \item{fletcher32}{\code{TRUE} to enable the fletcher32 checksum.}
+  \item{szip_options}{Options for szip compression are \code{NA} (no compression) and the character strings \code{"NC_SZIP_EC"} (entropy coding) and \code{"NC_SZIP_NN"} (nearest neighbor). Ignored if the installed netcdf library does not support this feature.}
+  \item{szip_pixels}{Pixels per block for szip compression, or \code{NA} for no szip compression. The numeric value must be even and not greater than either 32 or the number of elements in a chunk. This parameter affects compression ratio; the more pixel values vary, the smaller this number should be to achieve better performance.}
   \item{filter_id}{Identifier of filter to associate with the variable, or \code{NA} for no filter. For information about the available filters, please see the NetCDF documentation. Ignored if the installed NetCDF library does not support this feature.}
   \item{filter_params}{Vector of \code{integer} parameters for the filter specified by \code{filter_id}. The meaning of the parameters depends on the filter implementation, and RNetCDF is unable to perform any validation. Ignored if no filter is defined or if the installed NetCDF library does not support this feature.}
 }

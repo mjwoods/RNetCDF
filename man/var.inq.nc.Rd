@@ -32,8 +32,8 @@ The arguments below apply only to datasets in "netcdf4" format:
   \item{shuffle}{\code{TRUE} if byte shuffling is enabled for the variable, \code{FALSE} otherwise.}
   \item{big_endian}{Byte order of the variable. \code{TRUE} for big-endian, \code{FALSE} for little-endian, \code{NA} for not yet determined, or \code{NULL} if unsupported.}
   \item{fletcher32}{\code{TRUE} if the fletcher32 checksum is enabled for this variable, \code{FALSE} otherwise.}
-  \item{szip_options}{Integer containing a bitmask of szip options. \code{NA} if szip is not used, or \code{NULL} if unsupported.}
-  \item{szip_bits}{Number of bits per pixel for szip. \code{NA} if szip is not used, or \code{NULL} if unsupported.}
+  \item{szip_options}{Options for szip compression. Character \code{NC_SZIP_EC} or \code{NC_SZIP_NN} for known options, integer value for options not recognised by the netcdf library, \code{NA} if szip compression is not used, or \code{NULL} if szip inquiry is not supported by the netcdf library.}
+  \item{szip_pixels}{Number of pixels per block for szip. \code{NA} if szip is not used, or \code{NULL} if unsupported.}
   \item{filter_id}{Identifier of filter associated with the variable. \code{NA} if no filter is defined, or \code{NULL} if unsupported.}
   \item{filter_params}{Vector of integer parameters for the filter associated with the variable. \code{NA} if no filter is defined, or \code{NULL} if unsupported.}
 }

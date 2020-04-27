@@ -55,8 +55,9 @@
 SEXP
 R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
               SEXP chunking, SEXP chunksizes, SEXP deflate, SEXP shuffle,
-              SEXP big_endian, SEXP fletcher32, SEXP filter_id,
-              SEXP filter_params)
+              SEXP big_endian, SEXP fletcher32,
+              SEXP szip_options, SEXP szip_pixels,
+              SEXP filter_id, SEXP filter_params)
 {
   int ncid, ii, jj, *dimids, ndims, varid, chunkmode, format, withnc4;
   int deflate_mode, deflate_level, shuffle_mode, fletcher_mode;
@@ -69,6 +70,9 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 #endif
 #ifdef HAVE_NC_INQ_VAR_FILTER
   int filter_mode, filtid, *filtparm;
+#endif
+#ifdef HAVE_NC_DEF_VAR_SZIP
+  int szip_mode, szipopt, szippix;
 #endif
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
@@ -129,6 +133,20 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
     filter_mode = (filtid != NA_INTEGER);
     filtparm = INTEGER (filter_params);
 #endif
+
+#ifdef HAVE_NC_DEF_VAR_SZIP && defined NC_SZIP_EC && defined NC_SZIP_NN
+    if (R_nc_strcmp(szip_options, "NC_SZIP_EC")) {
+      szipopt = NC_SZIP_EC;
+    } else if (R_nc_strcmp(szip_options, "NC_SZIP_NN")) {
+      szipopt = NC_SZIP_NN;
+    } else if (asChar (szip_options) == NA_STRING) {
+      szipopt = NA_INTEGER;
+    } else {
+      error ("Unknown option for szip");
+    }
+    szippix = asInteger (szip_pixels);
+    szip_mode = (szipopt == NA_INTEGER || szippix == NA_INTEGER);
+#endif
   }
 
   /*-- Enter define mode ------------------------------------------------------*/
@@ -164,6 +182,12 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
     if (filter_mode) {
       R_nc_check (nc_def_var_filter (ncid, varid, (unsigned int) filtid,
         xlength (filter_params), (const unsigned int*) filtparm));
+    }
+#endif
+
+#ifdef HAVE_NC_DEF_VAR_SZIP
+    if (szip_mode) {
+      R_nc_check (nc_def_var_szip (ncid, varid, szipopt, szippix));
     }
 #endif
   }
@@ -567,7 +591,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
   int endian;
 #endif
 #ifdef HAVE_NC_INQ_VAR_SZIP
-  int szip_options, szip_bits;
+  int szip_options, szip_pixels;
 #endif
 #ifdef HAVE_NC_INQ_VAR_FILTER
   int filter_id;
@@ -678,15 +702,26 @@ R_nc_inq_var (SEXP nc, SEXP var)
 
     /* szip */
 #ifdef HAVE_NC_INQ_VAR_SZIP
-    status = nc_inq_var_szip (ncid, varid, &szip_options, &szip_bits);
+    status = nc_inq_var_szip (ncid, varid, &szip_options, &szip_pixels);
     if (status == NC_NOERR) {
       if (szip_options == 0) {
         /* netcdf>=4.7.4 sets results to 0 if szip is not used */
         SET_VECTOR_ELT (result, 14, ScalarInteger (NA_INTEGER));
         SET_VECTOR_ELT (result, 15, ScalarInteger (NA_INTEGER));
       } else {
+#  if defined NC_SZIP_EC && defined NC_SZIP_NN
+        if (szip_options == NC_SZIP_EC) {
+          SET_VECTOR_ELT (result, 14, mkString("NC_SZIP_EC"));
+        } else if (szip_options == NC_SZIP_NN) {
+          SET_VECTOR_ELT (result, 14, mkString("NC_SZIP_NN"));
+        } else {
+          /* Handle unknown options gracefully */
+          SET_VECTOR_ELT (result, 14, ScalarInteger (szip_options));
+        } 
+#  else
         SET_VECTOR_ELT (result, 14, ScalarInteger (szip_options));
-        SET_VECTOR_ELT (result, 15, ScalarInteger (szip_bits));
+#  endif
+        SET_VECTOR_ELT (result, 15, ScalarInteger (szip_pixels));
       }
 #  if defined NC_EFILTER
     } else if (status == NC_EFILTER) {

@@ -480,7 +480,9 @@ sync.nc <- function(ncfile) {
 var.def.nc <- function(ncfile, varname, vartype, dimensions,
                        chunking=NA, chunksizes=NULL,
                        deflate=NA, shuffle=FALSE, big_endian=NA,
-                       fletcher32=FALSE, filter_id=NA,
+                       fletcher32=FALSE,
+                       szip_options=NA, szip_pixels=NA,
+                       filter_id=NA,
                        filter_params=integer(0)) {
   #-- Check args -------------------------------------------------------------
   stopifnot(class(ncfile) == "NetCDF")
@@ -498,13 +500,15 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions,
   stopifnot(is.logical(shuffle))
   stopifnot(is.logical(big_endian))
   stopifnot(is.logical(fletcher32))
+  stopifnot(isTRUE(is.na(szip_options)) || is.character(szip_options))
+  stopifnot(isTRUE(is.na(szip_pixels)) || is.numeric(szip_pixels))
   stopifnot(isTRUE(is.na(filter_id)) || is.numeric(filter_id))
   stopifnot(is.integer(filter_params))
 
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_def_var, ncfile, varname, vartype, dimensions,
               chunking, chunksizes, deflate, shuffle, big_endian,
-              fletcher32, filter_id, filter_params)
+              fletcher32, szip_options, szip_pixels, filter_id, filter_params)
   
   return(invisible(nc))
 }
@@ -591,7 +595,7 @@ var.inq.nc <- function(ncfile, variable) {
     names(nc) <- c("id", "name", "type", "ndims", "dimids", "natts",
                    "chunksizes", "cache_bytes", "cache_slots",
                    "cache_preemption", "deflate", "shuffle", "big_endian",
-                   "fletcher32", "szip_options", "szip_bits",
+                   "fletcher32", "szip_options", "szip_pixels",
                    "filter_id", "filter_params")
   }
   
