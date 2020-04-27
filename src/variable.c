@@ -680,10 +680,17 @@ R_nc_inq_var (SEXP nc, SEXP var)
 #ifdef HAVE_NC_INQ_VAR_SZIP
     status = nc_inq_var_szip (ncid, varid, &szip_options, &szip_bits);
     if (status == NC_NOERR) {
-      SET_VECTOR_ELT (result, 14, ScalarInteger (szip_options));
-      SET_VECTOR_ELT (result, 15, ScalarInteger (szip_bits));
+      if (szip_options == 0) {
+        /* netcdf>=4.7.4 sets results to 0 if szip is not used */
+        SET_VECTOR_ELT (result, 14, ScalarInteger (NA_INTEGER));
+        SET_VECTOR_ELT (result, 15, ScalarInteger (NA_INTEGER));
+      } else {
+        SET_VECTOR_ELT (result, 14, ScalarInteger (szip_options));
+        SET_VECTOR_ELT (result, 15, ScalarInteger (szip_bits));
+      }
 #  if defined NC_EFILTER
     } else if (status == NC_EFILTER) {
+      /* netcdf<4.7.4 returns NC_EFILTER if szip is not used */
       SET_VECTOR_ELT (result, 14, ScalarInteger (NA_INTEGER));
       SET_VECTOR_ELT (result, 15, ScalarInteger (NA_INTEGER));
 #  endif
