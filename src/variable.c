@@ -92,7 +92,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
   if (withnc4) {
     chunkmode = asLogical (chunking);
     if (ndims == 0) {
-      /* Chunking is not relevant to scalar variables */
+      /* Chunking is not allowed for scalar variables */
       chunkmode = NA_LOGICAL;
     }
     if (chunkmode == TRUE) {
@@ -166,7 +166,6 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
         xlength (filter_params), (const unsigned int*) filtparm));
     }
 #endif
-
   }
 
   return ScalarInteger (varid);
@@ -463,6 +462,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   size_t fillsize;
 
 #ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
+  int storeprop;
   size_t bytes, slots;
   float preemption;
   double bytes_in, slots_in, preempt_in;
@@ -480,8 +480,10 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
 
   /*-- Chunk cache options for netcdf4 files ----------------------------------*/
 #ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
-  if (nc_get_var_chunk_cache(ncid, varid,
-                             &bytes, &slots, &preemption) == NC_NOERR) {
+  R_nc_check (nc_inq_var_chunking (ncid, varid, &storeprop, NULL));
+  if (storeprop == NC_CHUNKED) {
+    R_nc_check (nc_get_var_chunk_cache(ncid, varid,
+                                       &bytes, &slots, &preemption));
     bytes_in = asReal (cache_bytes);
     slots_in = asReal (cache_slots);
     preempt_in = asReal (cache_preemption);
@@ -606,27 +608,30 @@ R_nc_inq_var (SEXP nc, SEXP var)
     R_nc_check (nc_inq_vardimid (ncid, varid, dimids));
     /* Return dimension ids in reverse (Fortran) order */
     R_nc_rev_int (dimids, ndims);
+  } else {
+    /* Return single NA for scalar dimensions */
+    SET_VECTOR_ELT (result, 4, ScalarInteger (NA_INTEGER));
+  }
 
-    rchunks = R_NilValue;
-    if (withnc4) {
-      R_nc_check (nc_inq_var_chunking (ncid, varid, &storeprop, NULL));
-      if (storeprop == NC_CHUNKED) {
-	rchunks = PROTECT(allocVector (REALSXP, ndims));
-        SET_VECTOR_ELT (result, 6, rchunks);
-        UNPROTECT(1);
-	chunkdbl = REAL (rchunks);
-	chunksize_t = (size_t *) R_alloc (ndims, sizeof(size_t));
-	R_nc_check (nc_inq_var_chunking (ncid, varid, NULL, chunksize_t));
-	/* Return chunk sizes as double precision in reverse (Fortran) order */
-	R_nc_rev_size (chunksize_t, ndims);
-	for (idim=0; idim<ndims; idim++) {
-	  chunkdbl[idim] = chunksize_t[idim];
-	}
+  if (withnc4) {
+    R_nc_check (nc_inq_var_chunking (ncid, varid, &storeprop, NULL));
+
+    if (storeprop == NC_CHUNKED) {
+      rchunks = PROTECT(allocVector (REALSXP, ndims));
+      SET_VECTOR_ELT (result, 6, rchunks);
+      UNPROTECT(1);
+      chunkdbl = REAL (rchunks);
+      chunksize_t = (size_t *) R_alloc (ndims, sizeof(size_t));
+      R_nc_check (nc_inq_var_chunking (ncid, varid, NULL, chunksize_t));
+      /* Return chunk sizes as double precision in reverse (Fortran) order */
+      R_nc_rev_size (chunksize_t, ndims);
+      for (idim=0; idim<ndims; idim++) {
+	chunkdbl[idim] = chunksize_t[idim];
       }
 
 #ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
       R_nc_check (nc_get_var_chunk_cache (ncid, varid, &cache_bytes,
-                                          &cache_slots, &cache_preemption));
+					  &cache_slots, &cache_preemption));
       SET_VECTOR_ELT (result, 7, ScalarReal (cache_bytes));
       SET_VECTOR_ELT (result, 8, ScalarReal (cache_slots));
       SET_VECTOR_ELT (result, 9, ScalarReal (cache_preemption));
@@ -635,22 +640,14 @@ R_nc_inq_var (SEXP nc, SEXP var)
       SET_VECTOR_ELT (result, 8, R_NilValue);
       SET_VECTOR_ELT (result, 9, R_NilValue);
 #endif
-    }
-
-  } else {
-    /* Return single NA for scalar dimensions */
-    SET_VECTOR_ELT (result, 4, ScalarInteger (NA_INTEGER));
-
-    if (withnc4) {
-      /* Chunks not defined for scalars */
+    } else {
+      /* Chunks not defined */
       SET_VECTOR_ELT (result, 6, R_NilValue);
       SET_VECTOR_ELT (result, 7, ScalarReal (NA_REAL));
       SET_VECTOR_ELT (result, 8, ScalarReal (NA_REAL));
       SET_VECTOR_ELT (result, 9, ScalarReal (NA_REAL));
     }
-  }
 
-  if (withnc4) {
     /* deflate and shuffle */
     R_nc_check (nc_inq_var_deflate (ncid, varid, &shuffle,
                                     &deflate, &deflate_level));
@@ -700,29 +697,38 @@ R_nc_inq_var (SEXP nc, SEXP var)
 
     /* filter */
 #ifdef HAVE_NC_INQ_VAR_FILTER
-    status = nc_inq_var_filter (ncid, varid,
-                                (unsigned int *) &filter_id,
-                                &filter_nparams, NULL);
-    if (status == NC_NOERR) {
-      SET_VECTOR_ELT (result, 16, ScalarInteger (filter_id));
-      rfilter_params = PROTECT(allocVector (INTSXP, filter_nparams));
-      SET_VECTOR_ELT (result, 17, rfilter_params);
-      UNPROTECT(1);
-      if (filter_nparams > 0) {
-        R_nc_check (nc_inq_var_filter (ncid, varid, NULL, NULL,
-                      (unsigned int *) INTEGER (rfilter_params)));
+    if (storeprop == NC_CHUNKED) {
+      status = nc_inq_var_filter (ncid, varid,
+                                  (unsigned int *) &filter_id,
+                                  &filter_nparams, NULL);
+      if (status == NC_NOERR) {
+	SET_VECTOR_ELT (result, 16, ScalarInteger (filter_id));
+	rfilter_params = PROTECT(allocVector (INTSXP, filter_nparams));
+	SET_VECTOR_ELT (result, 17, rfilter_params);
+	UNPROTECT(1);
+	if (filter_nparams > 0) {
+	  R_nc_check (nc_inq_var_filter (ncid, varid, NULL, NULL,
+			(unsigned int *) INTEGER (rfilter_params)));
+	}
+#  ifdef NC_ENOFILTER
+      } else if (status == NC_EFILTER || status == NC_ENOFILTER ) {
+#  else
+      } else if (status == NC_EFILTER) {
+#  endif
+	SET_VECTOR_ELT (result, 16, ScalarInteger (NA_INTEGER));
+	SET_VECTOR_ELT (result, 17, ScalarInteger (NA_INTEGER));
+      } else {
+	error (nc_strerror (status));
       }
-    } else if (status == NC_EFILTER) {
+    } else {
+      /* netcdf>=4.7.4 returns NC_EINVAL for non-chunked variables */
       SET_VECTOR_ELT (result, 16, ScalarInteger (NA_INTEGER));
       SET_VECTOR_ELT (result, 17, ScalarInteger (NA_INTEGER));
-    } else {
-      error (nc_strerror (status));
     }
 #else
     SET_VECTOR_ELT (result, 16, R_NilValue);
     SET_VECTOR_ELT (result, 17, R_NilValue);
 #endif
-
   }
 
   UNPROTECT(1);
@@ -748,6 +754,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
   size_t fillsize;
 
 #ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
+  int storeprop;
   size_t bytes, slots;
   float preemption;
   double bytes_in, slots_in, preempt_in;
@@ -763,8 +770,10 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
 
   /*-- Chunk cache options for netcdf4 files ----------------------------------*/
 #ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
-  if (nc_get_var_chunk_cache(ncid, varid,
-                             &bytes, &slots, &preemption) == NC_NOERR) {
+  R_nc_check (nc_inq_var_chunking (ncid, varid, &storeprop, NULL));
+  if (storeprop == NC_CHUNKED) {
+    R_nc_check (nc_get_var_chunk_cache(ncid, varid,
+                                       &bytes, &slots, &preemption));
     bytes_in = asReal (cache_bytes);
     slots_in = asReal (cache_slots);
     preempt_in = asReal (cache_preemption);
