@@ -2,7 +2,7 @@
  *
  *  Name:       udunits.c
  *
- *  Version:    2.1-1
+ *  Version:    2.3-1
  *
  *  Purpose:    udunits2 functions for RNetCDF.
  *

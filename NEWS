@@ -1,3 +1,6 @@
+Version 2.3-1, 2020-04-27
+  * Fix problem when defining scalar variables with netcdf-4.7.4
+
 Version 2.1-1, 2019-10-18
   * Remove automatic handling of fill values in user-defined types
   * Link rwinlib libraries by pathname to fix r-hub Windows builds
