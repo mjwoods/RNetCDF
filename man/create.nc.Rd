@@ -14,7 +14,7 @@
   \item{clobber}{The creation mode. If \code{TRUE} (default), any existing dataset with the same filename will be overwritten. Otherwise set to \code{FALSE}.}
   \item{share}{The buffer scheme. If \code{FALSE} (default), dataset access is buffered and cached for performance. However, if one or more processes may be reading while another process is writing the dataset, set to \code{TRUE}.}
   \item{prefill}{The prefill mode. If \code{TRUE} (default), newly defined variables are initialised with fill values when they are first accessed. This allows unwritten array elements to be detected when reading, but it also implies duplicate writes if all elements are subsequently written with user-specified data. Enhanced write performance can be obtained by setting \code{prefill=FALSE}.}
-  \item{format}{The file format. One of "classic", "offset64", "netcdf4" or "classic4". See below for details.}
+  \item{format}{The file format. One of "classic", "offset64", "data64", "netcdf4" or "classic4". See below for details.}
   \item{large}{(Deprecated) \code{large=TRUE} sets the file format to "offset64" when \code{format="classic"}.}
 }
 
@@ -26,6 +26,7 @@ The file format is specified by the \code{format} argument, which may take the f
 \describe{
   \item{"classic"}{(default) Original netcdf file format, still widely used and recommended for maximum portability of datasets. Uses a signed 32-bit offset in its internal structures, so files larger than 2GB can only be created under limited conditions.}
   \item{"offset64"}{64-bit offset extension of original format, introduced by netcdf-3.6. Allows larger files and variables than "classic" format, but there remain some restrictions on files larger than 2GB.}
+  \item{"data64"}{Extension of "classic" format to support large files (i.e. over 2GB) and large variables (over 2B array elements). This format was introduced in netcdf-4.4.0.}
   \item{"netcdf4"}{Netcdf in an HDF5 container, introduced by netcdf-4.0. Allows dataset sizes up to filesystem limits, and extends the feature set of the older formats.}
   \item{"classic4"}{Same file format as "netcdf4", but this options ensures that only classic netcdf data structures are stored in the file for compatibility with older software (when linked with the netcdf4 library).}
 }

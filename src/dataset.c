@@ -61,9 +61,9 @@ R_nc_format2str (int format)
   case NC_FORMAT_64BIT_OFFSET:
 #endif
     return "offset64";
-#ifdef NC_FORMAT_CDF5
-  case NC_FORMAT_CDF5:
-    return "cdf5";
+#ifdef NC_FORMAT_64BIT_DATA
+  case NC_FORMAT_64BIT_DATA:
+    return "data64";
 #endif
   case NC_FORMAT_NETCDF4:
     return "netcdf4";
@@ -147,6 +147,8 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
     cmode = cmode | NC_NETCDF4 | NC_CLASSIC_MODEL;
   } else if (R_nc_strcmp(format, "offset64")) {
     cmode = cmode | NC_64BIT_OFFSET;
+  } else if (R_nc_strcmp(format, "data64")) {
+    cmode = cmode | NC_64BIT_DATA;
   }
 
   /*-- Create the file --------------------------------------------------------*/
