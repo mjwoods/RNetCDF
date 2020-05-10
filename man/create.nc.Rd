@@ -28,7 +28,7 @@ The file format is specified by the \code{format} argument, which may take the f
   \item{"offset64"}{64-bit offset extension of original format, introduced by netcdf-3.6. Allows larger files and variables than "classic" format, but there remain some restrictions on files larger than 2GB.}
   \item{"data64"}{Extension of "classic" format to support large files (i.e. over 2GB) and large variables (over 2B array elements). This format was introduced in netcdf-4.4.0.}
   \item{"netcdf4"}{Netcdf in an HDF5 container, introduced by netcdf-4.0. Allows dataset sizes up to filesystem limits, and extends the feature set of the older formats.}
-  \item{"classic4"}{Same file format as "netcdf4", but this options ensures that only classic netcdf data structures are stored in the file for compatibility with older software (when linked with the netcdf4 library).}
+  \item{"classic4"}{Same file format as "netcdf4", but this option ensures that only classic netcdf data structures are stored in the file for compatibility with older software (when linked with the netcdf4 library).}
 }
 }
 
