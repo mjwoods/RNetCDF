@@ -62,13 +62,14 @@ R_nc_close (SEXP ptr);
 
 SEXP
 R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
-             SEXP format);
+             SEXP format, SEXP diskless, SEXP persist);
 
 SEXP
 R_nc_inq_file (SEXP nc);
 
 SEXP
-R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill);
+R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill,
+           SEXP diskless, SEXP persist);
 
 SEXP
 R_nc_sync (SEXP nc);

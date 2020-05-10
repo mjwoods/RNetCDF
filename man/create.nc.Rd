@@ -7,7 +7,7 @@
 \description{Create a new NetCDF dataset.}
 
 \usage{create.nc(filename, clobber=TRUE, share=FALSE, prefill=TRUE,
-         format="classic", large=FALSE)}
+         format="classic", large=FALSE, diskless=FALSE, persist=FALSE)}
 
 \arguments{
   \item{filename}{Filename for the NetCDF dataset to be created.}
@@ -16,6 +16,8 @@
   \item{prefill}{The prefill mode. If \code{TRUE} (default), newly defined variables are initialised with fill values when they are first accessed. This allows unwritten array elements to be detected when reading, but it also implies duplicate writes if all elements are subsequently written with user-specified data. Enhanced write performance can be obtained by setting \code{prefill=FALSE}.}
   \item{format}{The file format. One of "classic", "offset64", "data64", "netcdf4" or "classic4". See below for details.}
   \item{large}{(Deprecated) \code{large=TRUE} sets the file format to "offset64" when \code{format="classic"}.}
+  \item{diskless}{When \code{diskless=TRUE}, the file is created in memory without writing to disk. This allows netcdf datasets to be used as fast, temporary files. When the file is closed, the contents are lost unless \code{persist=TRUE}.}
+  \item{persist}{When \code{persist=TRUE}, a file created with \code{diskless=TRUE} is flushed to disk when closed. In some cases, this may be faster than manipulating files directly on disk.}
 }
 
 \value{Object of class "\code{NetCDF}" which points to the NetCDF dataset, returned invisibly.}

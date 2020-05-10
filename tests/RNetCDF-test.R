@@ -788,6 +788,19 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   cat("Removed test file", ncfile, "\n")
 }
 
+# Try diskless files:
+ncfile <- tempfile("RNetCDF-test-diskless", fileext=".nc")
+cat("Test diskless creation of ", ncfile, "...\n")
+nc <- try(create.nc(ncfile, diskless=TRUE))
+if (inherits(nc, "try-error") || file.exists(ncfile)) {
+  warning("NetCDF library may not support diskless files")
+} else {
+  close.nc(nc)
+  tally <- testfun(TRUE, TRUE, tally)
+}
+unlink(ncfile)
+
+
 #-------------------------------------------------------------------------------#
 #  UDUNITS calendar functions
 #-------------------------------------------------------------------------------#

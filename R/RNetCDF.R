@@ -171,7 +171,7 @@ close.nc <- function(con, ...) {
 #-------------------------------------------------------------------------------
 
 create.nc <- function(filename, clobber = TRUE, share = FALSE, prefill = TRUE, 
-  format = "classic", large = FALSE) {
+  format = "classic", large = FALSE, diskless = FALSE, persist = FALSE) {
   #-- Check args -------------------------------------------------------------
   stopifnot(is.character(filename))
   stopifnot(is.logical(clobber))
@@ -180,6 +180,8 @@ create.nc <- function(filename, clobber = TRUE, share = FALSE, prefill = TRUE,
   stopifnot(is.character(format) &&
     format[1] %in% c("classic", "offset64", "data64", "netcdf4", "classic4"))
   stopifnot(is.logical(large))
+  stopifnot(is.logical(diskless))
+  stopifnot(is.logical(persist))
 
   # Handle deprecated argument:
   if (isTRUE(large) && format[1] == "classic") {
@@ -188,7 +190,8 @@ create.nc <- function(filename, clobber = TRUE, share = FALSE, prefill = TRUE,
   }
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call(R_nc_create, filename, clobber, share, prefill, format)
+  nc <- .Call(R_nc_create, filename, clobber, share, prefill, format,
+              diskless, persist)
   
   attr(nc, "class") <- "NetCDF"
   return(invisible(nc))
@@ -269,15 +272,18 @@ file.inq.nc <- function(ncfile) {
 # open.nc()
 #-------------------------------------------------------------------------------
 
-open.nc <- function(con, write = FALSE, share = FALSE, prefill = TRUE, ...) {
+open.nc <- function(con, write = FALSE, share = FALSE, prefill = TRUE, 
+                    diskless = FALSE, persist = FALSE, ...) {
   #-- Check args -------------------------------------------------------------
   stopifnot(is.character(con))
   stopifnot(is.logical(write))
   stopifnot(is.logical(share))
   stopifnot(is.logical(prefill))
+  stopifnot(is.logical(diskless))
+  stopifnot(is.logical(persist))
   
   #-- C function call --------------------------------------------------------
-  nc <- .Call(R_nc_open, con, write, share, prefill)
+  nc <- .Call(R_nc_open, con, write, share, prefill, diskless, persist)
   
   attr(nc, "class") <- "NetCDF"
   return(invisible(nc))
