@@ -124,6 +124,10 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
       endian_mode = NC_ENDIAN_NATIVE;
       break;
     }
+#else
+    if (asLogical (big_endian) != NA_LOGICAL) {
+      error("nc_def_var_endian not supported by netcdf library");
+    }
 #endif
 
     fletcher_mode = (asLogical (fletcher32) == TRUE);
@@ -132,9 +136,13 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
     filtid = asInteger (filter_id);
     filter_mode = (filtid != NA_INTEGER);
     filtparm = INTEGER (filter_params);
+#else
+    if (asInteger (filter_id) != NA_INTEGER) {
+      error("nc_def_var_filter not supported by netcdf library");
+    }
 #endif
 
-#ifdef HAVE_NC_DEF_VAR_SZIP && defined NC_SZIP_EC && defined NC_SZIP_NN
+#if defined HAVE_NC_DEF_VAR_SZIP && defined NC_SZIP_EC && defined NC_SZIP_NN
     if (R_nc_strcmp(szip_options, "NC_SZIP_EC")) {
       szipopt = NC_SZIP_EC;
     } else if (R_nc_strcmp(szip_options, "NC_SZIP_NN")) {
@@ -145,7 +153,11 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
       error ("Unknown option for szip");
     }
     szippix = asInteger (szip_pixels);
-    szip_mode = (szipopt == NA_INTEGER || szippix == NA_INTEGER);
+    szip_mode = !(szipopt == NA_INTEGER || szippix == NA_INTEGER);
+#else
+    if (asChar (szip_options) != NA_STRING || asInteger (szip_pixels) != NA_INTEGER) {
+      error("nc_def_var_szip not supported by netcdf library");
+    }
 #endif
   }
 
