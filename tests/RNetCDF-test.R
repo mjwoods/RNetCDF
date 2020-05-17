@@ -86,11 +86,15 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   ntime <- 2
   nstring <- 32
   nempty <- 0
+  nx <- 10
+  ny <- 5
 
   dim.def.nc(nc, "station", nstation)
   dim.def.nc(nc, "time", ntime)
   dim.def.nc(nc, "max_string_length", nstring)
   dim.def.nc(nc, "empty", unlim=TRUE)
+  dim.def.nc(nc, "nx", nx)
+  dim.def.nc(nc, "ny", ny)
 
   if (format == "netcdf4") {
     ## Define a group
@@ -181,6 +185,20 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
       varcnt <- varcnt+1
       numtypes <- c(numtypes, "NC_INT64", "NC_UINT64")
     }
+
+    id_szip <- try(var.def.nc(nc, "xy_szip", "NC_FLOAT", c("nx","ny"),
+                   chunking=TRUE, szip_options="NC_SZIP_EC", szip_pixels=8), silent=TRUE)
+    with_szip <- !inherits(id_szip, "try-error")
+    if (with_szip) {
+      inq_szip <- list()
+      inq_szip$id <- id_szip
+      inq_szip$name <- "xy_szip"
+      inq_szip$type <- "NC_FLOAT"
+      inq_szip$szip_options <- "NC_SZIP_EC"
+      inq_szip$szip_pixels <- 8
+    } else {
+      warning("Creation of variables with szip compression not supported by this build of RNetCDF")
+    }
   }
 
   for (numtype in numtypes) {
@@ -235,6 +253,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   myqcflag      <- "ABCDE"
   myint0        <- 12345
   mychar0       <- "?"
+  myxy          <- matrix(seq_len(nx*ny),ncol=ny)
 
   mysmall       <- as.double(c(1,2,3,4,5))
   mybig         <- mysmall*1e100
@@ -350,6 +369,12 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
       y <- 0.5
     }
     tally <- testfun(x,y,tally)
+
+    if (with_szip) {
+      cat("Check szip settings after writing", inq_szip$name, "...")
+      x <- var.inq.nc(nc, inq_szip$id)
+      tally <- testfun(x[names(inq_szip)],inq_szip,tally)
+    }
   }
 
 #  sync.nc(nc)
@@ -410,7 +435,7 @@ for (format in c("classic","offset64","classic4","netcdf4")) {
   cat("Inquire about groups in file/group ...")
   tally <- testfun(grpinfo$grps,list(),tally)
   cat("Inquire about dimension ids in file/group ...")
-  tally <- testfun(grpinfo$dimids,c(0:3),tally)
+  tally <- testfun(grpinfo$dimids,c(0:5),tally)
   cat("Inquire about variable ids in file/group ...")
   tally <- testfun(grpinfo$varids,c(0:(varcnt-1)),tally)
   cat("Inquire about fullname of file/group ...")
