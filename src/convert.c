@@ -542,7 +542,9 @@ R_NC_C2R_NUM_INIT(R_nc_c2r_bit64_init, REALSXP, REAL)
    The same buffer may be used for input and output.
    Output type may be larger (not smaller) than input,
    so convert in reverse order to avoid overwriting input with output.
-   Fill values and values outside the valid range are set to missing.
+   Fill values and values outside the valid range are set to missing,
+   but NA or NaN values in floating point data are transferred to the output
+   (because all comparisons with NA or NaN are false).
  */
 #define R_NC_C2R_NUM(FUN, NCITYPE, ITYPE, NCOTYPE, OTYPE, \
   MISSVAL, MINVAL, MAXVAL) \
@@ -639,7 +641,9 @@ R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, NC_UINT64, unsigned long long, NC_INT64, lon
    Output type is assumed not to be smaller than input type,
    so the same buffer may be used for input and output
    by converting in reverse order.
-   Fill values and values outside the valid range are set to missing.
+   Fill values and values outside the valid range are set to missing,
+   but NA or NaN values in floating point data are transferred to the output
+   (because all comparisons with NA or NaN are false).
  */
 
 #define R_NC_C2R_NUM_UNPACK(FUN, ITYPE, MINVAL, MAXVAL) \
