@@ -381,6 +381,7 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
     out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE)); \
   } else { \
     out = (OTYPE *) IFUN (rv); \
+    return out; \
   } \
   if (scale) { \
     factor = *scale; \
