@@ -204,7 +204,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   }
 
   for (numtype in numtypes) {
-    for (namode in c(0,1,2,4)) {
+    for (namode in c(0,1,2,3,4)) {
       cat("Defining variables of type", numtype, "for na.mode", namode, "...\n")
 
       varname <- paste(numtype,namode,sep="_")
@@ -429,7 +429,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   }
 
   for (numtype in numtypes) {
-    for (namode in c(0,1,2,4)) {
+    for (namode in c(0,1,2,3,4)) {
       cat("Writing to variable type", numtype, "with na.mode", namode, "...\n")
 
       # Should not succeed except for NC_DOUBLE:
@@ -452,23 +452,30 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
       var.put.nc(nc, paste(numtype,namode,sep="_"), mysmall, na.mode=namode)
       var.put.nc(nc, paste(numtype,"int",namode,sep="_"), as.integer(mysmall), na.mode=namode)
       tally <- testfun(TRUE, TRUE, tally)
+
+      # Should succeed except in the following cases:
+      nafail <- (namode==3 && numtype != "NC_DOUBLE")
+      naintfail <- (namode==3 && !(numtype %in% c("NC_INT","NC_INT64","NC_FLOAT","NC_DOUBLE")))
+
       cat("Writing data with missing values ...")
-      var.put.nc(nc, paste(numtype,"fill",namode,sep="_"), mysmallfill, na.mode=namode)
-      var.put.nc(nc, paste(numtype,"intfill",namode,sep="_"), as.integer(mysmallfill), na.mode=namode)
-      tally <- testfun(TRUE, TRUE, tally)
+      y <- try(var.put.nc(nc, paste(numtype,"fill",namode,sep="_"), mysmallfill, na.mode=namode), silent=TRUE)
+      tally <- testfun(inherits(y, "try-error"), nafail, tally)
+      y <- try(var.put.nc(nc, paste(numtype,"intfill",namode,sep="_"), as.integer(mysmallfill), na.mode=namode), silent=TRUE)
+      tally <- testfun(inherits(y, "try-error"), naintfail, tally)
       if (numtype == "NC_INT") {
         cat("Writing data with missing values and NA fill ...")
-        var.put.nc(nc, paste(numtype,"intfillna",namode,sep="_"), as.integer(mysmallfill), na.mode=namode)
-        tally <- testfun(TRUE, TRUE, tally)
+        y <- try(var.put.nc(nc, paste(numtype,"intfillna",namode,sep="_"), as.integer(mysmallfill), na.mode=namode), silent=TRUE)
+        tally <- testfun(inherits(y, "try-error"), naintfail, tally)
       } else if (numtype == "NC_DOUBLE") {
         cat("Writing data with non-finite values and NA fill ...")
-        var.put.nc(nc, paste(numtype,"fillna",namode,sep="_"), myinffill, na.mode=namode)
-        tally <- testfun(TRUE, TRUE, tally)
+        y <- try(var.put.nc(nc, paste(numtype,"fillna",namode,sep="_"), myinffill, na.mode=namode), silent=TRUE)
+        tally <- testfun(inherits(y, "try-error"), nafail, tally)
       }
       cat("Writing data with missing values and packing ...")
-      var.put.nc(nc, paste(numtype,"pack",namode,sep="_"), mypack, pack=TRUE, na.mode=namode)
-      var.put.nc(nc, paste(numtype,"intpack",namode,sep="_"), as.integer(mypack), pack=TRUE, na.mode=namode)
-      tally <- testfun(TRUE, TRUE, tally)
+      y <- try(var.put.nc(nc, paste(numtype,"pack",namode,sep="_"), mypack, pack=TRUE, na.mode=namode))
+      tally <- testfun(inherits(y, "try-error"), nafail, tally)
+      y <- try(var.put.nc(nc, paste(numtype,"intpack",namode,sep="_"), as.integer(mypack), pack=TRUE, na.mode=namode))
+      tally <- testfun(inherits(y, "try-error"), naintfail, tally)
     }
   }
 
@@ -575,7 +582,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   tally <- testfun(is.double(y),TRUE,tally)
 
   for (numtype in numtypes) {
-    for (namode in c(0,1,2,4)) {
+    for (namode in c(0,1,2,3,4)) {
       x <- mysmall
       dim(x) <- length(x)
 
@@ -591,30 +598,49 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
       tally <- testfun(x,y,tally)
       tally <- testfun(is.double(y),TRUE,tally)
 
+      # Some cases are expected to fail when writing the data,
+      # so there is nothing to read:
+      nafail <- (namode==3 && numtype != "NC_DOUBLE")
+      naintfail <- (namode==3 && !(numtype %in% c("NC_INT","NC_INT64","NC_FLOAT","NC_DOUBLE")))
+
       x <- mysmallfill
       dim(x) <- length(x)
 
-      varname <- paste(numtype,"fill",namode,sep="_")
-      cat("Read", varname, "...")
-      y <- var.get.nc(nc, varname, na.mode=namode)
-      tally <- testfun(x,y,tally)
-      tally <- testfun(is.double(y),TRUE,tally)
+      if (!nafail) {
+        varname <- paste(numtype,"fill",namode,sep="_")
+        cat("Read", varname, "...")
+        y <- var.get.nc(nc, varname, na.mode=namode)
+        tally <- testfun(x,y,tally)
+        tally <- testfun(is.double(y),TRUE,tally)
+      }
 
-      varname <- paste(numtype,"intfill",namode,sep="_")
-      cat("Read", varname, "...")
-      y <- var.get.nc(nc, varname, na.mode=namode)
-      tally <- testfun(x,y,tally)
-      tally <- testfun(is.double(y),TRUE,tally)
+      if (!naintfail) {
+        varname <- paste(numtype,"intfill",namode,sep="_")
+        cat("Read", varname, "...")
+        y <- var.get.nc(nc, varname, na.mode=namode)
+        if (namode==3) {
+          tally <- testfun(x[!is.na(x)],y[!is.na(x)],tally)
+          tally <- testfun(isTRUE(all.equal(x[is.na(x)],y[is.na(x)])),FALSE,tally)
+        } else {
+          tally <- testfun(x,y,tally)
+        }
+        tally <- testfun(is.double(y),TRUE,tally)
+      }
 
-      if (numtype == "NC_INT") {
+      if (numtype == "NC_INT" && !naintfail) {
         x <- mysmallfill
         dim(x) <- length(x)
         varname <- paste(numtype,"intfillna",namode,sep="_")
         cat("Read", varname, "...")
         y <- var.get.nc(nc, varname, na.mode=namode)
-        tally <- testfun(x,y,tally)
+        if (namode==3) {
+          tally <- testfun(x[!is.na(x)],y[!is.na(x)],tally)
+          tally <- testfun(isTRUE(all.equal(x[is.na(x)],y[is.na(x)])),FALSE,tally)
+        } else {
+          tally <- testfun(x,y,tally)
+        }
         tally <- testfun(is.double(y),TRUE,tally)
-      } else if (numtype == "NC_DOUBLE") {
+      } else if (numtype == "NC_DOUBLE" && !nafail) {
         x <- myinffill
         dim(x) <- length(x)
         varname <- paste(numtype,"fillna",namode,sep="_")
@@ -627,17 +653,26 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
       x <- mypack
       dim(x) <- length(x)
 
-      varname <- paste(numtype,"pack",namode,sep="_")
-      cat("Read", varname, "...")
-      y <- var.get.nc(nc, varname, unpack=TRUE, na.mode=namode)
-      tally <- testfun(x,y,tally)
-      tally <- testfun(is.double(y),TRUE,tally)
+      if (!nafail) {
+        varname <- paste(numtype,"pack",namode,sep="_")
+        cat("Read", varname, "...")
+        y <- var.get.nc(nc, varname, unpack=TRUE, na.mode=namode)
+        tally <- testfun(x,y,tally)
+        tally <- testfun(is.double(y),TRUE,tally)
+      }
 
-      varname <- paste(numtype,"intpack",namode,sep="_")
-      cat("Read", varname, "...")
-      y <- var.get.nc(nc, varname, unpack=TRUE, na.mode=namode)
-      tally <- testfun(x,y,tally)
-      tally <- testfun(is.double(y),TRUE,tally)
+      if (!naintfail) {
+        varname <- paste(numtype,"intpack",namode,sep="_")
+        cat("Read", varname, "...")
+        y <- var.get.nc(nc, varname, unpack=TRUE, na.mode=namode)
+        if (namode==3) {
+          tally <- testfun(x[!is.na(x)],y[!is.na(x)],tally)
+          tally <- testfun(isTRUE(all.equal(x[is.na(x)],y[is.na(x)])),FALSE,tally)
+        } else {
+          tally <- testfun(x,y,tally)
+        }
+        tally <- testfun(is.double(y),TRUE,tally)
+      }
     }
   }
 
