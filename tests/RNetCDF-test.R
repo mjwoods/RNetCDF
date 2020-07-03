@@ -266,6 +266,36 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
       tally <- testfun(TRUE, TRUE, tally)
 
       varcnt <- varcnt+6
+
+      if (numtype == "NC_DOUBLE") {
+        varname <- paste(numtype,"fillna",namode,sep="_")
+        var.def.nc(nc, varname, numtype, c("station"))
+        if (namode == 2) {
+          att.put.nc(nc, varname, "missing_value", numtype, as.double(NA))
+        } else if (namode == 4) {
+          att.put.nc(nc, varname, "valid_range", numtype, c(as.double(-Inf),as.double(Inf)))
+        } else {
+          att.put.nc(nc, varname, "_FillValue", numtype, as.double(NA))
+        }
+        tally <- testfun(TRUE, TRUE, tally)
+        varcnt <- varcnt+1
+      }
+
+      if (numtype == "NC_INT") {
+        varname <- paste(numtype,"intfillna",namode,sep="_")
+        var.def.nc(nc, varname, numtype, c("station"))
+        if (namode == 2) {
+          att.put.nc(nc, varname, "missing_value", numtype, as.integer(NA))
+        } else if (namode == 4) {
+          att.put.nc(nc, varname, "valid_min", numtype, 1)
+          att.put.nc(nc, varname, "valid_max", numtype, 5)
+        } else {
+          att.put.nc(nc, varname, "_FillValue", numtype, as.integer(NA))
+        }
+        tally <- testfun(TRUE, TRUE, tally)
+        varcnt <- varcnt+1
+      }
+
     }
   }
 
