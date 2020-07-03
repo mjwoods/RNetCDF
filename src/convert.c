@@ -658,94 +658,64 @@ R_NC_C2R_NUM_INIT(R_nc_c2r_bit64_init, REALSXP, REAL)
    but NA or NaN values in floating point data are transferred to the output
    (because all comparisons with NA or NaN are false).
  */
-#define R_NC_C2R_NUM(FUN, NCITYPE, ITYPE, NCOTYPE, OTYPE, \
-  MISSVAL, MINVAL, MAXVAL) \
+#define R_NC_C2R_NUM(FUN, NCITYPE, ITYPE, NCOTYPE, OTYPE, MISSVAL) \
 static void \
 FUN (R_nc_buf *io) \
 { \
   size_t ii; \
-  ITYPE fillval, minval, maxval, *in; \
+  ITYPE fillval=0, minval=0, maxval=0, *in; \
   OTYPE *out; \
+  int hasfill, hasmin, hasmax; \
   ii = xlength (io->rxp); \
   in = (ITYPE *) io->cbuf; \
   out = (OTYPE *) io->rbuf; \
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(ITYPE)) { \
     error ("Size of fill value does not match input type"); \
   } \
-  if (io->fill) { \
+  hasfill = (io->fill != NULL); \
+  if (hasfill) { \
     fillval = *((ITYPE *) io->fill); \
-  } else { \
-    fillval = 0; \
   } \
-  if (io->min) { \
+  hasmin = (io->min != NULL); \
+  if (hasmin) { \
     minval = *((ITYPE *) io->min); \
-  } else { \
-    minval = MINVAL; \
   } \
-  if (io->max) { \
+  hasmax = (io->max != NULL); \
+  if (hasmax) { \
     maxval = *((ITYPE *) io->max); \
-  } else { \
-    maxval = MAXVAL; \
   } \
-  if (io->fill) { \
-    while (ii-- > 0) { \
-      if ((in[ii] == fillval) || (in[ii] < minval) || (maxval < in[ii])) { \
-        out[ii] = MISSVAL; \
-      } else { \
-        out[ii] = in[ii]; \
-      } \
-    } \
-  } else { \
-    while (ii-- > 0) { \
-      if ((in[ii] < minval) || (maxval < in[ii])) { \
-        out[ii] = MISSVAL; \
-      } else { \
-        out[ii] = in[ii]; \
-      } \
+  while (ii-- > 0) { \
+    if ((hasfill && in[ii] == fillval) || (hasmin && in[ii] < minval) || (hasmax && maxval < in[ii])) { \
+      out[ii] = MISSVAL; \
+    } else { \
+      out[ii] = in[ii]; \
     } \
   } \
 }
 
-R_NC_C2R_NUM(R_nc_c2r_schar_int, NC_BYTE, signed char, NC_INT, int, \
-  NA_INTEGER, SCHAR_MIN, SCHAR_MAX)
-R_NC_C2R_NUM(R_nc_c2r_uchar_int, NC_UBYTE, unsigned char, NC_INT, int, \
-  NA_INTEGER, 0, UCHAR_MAX)
-R_NC_C2R_NUM(R_nc_c2r_short_int, NC_SHORT, short, NC_INT, int, \
-  NA_INTEGER, SHRT_MIN, SHRT_MAX)
-R_NC_C2R_NUM(R_nc_c2r_ushort_int, NC_USHORT, unsigned short, NC_INT, int, \
-  NA_INTEGER, 0, USHRT_MAX)
-R_NC_C2R_NUM(R_nc_c2r_int_int, NC_INT, int, NC_INT, int, \
-  NA_INTEGER, INT_MIN, INT_MAX)
+R_NC_C2R_NUM(R_nc_c2r_schar_int, NC_BYTE, signed char, NC_INT, int, NA_INTEGER)
+R_NC_C2R_NUM(R_nc_c2r_uchar_int, NC_UBYTE, unsigned char, NC_INT, int, NA_INTEGER)
+R_NC_C2R_NUM(R_nc_c2r_short_int, NC_SHORT, short, NC_INT, int, NA_INTEGER)
+R_NC_C2R_NUM(R_nc_c2r_ushort_int, NC_USHORT, unsigned short, NC_INT, int, NA_INTEGER)
+R_NC_C2R_NUM(R_nc_c2r_int_int, NC_INT, int, NC_INT, int, NA_INTEGER)
 
-R_NC_C2R_NUM(R_nc_c2r_schar_dbl, NC_BYTE, signed char, NC_DOUBLE, double, \
-  NA_REAL, SCHAR_MIN, SCHAR_MAX)
-R_NC_C2R_NUM(R_nc_c2r_uchar_dbl, NC_UBYTE, unsigned char, NC_DOUBLE, double, \
-  NA_REAL, 0, UCHAR_MAX)
-R_NC_C2R_NUM(R_nc_c2r_short_dbl, NC_SHORT, short, NC_DOUBLE, double, \
-  NA_REAL, SHRT_MIN, SHRT_MAX)
-R_NC_C2R_NUM(R_nc_c2r_ushort_dbl, NC_USHORT, unsigned short, NC_DOUBLE, double, \
-  NA_REAL, 0, USHRT_MAX)
-R_NC_C2R_NUM(R_nc_c2r_int_dbl, NC_INT, int, NC_DOUBLE, double, \
-  NA_REAL, INT_MIN, INT_MAX)
-R_NC_C2R_NUM(R_nc_c2r_uint_dbl, NC_UINT, unsigned int, NC_DOUBLE, double, \
-  NA_REAL, 0, UINT_MAX)
-R_NC_C2R_NUM(R_nc_c2r_float_dbl, NC_FLOAT, float, NC_DOUBLE, double, \
-  NA_REAL, -FLT_MAX, FLT_MAX)
-R_NC_C2R_NUM(R_nc_c2r_dbl_dbl, NC_DOUBLE, double, NC_DOUBLE, double, \
-  NA_REAL, -DBL_MAX, DBL_MAX)
-R_NC_C2R_NUM(R_nc_c2r_int64_dbl, NC_INT64, long long, NC_DOUBLE, double, \
-  NA_REAL, LLONG_MIN, LLONG_MAX)
-R_NC_C2R_NUM(R_nc_c2r_uint64_dbl, NC_UINT64, unsigned long long, NC_DOUBLE, double, \
-  NA_REAL, 0, ULLONG_MAX)
+R_NC_C2R_NUM(R_nc_c2r_schar_dbl, NC_BYTE, signed char, NC_DOUBLE, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_uchar_dbl, NC_UBYTE, unsigned char, NC_DOUBLE, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_short_dbl, NC_SHORT, short, NC_DOUBLE, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_ushort_dbl, NC_USHORT, unsigned short, NC_DOUBLE, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_int_dbl, NC_INT, int, NC_DOUBLE, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_uint_dbl, NC_UINT, unsigned int, NC_DOUBLE, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_float_dbl, NC_FLOAT, float, NC_DOUBLE, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_dbl_dbl, NC_DOUBLE, double, NC_DOUBLE, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_int64_dbl, NC_INT64, long long, NC_DOUBLE, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_uint64_dbl, NC_UINT64, unsigned long long, NC_DOUBLE, double, NA_REAL)
 
 /* bit64 is treated by R as signed long long,
    but we may need to store unsigned long long,
    with very large positive values wrapping to negative values in R.
  */
-R_NC_C2R_NUM(R_nc_c2r_int64_bit64, NC_INT64, long long, NC_INT64, long long, \
-  NA_INTEGER64, LLONG_MIN, LLONG_MAX)
-R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, NC_UINT64, unsigned long long, NC_INT64, long long, \
-  NA_INTEGER64, 0, ULLONG_MAX)
+R_NC_C2R_NUM(R_nc_c2r_int64_bit64, NC_INT64, long long, NC_INT64, long long, NA_INTEGER64)
+R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, NC_UINT64, unsigned long long, NC_INT64, long long, NA_INTEGER64)
 
 
 /* Convert numeric values from C to R format with unpacking.
@@ -758,74 +728,58 @@ R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, NC_UINT64, unsigned long long, NC_INT64, lon
    (because all comparisons with NA or NaN are false).
  */
 
-#define R_NC_C2R_NUM_UNPACK(FUN, ITYPE, MINVAL, MAXVAL) \
+#define R_NC_C2R_NUM_UNPACK(FUN, ITYPE) \
 static void \
 FUN (R_nc_buf *io) \
 { \
   size_t ii; \
-  double factor, offset; \
-  ITYPE fillval, minval, maxval, *in; \
+  double factor=1.0, offset=0.0; \
+  ITYPE fillval=0, minval=0, maxval=0, *in; \
   double *out; \
+  int hasfill, hasmin, hasmax; \
   ii = xlength (io->rxp); \
   in = (ITYPE *) io->cbuf; \
   out = (double *) io->rbuf; \
   if (io->scale) { \
     factor = *(io->scale); \
-  } else { \
-    factor = 1.0; \
   } \
   if (io->add) { \
     offset = *(io->add); \
-  } else { \
-    offset = 0.0; \
   } \
   if ((io->fill || io->min || io->max) && io->fillsize != sizeof(ITYPE)) { \
     error ("Size of fill value does not match input type"); \
   } \
-  if (io->fill) { \
+  hasfill = (io->fill != NULL); \
+  if (hasfill) { \
     fillval = *((ITYPE *) io->fill); \
-  } else { \
-    fillval = 0; \
   } \
-  if (io->min) { \
+  hasmin = (io->min != NULL); \
+  if (hasmin) { \
     minval = *((ITYPE *) io->min); \
-  } else { \
-    minval = MINVAL; \
   } \
-  if (io->max) { \
+  hasmax = (io->max != NULL); \
+  if (hasmax) { \
     maxval = *((ITYPE *) io->max); \
-  } else { \
-    maxval = MAXVAL; \
   } \
-  if (io->fill) { \
-    while (ii-- > 0) { \
-      if ((in[ii] == fillval) || (in[ii] < minval) || (maxval < in[ii])) { \
-        out[ii] = NA_REAL; \
-      } else { \
-        out[ii] = in[ii] * factor + offset; \
-      } \
-    } \
-  } else { \
-    while (ii-- > 0) { \
-      if ((in[ii] < minval) || (maxval < in[ii])) { \
-        out[ii] = NA_REAL; \
-      } else { \
-        out[ii] = in[ii] * factor + offset; \
-      } \
+  while (ii-- > 0) { \
+    if ((hasfill && in[ii] == fillval) || (hasmin && in[ii] < minval) || (hasmax && maxval < in[ii])) { \
+      out[ii] = NA_REAL; \
+    } else { \
+      out[ii] = in[ii] * factor + offset; \
     } \
   } \
 }
 
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_schar, signed char, SCHAR_MIN, SCHAR_MAX)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uchar, unsigned char, 0, UCHAR_MAX)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_short, short, SHRT_MIN, SHRT_MAX)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_ushort, unsigned short, 0, USHRT_MAX)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_int, int, INT_MIN, INT_MAX)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint, unsigned int, 0, UINT_MAX)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_float, float, -FLT_MAX, FLT_MAX)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_dbl, double, -DBL_MAX, DBL_MAX)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_int64, long long, LLONG_MIN, LLONG_MAX)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint64, unsigned long long, 0, ULLONG_MAX)
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_schar, signed char)
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uchar, unsigned char)
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_short, short)
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_ushort, unsigned short)
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_int, int)
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint, unsigned int)
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_float, float)
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_dbl, double)
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_int64, long long)
+R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint64, unsigned long long)
 
 
 /*=============================================================================*\
