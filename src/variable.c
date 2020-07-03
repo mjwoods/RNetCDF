@@ -238,20 +238,20 @@ R_nc_miss_att (int ncid, int varid, int mode,
   }
   R_nc_check (nc_inq_type (ncid, xtype, NULL, &size));
 
-  if ((mode == 0 || mode == 1) &&
-      nc_inq_att (ncid, varid, "_FillValue", &atype, &cnt) == NC_NOERR &&
-      cnt == 1 &&
-      atype == xtype) {
-    *fill = R_alloc (1, size);
-    R_nc_check (nc_get_att (ncid, varid, "_FillValue", *fill));
-
-  } else if ((mode == 0 || mode == 2) &&
-      nc_inq_att (ncid, varid, "missing_value", &atype, &cnt) == NC_NOERR &&
-      cnt == 1 &&
-      atype == xtype) {
-    *fill = R_alloc (1, size);
-    R_nc_check (nc_get_att (ncid, varid, "missing_value", *fill));
-
+  if (mode == 0 || mode == 1) {
+    if (nc_inq_att (ncid, varid, "_FillValue", &atype, &cnt) == NC_NOERR &&
+        cnt == 1 &&
+        atype == xtype) {
+      *fill = R_alloc (1, size);
+      R_nc_check (nc_get_att (ncid, varid, "_FillValue", *fill));
+    }
+  } else if (mode == 0 || mode == 2) {
+    if (nc_inq_att (ncid, varid, "missing_value", &atype, &cnt) == NC_NOERR &&
+        cnt == 1 &&
+        atype == xtype) {
+      *fill = R_alloc (1, size);
+      R_nc_check (nc_get_att (ncid, varid, "missing_value", *fill));
+    }
   } else if (mode == 3) {
     /* Let user code handle missing values */
     return 0;
