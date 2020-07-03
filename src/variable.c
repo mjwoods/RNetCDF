@@ -182,7 +182,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 
 /* Macros to set **max or **min so that **fill is outside valid range */
 #define FILL2RANGE_REAL(TYPE, EPS) { \
-  if (R_FINITE(**(TYPE **) fill)) { \
+  if (!ISNAN(**(TYPE **) fill)) { \
     if (**(TYPE **) fill > (TYPE) 0) { \
       *max = R_alloc (1, sizeof(TYPE)); \
       **(TYPE **) max = **(TYPE **) fill * ((TYPE) 1 - (TYPE) 2 * (TYPE) EPS); \
