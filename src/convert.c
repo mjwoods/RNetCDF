@@ -567,9 +567,6 @@ R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_float, NC_INT, int, INTEGER, NC_FLOAT, float
   R_NC_ISNA_INT, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX)
 R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_dbl, NC_INT, int, INTEGER, NC_DOUBLE, double, \
   R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
-/* Only convert non-negative values to size_t */
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_size, NC_INT, int, INTEGER, NC_NAT, size_t, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX_DBL)
 
 R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_schar, NC_DOUBLE, double, REAL, NC_BYTE, signed char, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX)
@@ -591,9 +588,6 @@ R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_float, NC_DOUBLE, double, REAL, NC_FLOAT, fl
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX)
 R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_dbl, NC_DOUBLE, double, REAL, NC_DOUBLE, double, \
   R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
-/* Only convert non-negative values to size_t */
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_size, NC_DOUBLE, double, REAL, NC_NAT, size_t, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX_DBL)
 
 /* bit64 is treated by R as signed long long,
    but we may need to store unsigned long long,
@@ -620,9 +614,6 @@ R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_float, NC_INT64, long long, REAL, NC_FLOAT
   R_NC_ISNA_BIT64, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX)
 R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_dbl, NC_INT64, long long, REAL, NC_DOUBLE, double, \
   R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
-/* Assume bit64 can represent size of any object without wrapping */
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_size, NC_INT64, long long, REAL, NC_NAT, size_t, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX_DBL)
 
 
 /* Allocate memory for reading a netcdf variable slice
