@@ -347,6 +347,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   mysmallfill   <- as.double(c(1,2,NA,4,5))
   mybigfill     <- mysmallfill*1e100
   mypack        <- mysmallfill*10+5
+  myinffill     <- c(-Inf,-100,NA,100,Inf)
 
   if (format == "netcdf4") {
     profiles      <- vector("list", nstation*ntime)
@@ -455,6 +456,15 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
       var.put.nc(nc, paste(numtype,"fill",namode,sep="_"), mysmallfill, na.mode=namode)
       var.put.nc(nc, paste(numtype,"intfill",namode,sep="_"), as.integer(mysmallfill), na.mode=namode)
       tally <- testfun(TRUE, TRUE, tally)
+      if (numtype == "NC_INT") {
+        cat("Writing data with missing values and NA fill ...")
+        var.put.nc(nc, paste(numtype,"intfillna",namode,sep="_"), as.integer(mysmallfill), na.mode=namode)
+        tally <- testfun(TRUE, TRUE, tally)
+      } else if (numtype == "NC_DOUBLE") {
+        cat("Writing data with non-finite values and NA fill ...")
+        var.put.nc(nc, paste(numtype,"fillna",namode,sep="_"), myinffill, na.mode=namode)
+        tally <- testfun(TRUE, TRUE, tally)
+      }
       cat("Writing data with missing values and packing ...")
       var.put.nc(nc, paste(numtype,"pack",namode,sep="_"), mypack, pack=TRUE, na.mode=namode)
       var.put.nc(nc, paste(numtype,"intpack",namode,sep="_"), as.integer(mypack), pack=TRUE, na.mode=namode)
@@ -595,6 +605,24 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
       y <- var.get.nc(nc, varname, na.mode=namode)
       tally <- testfun(x,y,tally)
       tally <- testfun(is.double(y),TRUE,tally)
+
+      if (numtype == "NC_INT") {
+        x <- mysmallfill
+        dim(x) <- length(x)
+        varname <- paste(numtype,"intfillna",namode,sep="_")
+        cat("Read", varname, "...")
+        y <- var.get.nc(nc, varname, na.mode=namode)
+        tally <- testfun(x,y,tally)
+        tally <- testfun(is.double(y),TRUE,tally)
+      } else if (numtype == "NC_DOUBLE") {
+        x <- myinffill
+        dim(x) <- length(x)
+        varname <- paste(numtype,"fillna",namode,sep="_")
+        cat("Read", varname, "...")
+        y <- var.get.nc(nc, varname, na.mode=namode)
+        tally <- testfun(x,y,tally)
+        tally <- testfun(is.double(y),TRUE,tally)
+      }
 
       x <- mypack
       dim(x) <- length(x)
