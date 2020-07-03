@@ -319,6 +319,37 @@ R_nc_miss_att (int ncid, int varid, int mode,
         }
       }
 
+      /* If a valid range is defined without a fill value,
+       * use the default fill value if it is outside the valid range
+       */
+      if (!*fill && *max) {
+        if (xtype == NC_UBYTE) {
+          if (NC_FILL_UBYTE > **(unsigned char **) max) {
+            *fill = R_alloc(1, 1);
+            **(unsigned char **) fill = NC_FILL_UBYTE;
+          }
+        } else {
+          if (NC_FILL_BYTE > **(signed char **) max) {
+            *fill = R_alloc(1, 1);
+            **(signed char **) fill = NC_FILL_BYTE;
+          }
+        }
+      }
+
+      if (!*fill && *min) {
+        if (xtype == NC_UBYTE) {
+          if (NC_FILL_UBYTE < **(unsigned char **) min) {
+            *fill = R_alloc(1, 1);
+            **(unsigned char **) fill = NC_FILL_UBYTE;
+          }
+        } else {
+          if (NC_FILL_BYTE < **(signed char **) min) {
+            *fill = R_alloc(1, 1);
+            **(signed char **) fill = NC_FILL_BYTE;
+          }
+        }
+      }
+
     } else {
       /* All types other than byte data */
 
