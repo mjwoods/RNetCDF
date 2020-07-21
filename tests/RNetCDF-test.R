@@ -388,7 +388,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   mysmallfill   <- as.double(c(1,2,NA,4,5))
   mybigfill     <- mysmallfill*1e100
   mypack        <- mysmallfill*10+5
-  myinffill     <- c(-Inf,-100,NA,100,Inf)
+  myinffill     <- c(-Inf,.Machine$double.xmin,NA,NaN,Inf)
  
   if (has_bit64) { 
     mysmall64 <- as.integer64(mysmall)
