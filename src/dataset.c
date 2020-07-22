@@ -46,6 +46,9 @@
 #include "common.h"
 #include "RNetCDF.h"
 
+#ifdef HAVE_NETCDF_PAR_H
+#include <netcdf_par.h>
+#endif
 
 /* Convert netcdf file format code to string label.
  */
@@ -115,9 +118,10 @@ R_nc_finalizer (SEXP ptr)
 
 SEXP
 R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
-             SEXP format, SEXP diskless, SEXP persist)
+             SEXP format, SEXP diskless, SEXP persist,
+             SEXP mpi_comm, SEXP mpi_info)
 {
-  int cmode, fillmode, old_fillmode, ncid, *fileid;
+  int cmode, fillmode, old_fillmode, ncid, *fileid, icommf, iinfof;
   SEXP Rptr, result;
   const char *filep;
 
@@ -167,7 +171,19 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
   /*-- Create the file --------------------------------------------------------*/
   filep = R_nc_strarg (filename);
   if (strlen (filep) > 0) {
-    R_nc_check (nc_create (R_ExpandFileName (filep), cmode, &ncid));
+    icommf = asInteger(mpi_comm);
+    iinfof = asInteger(mpi_info);
+    if (icommf == NA_INTEGER || iinfof == NA_INTEGER) {
+      R_nc_check (nc_create (R_ExpandFileName (filep), cmode, &ncid));
+    } else {
+#if defined HAVE_NETCDF_PAR_H && \
+    defined HAVE_NC_CREATE_PAR_FORTRAN
+      R_nc_check (nc_create_par_fortran (R_ExpandFileName (filep),
+                    cmode, icommf, iinfof, &ncid));
+#else
+      error("MPI not supported");
+#endif
+    }
   } else {
     error ("Filename must be a non-empty string");
   }
@@ -186,7 +202,6 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
   UNPROTECT(2);
   return result;
 }
-
 
 /*-----------------------------------------------------------------------------*\
  *  R_nc_inq_file()
@@ -232,9 +247,9 @@ R_nc_inq_file (SEXP nc)
 
 SEXP
 R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill,
-           SEXP diskless, SEXP persist)
+           SEXP diskless, SEXP persist, SEXP mpi_comm, SEXP mpi_info)
 {
-  int ncid, omode, fillmode, old_fillmode, *fileid;
+  int ncid, omode, fillmode, old_fillmode, *fileid, icommf, iinfof;
   const char *filep;
   SEXP Rptr, result;
 
@@ -272,7 +287,19 @@ R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill,
   /*-- Open the file ----------------------------------------------------------*/
   filep = R_nc_strarg (filename);
   if (strlen (filep) > 0) {
-    R_nc_check (nc_open (R_ExpandFileName (filep), omode, &ncid));
+    icommf = asInteger(mpi_comm);
+    iinfof = asInteger(mpi_info);
+    if (icommf == NA_INTEGER || iinfof == NA_INTEGER) {
+      R_nc_check (nc_open (R_ExpandFileName (filep), omode, &ncid));
+    } else {
+#if defined HAVE_NETCDF_PAR_H && \
+    defined HAVE_NC_OPEN_PAR_FORTRAN
+      R_nc_check (nc_open_par_fortran (R_ExpandFileName (filep),
+                    omode, icommf, iinfof, &ncid)); 
+#else
+      error("MPI not supported");
+#endif
+    }
   } else {
     error ("Filename must be a non-empty string");
   }

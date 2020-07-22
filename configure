@@ -3727,7 +3727,8 @@ fi
 
 # Check for the existence of optional netcdf routines.
 # C preprocessor macros HAVE_routine are defined for existing routines.
-for ac_func in nc_rename_grp nc_get_var_chunk_cache nc_inq_var_szip nc_inq_var_endian nc_inq_var_filter
+for ac_func in nc_rename_grp nc_get_var_chunk_cache nc_inq_var_szip \
+  nc_inq_var_endian nc_inq_var_filter nc_create_par_fortran nc_open_par_fortran
 do :
   as_ac_var=`$as_echo "ac_cv_func_$ac_func" | $as_tr_sh`
 ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
@@ -3737,6 +3738,20 @@ if eval test \"x\$"$as_ac_var"\" = x"yes"; then :
 _ACEOF
 
 fi
+done
+
+
+# Check for parallel I/O support.
+for ac_header in netcdf_par.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "netcdf_par.h" "ac_cv_header_netcdf_par_h" "$ac_includes_default"
+if test "x$ac_cv_header_netcdf_par_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_NETCDF_PAR_H 1
+_ACEOF
+
+fi
+
 done
 
 
