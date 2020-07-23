@@ -71,7 +71,7 @@ AC_CHECK_FUNCS([nc_rename_grp nc_get_var_chunk_cache nc_inq_var_szip \
   nc_inq_var_endian nc_inq_var_filter nc_create_par_fortran nc_open_par_fortran])
 
 # Check for parallel I/O support.
-AC_CHECK_HEADERS(netcdf_par.h)
+AC_CHECK_HEADERS(netcdf_par.h, [], [], [#include <netcdf.h>])
 
 #-------------------------------------------------------------------------------#
 #  Find UDUNITS2 library and header files                                       #

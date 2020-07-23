@@ -3744,7 +3744,8 @@ done
 # Check for parallel I/O support.
 for ac_header in netcdf_par.h
 do :
-  ac_fn_c_check_header_mongrel "$LINENO" "netcdf_par.h" "ac_cv_header_netcdf_par_h" "$ac_includes_default"
+  ac_fn_c_check_header_compile "$LINENO" "netcdf_par.h" "ac_cv_header_netcdf_par_h" "#include <netcdf.h>
+"
 if test "x$ac_cv_header_netcdf_par_h" = xyes; then :
   cat >>confdefs.h <<_ACEOF
 #define HAVE_NETCDF_PAR_H 1
