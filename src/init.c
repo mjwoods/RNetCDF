@@ -71,6 +71,7 @@ static const R_CallMethodDef callMethods[]  = {
   {"R_nc_def_var", (DL_FUNC) &R_nc_def_var, 12},
   {"R_nc_get_var", (DL_FUNC) &R_nc_get_var, 11},
   {"R_nc_inq_var", (DL_FUNC) &R_nc_inq_var, 2},
+  {"R_nc_par_var", (DL_FUNC) &R_nc_par_var, 3},
   {"R_nc_put_var", (DL_FUNC) &R_nc_put_var, 10},
   {"R_nc_rename_var", (DL_FUNC) &R_nc_rename_var, 3},
   {NULL, NULL, 0}

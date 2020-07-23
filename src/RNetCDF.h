@@ -166,6 +166,9 @@ SEXP
 R_nc_inq_var (SEXP nc, SEXP var);
 
 SEXP
+R_nc_par_var (SEXP nc, SEXP var, SEXP access);
+
+SEXP
 R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
               SEXP namode, SEXP pack,
               SEXP cache_bytes, SEXP cache_slots, SEXP cache_preemption);

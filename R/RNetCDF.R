@@ -613,6 +613,24 @@ var.inq.nc <- function(ncfile, variable) {
 
 
 #-------------------------------------------------------------------------------
+# var.par.nc()
+#-------------------------------------------------------------------------------
+
+var.par.nc <- function(ncfile, variable, access="NC_COLLECTIVE") {
+  #-- Check args -------------------------------------------------------------
+  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(is.character(variable) || is.numeric(variable))
+  stopifnot(is.character(access) &&
+            access[1] %in% c("NC_COLLECTIVE", "NC_INDEPENDENT"))
+
+  #-- C function call --------------------------------------------------------
+  nc <- .Call(R_nc_par_var, ncfile, variable, access)
+
+  return(invisible(NULL))
+}
+
+
+#-------------------------------------------------------------------------------
 # var.put.nc()
 #-------------------------------------------------------------------------------
 

@@ -47,6 +47,10 @@
 #include "convert.h"
 #include "RNetCDF.h"
 
+#ifdef HAVE_NETCDF_PAR_H
+#include <netcdf_par.h>
+#endif
+
 
 /*-----------------------------------------------------------------------------*\
  *  R_nc_def_var()
@@ -740,6 +744,46 @@ R_nc_inq_var (SEXP nc, SEXP var)
 
   UNPROTECT(1);
   return result;
+}
+
+
+/*-----------------------------------------------------------------------------*\
+ *  R_nc_par_var()
+\*-----------------------------------------------------------------------------*/
+
+SEXP
+R_nc_par_var (SEXP nc, SEXP var, SEXP access)
+{
+#if defined NC_COLLECTIVE && defined NC_INDEPENDENT && \
+    defined HAVE_NC_VAR_PAR_ACCESS
+
+  int ncid, varid, iaccess;
+
+  /*-- Convert arguments to netcdf ids ----------------------------------------*/
+  ncid = asInteger (nc);
+
+  if (R_nc_strcmp(var, "NC_GLOBAL")) {
+    varid = NC_GLOBAL;
+  } else {
+    R_nc_check (R_nc_var_id (var, ncid, &varid));
+  }
+
+  if (R_nc_strcmp(access, "NC_COLLECTIVE")) {
+    iaccess = NC_COLLECTIVE;
+  } else if (R_nc_strcmp(access, "NC_INDEPENDENT")) {
+    iaccess = NC_INDEPENDENT;
+  } else {
+    error("Unknown parallel access mode");
+  }
+
+  /*-- Change parallel access mode --------------------------------------------*/
+  R_nc_check (nc_var_par_access(ncid, varid, iaccess));
+
+  return R_NilValue;
+
+#else
+  error("Changing parallel access mode not supported by NetCDF library");
+#endif
 }
 
 
