@@ -61,9 +61,9 @@ R_nc_format2str (int format)
   case NC_FORMAT_64BIT_OFFSET:
 #endif
     return "offset64";
-#ifdef NC_FORMAT_CDF5
-  case NC_FORMAT_CDF5:
-    return "cdf5";
+#ifdef NC_FORMAT_64BIT_DATA
+  case NC_FORMAT_64BIT_DATA:
+    return "data64";
 #endif
   case NC_FORMAT_NETCDF4:
     return "netcdf4";
@@ -115,7 +115,7 @@ R_nc_finalizer (SEXP ptr)
 
 SEXP
 R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
-             SEXP format)
+             SEXP format, SEXP diskless, SEXP persist)
 {
   int cmode, fillmode, old_fillmode, ncid, *fileid;
   SEXP Rptr, result;
@@ -127,6 +127,19 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
   } else {
     cmode = NC_NOCLOBBER;
   }
+
+#if defined NC_DISKLESS && defined NC_PERSIST
+  if (asLogical(diskless) == TRUE) {
+    cmode = cmode | NC_DISKLESS;
+  }
+  if (asLogical(persist) == TRUE) {
+    cmode = cmode | NC_PERSIST;
+  }
+#else
+  if (asLogical(diskless) == TRUE) {
+    error("NetCDF library does not support diskless files");
+  }
+#endif
 
   /*-- Determine which buffer scheme shall be used ----------------------------*/
   if (asLogical(share) == TRUE) {
@@ -147,6 +160,8 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
     cmode = cmode | NC_NETCDF4 | NC_CLASSIC_MODEL;
   } else if (R_nc_strcmp(format, "offset64")) {
     cmode = cmode | NC_64BIT_OFFSET;
+  } else if (R_nc_strcmp(format, "data64")) {
+    cmode = cmode | NC_64BIT_DATA;
   }
 
   /*-- Create the file --------------------------------------------------------*/
@@ -216,7 +231,8 @@ R_nc_inq_file (SEXP nc)
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
+R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill,
+           SEXP diskless, SEXP persist)
 {
   int ncid, omode, fillmode, old_fillmode, *fileid;
   const char *filep;
@@ -228,6 +244,19 @@ R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill)
   } else {
     omode = NC_NOWRITE;
   }
+
+#if defined NC_DISKLESS && defined NC_PERSIST
+  if (asLogical(diskless) == TRUE) {
+    omode = omode | NC_DISKLESS;
+  }
+  if (asLogical(persist) == TRUE) {
+    omode = omode | NC_PERSIST;
+  }
+#else
+  if (asLogical(diskless) == TRUE) {
+    error("NetCDF library does not support diskless files");
+  }
+#endif
 
   if (asLogical(share) == TRUE) {
     omode = omode | NC_SHARE;
