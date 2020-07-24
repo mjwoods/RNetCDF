@@ -1,0 +1,14 @@
+citHeader("To cite Rmpi in a publication use:")
+
+citEntry(
+  entry = "Article",
+  title = "Rmpi: Parallel Statistical Computing in R",
+  author = "Hao Yu",
+  journal = "R News",
+  year = "2002",
+  volume= "2",
+  number = "2",
+  pages = "10--14",
+  url = "https://cran.r-project.org/doc/Rnews/Rnews_2002-2.pdf",
+  textVersion = "Yu, H. (2002). Rmpi: Parallel Statistical Computing in R. R News 2/2:10-14."
+)

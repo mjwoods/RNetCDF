@@ -1,0 +1,118 @@
+MPI APIs:
+
+mpi.abort		Abort (quit) all tasks associated with a comm
+mpi.allgather		Gather data from each process to all process
+mpi.allgatherv		Gather diff size data from each process to all process
+mpi.allreduce		Reduce all process's vectors into one vector
+mpi.barrier		Block the caller until all group have called it
+mpi.bcast		Broadcast a vector (int,double,char) to every process 
+mpi.cancel		Cancel a nonblocking send or recv
+mpi.cart.coords		Translate a rank to the Cartesian topology coordinate
+mpi.cart.create		Create a Cartesian structure of arbitrary dimension
+mpi.cartdim.get		Get dim information about a Cartesian topology
+mpi.cart.get		Provide the Cartesian topology associated with a comm
+mpi.cart.rank		Translate a Cartesian topology coordinate to the rank
+mpi.cart.shift		Shift Cartesian topology in displacement and direction
+mpi.comm.disconnect	Disconeect and free a comm
+mpi.comm.dup		Duplicate a comm to a new comm
+mpi.comm.c2f		Convert a comm into an integer used by extern Fortran
+mpi.comm.free		Free a comm
+mpi.comm.get.parent	Get the parent intercomm
+mpi.comm.rank		Find the rank (process id) of master and slaves
+mpi.comm.remote.size	Find the size of a remote group from an intercomm
+mpi.comm.size		Find the size (total # of master and slaves)
+mpi.comm.set.errhandler	Set comm to error return (no crash)
+mpi.comm.spawn		Spawn slaves
+mpi.comm.test.inter	Test if a comm is an intercomm
+mpi.dims.create		Create a Cartesian dim used by mpi.cart.create
+mpi.finalize		Exit MPI environment (call MPI_Finalize())
+mpi.gather		Gather data from each process to a root process
+mpi.gatherv		Gather diff data from each process to a root process
+mpi.get.count		Get the length of a message for given status and type
+mpi.get.processor.name	Get the process (host) name 
+mpi.info.create		Create an info object
+mpi.info.free		Free an info object
+mpi.info.get		Get the value from an info object and a key
+mpi.info.set		Set a key/value pair of an info object
+mpi.intercomm.merge	Merge a intercomm to a comm 
+mpi.iprobe		Nonblocking use a source and a tag to set status
+mpi.irecv		Nonblocking receive a vector from a specific process
+mpi.isend		Nonblocking send a vector to a specific process
+mpi.probe		Use a source and a tag to set status
+mpi.recv		Receive a vector from a specific process
+mpi.reduce		Reduce all processes's vectors into one (one process)
+mpi.scatter		Opposite of mpi.gather
+mpi.scatterv		Opposite of mpi.gatherv (diff size data)
+mpi.send		Send a vector to a specific process
+mpi.sendrecv		Send & receive different vectors in one call
+mpi.sendrecv.replace	Send & replace a vector in one call
+mpi.test		Test if a nonblocking send/recv request is complete
+mpi.testall		Test if all nonblocking send/recv requests are complete
+mpi.testany		Test if any nonblocking send/recv requests are complete
+mpi.testsome		Test if some nonblocking send/recv requests are complete
+mpi.test.cancelled	Test if a communication is cancelled by mpi.cancel
+mpi.universe.size	Total number of CPUs available
+mpi.wait		Wait if a nonblocking send/recv request is complete
+mpi.waitall		Wait if all nonblocking send/recv requests are complete
+mpi.waitany		Wait if any nonblocking send/recv requests are complete
+mpi.waitsome		Wait if some nonblocking send/recv requests are complete
+******************************************************************************
+MPI Extensions in R Environment:
+lamhosts		Hosts id and machine host name mapping 
+mpi.allgather.Robj      Gather any type of objects to every number
+mpi.any.source		A constant for receiving a message from any source
+mpi.any.tag		A constant for receiving a message from any tag
+mpi.bcast.Robj		Broadcast an R object to every process
+mpi.comm.maxsize	Find the length of comm array
+mpi.exit		Call MPI_Finalize and detach Rmpi library
+mpi.gather.Robj		Gather any type of object to  a root process
+mpi.get.sourcetag	Get the source and tag for a given status
+mpi.hostinfo		Get the host information that the process is running
+mpi.is.master		TRUE if it is a master otherwise FALSE (slave)
+mpi.isend.Robj		Nonblocking send an R object to a specific process
+mpi.proc.null		Dummy source and destination
+mpi.quit		Call MPI_Finalize and quit R
+mpi.recv.Robj		Receive an R object from a process (by mpi.send.Robj)	
+mpi.realloc.comm	Increase comm array to a new size
+mpi.realloc.request	Increase request array to a new size
+mpi.realloc.status	Increase status array to a new size
+mpi.request.maxsize	Find the length of request array
+mpi.scatter.Robj	Scatter an list to every number 
+mpi.send.Robj		Send an R object to a specific process
+mpi.spawn.Rslaves	Spawn R slaves. The default R script is slavedaemon.R
+mpi.status.maxsize	Find the length of status array
+*****************************************************************************
+MPI Extensions specifically to slavedaemon.R Script (interactive R slaves). 
+
+mpi.apply		Scatter an array to slaves and then apply a fun
+mpi.iapply		Nonblocking scatter an array to slaves and then apply a fun
+mpi.applyLB		Load balancing version of mpi.apply
+mpi.iapplyLB		Nonblocking load balancing version of mpi.apply
+mpi.bcast.Robj2slave	Master sends an Robj to all slaves
+mpi.bcast.Rfun2slave	Master sends all user functions to all slaves
+mpi.bcast.Rdata2slave	Master sends an vector or matrix to all slaves without serialization 
+mpi.bcast.cmd		Broadcast a command to every process
+mpi.close.Rslaves	Close all slaves launched by mpi.spawn.Rslaves()
+mpi.parApply		(Load balancing) parallel apply
+mpi.iparApply		(Nonblocking and load balancing) parallel apply
+mpi.parCapply		(Load balancing) parallel column apply
+mpi.iparCapply		(Nonblocking and load balancing) parallel column apply
+mpi.parLapply		(Load balancing) parallel lapply
+mpi.iparLapply		(Nonblocking and load balancing) parallel lapply
+mpi.parRapply		(Load balancing) parallel row apply
+mpi.iparRapply		(Nonblocking and load balancing) parallel row apply
+mpi.parReplicate	 A wrapper to mpi.parSapply for repeated eval of an expr
+mpi.iparReplicate	 A nonblocking wrapper to mpi.iparSapply for repeated eval of an expr
+mpi.parSapply		(Load balancing) parallel sapply
+mpi.iparSapply		(Nonblocking and load balancing) parallel sapply
+mpi.parSim		(Load balancing) parallel Monte Carlo simulation
+mpi.remote.exec		Run a command remotely on slaves and return 
+			results back to the master 
+mpi.setup.rngstream	Setup RNDstream (package rlecuyer) on all slaves
+slave.hostinfo		Show all slave rank, comm, host information
+tailslave.log		Tail (view) last lines of slave log files
+*****************************************************************************
+Some Internal Functions used by other MPI Functions
+
+mpi.comm.is.null	Test if a comm is NULL (no members)
+string			Create a string (empty space character) buffer

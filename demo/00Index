@@ -1,0 +1,15 @@
+cslavePI	R function to use external C program cslavePI.
+		Copy cslavePI.c in Rmpi library directory to your 
+		working directory and compile as "mpicc -o 
+		cslavePI cslavePI.c"
+masterslavePI 	R script to compute PI=4*\int_0^1 1/(1+x^2) dx.
+simPI		Use Monto Carlo simulation to compute PI (with plot). 
+                Use simPI to run the program. Run mpi.setup.rngstream
+		to setup a parallel RNG.
+simplePI 	R function to compute PI using slavedaemon.R. 
+slave1PI 	R functions to compute PI using slavedaemon.R (load 
+		balancing with a server and workers). Use master1PI to 
+		run the program.
+slave2PI 	R functions to compute PI using slavedaemon.R (load 
+		balancing with workers only). Use master2PI to run the 
+		program.
