@@ -80,6 +80,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     nc <- try(create.nc(ncfile, format=format), silent=TRUE)
     if (inherits(nc, "try-error")) {
       warning("NetCDF library may not support file format ", format)
+      next
     }
   } else {
     nc <- create.nc(ncfile, format=format)
