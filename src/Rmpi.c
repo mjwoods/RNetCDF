@@ -27,6 +27,7 @@ static MPI_Datatype *datatype;
 static MPI_Info *info;
 static MPI_Request *request;
 static int COMM_MAXSIZE=10;
+static int INFO_MAXSIZE=10;
 static int STATUS_MAXSIZE=2000;
 static int REQUEST_MAXSIZE=2000;
 static MPI_Datatype *xdouble;
@@ -96,8 +97,8 @@ if (flag)
 		status=(MPI_Status *)Calloc(STATUS_MAXSIZE, MPI_Status); 
 		datatype=(MPI_Datatype *)Calloc(1, MPI_Datatype); 
 		xdouble=(MPI_Datatype *)Calloc(1, MPI_Datatype); 
-		info=(MPI_Info *)Calloc(1, MPI_Info);
-		info[0]=MPI_INFO_NULL;
+		info=(MPI_Info *)Calloc(INFO_MAXSIZE, MPI_Info);
+		for (i=0; i < INFO_MAXSIZE; info[i++]=MPI_INFO_NULL);
 		request=(MPI_Request *)Calloc(REQUEST_MAXSIZE, MPI_Request);
 		for (i=0; i< REQUEST_MAXSIZE; request[i++]=MPI_REQUEST_NULL);	
 		comm[0]=MPI_COMM_WORLD;
@@ -164,6 +165,14 @@ SEXP mpi_undefined(){
 
 SEXP mpi_proc_null(){
 	return AsInt(MPI_PROC_NULL);
+}
+
+SEXP mpi_info_c2f(SEXP sexp_info){
+  int c = INTEGER(sexp_info)[0];
+  if (c < 0 || c >= INFO_MAXSIZE) {
+    error("Info number outside valid range 0-%d",INFO_MAXSIZE);
+  }
+  return AsInt(MPI_Info_c2f(info[c]));
 }
 
 SEXP mpi_info_create(SEXP sexp_info){

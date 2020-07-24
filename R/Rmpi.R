@@ -48,6 +48,10 @@ string <- function(length){
     .Call("mkstr",as.integer(length),PACKAGE = "Rmpi")
 }
 
+mpi.info.c2f <- function(info=0){
+    .Call("mpi_info_c2f", as.integer(info),PACKAGE = "Rmpi")
+}
+
 mpi.info.create <- function(info=0){
 	.Call("mpi_info_create", as.integer(info),PACKAGE = "Rmpi")
 }

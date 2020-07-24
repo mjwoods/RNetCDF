@@ -39,6 +39,7 @@ SEXP mpi_any_source();
 SEXP mpi_any_tag();
 SEXP mpi_undefined();
 SEXP mpi_proc_null();
+SEXP mpi_info_c2f(SEXP sexp_info);
 SEXP mpi_info_create(SEXP sexp_info);
 SEXP mpi_info_set(SEXP sexp_info, SEXP sexp_key, SEXP sexp_value);
 SEXP mpi_info_get(SEXP sexp_info, SEXP sexp_key, SEXP sexp_valuelen);

@@ -1,4 +1,5 @@
 \name{mpi.info.create}
+\alias{mpi.info.c2f}
 \alias{mpi.info.create}
 \alias{mpi.info.free}
 \alias{mpi.info.get}
@@ -18,6 +19,7 @@ memory to store an info object.
 \code{mpi.info.set} adds the key and value pair to info.
 }
 \usage{
+  mpi.info.c2f(info = 0)
   mpi.info.create(info = 0)
   mpi.info.free(info = 0)
   mpi.info.get(info = 0, key, valuelen)
@@ -30,10 +32,13 @@ memory to store an info object.
   \item{value}{a char (length 1).}
 }
 \value{
+  \code{mpi.info.c2f} returns an integer that can be passed to external code (e.g. FORTRAN) as a reference to the info object.
+
   \code{mpi.info.create}, \code{mpi.info.free}, and \code{mpi.info.set}  return 
 1 if success and 0 otherwise.
 
 \code{mpi.info.get} returns the value (a char) for a given info and valuelen.
+
 }
 \seealso{
   \code{\link{mpi.spawn.Rslaves}}

@@ -115,6 +115,7 @@ static const R_CallMethodDef callMethods[] = {
 	{"mpi_any_tag", (DL_FUNC) &mpi_any_tag, 0},
 	{"mpi_undefined", (DL_FUNC) &mpi_undefined, 0},
 	{"mpi_proc_null", (DL_FUNC) &mpi_proc_null, 0},	
+	{"mpi_info_c2f", (DL_FUNC) &mpi_info_c2f, 1},
 	{"mpi_info_create", (DL_FUNC) &mpi_info_create, 1},
 	{"mpi_info_set", (DL_FUNC) &mpi_info_set, 3},
 	{"mpi_info_get", (DL_FUNC) &mpi_info_get, 3},

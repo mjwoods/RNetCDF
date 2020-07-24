@@ -30,6 +30,7 @@ mpi.gather		Gather data from each process to a root process
 mpi.gatherv		Gather diff data from each process to a root process
 mpi.get.count		Get the length of a message for given status and type
 mpi.get.processor.name	Get the process (host) name 
+mpi.info.c2f		Convert an info object into an integer used by extern Fortran
 mpi.info.create		Create an info object
 mpi.info.free		Free an info object
 mpi.info.get		Get the value from an info object and a key
