@@ -7,7 +7,8 @@
 \description{Create a new NetCDF dataset.}
 
 \usage{create.nc(filename, clobber=TRUE, share=FALSE, prefill=TRUE,
-         format="classic", large=FALSE, diskless=FALSE, persist=FALSE)}
+         format="classic", large=FALSE, diskless=FALSE, persist=FALSE,
+         mpi_comm=NULL, mpi_info=NULL)}
 
 \arguments{
   \item{filename}{Filename for the NetCDF dataset to be created.}
@@ -18,6 +19,8 @@
   \item{large}{(Deprecated) \code{large=TRUE} sets the file format to "offset64" when \code{format="classic"}.}
   \item{diskless}{When \code{diskless=TRUE}, the file is created in memory without writing to disk. This allows netcdf datasets to be used as fast, temporary files. When the file is closed, the contents are lost unless \code{persist=TRUE}.}
   \item{persist}{When \code{persist=TRUE}, a file created with \code{diskless=TRUE} is flushed to disk when closed. In some cases, this may be faster than manipulating files directly on disk.}
+  \item{mpi_comm}{Fortran handle of MPI communicator for parallel I/O. The default of \code{NULL} implies serial I/O. Valid Fortran handles may be obtained from your chosen MPI package for R - for example \link[pbdMPI]{comm.c2f}.}
+  \item{mpi_info}{Fortran handle of MPI Info object for parallel I/O. The default value \code{NULL} implies serial I/O. Valid Fortran handles may be obtained from your chosen MPI package for R - for example \link[pbdMPI]{info.c2f}.}
 }
 
 \value{Object of class "\code{NetCDF}" which points to the NetCDF dataset, returned invisibly.}

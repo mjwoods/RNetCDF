@@ -1,0 +1,2 @@
+write1_readN	RNetCDF 	Example of writing NetCDF4 in 1 process then reading in N processes
+writeN_read1	RNetCDF 	Example of writing NetCDF4 file in N processes then reading in 1 process
