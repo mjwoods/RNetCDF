@@ -343,7 +343,7 @@ R_nc_str_strsxp (R_nc_buf *io)
 \*=============================================================================*/
 
 #define R_NC_ISNA_INT(value) (value==NA_INTEGER)
-#define R_NC_ISNA_REAL(value) (ISNAN(value))
+#define R_NC_ISNA_REAL(value) (ISNA(value))
 #define R_NC_ISNA_BIT64(value) (value==NA_INTEGER64)
 
 #define R_NC_RANGE_MIN(VAL,LIM,TYPE) ((TYPE) LIM <= (TYPE) VAL)
