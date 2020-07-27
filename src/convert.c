@@ -342,12 +342,18 @@ R_nc_str_strsxp (R_nc_buf *io)
  *  Numeric type conversions
 \*=============================================================================*/
 
+/* Tests for missing values */
 #define R_NC_ISNA_INT(value) (value==NA_INTEGER)
 #define R_NC_ISNA_REAL(value) (ISNA(value))
 #define R_NC_ISNA_BIT64(value) (value==NA_INTEGER64)
 
+/* General range checks */
 #define R_NC_RANGE_MIN(VAL,LIM,TYPE) ((TYPE) LIM <= (TYPE) VAL)
 #define R_NC_RANGE_MAX(VAL,LIM,TYPE) ((TYPE) VAL <= (TYPE) LIM)
+/* Range checks for conversion from double to float */
+#define R_NC_RANGE_MIN_D2F(VAL,LIM,TYPE) (!R_FINITE(VAL) || (double) LIM <= VAL)
+#define R_NC_RANGE_MAX_D2F(VAL,LIM,TYPE) (!R_FINITE(VAL) || VAL <= (double) LIM)
+/* Bypass range check */
 #define R_NC_RANGE_NONE(VAL,LIM,TYPE) (1)
 
 
@@ -448,7 +454,7 @@ R_NC_R2C_NUM(R_nc_r2c_dbl_ll, NC_DOUBLE, double, REAL, NC_INT64, long long, \
 R_NC_R2C_NUM(R_nc_r2c_dbl_ull, NC_DOUBLE, double, REAL, NC_UINT64, unsigned long long, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, ULLONG_MAX_DBL)
 R_NC_R2C_NUM(R_nc_r2c_dbl_float, NC_DOUBLE, double, REAL, NC_FLOAT, float, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX)
+  R_NC_ISNA_REAL, R_NC_RANGE_MIN_D2F, -FLT_MAX, R_NC_RANGE_MAX_D2F, FLT_MAX)
 R_NC_R2C_NUM(R_nc_r2c_dbl_dbl, NC_DOUBLE, double, REAL, NC_DOUBLE, double, \
   R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
 /* Only convert non-negative values to size_t */
@@ -585,7 +591,7 @@ R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_ll, NC_DOUBLE, double, REAL, NC_INT64, long 
 R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_ull, NC_DOUBLE, double, REAL, NC_UINT64, unsigned long long, \
   R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, ULLONG_MAX_DBL)
 R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_float, NC_DOUBLE, double, REAL, NC_FLOAT, float, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX)
+  R_NC_ISNA_REAL, R_NC_RANGE_MIN_D2F, -FLT_MAX, R_NC_RANGE_MAX_D2F, FLT_MAX)
 R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_dbl, NC_DOUBLE, double, REAL, NC_DOUBLE, double, \
   R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
 

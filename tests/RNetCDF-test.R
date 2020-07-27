@@ -523,7 +523,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
       }
 
       # Should succeed except in the following cases:
-      nafail <- (namode==3 && numtype != "NC_DOUBLE")
+      nafail <- (namode==3 && !(numtype %in% c("NC_FLOAT","NC_DOUBLE")))
       naintfail <- (namode==3 && !(numtype %in% c("NC_INT","NC_INT64","NC_FLOAT","NC_DOUBLE")))
       nabit64fail <- (namode==3 && !(numtype %in% c("NC_INT64","NC_UINT64","NC_FLOAT","NC_DOUBLE")))
       napack64fail <- (namode==3 && !(numtype %in% c("NC_INT64","NC_FLOAT","NC_DOUBLE")))
