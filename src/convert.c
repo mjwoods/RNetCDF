@@ -373,7 +373,6 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
      size_t fillsize, const OTYPE *fill) \
 { \
   size_t ii, cnt; \
-  int erange=0; \
   const ITYPE *in; \
   OTYPE fillval=0, *out; \
   in = (ITYPE *) IFUN (rv); \
@@ -399,11 +398,8 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
     } else if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
       out[ii] = in[ii]; \
     } else { \
-      erange = 1; \
+      error (nc_strerror (NC_ERANGE)); \
     } \
-  } \
-  if ( erange ) { \
-    error (nc_strerror (NC_ERANGE)); \
   } \
   return out; \
 }
@@ -540,12 +536,9 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
       if (MINTEST(dpack,MINVAL,double) && MAXTEST(dpack,MAXVAL,double)) { \
         out[ii] = dpack; \
       } else { \
-        erange = 1; \
+        error (nc_strerror (NC_ERANGE)); \
       } \
     } \
-  } \
-  if ( erange ) { \
-    error (nc_strerror (NC_ERANGE)); \
   } \
   return out; \
 }
