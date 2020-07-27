@@ -372,7 +372,7 @@ static const OTYPE* \
 FUN (SEXP rv, int ndim, const size_t *xdim, \
      size_t fillsize, const OTYPE *fill) \
 { \
-  size_t ii, cnt; \
+  size_t ii, cnt, hasfill; \
   const ITYPE *in; \
   OTYPE fillval=0, *out; \
   in = (ITYPE *) IFUN (rv); \
@@ -380,20 +380,21 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
   if ((size_t) xlength (rv) < cnt) { \
     error (RNC_EDATALEN); \
   } \
-  if (fill || (NCITYPE != NCOTYPE)) { \
+  hasfill = (fill != NULL); \
+  if (hasfill || (NCITYPE != NCOTYPE)) { \
     out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE)); \
   } else { \
     out = (OTYPE *) IFUN (rv); \
     return out; \
   } \
-  if (fill) { \
+  if (hasfill) { \
     if (fillsize != sizeof(OTYPE)) { \
       error ("Size of fill value does not match output type"); \
     } \
     fillval = *fill; \
   } \
   for (ii=0; ii<cnt; ii++) { \
-    if (fill && NATEST(in[ii])) { \
+    if (hasfill && NATEST(in[ii])) { \
       out[ii] = fillval; \
     } else if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
       out[ii] = in[ii]; \
@@ -505,8 +506,7 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
      size_t fillsize, const OTYPE *fill, \
      const double *scale, const double *add) \
 { \
-  size_t ii, cnt; \
-  int erange=0; \
+  size_t ii, cnt, hasfill; \
   double factor=1.0, offset=0.0, dpack; \
   const ITYPE *in; \
   OTYPE fillval=0, *out; \
@@ -522,14 +522,15 @@ FUN (SEXP rv, int ndim, const size_t *xdim, \
   if (add) { \
     offset = *add; \
   } \
-  if (fill) { \
+  hasfill = (fill != NULL); \
+  if (hasfill) { \
     if (fillsize != sizeof(OTYPE)) { \
       error ("Size of fill value does not match output type"); \
     } \
     fillval = *fill; \
   } \
   for (ii=0; ii<cnt; ii++) { \
-    if (fill && NATEST(in[ii])) { \
+    if (hasfill && NATEST(in[ii])) { \
       out[ii] = fillval; \
     } else { \
       dpack = round((in[ii] - offset) / factor); \
