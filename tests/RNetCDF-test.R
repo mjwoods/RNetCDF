@@ -2,14 +2,14 @@
 #
 #  Name:       RNetCDF-test.R
 #
-#  Version:    2.3-1
+#  Version:    2.4-1
 #
 #  Purpose:    Test functions to the NetCDF interface for R.
 #
 #  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
 #              Milton Woods (miltonjwoods@gmail.com)
 #
-#  Copyright:  (C) 2010-2019 Pavel Michna, Milton Woods
+#  Copyright:  (C) 2010-2020 Pavel Michna, Milton Woods
 #
 #===============================================================================#
 #
@@ -95,17 +95,22 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   nstring <- 32
   nempty <- 0
 
+  cat("Defining dimensions ...\n")
   dim.def.nc(nc, "station", nstation)
   dim.def.nc(nc, "time", ntime)
   dim.def.nc(nc, "max_string_length", nstring)
   dim.def.nc(nc, "empty", unlim=TRUE)
+  tally <- testfun(TRUE, TRUE, tally)
 
   if (format == "netcdf4") {
     ## Define a group
+    cat("Defining a group ...\n")
     ncroot <- nc
     nc <- grp.def.nc(nc, "testgrp")
+    tally <- testfun(TRUE, TRUE, tally)
 
     ## Define a type of each class:
+    cat("Defining user-defined types ...\n")
     id_blob <- type.def.nc(nc, "blob", "opaque", size=128)
     inq_blob <- list(id=id_blob, name="blob", class="opaque", size=128)
 
@@ -138,9 +143,11 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
                        dimsizes=list("siteid"=NULL,"height"=NULL,"colour"=c(3)))
 
     typeids <- c(id_blob,id_vector,id_vector_char,id_vector_blob,id_factor,id_struct)
+    tally <- testfun(TRUE, TRUE, tally)
   }
 
   ##  Define variables
+  cat("Defining variables for netcdf3 ...\n")
   var.def.nc(nc, "time", "NC_INT", "time")
 
   inq_temperature <- list()
@@ -169,7 +176,10 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 
   numtypes <- c("NC_BYTE", "NC_SHORT", "NC_INT", "NC_FLOAT", "NC_DOUBLE")
 
+  tally <- testfun(TRUE, TRUE, tally)
+
   if (format == "netcdf4") {
+    cat("Defining variables for netcdf4 ...\n")
     var.def.nc(nc, "namestr", "NC_STRING", c("station"))
     var.def.nc(nc, "profile", id_vector, c("station","time"))
     var.def.nc(nc, "profile_char", id_vector_char, c("station","time"))
@@ -181,6 +191,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     var.def.nc(nc, "snacks", "factor", c("station", "time"))
     var.def.nc(nc, "person", "struct", c("station", "time"))
     varcnt <- varcnt+10
+    tally <- testfun(TRUE, TRUE, tally)
 
     numtypes <- c(numtypes, "NC_UBYTE", "NC_USHORT", "NC_UINT")
 
@@ -188,27 +199,148 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
       var.def.nc(nc, "stationid", "NC_UINT64", c("station"))
       varcnt <- varcnt+1
       numtypes <- c(numtypes, "NC_INT64", "NC_UINT64")
+      tally <- testfun(TRUE, TRUE, tally)
     }
   }
 
   for (numtype in numtypes) {
-    var.def.nc(nc, numtype, numtype, c("station"))
-    var.def.nc(nc, paste(numtype,"_int",sep=""), numtype, c("station"))
+    for (namode in c(0,1,2,3,4)) {
+      cat("Defining variables of type", numtype, "for na.mode", namode, "...\n")
 
-    var.def.nc(nc, paste(numtype,"_fill",sep=""), numtype, c("station"))
-    att.put.nc(nc, paste(numtype,"_fill",sep=""), "_FillValue", numtype, 99)
-    var.def.nc(nc, paste(numtype,"_intfill",sep=""), numtype, c("station"))
-    att.put.nc(nc, paste(numtype,"_intfill",sep=""), "_FillValue", numtype, 99)
+      varname <- paste(numtype,namode,sep="_")
+      var.def.nc(nc, varname, numtype, c("station"))
+      tally <- testfun(TRUE, TRUE, tally)
 
-    var.def.nc(nc, paste(numtype,"_pack",sep=""), numtype, c("station"))
-    att.put.nc(nc, paste(numtype,"_pack",sep=""), "scale_factor", numtype, 10)
-    att.put.nc(nc, paste(numtype,"_pack",sep=""), "add_offset", numtype, 5)
-    var.def.nc(nc, paste(numtype,"_intpack",sep=""), numtype, c("station"))
-    att.put.nc(nc, paste(numtype,"_intpack",sep=""), "scale_factor", numtype, 10)
-    att.put.nc(nc, paste(numtype,"_intpack",sep=""), "add_offset", numtype, 5)
+      varname <- paste(numtype,"int",namode,sep="_")
+      var.def.nc(nc, varname, numtype, c("station"))
+      tally <- testfun(TRUE, TRUE, tally)
 
-    varcnt <- varcnt+6
+      varname <- paste(numtype,"fill",namode,sep="_")
+      var.def.nc(nc, varname, numtype, c("station"))
+      if (namode == 2) {
+        att.put.nc(nc, varname, "missing_value", numtype, 99)
+      } else if (namode == 4) {
+        att.put.nc(nc, varname, "valid_range", numtype, c(1,5))
+      } else {
+        att.put.nc(nc, varname, "_FillValue", numtype, 99)
+      }
+      tally <- testfun(TRUE, TRUE, tally)
+
+      varname <- paste(numtype,"intfill",namode,sep="_")
+      var.def.nc(nc, varname, numtype, c("station"))
+      if (namode == 2) {
+        att.put.nc(nc, varname, "missing_value", numtype, 99)
+      } else if (namode == 4) {
+        att.put.nc(nc, varname, "valid_min", numtype, 1)
+        att.put.nc(nc, varname, "valid_max", numtype, 5)
+      } else {
+        att.put.nc(nc, varname, "_FillValue", numtype, 99)
+      }
+      tally <- testfun(TRUE, TRUE, tally)
+
+      varname <- paste(numtype,"pack",namode,sep="_")
+      var.def.nc(nc, varname, numtype, c("station"))
+      att.put.nc(nc, varname, "scale_factor", numtype, 10)
+      att.put.nc(nc, varname, "add_offset", numtype, 5)
+      if (namode == 2) {
+        att.put.nc(nc, varname, "missing_value", numtype, 99)
+      } else if (namode == 4) {
+        att.put.nc(nc, varname, "valid_min", numtype, 1)
+        att.put.nc(nc, varname, "valid_max", numtype, 5)
+      } else {
+        att.put.nc(nc, varname, "_FillValue", numtype, 99)
+      }
+      tally <- testfun(TRUE, TRUE, tally)
+      
+      varname <- paste(numtype,"intpack",namode,sep="_")
+      var.def.nc(nc, varname, numtype, "station")
+      att.put.nc(nc, varname, "scale_factor", numtype, 10)
+      att.put.nc(nc, varname, "add_offset", numtype, 5)
+      if (namode == 2) {
+        att.put.nc(nc, varname, "missing_value", numtype, 99)
+      } else if (namode == 4) {
+        att.put.nc(nc, varname, "valid_range", numtype, c(1,5))
+      } else {
+        att.put.nc(nc, varname, "_FillValue", numtype, 99)
+      }
+      tally <- testfun(TRUE, TRUE, tally)
+
+      varcnt <- varcnt+6
+
+      if (numtype == "NC_DOUBLE") {
+        varname <- paste(numtype,"fillna",namode,sep="_")
+        var.def.nc(nc, varname, numtype, c("station"))
+        if (namode == 2) {
+          att.put.nc(nc, varname, "missing_value", numtype, as.double(NA))
+        } else if (namode == 4) {
+          att.put.nc(nc, varname, "valid_range", numtype, c(as.double(-Inf),as.double(Inf)))
+        } else {
+          att.put.nc(nc, varname, "_FillValue", numtype, as.double(NA))
+        }
+        tally <- testfun(TRUE, TRUE, tally)
+        varcnt <- varcnt+1
+      }
+
+      if (numtype == "NC_INT") {
+        varname <- paste(numtype,"intfillna",namode,sep="_")
+        var.def.nc(nc, varname, numtype, c("station"))
+        if (namode == 2) {
+          att.put.nc(nc, varname, "missing_value", numtype, as.integer(NA))
+        } else if (namode == 4) {
+          att.put.nc(nc, varname, "valid_min", numtype, 1)
+          att.put.nc(nc, varname, "valid_max", numtype, 5)
+        } else {
+          att.put.nc(nc, varname, "_FillValue", numtype, as.integer(NA))
+        }
+        tally <- testfun(TRUE, TRUE, tally)
+        varcnt <- varcnt+1
+      }
+
+      if (has_bit64) {
+        varname <- paste(numtype,"bit64",namode,sep="_")
+        var.def.nc(nc, varname, numtype, c("station"))
+        if (namode == 2) {
+          att.put.nc(nc, varname, "missing_value", numtype, 99)
+        } else if (namode == 4) {
+          att.put.nc(nc, varname, "valid_range", numtype, c(1,5))
+        } else {
+          att.put.nc(nc, varname, "_FillValue", numtype, 99)
+        }
+        tally <- testfun(TRUE, TRUE, tally)
+
+        varname <- paste(numtype,"fill64",namode,sep="_")
+        var.def.nc(nc, varname, numtype, c("station"))
+        if (namode == 2) {
+          att.put.nc(nc, varname, "missing_value", numtype, 99)
+        } else if (namode == 4) {
+          att.put.nc(nc, varname, "valid_min", numtype, 1)
+          att.put.nc(nc, varname, "valid_max", numtype, 5)
+        } else {
+          att.put.nc(nc, varname, "_FillValue", numtype, 99)
+        }
+        tally <- testfun(TRUE, TRUE, tally)
+
+        varname <- paste(numtype,"pack64",namode,sep="_")
+        var.def.nc(nc, varname, numtype, c("station"))
+        att.put.nc(nc, varname, "scale_factor", numtype, 10)
+        att.put.nc(nc, varname, "add_offset", numtype, 5)
+        if (namode == 2) {
+          att.put.nc(nc, varname, "missing_value", numtype, 99)
+        } else if (namode == 4) {
+          att.put.nc(nc, varname, "valid_min", numtype, 1)
+          att.put.nc(nc, varname, "valid_max", numtype, 5)
+        } else {
+          att.put.nc(nc, varname, "_FillValue", numtype, 99)
+        }
+        tally <- testfun(TRUE, TRUE, tally)
+   
+        varcnt <- varcnt+3
+      }
+
+    }
   }
+
+  cat("Defining additional attributes ...")
 
   ##  Set a _FillValue attribute for temperature
   att.put.nc(nc, "temperature", "_FillValue", "NC_DOUBLE", -99999.9)
@@ -225,13 +357,19 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   att.put.nc(nc, "NC_GLOBAL", "char_att", "NC_CHAR", att_text)
   att.put.nc(nc, "name", "char_att", "NC_CHAR", att_text)
   att.put.nc(nc, "name", "raw_att", "NC_CHAR", charToRaw(att_text))
+  tally <- testfun(TRUE, TRUE, tally)
+
   if (format == "netcdf4") {
+    cat("Defining additional attributes for netcdf4 ...")
     att.put.nc(nc, "temperature", "string_att", "NC_STRING", att_text2)
+    tally <- testfun(TRUE, TRUE, tally)
     inq_temperature$natts <- inq_temperature$natts + as.integer(1)
+
     if (has_bit64) {
       hugeint <- as.integer64("-1234567890123456789")
       att.put.nc(nc, "temperature", "int64_att", "NC_INT64", hugeint)
       inq_temperature$natts <- inq_temperature$natts + as.integer(1)
+      tally <- testfun(TRUE, TRUE, tally)
     }
   }
 
@@ -249,7 +387,17 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   myminus       <- -mysmall
   mysmallfill   <- as.double(c(1,2,NA,4,5))
   mybigfill     <- mysmallfill*1e100
-  mypack        <- mysmall*10+5
+  mypack        <- mysmallfill*10+5
+  myinffill     <- c(-Inf,.Machine$double.xmin,NA,NaN,Inf)
+ 
+  if (has_bit64) { 
+    mysmall64 <- as.integer64(mysmall)
+    mysmallfill64 <- as.integer64(mysmallfill)
+    myminus64 <- -mysmall64
+    mybig64 <- as.integer64("1234567890123456789")+mysmall
+    mybigfill64 <- as.integer64("1234567890123456789")+mysmallfill
+    mypack64 <- as.integer64(mypack)
+  }
 
   if (format == "netcdf4") {
     profiles      <- vector("list", nstation*ntime)
@@ -281,6 +429,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 
   ## Define some user-defined test attributes:
   if (format == "netcdf4") {
+    cat("Defining user-defined attributes ...")
     person1 <- list(siteid=array(person$siteid[1,1], 1),
                     height=array(person$height[1,1], 1),
                     colour=array(person$colour[,1,1], c(3,1)))
@@ -295,10 +444,11 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     att.put.nc(nc, "NC_GLOBAL", "opaque_vect_att", "blob", rawdata[,1,])
     att.put.nc(nc, "NC_GLOBAL", "vector_scal_att", "vector", profiles[1])
     att.put.nc(nc, "NC_GLOBAL", "vector_vect_att", "vector", profiles[1:3])
+    tally <- testfun(TRUE, TRUE, tally)
   }
 
   ##  Put the data
-  cat("Writing variables ...\n")
+  cat("Writing netcdf3 variables ...")
   var.put.nc(nc, "time", mytime, 1, length(mytime))
   var.put.nc(nc, "temperature", mytemperature, c(1,1), c(nstation,ntime),
              cache_preemption=0.5)
@@ -307,8 +457,10 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   var.put.nc(nc, "qcflag", charToRaw(myqcflag))
   var.put.nc(nc, "int0", myint0)
   var.put.nc(nc, "char0", mychar0)
+  tally <- testfun(TRUE, TRUE, tally)
 
   if (format == "netcdf4") {
+    cat("Writing extra netcdf4 variables ...")
     var.put.nc(nc, "namestr", myname)
     var.put.nc(nc, "profile", profiles)
     var.put.nc(nc, "profile_char", profiles_char)
@@ -320,32 +472,94 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     var.put.nc(nc, "snacks", snacks)
     var.put.nc(nc, "person", person)
     if (has_bit64) {
-      myid <- as.integer64("1234567890123456789")+c(0,1,2,3,4)
-      var.put.nc(nc, "stationid", myid)
+      var.put.nc(nc, "stationid", mybig64)
     }
+    tally <- testfun(TRUE, TRUE, tally)
   }
 
   for (numtype in numtypes) {
-    # Should not succeed except for NC_DOUBLE:
-    y <- try(var.put.nc(nc, numtype, mybig), silent=TRUE)
-    tally <- testfun(inherits(y, "try-error"), numtype!="NC_DOUBLE", tally)
+    for (namode in c(0,1,2,3,4)) {
+      cat("Writing to variable type", numtype, "with na.mode", namode, "...\n")
 
-    y <- try(var.put.nc(nc, paste(numtype,"_fill",sep=""), mybigfill), silent=TRUE)
-    tally <- testfun(inherits(y, "try-error"), numtype!="NC_DOUBLE", tally)
+      # Should not succeed except for NC_DOUBLE:
+      cat("Writing huge values ...")
+      y <- try(var.put.nc(nc, paste(numtype,namode,sep="_"), mybig, na.mode=namode), silent=TRUE)
+      tally <- testfun(inherits(y, "try-error"), numtype!="NC_DOUBLE", tally)
 
-    # Should not succeed for unsigned types:
-    y <- try(var.put.nc(nc, numtype, myminus), silent=TRUE)
-    tally <- testfun(inherits(y, "try-error"),
-                     any(numtype==c("NC_UBYTE", "NC_USHORT", "NC_UINT", "NC_UINT64")),
-                     tally) 
+      y <- try(var.put.nc(nc, paste(numtype,"fill",namode,sep="_"), mybigfill, na.mode=namode), silent=TRUE)
+      tally <- testfun(inherits(y, "try-error"), numtype!="NC_DOUBLE", tally)
 
-    # Should succeed for all types:
-    var.put.nc(nc, numtype, mysmall)
-    var.put.nc(nc, paste(numtype,"_int",sep=""), as.integer(mysmall))
-    var.put.nc(nc, paste(numtype,"_fill",sep=""), mysmallfill)
-    var.put.nc(nc, paste(numtype,"_intfill",sep=""), as.integer(mysmallfill))
-    var.put.nc(nc, paste(numtype,"_pack",sep=""), mypack, pack=TRUE)
-    var.put.nc(nc, paste(numtype,"_intpack",sep=""), as.integer(mypack), pack=TRUE)
+      # Should not succeed except for NC_FLOAT and 64-bit types:
+      if (has_bit64) {
+        cat("Writing huge bit64 values ...")
+        y <- try(var.put.nc(nc, paste(numtype,"bit64",namode,sep="_"), mybig64, na.mode=namode), silent=TRUE)
+        tally <- testfun(inherits(y, "try-error"), !(numtype %in% c("NC_FLOAT","NC_INT64","NC_UINT64","NC_DOUBLE")), tally)
+      }
+
+      # Should not succeed for unsigned types:
+      cat("Writing negative values ...")
+      y <- try(var.put.nc(nc, paste(numtype,namode,sep="_"), myminus, na.mode=namode), silent=TRUE)
+      tally <- testfun(inherits(y, "try-error"),
+                       any(numtype==c("NC_UBYTE", "NC_USHORT", "NC_UINT", "NC_UINT64")),
+                       tally) 
+
+      # Allow wrapping of negative bit64 values when converting to NC_UINT64:
+      if (has_bit64) {
+        cat("Writing negative bit64 values ...")
+        y <- try(var.put.nc(nc, paste(numtype,"bit64",namode,sep="_"), myminus64, na.mode=namode), silent=TRUE)
+        tally <- testfun(inherits(y, "try-error"), numtype %in% c("NC_UBYTE","NC_USHORT","NC_UINT"), tally)
+      }
+
+      # Should succeed for all types:
+      cat("Writing data without missing values ...")
+      var.put.nc(nc, paste(numtype,namode,sep="_"), mysmall, na.mode=namode)
+      var.put.nc(nc, paste(numtype,"int",namode,sep="_"), as.integer(mysmall), na.mode=namode)
+      tally <- testfun(TRUE, TRUE, tally)
+
+      if (has_bit64) {
+        cat("Writing bit64 data without missing values ...")
+        var.put.nc(nc, paste(numtype,"bit64",namode,sep="_"), mysmall64, na.mode=namode)
+        tally <- testfun(TRUE, TRUE, tally)
+      }
+
+      # Should succeed except in the following cases:
+      nafail <- (namode==3 && !(numtype %in% c("NC_FLOAT","NC_DOUBLE")))
+      naintfail <- (namode==3 && !(numtype %in% c("NC_INT","NC_INT64","NC_FLOAT","NC_DOUBLE")))
+      nabit64fail <- (namode==3 && !(numtype %in% c("NC_INT64","NC_UINT64","NC_FLOAT","NC_DOUBLE")))
+      napack64fail <- (namode==3 && !(numtype %in% c("NC_INT64","NC_FLOAT","NC_DOUBLE")))
+
+      cat("Writing data with missing values ...")
+      y <- try(var.put.nc(nc, paste(numtype,"fill",namode,sep="_"), mysmallfill, na.mode=namode), silent=TRUE)
+      tally <- testfun(inherits(y, "try-error"), nafail, tally)
+      y <- try(var.put.nc(nc, paste(numtype,"intfill",namode,sep="_"), as.integer(mysmallfill), na.mode=namode), silent=TRUE)
+      tally <- testfun(inherits(y, "try-error"), naintfail, tally)
+      if (numtype == "NC_INT") {
+        cat("Writing data with missing values and NA fill ...")
+        y <- try(var.put.nc(nc, paste(numtype,"intfillna",namode,sep="_"), as.integer(mysmallfill), na.mode=namode), silent=TRUE)
+        tally <- testfun(inherits(y, "try-error"), naintfail, tally)
+      } else if (numtype == "NC_DOUBLE") {
+        cat("Writing data with non-finite values and NA fill ...")
+        y <- try(var.put.nc(nc, paste(numtype,"fillna",namode,sep="_"), myinffill, na.mode=namode), silent=TRUE)
+        tally <- testfun(inherits(y, "try-error"), nafail, tally)
+      }
+
+      cat("Writing data with missing values and packing ...")
+      y <- try(var.put.nc(nc, paste(numtype,"pack",namode,sep="_"), mypack, pack=TRUE, na.mode=namode), silent=TRUE)
+      tally <- testfun(inherits(y, "try-error"), nafail, tally)
+      y <- try(var.put.nc(nc, paste(numtype,"intpack",namode,sep="_"), as.integer(mypack), pack=TRUE, na.mode=namode), silent=TRUE)
+      tally <- testfun(inherits(y, "try-error"), naintfail, tally)
+
+      if (has_bit64) {
+        cat("Writing bit64 data with missing values ...")
+        y <- try(var.put.nc(nc, paste(numtype,"fill64",namode,sep="_"), mysmallfill64, na.mode=namode), silent=TRUE)
+        tally <- testfun(inherits(y, "try-error"), nabit64fail, tally)
+
+        cat("Writing bit64 data with missing values and packing ...")
+        y <- try(var.put.nc(nc, paste(numtype,"pack64",namode,sep="_"), mypack64, pack=TRUE, na.mode=namode), silent=TRUE)
+        tally <- testfun(inherits(y, "try-error"), napack64fail, tally)
+      }
+
+    }
   }
 
   if (format == "netcdf4") {
@@ -451,33 +665,134 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   tally <- testfun(is.double(y),TRUE,tally)
 
   for (numtype in numtypes) {
-    cat("Read", numtype, "...")
-    x <- mysmall
-    dim(x) <- length(x)
-    y <- var.get.nc(nc, numtype)
-    tally <- testfun(x,y,tally)
-    tally <- testfun(is.double(y),TRUE,tally)
-    y <- var.get.nc(nc, paste(numtype,"_int",sep=""))
-    tally <- testfun(x,y,tally)
-    tally <- testfun(is.double(y),TRUE,tally)
+    for (namode in c(0,1,2,3,4)) {
+      x <- mysmall
+      dim(x) <- length(x)
 
-    x <- mysmallfill
-    dim(x) <- length(x)
-    y <- var.get.nc(nc, paste(numtype,"_fill",sep=""))
-    tally <- testfun(x,y,tally)
-    tally <- testfun(is.double(y),TRUE,tally)
-    y <- var.get.nc(nc, paste(numtype,"_intfill",sep=""))
-    tally <- testfun(x,y,tally)
-    tally <- testfun(is.double(y),TRUE,tally)
+      varname <- paste(numtype,namode,sep="_")
+      cat("Read", varname, "...")
+      y <- var.get.nc(nc, varname, na.mode=namode)
+      tally <- testfun(x,y,tally)
+      tally <- testfun(is.double(y),TRUE,tally)
 
-    x <- mypack
-    dim(x) <- length(x)
-    y <- var.get.nc(nc, paste(numtype,"_pack",sep=""), unpack=TRUE)
-    tally <- testfun(x,y,tally)
-    tally <- testfun(is.double(y),TRUE,tally)
-    y <- var.get.nc(nc, paste(numtype,"_intpack",sep=""), unpack=TRUE)
-    tally <- testfun(x,y,tally)
-    tally <- testfun(is.double(y),TRUE,tally)
+      varname <- paste(numtype,"int",namode,sep="_")
+      cat("Read", varname, "...")
+      y <- var.get.nc(nc, varname, na.mode=namode)
+      tally <- testfun(x,y,tally)
+      tally <- testfun(is.double(y),TRUE,tally)
+
+      if (has_bit64) {
+        varname <- paste(numtype,"bit64",namode,sep="_")
+        cat("Read", varname, "...")
+        y <- var.get.nc(nc, varname, na.mode=namode)
+        tally <- testfun(x,y,tally)
+        tally <- testfun(is.double(y),TRUE,tally)
+      }
+
+      # Some cases are expected to fail when writing the data,
+      # so there is nothing to read:
+      nafail <- (namode==3 && numtype != "NC_DOUBLE")
+      naintfail <- (namode==3 && !(numtype %in% c("NC_INT","NC_INT64","NC_FLOAT","NC_DOUBLE")))
+      nabit64fail <- (namode==3 && !(numtype %in% c("NC_INT64","NC_FLOAT","NC_DOUBLE")))
+
+      x <- mysmallfill
+      dim(x) <- length(x)
+
+      if (!nafail) {
+        varname <- paste(numtype,"fill",namode,sep="_")
+        cat("Read", varname, "...")
+        y <- var.get.nc(nc, varname, na.mode=namode)
+        tally <- testfun(x,y,tally)
+        tally <- testfun(is.double(y),TRUE,tally)
+      }
+
+      if (!naintfail) {
+        varname <- paste(numtype,"intfill",namode,sep="_")
+        cat("Read", varname, "...")
+        y <- var.get.nc(nc, varname, na.mode=namode)
+        if (namode==3) {
+          tally <- testfun(x[!is.na(x)],y[!is.na(x)],tally)
+          tally <- testfun(isTRUE(all.equal(x[is.na(x)],y[is.na(x)])),FALSE,tally)
+        } else {
+          tally <- testfun(x,y,tally)
+        }
+        tally <- testfun(is.double(y),TRUE,tally)
+      }
+
+      if (has_bit64 && !nabit64fail) {
+        varname <- paste(numtype,"fill64",namode,sep="_")
+        cat("Read", varname, "...")
+        y <- var.get.nc(nc, varname, na.mode=namode)
+        if (namode==3) {
+          tally <- testfun(x[!is.na(x)],y[!is.na(x)],tally)
+          tally <- testfun(isTRUE(all.equal(x[is.na(x)],y[is.na(x)])),FALSE,tally)
+        } else {
+          tally <- testfun(x,y,tally)
+        }
+        tally <- testfun(is.double(y),TRUE,tally)
+      }
+
+      if (numtype == "NC_INT" && !naintfail) {
+        x <- mysmallfill
+        dim(x) <- length(x)
+        varname <- paste(numtype,"intfillna",namode,sep="_")
+        cat("Read", varname, "...")
+        y <- var.get.nc(nc, varname, na.mode=namode)
+        if (namode==3) {
+          tally <- testfun(x[!is.na(x)],y[!is.na(x)],tally)
+          tally <- testfun(isTRUE(all.equal(x[is.na(x)],y[is.na(x)])),FALSE,tally)
+        } else {
+          tally <- testfun(x,y,tally)
+        }
+        tally <- testfun(is.double(y),TRUE,tally)
+      } else if (numtype == "NC_DOUBLE" && !nafail) {
+        x <- myinffill
+        dim(x) <- length(x)
+        varname <- paste(numtype,"fillna",namode,sep="_")
+        cat("Read", varname, "...")
+        y <- var.get.nc(nc, varname, na.mode=namode)
+        tally <- testfun(x,y,tally)
+        tally <- testfun(is.double(y),TRUE,tally)
+      }
+
+      x <- mypack
+      dim(x) <- length(x)
+
+      if (!nafail) {
+        varname <- paste(numtype,"pack",namode,sep="_")
+        cat("Read", varname, "...")
+        y <- var.get.nc(nc, varname, unpack=TRUE, na.mode=namode)
+        tally <- testfun(x,y,tally)
+        tally <- testfun(is.double(y),TRUE,tally)
+      }
+
+      if (!naintfail) {
+        varname <- paste(numtype,"intpack",namode,sep="_")
+        cat("Read", varname, "...")
+        y <- var.get.nc(nc, varname, unpack=TRUE, na.mode=namode)
+        if (namode==3) {
+          tally <- testfun(x[!is.na(x)],y[!is.na(x)],tally)
+          tally <- testfun(isTRUE(all.equal(x[is.na(x)],y[is.na(x)])),FALSE,tally)
+        } else {
+          tally <- testfun(x,y,tally)
+        }
+        tally <- testfun(is.double(y),TRUE,tally)
+      }
+
+      if (!nabit64fail) {
+        varname <- paste(numtype,"pack64",namode,sep="_")
+        cat("Read", varname, "...")
+        y <- var.get.nc(nc, varname, unpack=TRUE, na.mode=namode)
+        if (namode==3) {
+          tally <- testfun(x[!is.na(x)],y[!is.na(x)],tally)
+          tally <- testfun(isTRUE(all.equal(x[is.na(x)],y[is.na(x)])),FALSE,tally)
+        } else {
+          tally <- testfun(x,y,tally)
+        }
+        tally <- testfun(is.double(y),TRUE,tally)
+      }
+
+    }
   }
 
   cat("Read integer vector as smallest R type ... ")
@@ -493,7 +808,10 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
       x <- as.integer64(x)
     }
     dim(x) <- length(x)
-    y <- var.get.nc(nc, numtype, fitnum=TRUE)
+
+    varname <- paste(numtype,namode,sep="_")
+    cat("Read", varname, "...")
+    y <- var.get.nc(nc, varname, fitnum=TRUE)
     tally <- testfun(x,y,tally)
     tally <- testfun(is.integer(y),
                      any(numtype==c("NC_BYTE","NC_UBYTE","NC_SHORT","NC_USHORT","NC_INT")),
@@ -504,7 +822,10 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
       x <- as.integer64(x)
     }
     dim(x) <- length(x)
-    y <- var.get.nc(nc, paste(numtype,"_fill",sep=""), fitnum=TRUE)
+
+    varname <- paste(numtype,"fill",namode,sep="_")
+    cat("Read", varname, "...")
+    y <- var.get.nc(nc, varname, fitnum=TRUE)
     tally <- testfun(x,y,tally)
     tally <- testfun(is.integer(y),
                      any(numtype==c("NC_BYTE","NC_UBYTE","NC_SHORT","NC_USHORT","NC_INT")),
@@ -623,7 +944,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 
     if (has_bit64) {
       cat("Read 1D int64 array as integer64 ...")
-      x <- myid
+      x <- mybig64
       dim(x) <- length(x)
       y <- var.get.nc(nc, "stationid", fitnum=TRUE)
       tally <- testfun(x,y,tally)

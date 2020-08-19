@@ -2,14 +2,14 @@
  *
  *  Name:       variable.c
  *
- *  Version:    2.3-1
+ *  Version:    2.4-1
  *
  *  Purpose:    NetCDF variable functions for RNetCDF
  *
  *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
  *              Milton Woods (miltonjwoods@gmail.com)
  *
- *  Copyright:  (C) 2004-2019 Pavel Michna, Milton Woods
+ *  Copyright:  (C) 2004-2020 Pavel Michna, Milton Woods
  *
  *=============================================================================*
  *
@@ -182,12 +182,14 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 
 /* Macros to set **max or **min so that **fill is outside valid range */
 #define FILL2RANGE_REAL(TYPE, EPS) { \
-  if (**(TYPE **) fill > (TYPE) 0) { \
-    *max = R_alloc (1, sizeof(TYPE)); \
-    **(TYPE **) max = **(TYPE **) fill * ((TYPE) 1 - (TYPE) 2 * (TYPE) EPS); \
-  } else { \
-    *min = R_alloc (1, sizeof(TYPE)); \
-    **(TYPE **) min = **(TYPE **) fill * ((TYPE) 1 + (TYPE) 2 * (TYPE) EPS); \
+  if (!ISNAN(**(TYPE **) fill)) { \
+    if (**(TYPE **) fill > (TYPE) 0) { \
+      *max = R_alloc (1, sizeof(TYPE)); \
+      **(TYPE **) max = **(TYPE **) fill * ((TYPE) 1 - (TYPE) 2 * (TYPE) EPS); \
+    } else { \
+      *min = R_alloc (1, sizeof(TYPE)); \
+      **(TYPE **) min = **(TYPE **) fill * ((TYPE) 1 + (TYPE) 2 * (TYPE) EPS); \
+    } \
   } \
 }
 #define FILL2RANGE_INT(TYPE) { \
@@ -236,20 +238,20 @@ R_nc_miss_att (int ncid, int varid, int mode,
   }
   R_nc_check (nc_inq_type (ncid, xtype, NULL, &size));
 
-  if ((mode == 0 || mode == 1) &&
-      nc_inq_att (ncid, varid, "_FillValue", &atype, &cnt) == NC_NOERR &&
-      cnt == 1 &&
-      atype == xtype) {
-    *fill = R_alloc (1, size);
-    R_nc_check (nc_get_att (ncid, varid, "_FillValue", *fill));
-
-  } else if ((mode == 0 || mode == 2) &&
-      nc_inq_att (ncid, varid, "missing_value", &atype, &cnt) == NC_NOERR &&
-      cnt == 1 &&
-      atype == xtype) {
-    *fill = R_alloc (1, size);
-    R_nc_check (nc_get_att (ncid, varid, "missing_value", *fill));
-
+  if (mode == 0 || mode == 1) {
+    if (nc_inq_att (ncid, varid, "_FillValue", &atype, &cnt) == NC_NOERR &&
+        cnt == 1 &&
+        atype == xtype) {
+      *fill = R_alloc (1, size);
+      R_nc_check (nc_get_att (ncid, varid, "_FillValue", *fill));
+    }
+  } else if (mode == 0 || mode == 2) {
+    if (nc_inq_att (ncid, varid, "missing_value", &atype, &cnt) == NC_NOERR &&
+        cnt == 1 &&
+        atype == xtype) {
+      *fill = R_alloc (1, size);
+      R_nc_check (nc_get_att (ncid, varid, "missing_value", *fill));
+    }
   } else if (mode == 3) {
     /* Let user code handle missing values */
     return 0;
@@ -314,6 +316,37 @@ R_nc_miss_att (int ncid, int varid, int mode,
           FILL2RANGE_INT(unsigned char)
         } else {
           FILL2RANGE_INT(signed char)
+        }
+      }
+
+      /* If a valid range is defined without a fill value,
+       * use the default fill value if it is outside the valid range
+       */
+      if (!*fill && *max) {
+        if (xtype == NC_UBYTE) {
+          if (NC_FILL_UBYTE > **(unsigned char **) max) {
+            *fill = R_alloc(1, 1);
+            **(unsigned char **) fill = NC_FILL_UBYTE;
+          }
+        } else {
+          if (NC_FILL_BYTE > **(signed char **) max) {
+            *fill = R_alloc(1, 1);
+            **(signed char **) fill = NC_FILL_BYTE;
+          }
+        }
+      }
+
+      if (!*fill && *min) {
+        if (xtype == NC_UBYTE) {
+          if (NC_FILL_UBYTE < **(unsigned char **) min) {
+            *fill = R_alloc(1, 1);
+            **(unsigned char **) fill = NC_FILL_UBYTE;
+          }
+        } else {
+          if (NC_FILL_BYTE < **(signed char **) min) {
+            *fill = R_alloc(1, 1);
+            **(signed char **) fill = NC_FILL_BYTE;
+          }
         }
       }
 

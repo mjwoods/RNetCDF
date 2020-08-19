@@ -1,8 +1,12 @@
-Version 2.4-1, 2020-05-10
-  * Support datasets in "data64" (CDF5) format
+Version 2.4-1, 2020-07-25
+  * Support reading/writing special values (e.g. NA, Inf) without substitution,
+    mainly in cases where type conversion between R and NetCDF is not required.
+  * Fix selection of na.mode values 0,1,2
+  * Fix range checks for numeric conversions with packing
+  * Significantly increase test coverage of type conversion routines
+  * Support parallel NetCDF when running with MPI
+  * Allow creation of datasets in "data64" (CDF5) format
   * Support diskless files and in-memory manipulation of persistent files
-  * TODO: Inquiry functions for extended format information
-  * TODO: Parallel (MPI) IO
 
 Version 2.3-1, 2020-04-27
   * Fix problem when defining scalar variables with netcdf-4.7.4

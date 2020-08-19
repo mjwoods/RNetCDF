@@ -2,14 +2,14 @@
  *
  *  Name:       RNetCDF.h
  *
- *  Version:    2.3-1
+ *  Version:    2.4-1
  *
  *  Purpose:    Declare RNetCDF functions callable from R
  *
  *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
  *              Milton Woods (miltonjwoods@gmail.com)
  *
- *  Copyright:  (C) 2004-2019 Pavel Michna, Milton Woods
+ *  Copyright:  (C) 2004-2020 Pavel Michna, Milton Woods
  *
  *=============================================================================*
  *
