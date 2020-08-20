@@ -166,7 +166,11 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
   } else if (R_nc_strcmp(format, "offset64")) {
     cmode = cmode | NC_64BIT_OFFSET;
   } else if (R_nc_strcmp(format, "data64")) {
+#ifdef NC_64BIT_DATA
     cmode = cmode | NC_64BIT_DATA;
+#else
+    error("NetCDF library does not support data64 format");
+#endif
   }
 
   /*-- Create the file --------------------------------------------------------*/
