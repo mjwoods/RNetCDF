@@ -1,4 +1,4 @@
-Version 2.4-1, 2020-07-25
+Version 2.4-1, 2020-08-27
   * Support reading/writing special values (e.g. NA, Inf) without substitution,
     mainly in cases where type conversion between R and NetCDF is not required.
   * Fix selection of na.mode values 0,1,2
