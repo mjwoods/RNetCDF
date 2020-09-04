@@ -17,7 +17,7 @@
 UDUNITS2 obtains a unit system by reading an XML file. The file name is given by argument \code{path}, if it is a non-empty character string. Otherwise, the file name is taken from environment variable \code{UDUNITS2_XML_PATH}, if it is a non-empty character string. By default, the file name is set to an XML file distributed with RNetCDF.
 }
 
-\references{\url{http://www.unidata.ucar.edu/software/udunits/}}
+\references{\url{https://www.unidata.ucar.edu/software/udunits/}}
 
 \author{Pavel Michna, Milton Woods}
 

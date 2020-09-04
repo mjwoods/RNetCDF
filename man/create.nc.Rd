@@ -37,7 +37,7 @@ The file format is specified by the \code{format} argument, which may take the f
 }
 }
 
-\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
+\references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna, Milton Woods}
 

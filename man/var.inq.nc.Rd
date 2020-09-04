@@ -40,7 +40,7 @@ The arguments below apply only to datasets in "netcdf4" format:
 
 \details{This function returns information about a NetCDF variable. Information about a variable include its name, its ID, its type, its number of dimensions, a vector of the dimension IDs of this variable and the number of attributes.}
 
-\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
+\references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna, Milton Woods}
 

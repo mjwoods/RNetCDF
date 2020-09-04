@@ -22,7 +22,7 @@
   \item{libvers}{Version string of the NetCDF library in the current R session.}
 }
 
-\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
+\references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna, Milton Woods}
 

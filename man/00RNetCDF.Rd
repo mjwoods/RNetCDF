@@ -81,9 +81,9 @@ In addition to the external types, NetCDF4 supports user-defined types. See \cod
 }
 
 \references{
-  \url{http://www.unidata.ucar.edu/software/netcdf/}
+  \url{https://www.unidata.ucar.edu/software/netcdf/}
   
-  \url{http://www.unidata.ucar.edu/software/udunits/}
+  \url{https://www.unidata.ucar.edu/software/udunits/}
 }
 
 \note{When installing RNetCDF from source code, the netcdf4 library and header files must be installed on the system. Calendar functions will only be enabled in RNetCDF if the udunits2 library and header files are detected during the build process. Parallel file access requires a netcdf4 library built with MPI support along with an MPI interface package installed in R (e.g. pbdMPI or Rmpi).}

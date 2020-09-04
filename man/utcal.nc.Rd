@@ -27,7 +27,7 @@ Conversions involving alternative calendars are not supported by UDUNITS, but th
 
 \seealso{\code{\link{utinvcal.nc}}}
 
-\references{\url{http://www.unidata.ucar.edu/software/udunits/}
+\references{\url{https://www.unidata.ucar.edu/software/udunits/}
 
 \url{http://cfconventions.org}}
 
@@ -67,7 +67,7 @@ if (inherits(try(utcal.nc("seconds since 1970-01-01", 0)), "try-error")) {
   att.put.nc(nc, "NC_GLOBAL", "history", "NC_CHAR",
     paste(Sys.time(), "File created"))
   att.put.nc(nc, "NC_GLOBAL", "references", "NC_CHAR",
-    "http://www.unidata.ucar.edu/software/udunits")
+    "https://www.unidata.ucar.edu/software/udunits")
   att.put.nc(nc, "NC_GLOBAL", "comment", "NC_CHAR",
     "Uses attributes recommended by http://cfconventions.org")
 

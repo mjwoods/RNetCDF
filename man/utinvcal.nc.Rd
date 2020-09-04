@@ -24,7 +24,7 @@ A vector of POSIXct values is also accepted as input. These are converted to the
 
 \seealso{\code{\link{utcal.nc}}}
 
-\references{\url{http://www.unidata.ucar.edu/software/udunits/}}
+\references{\url{https://www.unidata.ucar.edu/software/udunits/}}
 
 \author{Pavel Michna, Milton Woods}
 

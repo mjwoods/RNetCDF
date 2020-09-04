@@ -16,7 +16,7 @@
 
 \details{This function renames an existing group in a NetCDF dataset or group that is open for writing. A group cannot be renamed to have the same name as another group, type or variable in the parent group.}
 
-\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
+\references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna, Milton Woods}
 
