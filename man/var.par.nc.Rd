@@ -20,7 +20,7 @@ All netCDF metadata writing operations are collective - all creation of groups, 
 
 Note that when the file format is "classic" or "offset64", the change always applies to all variables in the file, even if a single variable is specified in argument \code{variable}.}
 
-\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
+\references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna, Milton Woods}
 

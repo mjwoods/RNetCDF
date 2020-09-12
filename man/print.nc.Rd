@@ -18,7 +18,7 @@
 The output of this function is similar to the \code{ncdump -h} command supplied with the NetCDF C library. One important difference is that array dimensions are shown by \code{print.nc} in the order used by R, where the leftmost subscript varies fastest.
 }
 
-\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
+\references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna, Milton Woods}
 

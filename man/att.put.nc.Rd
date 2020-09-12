@@ -23,7 +23,7 @@ Text represented by R type \code{character} can be written to NetCDF types \code
 R \code{numeric} and \code{integer} variables can be written to NetCDF numeric types. The NetCDF library handles type conversions, but conversions of values outside the range of a type will result in an error. Due to the lack of native support for 64-bit integers in R, this function accepts \code{\link[bit64:bit64-package]{integer64}} vectors.
 }
 
-\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
+\references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 
 \note{\code{NC_BYTE} is always interpreted as signed.}
 

@@ -39,7 +39,7 @@ Several varieties of data type are supported, as specified by argument \code{cla
 \code{type.def.nc} may be repeated to insert additional members of an "enum" type or fields of a "compound" type. However, the size of a "compound" type is calculated from the fields specified when it is first defined, and later insertion of fields will only succeed if there is sufficient free space after the last field. Existing fields/members cannot be modified, and types cannot be removed from a dataset.
 }
 
-\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
+\references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna, Milton Woods}
 

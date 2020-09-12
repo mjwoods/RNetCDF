@@ -19,7 +19,7 @@
 
 Most NetCDF object types, including groups, variables and "global" attributes, are visible only in the group where they are defined. However, dimensions are visible in their groups and all child groups.}
 
-\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
+\references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna, Milton Woods}
 

@@ -23,7 +23,7 @@
 Groups in the dataset may optionally be read recursively and returned as nested lists. Each list has the name of the corresponding group in the dataset.
 }
 
-\references{\url{http://www.unidata.ucar.edu/software/netcdf/}}
+\references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 
 \author{Pavel Michna, Milton Woods}
 
