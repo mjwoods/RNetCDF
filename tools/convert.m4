@@ -356,7 +356,6 @@ R_nc_str_strsxp (R_nc_buf *io)
 /* Bypass range check */
 #define R_NC_RANGE_NONE(VAL,LIM,TYPE) (1)
 
-
 /* Convert numeric values from R to C format.
    Memory for the result is allocated if necessary (and freed by R).
    In special cases, the output is a pointer to the input data,
@@ -364,7 +363,7 @@ R_nc_str_strsxp (R_nc_buf *io)
    An error is raised if any input values are outside the range of the output type.
    For certain combinations of types, some or all range checks are always true,
    and we assume that an optimising compiler will remove these checks.
-dnl R_NC_R2C_NUM(FUN, NCITYPE, ITYPE, IFUN, NCOTYPE, OTYPE, NATEST, MINTEST, MINVAL, MAXTEST, MAXVAL)
+dnl R_NC_R2C_NUM(FUN, NCITYPE, ITYPE, IFUN, NCOTYPE, OTYPE, NATEST, MINVAL, MAXVAL)
  */
 define(`R_NC_R2C_NUM', `dnl
 pushdef(`FUN',`$1')dnl
@@ -374,10 +373,8 @@ pushdef(`IFUN',`$4')dnl
 pushdef(`NCOTYPE',`$5')dnl
 pushdef(`OTYPE',`$6')dnl
 pushdef(`NATEST',`$7')dnl
-pushdef(`MINTEST',`$8')dnl
-pushdef(`MINVAL',`$9')dnl
-pushdef(`MAXTEST',`$10')dnl
-pushdef(`MAXVAL',`$11')dnl
+pushdef(`MINVAL',`$8')dnl
+pushdef(`MAXVAL',`$9')dnl
 static const OTYPE*
 FUN (SEXP rv, int ndim, const size_t *xdim,
      size_t fillsize, const OTYPE *fill)
@@ -406,70 +403,84 @@ FUN (SEXP rv, int ndim, const size_t *xdim,
   for (ii=0; ii<cnt; ii++) {
     if (hasfill && NATEST`('in[ii])) {
       out[ii] = fillval;
-    } else if (MINTEST`('in[ii],MINVAL,ITYPE) && MAXTEST`('in[ii],MAXVAL,ITYPE)) {
+ifelse(ITYPE,`double',ifelse(eval(ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0)),1,`dnl
+dnl Allow conversion of non-finite doubles to float or double:
+    } else if (!R_FINITE(in[ii])) {
+      out[ii] = in[ii];
+'))dnl
+ifelse(eval(ifelse(MINVAL,`',0,1) || ifelse(MAXVAL,`',0,1)),1,`dnl
+dnl Include range checks:
+    } else if (dnl
+ifelse(MINVAL,`',,`((ITYPE) MINVAL <= in[ii])'ifelse(MAXVAL,`',,` && '))dnl
+ifelse(MAXVAL,`',,`(in[ii] <= (ITYPE) MAXVAL)')dnl
+) {
       out[ii] = in[ii];
     } else {
       error (nc_strerror (NC_ERANGE));
-    }
+    }',`dnl
+dnl No range checks needed:
+    } else {
+      out[ii] = in[ii];
+    }')
   }
   return out;
 }
 popdef(`FUN',`NCITYPE',`ITYPE',`IFUN',`NCOTYPE',`OTYPE')dnl
-popdef(`NATEST',`MINTEST',`MINVAL',`MAXTEST',`MAXVAL')dnl
+popdef(`NATEST',`MINVAL',`MAXVAL')dnl
 ')
 
 R_NC_R2C_NUM(R_nc_r2c_int_schar, NC_INT, int, INTEGER, NC_BYTE, signed char, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX)
+  R_NC_ISNA_INT, SCHAR_MIN, SCHAR_MAX)
 R_NC_R2C_NUM(R_nc_r2c_int_uchar, NC_INT, int, INTEGER, NC_UBYTE, unsigned char, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX)
+  R_NC_ISNA_INT, 0, UCHAR_MAX)
 R_NC_R2C_NUM(R_nc_r2c_int_short, NC_INT, int, INTEGER, NC_SHORT, short, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX)
+  R_NC_ISNA_INT, SHRT_MIN, SHRT_MAX)
 R_NC_R2C_NUM(R_nc_r2c_int_ushort, NC_INT, int, INTEGER, NC_USHORT, unsigned short, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX)
+  R_NC_ISNA_INT, 0, USHRT_MAX)
 R_NC_R2C_NUM(R_nc_r2c_int_int, NC_INT, int, INTEGER, NC_INT, int, \
-  R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+  R_NC_ISNA_INT,,)
 R_NC_R2C_NUM(R_nc_r2c_int_uint, NC_INT, int, INTEGER, NC_UINT, unsigned int, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_NONE, )
+  R_NC_ISNA_INT, 0,)
 R_NC_R2C_NUM(R_nc_r2c_int_ll, NC_INT, int, INTEGER, NC_INT64, long long, \
-  R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+  R_NC_ISNA_INT,,)
 R_NC_R2C_NUM(R_nc_r2c_int_ull, NC_INT, int, INTEGER, NC_UINT64, unsigned long long, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_NONE, )
+  R_NC_ISNA_INT, 0,)
 R_NC_R2C_NUM(R_nc_r2c_int_float, NC_INT, int, INTEGER, NC_FLOAT, float, \
-  R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+  R_NC_ISNA_INT,,)
 R_NC_R2C_NUM(R_nc_r2c_int_dbl, NC_INT, int, INTEGER, NC_DOUBLE, double, \
-  R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+  R_NC_ISNA_INT,,)
 /* Only convert non-negative values to size_t */
 #if SIZEOF_INT > SIZEOF_SIZE_T
 R_NC_R2C_NUM(R_nc_r2c_int_size, NC_INT, int, INTEGER, NC_NAT, size_t, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX)
+  R_NC_ISNA_INT, 0, SIZE_MAX)
 #else
 R_NC_R2C_NUM(R_nc_r2c_int_size, NC_INT, int, INTEGER, NC_NAT, size_t, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_NONE, )
+  R_NC_ISNA_INT, 0,)
 #endif
 
 R_NC_R2C_NUM(R_nc_r2c_dbl_schar, NC_DOUBLE, double, REAL, NC_BYTE, signed char, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX)
+  R_NC_ISNA_REAL, SCHAR_MIN, SCHAR_MAX)
 R_NC_R2C_NUM(R_nc_r2c_dbl_uchar, NC_DOUBLE, double, REAL, NC_UBYTE, unsigned char, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX)
+  R_NC_ISNA_REAL, 0, UCHAR_MAX)
 R_NC_R2C_NUM(R_nc_r2c_dbl_short, NC_DOUBLE, double, REAL, NC_SHORT, short, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX)
+  R_NC_ISNA_REAL, SHRT_MIN, SHRT_MAX)
 R_NC_R2C_NUM(R_nc_r2c_dbl_ushort, NC_DOUBLE, double, REAL, NC_USHORT, unsigned short, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX)
+  R_NC_ISNA_REAL, 0, USHRT_MAX)
 R_NC_R2C_NUM(R_nc_r2c_dbl_int, NC_DOUBLE, double, REAL, NC_INT, int, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX)
+  R_NC_ISNA_REAL, INT_MIN, INT_MAX)
 R_NC_R2C_NUM(R_nc_r2c_dbl_uint, NC_DOUBLE, double, REAL, NC_UINT, unsigned int, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX)
+  R_NC_ISNA_REAL, 0, UINT_MAX)
 R_NC_R2C_NUM(R_nc_r2c_dbl_ll, NC_DOUBLE, double, REAL, NC_INT64, long long, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, LLONG_MIN_DBL, R_NC_RANGE_MAX, LLONG_MAX_DBL)
+  R_NC_ISNA_REAL, LLONG_MIN_DBL, LLONG_MAX_DBL)
 R_NC_R2C_NUM(R_nc_r2c_dbl_ull, NC_DOUBLE, double, REAL, NC_UINT64, unsigned long long, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, ULLONG_MAX_DBL)
+  R_NC_ISNA_REAL, 0, ULLONG_MAX_DBL)
 R_NC_R2C_NUM(R_nc_r2c_dbl_float, NC_DOUBLE, double, REAL, NC_FLOAT, float, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN_D2F, -FLT_MAX, R_NC_RANGE_MAX_D2F, FLT_MAX)
+  R_NC_ISNA_REAL, -FLT_MAX, FLT_MAX)
 R_NC_R2C_NUM(R_nc_r2c_dbl_dbl, NC_DOUBLE, double, REAL, NC_DOUBLE, double, \
-  R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+  R_NC_ISNA_REAL,,)
 /* Only convert non-negative values to size_t */
 R_NC_R2C_NUM(R_nc_r2c_dbl_size, NC_DOUBLE, double, REAL, NC_NAT, size_t, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX_DBL)
+  R_NC_ISNA_REAL, 0, SIZE_MAX_DBL)
 
 /* bit64 is treated by R as signed long long,
    but we may need to store unsigned long long,
@@ -477,31 +488,31 @@ R_NC_R2C_NUM(R_nc_r2c_dbl_size, NC_DOUBLE, double, REAL, NC_NAT, size_t, \
    We allow wrapping in reverse for conversion of bit64 to unsigned long long.
  */
 R_NC_R2C_NUM(R_nc_r2c_bit64_schar, NC_INT64, long long, REAL, NC_BYTE, signed char, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX)
+  R_NC_ISNA_BIT64, SCHAR_MIN, SCHAR_MAX)
 R_NC_R2C_NUM(R_nc_r2c_bit64_uchar, NC_INT64, long long, REAL, NC_UBYTE, unsigned char, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX)
+  R_NC_ISNA_BIT64, 0, UCHAR_MAX)
 R_NC_R2C_NUM(R_nc_r2c_bit64_short, NC_INT64, long long, REAL, NC_SHORT, short, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX)
+  R_NC_ISNA_BIT64, SHRT_MIN, SHRT_MAX)
 R_NC_R2C_NUM(R_nc_r2c_bit64_ushort, NC_INT64, long long, REAL, NC_USHORT, unsigned short, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX)
+  R_NC_ISNA_BIT64, 0, USHRT_MAX)
 R_NC_R2C_NUM(R_nc_r2c_bit64_int, NC_INT64, long long, REAL, NC_INT, int, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX)
+  R_NC_ISNA_BIT64, INT_MIN, INT_MAX)
 R_NC_R2C_NUM(R_nc_r2c_bit64_uint, NC_INT64, long long, REAL, NC_UINT, unsigned int, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX)
+  R_NC_ISNA_BIT64, 0, UINT_MAX)
 R_NC_R2C_NUM(R_nc_r2c_bit64_ll, NC_INT64, long long, REAL, NC_INT64, long long, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+  R_NC_ISNA_BIT64,,)
 R_NC_R2C_NUM(R_nc_r2c_bit64_ull, NC_INT64, long long, REAL, NC_UINT64, unsigned long long, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+  R_NC_ISNA_BIT64,,)
 R_NC_R2C_NUM(R_nc_r2c_bit64_float, NC_INT64, long long, REAL, NC_FLOAT, float, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+  R_NC_ISNA_BIT64,,)
 R_NC_R2C_NUM(R_nc_r2c_bit64_dbl, NC_INT64, long long, REAL, NC_DOUBLE, double, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+  R_NC_ISNA_BIT64,,)
 #if SIZEOF_LONG_LONG > SIZEOF_SIZE_T
 R_NC_R2C_NUM(R_nc_r2c_bit64_size, NC_INT64, long long, REAL, NC_NAT, size_t, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX)
+  R_NC_ISNA_BIT64, 0, SIZE_MAX)
 #else
 R_NC_R2C_NUM(R_nc_r2c_bit64_size, NC_INT64, long long, REAL, NC_NAT, size_t, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+  R_NC_ISNA_BIT64,,)
 #endif
 
 
