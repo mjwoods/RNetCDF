@@ -378,41 +378,41 @@ pushdef(`MINTEST',`$8')dnl
 pushdef(`MINVAL',`$9')dnl
 pushdef(`MAXTEST',`$10')dnl
 pushdef(`MAXVAL',`$11')dnl
-static const OTYPE* \
-FUN (SEXP rv, int ndim, const size_t *xdim, \
-     size_t fillsize, const OTYPE *fill) \
-{ \
-  size_t ii, cnt, hasfill; \
-  const ITYPE *in; \
-  OTYPE fillval=0, *out; \
-  in = (ITYPE *) IFUN (rv); \
-  cnt = R_nc_length (ndim, xdim); \
-  if ((size_t) xlength (rv) < cnt) { \
-    error (RNC_EDATALEN); \
-  } \
-  hasfill = (fill != NULL); \
-  if (hasfill || (NCITYPE != NCOTYPE)) { \
-    out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE)); \
-  } else { \
-    out = (OTYPE *) IFUN (rv); \
-    return out; \
-  } \
-  if (hasfill) { \
-    if (fillsize != sizeof(OTYPE)) { \
-      error ("Size of fill value does not match output type"); \
-    } \
-    fillval = *fill; \
-  } \
-  for (ii=0; ii<cnt; ii++) { \
-    if (hasfill && NATEST`('in[ii])) { \
-      out[ii] = fillval; \
-    } else if (MINTEST`('in[ii],MINVAL,ITYPE) && MAXTEST`('in[ii],MAXVAL,ITYPE)) { \
-      out[ii] = in[ii]; \
-    } else { \
-      error (nc_strerror (NC_ERANGE)); \
-    } \
-  } \
-  return out; \
+static const OTYPE*
+FUN (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const OTYPE *fill)
+{
+  size_t ii, cnt, hasfill;
+  const ITYPE *in;
+  OTYPE fillval=0, *out;
+  in = (ITYPE *) IFUN (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  if (hasfill || (NCITYPE != NCOTYPE)) {
+    out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE));
+  } else {
+    out = (OTYPE *) IFUN (rv);
+    return out;
+  }
+  if (hasfill) {
+    if (fillsize != sizeof(OTYPE)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  for (ii=0; ii<cnt; ii++) {
+    if (hasfill && NATEST`('in[ii])) {
+      out[ii] = fillval;
+    } else if (MINTEST`('in[ii],MINVAL,ITYPE) && MAXTEST`('in[ii],MAXVAL,ITYPE)) {
+      out[ii] = in[ii];
+    } else {
+      error (nc_strerror (NC_ERANGE));
+    }
+  }
+  return out;
 }
 popdef(`FUN',`NCITYPE',`ITYPE',`IFUN',`NCOTYPE',`OTYPE')dnl
 popdef(`NATEST',`MINTEST',`MINVAL',`MAXTEST',`MAXVAL')dnl
