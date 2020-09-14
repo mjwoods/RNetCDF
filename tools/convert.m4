@@ -387,12 +387,17 @@ FUN (SEXP rv, int ndim, const size_t *xdim,
     error (RNC_EDATALEN);
   }
   hasfill = (fill != NULL);
-  if (hasfill || ifelse(ITYPE,OTYPE,0,1)) {
+ifelse(ITYPE,OTYPE,
+`dnl Same types:
+  if (hasfill) {
     out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE));
   } else {
     out = (OTYPE *) IFUN (rv);
     return out;
   }
+',`dnl Different types:
+  out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE));
+')dnl
   if (hasfill) {
     if (fillsize != sizeof(OTYPE)) {
       error ("Size of fill value does not match output type");
