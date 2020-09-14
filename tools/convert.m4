@@ -361,8 +361,6 @@ R_nc_str_strsxp (R_nc_buf *io)
    In special cases, the output is a pointer to the input data,
    so the output data should not be modified.
    An error is raised if any input values are outside the range of the output type.
-   For certain combinations of types, some or all range checks are always true,
-   and we assume that an optimising compiler will remove these checks.
 dnl R_NC_R2C_NUM(FUN, ITYPE, IFUN, OTYPE, NATEST, MINVAL, MAXVAL)
  */
 define(`R_NC_R2C_NUM', `dnl
@@ -401,13 +399,15 @@ FUN (SEXP rv, int ndim, const size_t *xdim,
   for (ii=0; ii<cnt; ii++) {
     if (hasfill && NATEST`('in[ii])) {
       out[ii] = fillval;
-ifelse(ITYPE,`double',ifelse(eval(ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0)),1,`dnl
+ifelse(ITYPE,`double',ifelse(eval(ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0)),1,
 dnl Allow conversion of non-finite doubles to float or double:
+`dnl
     } else if (!R_FINITE(in[ii])) {
       out[ii] = in[ii];
 '))dnl
-ifelse(eval(ifelse(MINVAL,`',0,1) || ifelse(MAXVAL,`',0,1)),1,`dnl
+ifelse(eval(ifelse(MINVAL,`',0,1) || ifelse(MAXVAL,`',0,1)),1,
 dnl Include range checks:
+`dnl
     } else if (dnl
 ifelse(MINVAL,`',,`((ITYPE) MINVAL <= in[ii])'ifelse(MAXVAL,`',,` && '))dnl
 ifelse(MAXVAL,`',,`(in[ii] <= (ITYPE) MAXVAL)')dnl
@@ -415,11 +415,14 @@ ifelse(MAXVAL,`',,`(in[ii] <= (ITYPE) MAXVAL)')dnl
       out[ii] = in[ii];
     } else {
       error (nc_strerror (NC_ERANGE));
-    }',`dnl
+    }
+',
 dnl No range checks needed:
+`dnl
     } else {
       out[ii] = in[ii];
-    }')
+    }
+')dnl
   }
   return out;
 }
