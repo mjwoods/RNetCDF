@@ -1,3 +1,6 @@
+dnl Insert warning into generated C code:
+/* NOTE: This code was generated from tools/convert.m4 */
+
 /*=============================================================================*\
  *
  *  Name:       convert.c
