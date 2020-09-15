@@ -425,12 +425,13 @@ ifelse(`$1',1,
       ELSE`'if (NATEST`('in[ii])) {
         out[ii] = fillval;
 ')dnl
-ifelse(ITYPE,`double',ifelse(eval(ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0)),1,
-dnl Allow conversion of non-finite doubles to float or double:
+ifelse(eval(ifelse(ITYPE,`double',1,0) &&
+            ( ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0))), 1,
 `dnl
+dnl Allow conversion of non-finite doubles to float or double:
       ELSE`'if (!R_FINITE(in[ii])) {
         out[ii] = in[ii];
-'))dnl
+')dnl
 ifelse(eval(ifelse(MINVAL,`',0,1) || ifelse(MAXVAL,`',0,1)),1,
 dnl Include range checks:
 `dnl
