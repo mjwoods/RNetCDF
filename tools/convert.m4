@@ -404,6 +404,14 @@ ifelse(ITYPE,OTYPE,
     }
     fillval = *fill;
   }
+R_NC_R2C_NUM_LOOP
+  return out;
+}
+popdef(`FUN',`ITYPE',`IFUN',`OTYPE',`NATEST',`MINVAL',`MAXVAL')dnl
+')
+
+dnl R_NC_R2C_NUM_LOOP - called by R_NC_R2C_NUM
+define(`R_NC_R2C_NUM_LOOP',`dnl
   for (ii=0; ii<cnt; ii++) {
     if (hasfill && NATEST`('in[ii])) {
       out[ii] = fillval;
@@ -432,10 +440,8 @@ dnl No range checks needed:
     }
 ')dnl
   }
-  return out;
-}
-popdef(`FUN',`ITYPE',`IFUN',`OTYPE',`NATEST',`MINVAL',`MAXVAL')dnl
 ')
+
 
 R_NC_R2C_NUM(R_nc_r2c_int_schar, int, INTEGER, signed char, \
   R_NC_ISNA_INT, SCHAR_MIN, SCHAR_MAX)
