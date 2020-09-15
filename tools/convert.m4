@@ -395,7 +395,8 @@ ifelse(ITYPE,OTYPE,
     out = (OTYPE *) IFUN (rv);
     return out;
   }
-',`dnl Different types:
+',
+`dnl Different types:
   out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE));
 ')dnl
   if (hasfill) {
@@ -420,21 +421,18 @@ dnl Allow any block of "if" statement to be first;
 dnl ELSE is blank on first use, then redefined to "} else".
 pushdef(`ELSE',`popdef(`ELSE')pushdef(`ELSE',`} else ')')dnl
     for (ii=0; ii<cnt; ii++) {
-ifelse(`$1',1,
-`dnl
+ifelse(`$1',1,`dnl
       ELSE`'if (NATEST`('in[ii])) {
         out[ii] = fillval;
 ')dnl
 ifelse(eval(ifelse(ITYPE,`double',1,0) &&
             ( ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0))), 1,
-`dnl
-dnl Allow conversion of non-finite doubles to float or double:
+`dnl Allow conversion of non-finite doubles to float or double:
       ELSE`'if (!R_FINITE(in[ii])) {
         out[ii] = in[ii];
 ')dnl
 ifelse(eval(ifelse(MINVAL,`',0,1) || ifelse(MAXVAL,`',0,1)),1,
-dnl Include range checks:
-`dnl
+`dnl Include range checks:
       ELSE`'if (dnl
 ifelse(MINVAL,`',,`((ITYPE) MINVAL <= in[ii])'ifelse(MAXVAL,`',,` && '))dnl
 ifelse(MAXVAL,`',,`(in[ii] <= (ITYPE) MAXVAL)')dnl
@@ -444,8 +442,7 @@ ifelse(MAXVAL,`',,`(in[ii] <= (ITYPE) MAXVAL)')dnl
         error (nc_strerror (NC_ERANGE));
       }
 ',
-dnl No range checks needed:
-`dnl
+`dnl No range checks needed:
       ELSE`'{
         out[ii] = in[ii];
       }
