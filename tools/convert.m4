@@ -678,40 +678,49 @@ R_NC_C2R_NUM_INIT(R_nc_c2r_bit64_init, REALSXP, REAL)
    but NA or NaN values in floating point data are transferred to the output
    (because all comparisons with NA or NaN are false).
  */
-#define R_NC_C2R_NUM(FUN, NCITYPE, ITYPE, NCOTYPE, OTYPE, MISSVAL) \
-static void \
-FUN (R_nc_buf *io) \
-{ \
-  size_t ii; \
-  ITYPE fillval=0, minval=0, maxval=0, *in; \
-  OTYPE *out; \
-  int hasfill, hasmin, hasmax; \
-  ii = xlength (io->rxp); \
-  in = (ITYPE *) io->cbuf; \
-  out = (OTYPE *) io->rbuf; \
-  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(ITYPE)) { \
-    error ("Size of fill value does not match input type"); \
-  } \
-  hasfill = (io->fill != NULL); \
-  if (hasfill) { \
-    fillval = *((ITYPE *) io->fill); \
-  } \
-  hasmin = (io->min != NULL); \
-  if (hasmin) { \
-    minval = *((ITYPE *) io->min); \
-  } \
-  hasmax = (io->max != NULL); \
-  if (hasmax) { \
-    maxval = *((ITYPE *) io->max); \
-  } \
-  while (ii-- > 0) { \
-    if ((hasfill && in[ii] == fillval) || (hasmin && in[ii] < minval) || (hasmax && maxval < in[ii])) { \
-      out[ii] = MISSVAL; \
-    } else { \
-      out[ii] = in[ii]; \
-    } \
-  } \
+dnl R_NC_C2R_NUM(FUN, NCITYPE, ITYPE, NCOTYPE, OTYPE, MISSVAL)
+define(`R_NC_C2R_NUM',`dnl
+pushdef(`FUN',`$1')dnl
+pushdef(`NCITYPE',`$2')dnl
+pushdef(`ITYPE',`$3')dnl
+pushdef(`NCOTYPE',`$4')dnl
+pushdef(`OTYPE',`$5')dnl
+pushdef(`MISSVAL',`$6')dnl
+static void
+FUN (R_nc_buf *io)
+{
+  size_t ii;
+  ITYPE fillval=0, minval=0, maxval=0, *in;
+  OTYPE *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (ITYPE *) io->cbuf;
+  out = (OTYPE *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(ITYPE)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((ITYPE *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((ITYPE *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((ITYPE *) io->max);
+  }
+  while (ii-- > 0) {
+    if ((hasfill && in[ii] == fillval) || (hasmin && in[ii] < minval) || (hasmax && maxval < in[ii])) {
+      out[ii] = MISSVAL;
+    } else {
+      out[ii] = in[ii];
+    }
+  }
 }
+popdef(`FUN',`NCITYPE',`ITYPE',`NCOTYPE',`OTYPE',`MISSVAL')dnl
+')dnl
 
 R_NC_C2R_NUM(R_nc_c2r_schar_int, NC_BYTE, signed char, NC_INT, int, NA_INTEGER)
 R_NC_C2R_NUM(R_nc_c2r_uchar_int, NC_UBYTE, unsigned char, NC_INT, int, NA_INTEGER)
