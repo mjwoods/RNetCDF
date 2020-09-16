@@ -512,125 +512,131 @@ R_NC_R2C_NUM(R_nc_r2c_bit64_size, long long, REAL, size_t,,)
 /* Convert numeric values from R to C format with packing.
    Memory for the result is allocated and freed by R.
    An error is raised if any packed values are outside the range of the output type.
-   For certain combinations of types, some or all range checks are always true,
-   and we assume that an optimising compiler will remove these checks.
+dnl R_NC_R2C_NUM_PACK(FUN, ITYPE, IFUN, OTYPE, MINVAL, MAXVAL)
  */
-#define R_NC_R2C_NUM_PACK(FUN, \
-  NCITYPE, ITYPE, IFUN, NCOTYPE, OTYPE, \
-  NATEST, MINTEST, MINVAL, MAXTEST, MAXVAL) \
-static const OTYPE* \
-FUN (SEXP rv, int ndim, const size_t *xdim, \
-     size_t fillsize, const OTYPE *fill, \
-     const double *scale, const double *add) \
-{ \
-  size_t ii, cnt, hasfill; \
-  double factor=1.0, offset=0.0, dpack; \
-  const ITYPE *in; \
-  OTYPE fillval=0, *out; \
-  in = (ITYPE *) IFUN (rv); \
-  cnt = R_nc_length (ndim, xdim); \
-  if ((size_t) xlength (rv) < cnt) { \
-    error (RNC_EDATALEN); \
-  } \
-  out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE)); \
-  if (scale) { \
-    factor = *scale; \
-  } \
-  if (add) { \
-    offset = *add; \
-  } \
-  hasfill = (fill != NULL); \
-  if (hasfill) { \
-    if (fillsize != sizeof(OTYPE)) { \
-      error ("Size of fill value does not match output type"); \
-    } \
-    fillval = *fill; \
-  } \
-  for (ii=0; ii<cnt; ii++) { \
-    if (hasfill && NATEST(in[ii])) { \
-      out[ii] = fillval; \
-    } else { \
-      dpack = round((in[ii] - offset) / factor); \
-      if (MINTEST(dpack,MINVAL,double) && MAXTEST(dpack,MAXVAL,double)) { \
-        out[ii] = dpack; \
-      } else { \
-        error (nc_strerror (NC_ERANGE)); \
-      } \
-    } \
-  } \
-  return out; \
+define(`R_NC_R2C_NUM_PACK', `dnl
+pushdef(`FUN',`$1')dnl
+pushdef(`ITYPE',`$2')dnl
+pushdef(`IFUN',`$3')dnl
+pushdef(`OTYPE',`$4')dnl
+pushdef(`MINVAL',`$5')dnl
+pushdef(`MAXVAL',`$6')dnl
+static const OTYPE*
+FUN (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const OTYPE *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const ITYPE *in;
+  OTYPE fillval=0, *out;
+  in = (ITYPE *) IFUN (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(OTYPE)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+R_NC_R2C_NUM_PACK_LOOP(1)
+  } else {
+R_NC_R2C_NUM_PACK_LOOP(0)
+  }
+  return out;
 }
+popdef(`FUN',`ITYPE',`IFUN',`OTYPE',`MINVAL',`MAXVAL')dnl
+')
+
+dnl R_NC_R2C_NUM_PACK_LOOP(WITH_FILL) - called by R_NC_R2C_NUM_PACK
+define(`R_NC_R2C_NUM_PACK_LOOP',`dnl
+dnl Allow any block of "if" statement to be first;
+dnl ELSE is blank on first use, then redefined to "} else".
+pushdef(`ELSE',`popdef(`ELSE')pushdef(`ELSE',`} else ')')dnl
+pushdef(`ELSE2',`popdef(`ELSE2')pushdef(`ELSE2',`} else ')')dnl
+    for (ii=0; ii<cnt; ii++) {
+ifelse(`$1',1,`dnl
+      ELSE`'if (R_NC_ISNA(ITYPE,`in[ii]')) {
+        out[ii] = fillval;
+')dnl
+      ELSE`'{
+        dpack = round((in[ii] - offset) / factor);
+ifelse(eval( ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0) ), 1,
+`dnl Allow conversion of non-finite doubles to float or double:
+        ELSE2`'if (!R_FINITE(dpack)) {
+          out[ii] = dpack;
+')dnl
+ifelse(eval(ifelse(MINVAL,`',0,1) || ifelse(MAXVAL,`',0,1)),1,
+`dnl Include range checks:
+        ELSE2`'if (dnl
+ifelse(MINVAL,`',,`((double) MINVAL <= dpack)'ifelse(MAXVAL,`',,` && '))dnl
+ifelse(MAXVAL,`',,`(dpack <= (double) MAXVAL)')dnl
+) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+',
+`dnl No range checks needed:
+        ELSE2`'{
+          out[ii] = dpack;
+        }
+')dnl
+      }
+    }dnl
+popdef(`ELSE',`ELSE2')dnl
+')
 
 /* Define functions similar to those for conversions without packing,
  * noting that range checks are used before conversions from double to the output type.
  */
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_schar, NC_INT, int, INTEGER, NC_BYTE, signed char, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_uchar, NC_INT, int, INTEGER, NC_UBYTE, unsigned char, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_short, NC_INT, int, INTEGER, NC_SHORT, short, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_ushort, NC_INT, int, INTEGER, NC_USHORT, unsigned short, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_int, NC_INT, int, INTEGER, NC_INT, int, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_uint, NC_INT, int, INTEGER, NC_UINT, unsigned int, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_ll, NC_INT, int, INTEGER, NC_INT64, long long, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, LLONG_MIN_DBL , R_NC_RANGE_MAX, LLONG_MAX_DBL)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_ull, NC_INT, int, INTEGER, NC_UINT64, unsigned long long, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, ULLONG_MAX_DBL)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_float, NC_INT, int, INTEGER, NC_FLOAT, float, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_dbl, NC_INT, int, INTEGER, NC_DOUBLE, double, \
-  R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
-
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_schar, NC_DOUBLE, double, REAL, NC_BYTE, signed char, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_uchar, NC_DOUBLE, double, REAL, NC_UBYTE, unsigned char, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_short, NC_DOUBLE, double, REAL, NC_SHORT, short, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_ushort, NC_DOUBLE, double, REAL, NC_USHORT, unsigned short, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_int, NC_DOUBLE, double, REAL, NC_INT, int, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_uint, NC_DOUBLE, double, REAL, NC_UINT, unsigned int, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_ll, NC_DOUBLE, double, REAL, NC_INT64, long long, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, LLONG_MIN_DBL, R_NC_RANGE_MAX, LLONG_MAX_DBL)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_ull, NC_DOUBLE, double, REAL, NC_UINT64, unsigned long long, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, ULLONG_MAX_DBL)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_float, NC_DOUBLE, double, REAL, NC_FLOAT, float, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN_D2F, -FLT_MAX, R_NC_RANGE_MAX_D2F, FLT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_dbl, NC_DOUBLE, double, REAL, NC_DOUBLE, double, \
-  R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_schar, int, INTEGER, signed char, SCHAR_MIN, SCHAR_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_uchar, int, INTEGER, unsigned char, 0, UCHAR_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_short, int, INTEGER, short, SHRT_MIN, SHRT_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_ushort, int, INTEGER, unsigned short, 0, USHRT_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_int, int, INTEGER, int, INT_MIN, INT_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_uint, int, INTEGER, unsigned int, 0, UINT_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_ll, int, INTEGER, long long, LLONG_MIN_DBL , LLONG_MAX_DBL)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_ull, int, INTEGER, unsigned long long, 0, ULLONG_MAX_DBL)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_float, int, INTEGER, float, -FLT_MAX, FLT_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_dbl, int, INTEGER, double,,)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_schar, double, REAL, signed char, SCHAR_MIN, SCHAR_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_uchar, double, REAL, unsigned char, 0, UCHAR_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_short, double, REAL, short, SHRT_MIN, SHRT_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_ushort, double, REAL, unsigned short, 0, USHRT_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_int, double, REAL, int, INT_MIN, INT_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_uint, double, REAL, unsigned int, 0, UINT_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_ll, double, REAL, long long, LLONG_MIN_DBL, LLONG_MAX_DBL)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_ull, double, REAL, unsigned long long, 0, ULLONG_MAX_DBL)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_float, double, REAL, float, -FLT_MAX, FLT_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_dbl, double, REAL, double,,)
 
 /* bit64 is treated by R as signed long long,
    but we may need to store unsigned long long,
    with very large positive values wrapping to negative values in R.
    We allow wrapping in reverse for conversion of bit64 to unsigned long long.
  */
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_schar, NC_INT64, long long, REAL, NC_BYTE, signed char, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_uchar, NC_INT64, long long, REAL, NC_UBYTE, unsigned char, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_short, NC_INT64, long long, REAL, NC_SHORT, short, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_ushort, NC_INT64, long long, REAL, NC_USHORT, unsigned short, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_int, NC_INT64, long long, REAL, NC_INT, int, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_uint, NC_INT64, long long, REAL, NC_UINT, unsigned int, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_ll, NC_INT64, long long, REAL, NC_INT64, long long, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, LLONG_MIN_DBL, R_NC_RANGE_MAX, LLONG_MAX_DBL)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_ull, NC_INT64, long long, REAL, NC_UINT64, unsigned long long, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, ULLONG_MAX_DBL)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_float, NC_INT64, long long, REAL, NC_FLOAT, float, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_dbl, NC_INT64, long long, REAL, NC_DOUBLE, double, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_schar, long long, REAL, signed char, SCHAR_MIN, SCHAR_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_uchar, long long, REAL, unsigned char, 0, UCHAR_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_short, long long, REAL, short, SHRT_MIN, SHRT_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_ushort, long long, REAL, unsigned short, 0, USHRT_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_int, long long, REAL, int, INT_MIN, INT_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_uint, long long, REAL, unsigned int, 0, UINT_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_ll, long long, REAL, long long, LLONG_MIN_DBL, LLONG_MAX_DBL)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_ull, long long, REAL, unsigned long long, 0, ULLONG_MAX_DBL)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_float, long long, REAL, float, -FLT_MAX, FLT_MAX)
+R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_dbl, long long, REAL, double,,)
 
 
 /* Allocate memory for reading a netcdf variable slice
