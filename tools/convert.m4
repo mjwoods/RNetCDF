@@ -425,22 +425,24 @@ define(`R_NC_R2C_NUM_LOOP',`dnl
 dnl Allow any block of "if" statement to be first;
 dnl ELSE is blank on first use, then redefined to "} else".
 pushdef(`ELSE',`popdef(`ELSE')pushdef(`ELSE',`} else ')')dnl
+dnl Include range checks?
+pushdef(`WITH_RANGE',eval( ifelse(MINVAL,`',0,1) || ifelse(MAXVAL,`',0,1) ))dnl
+dnl Are non-finite input values within range?
+pushdef(`PASS_INF',eval( ifelse(ITYPE,`double',1,0) &&
+                         ( ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0) )))dnl
     for (ii=0; ii<cnt; ii++) {
 ifelse(`$1',1,`dnl
+dnl Convert missing values to fillval:
       ELSE`'if (R_NC_ISNA(ITYPE,`in[ii]')) {
         out[ii] = fillval;
 ')dnl
-ifelse(eval(ifelse(ITYPE,`double',1,0) &&
-            ( ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0))), 1,
-`dnl Allow conversion of non-finite doubles to float or double:
-      ELSE`'if (!R_FINITE(in[ii])) {
-        out[ii] = in[ii];
-')dnl
-ifelse(eval(ifelse(MINVAL,`',0,1) || ifelse(MAXVAL,`',0,1)),1,
+ifelse(WITH_RANGE, 1,
 `dnl Include range checks:
       ELSE`'if (dnl
+ifelse(PASS_INF, 1, `(!R_FINITE(in[ii])) || (')dnl
 ifelse(MINVAL,`',,`((ITYPE) MINVAL <= in[ii])'ifelse(MAXVAL,`',,` && '))dnl
 ifelse(MAXVAL,`',,`(in[ii] <= (ITYPE) MAXVAL)')dnl
+ifelse(PASS_INF, 1, `)')dnl
 ) {
         out[ii] = in[ii];
       } else {
@@ -453,7 +455,7 @@ ifelse(MAXVAL,`',,`(in[ii] <= (ITYPE) MAXVAL)')dnl
       }
 ')dnl
     }dnl
-popdef(`ELSE')dnl
+popdef(`ELSE',`WITH_RANGE',`PASS_INF')dnl
 ')
 
 
@@ -564,24 +566,25 @@ define(`R_NC_R2C_NUM_PACK_LOOP',`dnl
 dnl Allow any block of "if" statement to be first;
 dnl ELSE is blank on first use, then redefined to "} else".
 pushdef(`ELSE',`popdef(`ELSE')pushdef(`ELSE',`} else ')')dnl
-pushdef(`ELSE2',`popdef(`ELSE2')pushdef(`ELSE2',`} else ')')dnl
+dnl Include range checks?
+pushdef(`WITH_RANGE',eval( ifelse(MINVAL,`',0,1) || ifelse(MAXVAL,`',0,1) ))dnl
+dnl Are non-finite input values within range?
+pushdef(`PASS_INF',eval( ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0) ))dnl
     for (ii=0; ii<cnt; ii++) {
 ifelse(`$1',1,`dnl
+dnl Convert missing values to fillval:
       ELSE`'if (R_NC_ISNA(ITYPE,`in[ii]')) {
         out[ii] = fillval;
 ')dnl
       ELSE`'{
         dpack = round((in[ii] - offset) / factor);
-ifelse(eval( ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0) ), 1,
-`dnl Allow conversion of non-finite doubles to float or double:
-        ELSE2`'if (!R_FINITE(dpack)) {
-          out[ii] = dpack;
-')dnl
-ifelse(eval(ifelse(MINVAL,`',0,1) || ifelse(MAXVAL,`',0,1)),1,
+ifelse(WITH_RANGE, 1,
 `dnl Include range checks:
-        ELSE2`'if (dnl
+        if (dnl
+ifelse(PASS_INF, 1, `(!R_FINITE(dpack)) || (')dnl
 ifelse(MINVAL,`',,`((double) MINVAL <= dpack)'ifelse(MAXVAL,`',,` && '))dnl
 ifelse(MAXVAL,`',,`(dpack <= (double) MAXVAL)')dnl
+ifelse(PASS_INF, 1, `)')dnl
 ) {
           out[ii] = dpack;
         } else {
@@ -589,13 +592,11 @@ ifelse(MAXVAL,`',,`(dpack <= (double) MAXVAL)')dnl
         }
 ',
 `dnl No range checks needed:
-        ELSE2`'{
-          out[ii] = dpack;
-        }
+        out[ii] = dpack;
 ')dnl
       }
     }dnl
-popdef(`ELSE',`ELSE2')dnl
+popdef(`ELSE',`WITH_RANGE',`PASS_INF')dnl
 ')
 
 /* Define functions similar to those for conversions without packing,
