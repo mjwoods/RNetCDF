@@ -645,18 +645,24 @@ R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_dbl, long long, REAL, double,,)
    On input, the R_nc_buf structure contains dimensions of the buffer (ndim, *xdim).
    On output, the R_nc_buf structure contains an allocated SEXP and a pointer to its data.
  */
-#define R_NC_C2R_NUM_INIT(FUN, SEXPTYPE, OFUN) \
-static SEXP \
-FUN (R_nc_buf *io) \
-{ \
-  io->rxp = PROTECT(R_nc_allocArray (SEXPTYPE, io->ndim, io->xdim)); \
-  io->rbuf = OFUN (io->rxp); \
-  if (!io->cbuf) { \
-    io->cbuf = io->rbuf; \
-  } \
-  UNPROTECT(1); \
-  return io->rxp; \
+dnl R_NC_C2R_NUM_INIT(FUN, SEXPTYPE, OFUN)
+define(`R_NC_C2R_NUM_INIT',`dnl
+pushdef(`FUN',`$1')dnl
+pushdef(`SEXPTYPE',`$2')dnl
+pushdef(`OFUN',`$3')dnl
+static SEXP
+FUN (R_nc_buf *io)
+{
+  io->rxp = PROTECT(R_nc_allocArray (SEXPTYPE, io->ndim, io->xdim));
+  io->rbuf = OFUN (io->rxp);
+  if (!io->cbuf) {
+    io->cbuf = io->rbuf;
+  }
+  UNPROTECT(1);
+  return io->rxp;
 }
+popdef(`FUN',`SEXPTYPE',`OFUN')dnl
+')dnl
 
 R_NC_C2R_NUM_INIT(R_nc_c2r_int_init, INTSXP, INTEGER)
 R_NC_C2R_NUM_INIT(R_nc_c2r_dbl_init, REALSXP, REAL)
