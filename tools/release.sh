@@ -16,9 +16,9 @@ if ! echo "$newver" | grep -q '^[0-9]\+.[0-9]\+-[0-9]\+$' ; then
   exit 1
 fi
 
-# Find base directory of package from location of this script:
+# Set working directory to base directory of package:
 thisdir="$( dirname "$0" )"
-basedir="$( cd "$thisdir/.." && pwd )"
+cd "$thisdir/.."
 
 # Check that generated files are up-to-date:
 if test -n "$( git status --porcelain )"; then
@@ -37,27 +37,27 @@ for file in configure configure.ac tools/convert.m4 src/convert.c ; do
   fi
 done
 
-if [[ "$basedir/configure.ac" -nt "$basedir/configure" ]]; then
+if [[ "configure.ac" -nt "configure" ]]; then
   echo "ERROR: configure.ac is newer than configure" >&2
   exit 2
 fi
 
-if [[ "$basedir/tools/convert.m4" -nt "$basedir/src/convert.c" ]]; then
+if [[ "tools/convert.m4" -nt "src/convert.c" ]]; then
   echo "ERROR: tools/convert.m4 is newer than src/convert.c" >&2
   exit 3
 fi
 
 # Check that NEWS contains a description of the release:
-if ! grep -q "$newver" "$basedir/NEWS"; then
+if ! grep -q "$newver" NEWS; then
   echo "WARNING: NEWS has no entry for release $newver" >&2
 fi
 
 # Get existing version string:
-oldver="$( grep 'Version: ' "$basedir/DESCRIPTION" | awk '{ print $2 }' )"
+oldver="$( grep 'Version: ' DESCRIPTION | awk '{ print $2 }' )"
 
 # Replace version string in all files (excluding hidden files).
 # In-place option of sed is not portable between GNU and BSD versions.
-find "$basedir" -name '.*' -prune -o -type f -print | while read file; do
+find . -mindepth 1 -name '.*' -prune -o -type f -print | while read file; do
     sed "s|$oldver|$newver|g" "$file" >"$file.sed"
     if [[ -x "$file" ]]; then
       # Preserve execute permissions:
