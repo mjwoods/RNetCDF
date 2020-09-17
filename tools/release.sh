@@ -21,6 +21,10 @@ thisdir="$( dirname "$0" )"
 basedir="$( cd "$thisdir/.." && pwd )"
 
 # Check that generated files are up-to-date:
+if test -n "$( git status --porcelain )"; then
+  echo "WARNING: uncommitted changes in package" >&2
+fi
+
 for file in configure configure.ac tools/convert.m4 src/convert.c ; do
   if test -n "$(git status --porcelain "$file")"; then
     echo "ERROR: $file has uncommitted changes" >&2
