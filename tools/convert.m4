@@ -800,48 +800,52 @@ R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, unsigned long long, long long, NA_INTEGER64)
    but NA or NaN values in floating point data are transferred to the output
    (because all comparisons with NA or NaN are false).
  */
-
-#define R_NC_C2R_NUM_UNPACK(FUN, ITYPE) \
-static void \
-FUN (R_nc_buf *io) \
-{ \
-  size_t ii; \
-  double factor=1.0, offset=0.0; \
-  ITYPE fillval=0, minval=0, maxval=0, *in; \
-  double *out; \
-  int hasfill, hasmin, hasmax; \
-  ii = xlength (io->rxp); \
-  in = (ITYPE *) io->cbuf; \
-  out = (double *) io->rbuf; \
-  if (io->scale) { \
-    factor = *(io->scale); \
-  } \
-  if (io->add) { \
-    offset = *(io->add); \
-  } \
-  if ((io->fill || io->min || io->max) && io->fillsize != sizeof(ITYPE)) { \
-    error ("Size of fill value does not match input type"); \
-  } \
-  hasfill = (io->fill != NULL); \
-  if (hasfill) { \
-    fillval = *((ITYPE *) io->fill); \
-  } \
-  hasmin = (io->min != NULL); \
-  if (hasmin) { \
-    minval = *((ITYPE *) io->min); \
-  } \
-  hasmax = (io->max != NULL); \
-  if (hasmax) { \
-    maxval = *((ITYPE *) io->max); \
-  } \
-  while (ii-- > 0) { \
-    if ((hasfill && in[ii] == fillval) || (hasmin && in[ii] < minval) || (hasmax && maxval < in[ii])) { \
-      out[ii] = NA_REAL; \
-    } else { \
-      out[ii] = in[ii] * factor + offset; \
-    } \
-  } \
+dnl R_NC_C2R_NUM_UNPACK(FUN, ITYPE)
+define(`R_NC_C2R_NUM_UNPACK',`dnl
+pushdef(`FUN',`$1')dnl
+pushdef(`ITYPE',`$2')dnl
+static void
+FUN (R_nc_buf *io)
+{
+  size_t ii;
+  double factor=1.0, offset=0.0;
+  ITYPE fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (ITYPE *) io->cbuf;
+  out = (double *) io->rbuf;
+  if (io->scale) {
+    factor = *(io->scale);
+  }
+  if (io->add) {
+    offset = *(io->add);
+  }
+  if ((io->fill || io->min || io->max) && io->fillsize != sizeof(ITYPE)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((ITYPE *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((ITYPE *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((ITYPE *) io->max);
+  }
+  while (ii-- > 0) {
+    if ((hasfill && in[ii] == fillval) || (hasmin && in[ii] < minval) || (hasmax && maxval < in[ii])) {
+      out[ii] = NA_REAL;
+    } else {
+      out[ii] = in[ii] * factor + offset;
+    }
+  }
 }
+popdef(`FUN',`ITYPE')dnl
+')dnl
 
 R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_schar, signed char)
 R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uchar, unsigned char)
