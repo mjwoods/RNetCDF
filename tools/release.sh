@@ -55,5 +55,9 @@ oldver="$( grep 'Version: ' "$basedir/DESCRIPTION" | awk '{ print $2 }' )"
 # In-place option of sed is not portable between GNU and BSD versions.
 find "$basedir" -name '.*' -prune -o -type f -print | while read file; do
     sed "s|$oldver|$newver|g" "$file" >"$file.sed"
+    if [[ -x "$file" ]]; then
+      # Preserve execute permissions:
+      chmod +x "$file.sed"
+    fi
     mv "$file.sed" "$file"
   done
