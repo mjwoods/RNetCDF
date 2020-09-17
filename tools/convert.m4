@@ -1953,19 +1953,24 @@ R_nc_c2r (R_nc_buf *io)
 /* Reverse a vector in-place.
    Example: R_nc_rev_int (cv, cnt);
  */
-#define R_NC_REVERSE(FUN, TYPE) \
-void \
-FUN (TYPE *data, size_t cnt) \
-{ \
-  size_t ii, jj; \
-  TYPE tmp; \
-  if (cnt<=0) return; \
-  for (ii=0, jj=cnt-1; ii<jj; ii++, jj--) { \
-    tmp = data[ii]; \
-    data[ii] = data[jj]; \
-    data[jj] = tmp; \
-  } \
+dnl R_NC_REVERSE(FUN, TYPE)
+define(`R_NC_REVERSE',`dnl
+pushdef(`FUN',`$1')dnl
+pushdef(`TYPE',`$2')dnl
+void
+FUN (TYPE *data, size_t cnt)
+{
+  size_t ii, jj;
+  TYPE tmp;
+  if (cnt<=0) return;
+  for (ii=0, jj=cnt-1; ii<jj; ii++, jj--) {
+    tmp = data[ii];
+    data[ii] = data[jj];
+    data[jj] = tmp;
+  }
 }
+popdef(`FUN',`TYPE')dnl
+')dnl
 
 R_NC_REVERSE(R_nc_rev_int, int)
 R_NC_REVERSE(R_nc_rev_size, size_t)
