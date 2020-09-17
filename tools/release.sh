@@ -57,7 +57,7 @@ oldver="$( grep 'Version: ' DESCRIPTION | awk '{ print $2 }' )"
 
 # Replace version string in all files (excluding hidden files).
 # In-place option of sed is not portable between GNU and BSD versions.
-find . -mindepth 1 -name '.*' -prune -o -type f -print | while read file; do
+find . -mindepth 1 -name '.*' -prune -o -type f ! -name NEWS -print | while read file; do
     sed "s|$oldver|$newver|g" "$file" >"$file.sed"
     if [[ -x "$file" ]]; then
       # Preserve execute permissions:
