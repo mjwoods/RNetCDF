@@ -1981,47 +1981,53 @@ R_NC_REVERSE(R_nc_rev_size, size_t)
    reversing from Fortran to C storage order.
    Elements beyond the length of rv and non-finite values are stored as fillval.
  */
-#define R_NC_DIM_R2C(FUN, TYPENAME, TYPE) \
-TYPE * \
-FUN (SEXP rv, size_t N, TYPE fillval) \
-{ \
-  TYPE *cv; \
-  const void *voidbuf; \
-  size_t nr, ii; \
-\
-  /* Allocate new C vector (freed by R) */ \
-  cv = (TYPE *) R_alloc (N, sizeof (TYPE)); \
-\
-  /* Number of elements to copy must not exceed N */ \
-  nr = xlength (rv); \
-  nr = (nr < N) ? nr : N; \
-\
-  /* Copy R elements to cv */ \
-  if (isReal (rv)) { \
-    if (R_nc_inherits (rv, "integer64")) { \
-      voidbuf = R_nc_r2c_bit64_##TYPENAME (rv, 1, &nr, sizeof(TYPE), &fillval); \
-    } else { \
-      voidbuf = R_nc_r2c_dbl_##TYPENAME (rv, 1, &nr, sizeof(TYPE), &fillval); \
-    } \
-  } else if (isInteger (rv)) { \
-    voidbuf = R_nc_r2c_int_##TYPENAME (rv, 1, &nr, sizeof(TYPE), &fillval); \
-  } else { \
-    error ("Unsupported R type in R_NC_DIM_R2C"); \
-  } \
-  memcpy (cv, voidbuf, nr*sizeof (TYPE)); \
-\
-  /* Reverse from Fortran to C order */ \
-  R_nc_rev_##TYPENAME (cv, nr); \
-\
-  /* Fill any remaining elements beyond length of rv */ \
-  for ( ii=nr; ii<N; ii++ ) { \
-    cv[ii] = fillval; \
-  } \
-\
-  return cv; \
-}
+dnl R_NC_DIM_R2C(FUN, TYPENAME, TYPE)
+define(`R_NC_DIM_R2C',`dnl
+pushdef(`FUN',`$1')dnl
+pushdef(`TYPENAME',`$2')dnl
+pushdef(`TYPE',`$3')dnl
+TYPE *
+FUN (SEXP rv, size_t N, TYPE fillval)
+{
+  TYPE *cv;
+  const void *voidbuf;
+  size_t nr, ii;
 
-R_NC_DIM_R2C (R_nc_dim_r2c_int, int, int)
-R_NC_DIM_R2C (R_nc_dim_r2c_size, size, size_t)
+  /* Allocate new C vector (freed by R) */
+  cv = (TYPE *) R_alloc (N, sizeof (TYPE));
+
+  /* Number of elements to copy must not exceed N */
+  nr = xlength (rv);
+  nr = (nr < N) ? nr : N;
+
+  /* Copy R elements to cv */
+  if (isReal (rv)) {
+    if (R_nc_inherits (rv, "integer64")) {
+      voidbuf = R_nc_r2c_bit64_`'TYPENAME (rv, 1, &nr, sizeof(TYPE), &fillval);
+    } else {
+      voidbuf = R_nc_r2c_dbl_`'TYPENAME (rv, 1, &nr, sizeof(TYPE), &fillval);
+    }
+  } else if (isInteger (rv)) {
+    voidbuf = R_nc_r2c_int_`'TYPENAME (rv, 1, &nr, sizeof(TYPE), &fillval);
+  } else {
+    error ("Unsupported R type in FUN");
+  }
+  memcpy (cv, voidbuf, nr*sizeof (TYPE));
+
+  /* Reverse from Fortran to C order */
+  R_nc_rev_`'TYPENAME (cv, nr);
+
+  /* Fill any remaining elements beyond length of rv */
+  for ( ii=nr; ii<N; ii++ ) {
+    cv[ii] = fillval;
+  }
+
+  return cv;
+}
+popdef(`FUN',`TYPENAME',`TYPE')dnl
+')dnl
+
+R_NC_DIM_R2C(R_nc_dim_r2c_int, int, int)
+R_NC_DIM_R2C(R_nc_dim_r2c_size, size, size_t)
 
 
