@@ -678,14 +678,12 @@ R_NC_C2R_NUM_INIT(R_nc_c2r_bit64_init, REALSXP, REAL)
    but NA or NaN values in floating point data are transferred to the output
    (because all comparisons with NA or NaN are false).
  */
-dnl R_NC_C2R_NUM(FUN, NCITYPE, ITYPE, NCOTYPE, OTYPE, MISSVAL)
+dnl R_NC_C2R_NUM(FUN, ITYPE, OTYPE, MISSVAL)
 define(`R_NC_C2R_NUM',`dnl
 pushdef(`FUN',`$1')dnl
-pushdef(`NCITYPE',`$2')dnl
-pushdef(`ITYPE',`$3')dnl
-pushdef(`NCOTYPE',`$4')dnl
-pushdef(`OTYPE',`$5')dnl
-pushdef(`MISSVAL',`$6')dnl
+pushdef(`ITYPE',`$2')dnl
+pushdef(`OTYPE',`$3')dnl
+pushdef(`MISSVAL',`$4')dnl
 static void
 FUN (R_nc_buf *io)
 {
@@ -741,7 +739,7 @@ R_NC_C2R_NUM_LOOP(0,0,0)
     }
   }
 }
-popdef(`FUN',`NCITYPE',`ITYPE',`NCOTYPE',`OTYPE',`MISSVAL')dnl
+popdef(`FUN',`ITYPE',`OTYPE',`MISSVAL')dnl
 ')dnl
 
 dnl R_NC_C2R_NUM_LOOP(WITH_FILL,WITH_MIN,WITH_MAX) - called by R_NC_C2R_NUM
@@ -768,29 +766,29 @@ ifelse(TESTSTR,`',
 popdef(`TESTSTR')dnl
 ')dnl
 
-R_NC_C2R_NUM(R_nc_c2r_schar_int, NC_BYTE, signed char, NC_INT, int, NA_INTEGER)
-R_NC_C2R_NUM(R_nc_c2r_uchar_int, NC_UBYTE, unsigned char, NC_INT, int, NA_INTEGER)
-R_NC_C2R_NUM(R_nc_c2r_short_int, NC_SHORT, short, NC_INT, int, NA_INTEGER)
-R_NC_C2R_NUM(R_nc_c2r_ushort_int, NC_USHORT, unsigned short, NC_INT, int, NA_INTEGER)
-R_NC_C2R_NUM(R_nc_c2r_int_int, NC_INT, int, NC_INT, int, NA_INTEGER)
+R_NC_C2R_NUM(R_nc_c2r_schar_int, signed char, int, NA_INTEGER)
+R_NC_C2R_NUM(R_nc_c2r_uchar_int, unsigned char, int, NA_INTEGER)
+R_NC_C2R_NUM(R_nc_c2r_short_int, short, int, NA_INTEGER)
+R_NC_C2R_NUM(R_nc_c2r_ushort_int, unsigned short, int, NA_INTEGER)
+R_NC_C2R_NUM(R_nc_c2r_int_int, int, int, NA_INTEGER)
 
-R_NC_C2R_NUM(R_nc_c2r_schar_dbl, NC_BYTE, signed char, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_uchar_dbl, NC_UBYTE, unsigned char, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_short_dbl, NC_SHORT, short, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_ushort_dbl, NC_USHORT, unsigned short, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_int_dbl, NC_INT, int, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_uint_dbl, NC_UINT, unsigned int, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_float_dbl, NC_FLOAT, float, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_dbl_dbl, NC_DOUBLE, double, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_int64_dbl, NC_INT64, long long, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_uint64_dbl, NC_UINT64, unsigned long long, NC_DOUBLE, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_schar_dbl, signed char, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_uchar_dbl, unsigned char, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_short_dbl, short, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_ushort_dbl, unsigned short, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_int_dbl, int, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_uint_dbl, unsigned int, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_float_dbl, float, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_dbl_dbl, double, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_int64_dbl, long long, double, NA_REAL)
+R_NC_C2R_NUM(R_nc_c2r_uint64_dbl, unsigned long long, double, NA_REAL)
 
 /* bit64 is treated by R as signed long long,
    but we may need to store unsigned long long,
    with very large positive values wrapping to negative values in R.
  */
-R_NC_C2R_NUM(R_nc_c2r_int64_bit64, NC_INT64, long long, NC_INT64, long long, NA_INTEGER64)
-R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, NC_UINT64, unsigned long long, NC_INT64, long long, NA_INTEGER64)
+R_NC_C2R_NUM(R_nc_c2r_int64_bit64, long long, long long, NA_INTEGER64)
+R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, unsigned long long, long long, NA_INTEGER64)
 
 
 /* Convert numeric values from C to R format with unpacking.
