@@ -836,16 +836,64 @@ FUN (R_nc_buf *io)
   if (hasmax) {
     maxval = *((ITYPE *) io->max);
   }
-  while (ii-- > 0) {
-    if ((hasfill && in[ii] == fillval) || (hasmin && in[ii] < minval) || (hasmax && maxval < in[ii])) {
-      out[ii] = NA_REAL;
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+R_NC_C2R_NUM_UNPACK_LOOP(1,1,1)
+      } else {
+R_NC_C2R_NUM_UNPACK_LOOP(1,1,0)
+      }
     } else {
-      out[ii] = in[ii] * factor + offset;
+      if (hasmax) {
+R_NC_C2R_NUM_UNPACK_LOOP(1,0,1)
+      } else {
+R_NC_C2R_NUM_UNPACK_LOOP(1,0,0)
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+R_NC_C2R_NUM_UNPACK_LOOP(0,1,1)
+      } else {
+R_NC_C2R_NUM_UNPACK_LOOP(0,1,0)
+      }
+    } else {
+      if (hasmax) {
+R_NC_C2R_NUM_UNPACK_LOOP(0,0,1)
+      } else {
+R_NC_C2R_NUM_UNPACK_LOOP(0,0,0)
+      }
     }
   }
 }
 popdef(`FUN',`ITYPE')dnl
 ')dnl
+
+dnl R_NC_C2R_NUM_UNPACK_LOOP(WITH_FILL,WITH_MIN,WITH_MAX) - called by R_NC_C2R_NUM_UNPACK
+define(`R_NC_C2R_NUM_UNPACK_LOOP',`dnl
+        while (ii-- > 0) {
+pushdef(`TESTSTR',`')dnl
+ifelse(`$1',1,`pushdef(`TESTSTR',`in[ii] == fillval')')dnl
+ifelse(`$2',1,`pushdef(`TESTSTR',
+  TESTSTR`'ifelse(TESTSTR,`',,` || ')popdef(`TESTSTR')`(in[ii] < minval)')')dnl
+ifelse(`$3',1,`pushdef(`TESTSTR',
+  TESTSTR`'ifelse(TESTSTR,`',,` || ')popdef(`TESTSTR')`(maxval < in[ii])')')dnl
+ifelse(TESTSTR,`',
+`dnl Ignore missing values:
+          out[ii] = in[ii] * factor + offset;
+',
+`dnl Replace missing values:
+          if (TESTSTR) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+')dnl
+        }dnl
+popdef(`TESTSTR')dnl
+')dnl
+
+
 
 R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_schar, signed char)
 R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uchar, unsigned char)
