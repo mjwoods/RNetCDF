@@ -748,7 +748,7 @@ dnl R_NC_C2R_NUM_LOOP(WITH_FILL,WITH_MIN,WITH_MAX) - called by R_NC_C2R_NUM
 define(`R_NC_C2R_NUM_LOOP',`dnl
         while (ii-- > 0) {
 pushdef(`TESTSTR',`')dnl
-ifelse(`$1',1,`pushdef(`TESTSTR',`(in[ii] == fillval)')')dnl
+ifelse(`$1',1,`pushdef(`TESTSTR',`in[ii] == fillval')')dnl
 ifelse(`$2',1,`pushdef(`TESTSTR',
   TESTSTR`'ifelse(TESTSTR,`',,` || ')popdef(`TESTSTR')`(in[ii] < minval)')')dnl
 ifelse(`$3',1,`pushdef(`TESTSTR',
