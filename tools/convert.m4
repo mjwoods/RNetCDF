@@ -59,20 +59,6 @@ dnl Insert warning into generated C code:
 
 #define RNC_CHARSXP_MAXLEN 2147483647
 
-#ifdef __WIN32__
-# define RNC_FMT_LL "%I64d"
-#else
-# define RNC_FMT_LL "%lld"
-#endif
-
-#ifdef __WIN32__
-# define RNC_FMT_ULL "%I64u"
-#else
-# define RNC_FMT_ULL "%llu"
-#endif
-
-#define RNC_DBL_DIG 24
-
 /* Conversion from 64-bit integers to double may round upwards,
    so that the double cannot be converted back to the original type.
    The following limits can be safely converted both ways.
@@ -344,20 +330,6 @@ R_nc_str_strsxp (R_nc_buf *io)
 /*=============================================================================*\
  *  Numeric type conversions
 \*=============================================================================*/
-
-/* Tests for missing values */
-#define R_NC_ISNA_INT(value) (value==NA_INTEGER)
-#define R_NC_ISNA_REAL(value) (ISNA(value))
-#define R_NC_ISNA_BIT64(value) (value==NA_INTEGER64)
-
-/* General range checks */
-#define R_NC_RANGE_MIN(VAL,LIM,TYPE) ((TYPE) LIM <= (TYPE) VAL)
-#define R_NC_RANGE_MAX(VAL,LIM,TYPE) ((TYPE) VAL <= (TYPE) LIM)
-/* Range checks for conversion from double to float */
-#define R_NC_RANGE_MIN_D2F(VAL,LIM,TYPE) (!R_FINITE(VAL) || (double) LIM <= VAL)
-#define R_NC_RANGE_MAX_D2F(VAL,LIM,TYPE) (!R_FINITE(VAL) || VAL <= (double) LIM)
-/* Bypass range check */
-#define R_NC_RANGE_NONE(VAL,LIM,TYPE) (1)
 
 dnl Test for missing values:
 dnl R_NC_ISNA(RTYPE,VALUE)
