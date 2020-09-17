@@ -21,6 +21,18 @@ thisdir="$( dirname "$0" )"
 basedir="$( cd "$thisdir/.." && pwd )"
 
 # Check that generated files are up-to-date:
+for file in configure configure.ac tools/convert.m4 src/convert.c ; do
+  if test -n "$(git status --porcelain "$file")"; then
+    echo "ERROR: $file has uncommitted changes" >&2
+    exit 2
+  else
+    # Set timestamp on file to match last commit:
+    time="$(git log --pretty=format:%cd -n 1 --date=iso -- "$file")"
+    time="$(date -j -f '%Y-%m-%d %H:%M:%S %z' "$time" +%Y%m%d%H%M.%S)"
+    touch -m -t "$time" "$file"
+  fi
+done
+
 if [[ "$basedir/configure.ac" -nt "$basedir/configure" ]]; then
   echo "ERROR: configure.ac is newer than configure" >&2
   exit 2
