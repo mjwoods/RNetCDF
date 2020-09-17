@@ -65,3 +65,8 @@ find . -mindepth 1 -name '.*' -prune -o -type f ! -name NEWS -print | while read
     fi
     mv "$file.sed" "$file"
   done
+
+# Update release date in DESCRIPTION:
+newdate="$( date +%Y-%m-%d )"
+sed "s|Date:.*|Date: $newdate|" DESCRIPTION >DESCRIPTION.sed
+mv DESCRIPTION.sed DESCRIPTION
