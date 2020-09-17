@@ -711,15 +711,61 @@ FUN (R_nc_buf *io)
   if (hasmax) {
     maxval = *((ITYPE *) io->max);
   }
-  while (ii-- > 0) {
-    if ((hasfill && in[ii] == fillval) || (hasmin && in[ii] < minval) || (hasmax && maxval < in[ii])) {
-      out[ii] = MISSVAL;
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+R_NC_C2R_NUM_LOOP(1,1,1)
+      } else {
+R_NC_C2R_NUM_LOOP(1,1,0)
+      }
     } else {
-      out[ii] = in[ii];
+      if (hasmax) {
+R_NC_C2R_NUM_LOOP(1,0,1)
+      } else {
+R_NC_C2R_NUM_LOOP(1,0,0)
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+R_NC_C2R_NUM_LOOP(0,1,1)
+      } else {
+R_NC_C2R_NUM_LOOP(0,1,0)
+      }
+    } else {
+      if (hasmax) {
+R_NC_C2R_NUM_LOOP(0,0,1)
+      } else {
+R_NC_C2R_NUM_LOOP(0,0,0)
+      }
     }
   }
 }
 popdef(`FUN',`NCITYPE',`ITYPE',`NCOTYPE',`OTYPE',`MISSVAL')dnl
+')dnl
+
+dnl R_NC_C2R_NUM_LOOP(WITH_FILL,WITH_MIN,WITH_MAX) - called by R_NC_C2R_NUM
+define(`R_NC_C2R_NUM_LOOP',`dnl
+        while (ii-- > 0) {
+pushdef(`TESTSTR',`')dnl
+ifelse(`$1',1,`pushdef(`TESTSTR',`(in[ii] == fillval)')')dnl
+ifelse(`$2',1,`pushdef(`TESTSTR',
+  TESTSTR`'ifelse(TESTSTR,`',,` || ')popdef(`TESTSTR')`(in[ii] < minval)')')dnl
+ifelse(`$3',1,`pushdef(`TESTSTR',
+  TESTSTR`'ifelse(TESTSTR,`',,` || ')popdef(`TESTSTR')`(maxval < in[ii])')')dnl
+ifelse(TESTSTR,`',
+`dnl Ignore missing values:
+          out[ii] = in[ii];
+',
+`dnl Replace missing values:
+          if (TESTSTR) {
+            out[ii] = MISSVAL;
+          } else {
+            out[ii] = in[ii];
+          }
+')dnl
+        }dnl
+popdef(`TESTSTR')dnl
 ')dnl
 
 R_NC_C2R_NUM(R_nc_c2r_schar_int, NC_BYTE, signed char, NC_INT, int, NA_INTEGER)
