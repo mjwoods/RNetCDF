@@ -20,6 +20,19 @@ fi
 thisdir="$( dirname "$0" )"
 cd "$thisdir/.."
 
+# Define function to convert date formats:
+if date -v 1d 2>/dev/null; then
+  # BSD date
+  DATEFMT() {
+    date -j -f '%Y-%m-%d %H:%M:%S %z' "$1" +%Y%m%d%H%M.%S
+  }
+else
+  # GNU date
+  DATEFMT() {
+    date -d "$1" +%Y%m%d%H%M.%S
+  }
+fi  
+
 # Check that generated files are up-to-date:
 if test -n "$( git status --porcelain )"; then
   echo "WARNING: uncommitted changes in package" >&2
@@ -32,7 +45,7 @@ for file in configure configure.ac tools/convert.m4 src/convert.c ; do
   else
     # Set timestamp on file to match last commit:
     time="$(git log --pretty=format:%cd -n 1 --date=iso -- "$file")"
-    time="$(date -j -f '%Y-%m-%d %H:%M:%S %z' "$time" +%Y%m%d%H%M.%S)"
+    time="$(DATEFMT "$time")"
     touch -m -t "$time" "$file"
   fi
 done
