@@ -44,7 +44,7 @@ for file in configure configure.ac tools/convert.m4 src/convert.c ; do
     exit 2
   else
     # Set timestamp on file to match last commit:
-    time="$(git log --pretty=format:%cd -n 1 --date=iso -- "$file")"
+    time="$(git log --pretty=format:%ad -n 1 --date=iso -- "$file")"
     time="$(DATEFMT "$time")"
     touch -m -t "$time" "$file"
   fi
