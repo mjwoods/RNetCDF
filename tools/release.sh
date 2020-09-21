@@ -21,7 +21,7 @@ thisdir="$( dirname "$0" )"
 cd "$thisdir/.."
 
 # Define function to convert date formats:
-if date -v 1d 2>/dev/null; then
+if date -v 1d >/dev/null 2>&1; then
   # BSD date
   DATEFMT() {
     date -j -f '%Y-%m-%d %H:%M:%S %z' "$1" +%Y%m%d%H%M.%S
