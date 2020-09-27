@@ -1,3 +1,5 @@
+/* NOTE: This code was generated from tools/convert.m4 */
+
 /*=============================================================================*\
  *
  *  Name:       convert.c
@@ -55,20 +57,6 @@
 \*=============================================================================*/
 
 #define RNC_CHARSXP_MAXLEN 2147483647
-
-#ifdef __WIN32__
-# define RNC_FMT_LL "%I64d"
-#else
-# define RNC_FMT_LL "%lld"
-#endif
-
-#ifdef __WIN32__
-# define RNC_FMT_ULL "%I64u"
-#else
-# define RNC_FMT_ULL "%llu"
-#endif
-
-#define RNC_DBL_DIG 24
 
 /* Conversion from 64-bit integers to double may round upwards,
    so that the double cannot be converted back to the original type.
@@ -342,19 +330,6 @@ R_nc_str_strsxp (R_nc_buf *io)
  *  Numeric type conversions
 \*=============================================================================*/
 
-/* Tests for missing values */
-#define R_NC_ISNA_INT(value) (value==NA_INTEGER)
-#define R_NC_ISNA_REAL(value) (ISNA(value))
-#define R_NC_ISNA_BIT64(value) (value==NA_INTEGER64)
-
-/* General range checks */
-#define R_NC_RANGE_MIN(VAL,LIM,TYPE) ((TYPE) LIM <= (TYPE) VAL)
-#define R_NC_RANGE_MAX(VAL,LIM,TYPE) ((TYPE) VAL <= (TYPE) LIM)
-/* Range checks for conversion from double to float */
-#define R_NC_RANGE_MIN_D2F(VAL,LIM,TYPE) (!R_FINITE(VAL) || (double) LIM <= VAL)
-#define R_NC_RANGE_MAX_D2F(VAL,LIM,TYPE) (!R_FINITE(VAL) || VAL <= (double) LIM)
-/* Bypass range check */
-#define R_NC_RANGE_NONE(VAL,LIM,TYPE) (1)
 
 
 /* Convert numeric values from R to C format.
@@ -362,258 +337,3147 @@ R_nc_str_strsxp (R_nc_buf *io)
    In special cases, the output is a pointer to the input data,
    so the output data should not be modified.
    An error is raised if any input values are outside the range of the output type.
-   For certain combinations of types, some or all range checks are always true,
-   and we assume that an optimising compiler will remove these checks.
  */
-#define R_NC_R2C_NUM(FUN, \
-  NCITYPE, ITYPE, IFUN, NCOTYPE, OTYPE, \
-  NATEST, MINTEST, MINVAL, MAXTEST, MAXVAL) \
-static const OTYPE* \
-FUN (SEXP rv, int ndim, const size_t *xdim, \
-     size_t fillsize, const OTYPE *fill) \
-{ \
-  size_t ii, cnt, hasfill; \
-  const ITYPE *in; \
-  OTYPE fillval=0, *out; \
-  in = (ITYPE *) IFUN (rv); \
-  cnt = R_nc_length (ndim, xdim); \
-  if ((size_t) xlength (rv) < cnt) { \
-    error (RNC_EDATALEN); \
-  } \
-  hasfill = (fill != NULL); \
-  if (hasfill || (NCITYPE != NCOTYPE)) { \
-    out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE)); \
-  } else { \
-    out = (OTYPE *) IFUN (rv); \
-    return out; \
-  } \
-  if (hasfill) { \
-    if (fillsize != sizeof(OTYPE)) { \
-      error ("Size of fill value does not match output type"); \
-    } \
-    fillval = *fill; \
-  } \
-  for (ii=0; ii<cnt; ii++) { \
-    if (hasfill && NATEST(in[ii])) { \
-      out[ii] = fillval; \
-    } else if (MINTEST(in[ii],MINVAL,ITYPE) && MAXTEST(in[ii],MAXVAL,ITYPE)) { \
-      out[ii] = in[ii]; \
-    } else { \
-      error (nc_strerror (NC_ERANGE)); \
-    } \
-  } \
-  return out; \
+
+
+
+
+
+static const signed char*
+R_nc_r2c_int_schar (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const signed char *fill)
+{
+  size_t ii, cnt, hasfill;
+  const int *in;
+  signed char fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (signed char *) R_alloc (cnt, sizeof(signed char));
+  if (hasfill) {
+    if (fillsize != sizeof(signed char)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else if (((int) SCHAR_MIN <= in[ii]) && (in[ii] <= (int) SCHAR_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((int) SCHAR_MIN <= in[ii]) && (in[ii] <= (int) SCHAR_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
 }
 
-R_NC_R2C_NUM(R_nc_r2c_int_schar, NC_INT, int, INTEGER, NC_BYTE, signed char, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX)
-R_NC_R2C_NUM(R_nc_r2c_int_uchar, NC_INT, int, INTEGER, NC_UBYTE, unsigned char, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX)
-R_NC_R2C_NUM(R_nc_r2c_int_short, NC_INT, int, INTEGER, NC_SHORT, short, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX)
-R_NC_R2C_NUM(R_nc_r2c_int_ushort, NC_INT, int, INTEGER, NC_USHORT, unsigned short, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX)
-R_NC_R2C_NUM(R_nc_r2c_int_int, NC_INT, int, INTEGER, NC_INT, int, \
-  R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
-R_NC_R2C_NUM(R_nc_r2c_int_uint, NC_INT, int, INTEGER, NC_UINT, unsigned int, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_NONE, )
-R_NC_R2C_NUM(R_nc_r2c_int_ll, NC_INT, int, INTEGER, NC_INT64, long long, \
-  R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
-R_NC_R2C_NUM(R_nc_r2c_int_ull, NC_INT, int, INTEGER, NC_UINT64, unsigned long long, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_NONE, )
-R_NC_R2C_NUM(R_nc_r2c_int_float, NC_INT, int, INTEGER, NC_FLOAT, float, \
-  R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
-R_NC_R2C_NUM(R_nc_r2c_int_dbl, NC_INT, int, INTEGER, NC_DOUBLE, double, \
-  R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+static const unsigned char*
+R_nc_r2c_int_uchar (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned char *fill)
+{
+  size_t ii, cnt, hasfill;
+  const int *in;
+  unsigned char fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (unsigned char *) R_alloc (cnt, sizeof(unsigned char));
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned char)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else if (((int) 0 <= in[ii]) && (in[ii] <= (int) UCHAR_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((int) 0 <= in[ii]) && (in[ii] <= (int) UCHAR_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const short*
+R_nc_r2c_int_short (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const short *fill)
+{
+  size_t ii, cnt, hasfill;
+  const int *in;
+  short fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (short *) R_alloc (cnt, sizeof(short));
+  if (hasfill) {
+    if (fillsize != sizeof(short)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else if (((int) SHRT_MIN <= in[ii]) && (in[ii] <= (int) SHRT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((int) SHRT_MIN <= in[ii]) && (in[ii] <= (int) SHRT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned short*
+R_nc_r2c_int_ushort (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned short *fill)
+{
+  size_t ii, cnt, hasfill;
+  const int *in;
+  unsigned short fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (unsigned short *) R_alloc (cnt, sizeof(unsigned short));
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned short)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else if (((int) 0 <= in[ii]) && (in[ii] <= (int) USHRT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((int) 0 <= in[ii]) && (in[ii] <= (int) USHRT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const int*
+R_nc_r2c_int_int (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const int *fill)
+{
+  size_t ii, cnt, hasfill;
+  const int *in;
+  int fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    out = (int *) R_alloc (cnt, sizeof(int));
+  } else {
+    out = (int *) INTEGER (rv);
+    return out;
+  }
+  if (hasfill) {
+    if (fillsize != sizeof(int)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else {
+        out[ii] = in[ii];
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        out[ii] = in[ii];
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned int*
+R_nc_r2c_int_uint (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned int *fill)
+{
+  size_t ii, cnt, hasfill;
+  const int *in;
+  unsigned int fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (unsigned int *) R_alloc (cnt, sizeof(unsigned int));
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned int)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else if (((int) 0 <= in[ii])) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((int) 0 <= in[ii])) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const long long*
+R_nc_r2c_int_ll (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const long long *fill)
+{
+  size_t ii, cnt, hasfill;
+  const int *in;
+  long long fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (long long *) R_alloc (cnt, sizeof(long long));
+  if (hasfill) {
+    if (fillsize != sizeof(long long)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else {
+        out[ii] = in[ii];
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        out[ii] = in[ii];
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned long long*
+R_nc_r2c_int_ull (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned long long *fill)
+{
+  size_t ii, cnt, hasfill;
+  const int *in;
+  unsigned long long fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (unsigned long long *) R_alloc (cnt, sizeof(unsigned long long));
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned long long)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else if (((int) 0 <= in[ii])) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((int) 0 <= in[ii])) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const float*
+R_nc_r2c_int_float (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const float *fill)
+{
+  size_t ii, cnt, hasfill;
+  const int *in;
+  float fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (float *) R_alloc (cnt, sizeof(float));
+  if (hasfill) {
+    if (fillsize != sizeof(float)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else {
+        out[ii] = in[ii];
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        out[ii] = in[ii];
+      }
+    }
+  }
+  return out;
+}
+
+static const double*
+R_nc_r2c_int_dbl (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const double *fill)
+{
+  size_t ii, cnt, hasfill;
+  const int *in;
+  double fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (double *) R_alloc (cnt, sizeof(double));
+  if (hasfill) {
+    if (fillsize != sizeof(double)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else {
+        out[ii] = in[ii];
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        out[ii] = in[ii];
+      }
+    }
+  }
+  return out;
+}
+
 /* Only convert non-negative values to size_t */
 #if SIZEOF_INT > SIZEOF_SIZE_T
-R_NC_R2C_NUM(R_nc_r2c_int_size, NC_INT, int, INTEGER, NC_NAT, size_t, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX)
+static const size_t*
+R_nc_r2c_int_size (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const size_t *fill)
+{
+  size_t ii, cnt, hasfill;
+  const int *in;
+  size_t fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (size_t *) R_alloc (cnt, sizeof(size_t));
+  if (hasfill) {
+    if (fillsize != sizeof(size_t)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else if (((int) 0 <= in[ii]) && (in[ii] <= (int) SIZE_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((int) 0 <= in[ii]) && (in[ii] <= (int) SIZE_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
 #else
-R_NC_R2C_NUM(R_nc_r2c_int_size, NC_INT, int, INTEGER, NC_NAT, size_t, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_NONE, )
+static const size_t*
+R_nc_r2c_int_size (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const size_t *fill)
+{
+  size_t ii, cnt, hasfill;
+  const int *in;
+  size_t fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (size_t *) R_alloc (cnt, sizeof(size_t));
+  if (hasfill) {
+    if (fillsize != sizeof(size_t)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else if (((int) 0 <= in[ii])) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((int) 0 <= in[ii])) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
 #endif
 
-R_NC_R2C_NUM(R_nc_r2c_dbl_schar, NC_DOUBLE, double, REAL, NC_BYTE, signed char, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX)
-R_NC_R2C_NUM(R_nc_r2c_dbl_uchar, NC_DOUBLE, double, REAL, NC_UBYTE, unsigned char, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX)
-R_NC_R2C_NUM(R_nc_r2c_dbl_short, NC_DOUBLE, double, REAL, NC_SHORT, short, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX)
-R_NC_R2C_NUM(R_nc_r2c_dbl_ushort, NC_DOUBLE, double, REAL, NC_USHORT, unsigned short, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX)
-R_NC_R2C_NUM(R_nc_r2c_dbl_int, NC_DOUBLE, double, REAL, NC_INT, int, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX)
-R_NC_R2C_NUM(R_nc_r2c_dbl_uint, NC_DOUBLE, double, REAL, NC_UINT, unsigned int, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX)
-R_NC_R2C_NUM(R_nc_r2c_dbl_ll, NC_DOUBLE, double, REAL, NC_INT64, long long, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, LLONG_MIN_DBL, R_NC_RANGE_MAX, LLONG_MAX_DBL)
-R_NC_R2C_NUM(R_nc_r2c_dbl_ull, NC_DOUBLE, double, REAL, NC_UINT64, unsigned long long, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, ULLONG_MAX_DBL)
-R_NC_R2C_NUM(R_nc_r2c_dbl_float, NC_DOUBLE, double, REAL, NC_FLOAT, float, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN_D2F, -FLT_MAX, R_NC_RANGE_MAX_D2F, FLT_MAX)
-R_NC_R2C_NUM(R_nc_r2c_dbl_dbl, NC_DOUBLE, double, REAL, NC_DOUBLE, double, \
-  R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+static const signed char*
+R_nc_r2c_dbl_schar (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const signed char *fill)
+{
+  size_t ii, cnt, hasfill;
+  const double *in;
+  signed char fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (signed char *) R_alloc (cnt, sizeof(signed char));
+  if (hasfill) {
+    if (fillsize != sizeof(signed char)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else if (((double) SCHAR_MIN <= in[ii]) && (in[ii] <= (double) SCHAR_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((double) SCHAR_MIN <= in[ii]) && (in[ii] <= (double) SCHAR_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned char*
+R_nc_r2c_dbl_uchar (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned char *fill)
+{
+  size_t ii, cnt, hasfill;
+  const double *in;
+  unsigned char fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (unsigned char *) R_alloc (cnt, sizeof(unsigned char));
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned char)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) UCHAR_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((double) 0 <= in[ii]) && (in[ii] <= (double) UCHAR_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const short*
+R_nc_r2c_dbl_short (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const short *fill)
+{
+  size_t ii, cnt, hasfill;
+  const double *in;
+  short fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (short *) R_alloc (cnt, sizeof(short));
+  if (hasfill) {
+    if (fillsize != sizeof(short)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else if (((double) SHRT_MIN <= in[ii]) && (in[ii] <= (double) SHRT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((double) SHRT_MIN <= in[ii]) && (in[ii] <= (double) SHRT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned short*
+R_nc_r2c_dbl_ushort (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned short *fill)
+{
+  size_t ii, cnt, hasfill;
+  const double *in;
+  unsigned short fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (unsigned short *) R_alloc (cnt, sizeof(unsigned short));
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned short)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) USHRT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((double) 0 <= in[ii]) && (in[ii] <= (double) USHRT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const int*
+R_nc_r2c_dbl_int (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const int *fill)
+{
+  size_t ii, cnt, hasfill;
+  const double *in;
+  int fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (int *) R_alloc (cnt, sizeof(int));
+  if (hasfill) {
+    if (fillsize != sizeof(int)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else if (((double) INT_MIN <= in[ii]) && (in[ii] <= (double) INT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((double) INT_MIN <= in[ii]) && (in[ii] <= (double) INT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned int*
+R_nc_r2c_dbl_uint (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned int *fill)
+{
+  size_t ii, cnt, hasfill;
+  const double *in;
+  unsigned int fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (unsigned int *) R_alloc (cnt, sizeof(unsigned int));
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned int)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) UINT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((double) 0 <= in[ii]) && (in[ii] <= (double) UINT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const long long*
+R_nc_r2c_dbl_ll (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const long long *fill)
+{
+  size_t ii, cnt, hasfill;
+  const double *in;
+  long long fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (long long *) R_alloc (cnt, sizeof(long long));
+  if (hasfill) {
+    if (fillsize != sizeof(long long)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else if (((double) LLONG_MIN_DBL <= in[ii]) && (in[ii] <= (double) LLONG_MAX_DBL)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((double) LLONG_MIN_DBL <= in[ii]) && (in[ii] <= (double) LLONG_MAX_DBL)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned long long*
+R_nc_r2c_dbl_ull (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned long long *fill)
+{
+  size_t ii, cnt, hasfill;
+  const double *in;
+  unsigned long long fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (unsigned long long *) R_alloc (cnt, sizeof(unsigned long long));
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned long long)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) ULLONG_MAX_DBL)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((double) 0 <= in[ii]) && (in[ii] <= (double) ULLONG_MAX_DBL)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const float*
+R_nc_r2c_dbl_float (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const float *fill)
+{
+  size_t ii, cnt, hasfill;
+  const double *in;
+  float fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (float *) R_alloc (cnt, sizeof(float));
+  if (hasfill) {
+    if (fillsize != sizeof(float)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else if ((!R_FINITE(in[ii])) || (((double) -FLT_MAX <= in[ii]) && (in[ii] <= (double) FLT_MAX))) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if ((!R_FINITE(in[ii])) || (((double) -FLT_MAX <= in[ii]) && (in[ii] <= (double) FLT_MAX))) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const double*
+R_nc_r2c_dbl_dbl (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const double *fill)
+{
+  size_t ii, cnt, hasfill;
+  const double *in;
+  double fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    out = (double *) R_alloc (cnt, sizeof(double));
+  } else {
+    out = (double *) REAL (rv);
+    return out;
+  }
+  if (hasfill) {
+    if (fillsize != sizeof(double)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else {
+        out[ii] = in[ii];
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        out[ii] = in[ii];
+      }
+    }
+  }
+  return out;
+}
+
 /* Only convert non-negative values to size_t */
-R_NC_R2C_NUM(R_nc_r2c_dbl_size, NC_DOUBLE, double, REAL, NC_NAT, size_t, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX_DBL)
+static const size_t*
+R_nc_r2c_dbl_size (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const size_t *fill)
+{
+  size_t ii, cnt, hasfill;
+  const double *in;
+  size_t fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (size_t *) R_alloc (cnt, sizeof(size_t));
+  if (hasfill) {
+    if (fillsize != sizeof(size_t)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) SIZE_MAX_DBL)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((double) 0 <= in[ii]) && (in[ii] <= (double) SIZE_MAX_DBL)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
 
 /* bit64 is treated by R as signed long long,
    but we may need to store unsigned long long,
    with very large positive values wrapping to negative values in R.
    We allow wrapping in reverse for conversion of bit64 to unsigned long long.
  */
-R_NC_R2C_NUM(R_nc_r2c_bit64_schar, NC_INT64, long long, REAL, NC_BYTE, signed char, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX)
-R_NC_R2C_NUM(R_nc_r2c_bit64_uchar, NC_INT64, long long, REAL, NC_UBYTE, unsigned char, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX)
-R_NC_R2C_NUM(R_nc_r2c_bit64_short, NC_INT64, long long, REAL, NC_SHORT, short, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX)
-R_NC_R2C_NUM(R_nc_r2c_bit64_ushort, NC_INT64, long long, REAL, NC_USHORT, unsigned short, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX)
-R_NC_R2C_NUM(R_nc_r2c_bit64_int, NC_INT64, long long, REAL, NC_INT, int, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX)
-R_NC_R2C_NUM(R_nc_r2c_bit64_uint, NC_INT64, long long, REAL, NC_UINT, unsigned int, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX)
-R_NC_R2C_NUM(R_nc_r2c_bit64_ll, NC_INT64, long long, REAL, NC_INT64, long long, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
-R_NC_R2C_NUM(R_nc_r2c_bit64_ull, NC_INT64, long long, REAL, NC_UINT64, unsigned long long, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
-R_NC_R2C_NUM(R_nc_r2c_bit64_float, NC_INT64, long long, REAL, NC_FLOAT, float, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
-R_NC_R2C_NUM(R_nc_r2c_bit64_dbl, NC_INT64, long long, REAL, NC_DOUBLE, double, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+static const signed char*
+R_nc_r2c_bit64_schar (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const signed char *fill)
+{
+  size_t ii, cnt, hasfill;
+  const long long *in;
+  signed char fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (signed char *) R_alloc (cnt, sizeof(signed char));
+  if (hasfill) {
+    if (fillsize != sizeof(signed char)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else if (((long long) SCHAR_MIN <= in[ii]) && (in[ii] <= (long long) SCHAR_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((long long) SCHAR_MIN <= in[ii]) && (in[ii] <= (long long) SCHAR_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned char*
+R_nc_r2c_bit64_uchar (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned char *fill)
+{
+  size_t ii, cnt, hasfill;
+  const long long *in;
+  unsigned char fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (unsigned char *) R_alloc (cnt, sizeof(unsigned char));
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned char)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) UCHAR_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) UCHAR_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const short*
+R_nc_r2c_bit64_short (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const short *fill)
+{
+  size_t ii, cnt, hasfill;
+  const long long *in;
+  short fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (short *) R_alloc (cnt, sizeof(short));
+  if (hasfill) {
+    if (fillsize != sizeof(short)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else if (((long long) SHRT_MIN <= in[ii]) && (in[ii] <= (long long) SHRT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((long long) SHRT_MIN <= in[ii]) && (in[ii] <= (long long) SHRT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned short*
+R_nc_r2c_bit64_ushort (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned short *fill)
+{
+  size_t ii, cnt, hasfill;
+  const long long *in;
+  unsigned short fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (unsigned short *) R_alloc (cnt, sizeof(unsigned short));
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned short)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) USHRT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) USHRT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const int*
+R_nc_r2c_bit64_int (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const int *fill)
+{
+  size_t ii, cnt, hasfill;
+  const long long *in;
+  int fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (int *) R_alloc (cnt, sizeof(int));
+  if (hasfill) {
+    if (fillsize != sizeof(int)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else if (((long long) INT_MIN <= in[ii]) && (in[ii] <= (long long) INT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((long long) INT_MIN <= in[ii]) && (in[ii] <= (long long) INT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned int*
+R_nc_r2c_bit64_uint (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned int *fill)
+{
+  size_t ii, cnt, hasfill;
+  const long long *in;
+  unsigned int fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (unsigned int *) R_alloc (cnt, sizeof(unsigned int));
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned int)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) UINT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) UINT_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
+static const long long*
+R_nc_r2c_bit64_ll (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const long long *fill)
+{
+  size_t ii, cnt, hasfill;
+  const long long *in;
+  long long fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    out = (long long *) R_alloc (cnt, sizeof(long long));
+  } else {
+    out = (long long *) REAL (rv);
+    return out;
+  }
+  if (hasfill) {
+    if (fillsize != sizeof(long long)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else {
+        out[ii] = in[ii];
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        out[ii] = in[ii];
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned long long*
+R_nc_r2c_bit64_ull (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned long long *fill)
+{
+  size_t ii, cnt, hasfill;
+  const long long *in;
+  unsigned long long fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (unsigned long long *) R_alloc (cnt, sizeof(unsigned long long));
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned long long)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else {
+        out[ii] = in[ii];
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        out[ii] = in[ii];
+      }
+    }
+  }
+  return out;
+}
+
+static const float*
+R_nc_r2c_bit64_float (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const float *fill)
+{
+  size_t ii, cnt, hasfill;
+  const long long *in;
+  float fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (float *) R_alloc (cnt, sizeof(float));
+  if (hasfill) {
+    if (fillsize != sizeof(float)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else {
+        out[ii] = in[ii];
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        out[ii] = in[ii];
+      }
+    }
+  }
+  return out;
+}
+
+static const double*
+R_nc_r2c_bit64_dbl (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const double *fill)
+{
+  size_t ii, cnt, hasfill;
+  const long long *in;
+  double fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (double *) R_alloc (cnt, sizeof(double));
+  if (hasfill) {
+    if (fillsize != sizeof(double)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else {
+        out[ii] = in[ii];
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        out[ii] = in[ii];
+      }
+    }
+  }
+  return out;
+}
+
 #if SIZEOF_LONG_LONG > SIZEOF_SIZE_T
-R_NC_R2C_NUM(R_nc_r2c_bit64_size, NC_INT64, long long, REAL, NC_NAT, size_t, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, SIZE_MAX)
+static const size_t*
+R_nc_r2c_bit64_size (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const size_t *fill)
+{
+  size_t ii, cnt, hasfill;
+  const long long *in;
+  size_t fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (size_t *) R_alloc (cnt, sizeof(size_t));
+  if (hasfill) {
+    if (fillsize != sizeof(size_t)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) SIZE_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) SIZE_MAX)) {
+        out[ii] = in[ii];
+      } else {
+        error (nc_strerror (NC_ERANGE));
+      }
+    }
+  }
+  return out;
+}
+
 #else
-R_NC_R2C_NUM(R_nc_r2c_bit64_size, NC_INT64, long long, REAL, NC_NAT, size_t, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+static const size_t*
+R_nc_r2c_bit64_size (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const size_t *fill)
+{
+  size_t ii, cnt, hasfill;
+  const long long *in;
+  size_t fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  hasfill = (fill != NULL);
+  out = (size_t *) R_alloc (cnt, sizeof(size_t));
+  if (hasfill) {
+    if (fillsize != sizeof(size_t)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else {
+        out[ii] = in[ii];
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        out[ii] = in[ii];
+      }
+    }
+  }
+  return out;
+}
+
 #endif
 
 
 /* Convert numeric values from R to C format with packing.
    Memory for the result is allocated and freed by R.
    An error is raised if any packed values are outside the range of the output type.
-   For certain combinations of types, some or all range checks are always true,
-   and we assume that an optimising compiler will remove these checks.
  */
-#define R_NC_R2C_NUM_PACK(FUN, \
-  NCITYPE, ITYPE, IFUN, NCOTYPE, OTYPE, \
-  NATEST, MINTEST, MINVAL, MAXTEST, MAXVAL) \
-static const OTYPE* \
-FUN (SEXP rv, int ndim, const size_t *xdim, \
-     size_t fillsize, const OTYPE *fill, \
-     const double *scale, const double *add) \
-{ \
-  size_t ii, cnt, hasfill; \
-  double factor=1.0, offset=0.0, dpack; \
-  const ITYPE *in; \
-  OTYPE fillval=0, *out; \
-  in = (ITYPE *) IFUN (rv); \
-  cnt = R_nc_length (ndim, xdim); \
-  if ((size_t) xlength (rv) < cnt) { \
-    error (RNC_EDATALEN); \
-  } \
-  out = (OTYPE *) R_alloc (cnt, sizeof(OTYPE)); \
-  if (scale) { \
-    factor = *scale; \
-  } \
-  if (add) { \
-    offset = *add; \
-  } \
-  hasfill = (fill != NULL); \
-  if (hasfill) { \
-    if (fillsize != sizeof(OTYPE)) { \
-      error ("Size of fill value does not match output type"); \
-    } \
-    fillval = *fill; \
-  } \
-  for (ii=0; ii<cnt; ii++) { \
-    if (hasfill && NATEST(in[ii])) { \
-      out[ii] = fillval; \
-    } else { \
-      dpack = round((in[ii] - offset) / factor); \
-      if (MINTEST(dpack,MINVAL,double) && MAXTEST(dpack,MAXVAL,double)) { \
-        out[ii] = dpack; \
-      } else { \
-        error (nc_strerror (NC_ERANGE)); \
-      } \
-    } \
-  } \
-  return out; \
-}
+
+
+
 
 /* Define functions similar to those for conversions without packing,
  * noting that range checks are used before conversions from double to the output type.
  */
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_schar, NC_INT, int, INTEGER, NC_BYTE, signed char, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_uchar, NC_INT, int, INTEGER, NC_UBYTE, unsigned char, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_short, NC_INT, int, INTEGER, NC_SHORT, short, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_ushort, NC_INT, int, INTEGER, NC_USHORT, unsigned short, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_int, NC_INT, int, INTEGER, NC_INT, int, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_uint, NC_INT, int, INTEGER, NC_UINT, unsigned int, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_ll, NC_INT, int, INTEGER, NC_INT64, long long, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, LLONG_MIN_DBL , R_NC_RANGE_MAX, LLONG_MAX_DBL)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_ull, NC_INT, int, INTEGER, NC_UINT64, unsigned long long, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, ULLONG_MAX_DBL)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_float, NC_INT, int, INTEGER, NC_FLOAT, float, \
-  R_NC_ISNA_INT, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_int_dbl, NC_INT, int, INTEGER, NC_DOUBLE, double, \
-  R_NC_ISNA_INT, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+static const signed char*
+R_nc_r2c_pack_int_schar (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const signed char *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const int *in;
+  signed char fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (signed char *) R_alloc (cnt, sizeof(signed char));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(signed char)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
 
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_schar, NC_DOUBLE, double, REAL, NC_BYTE, signed char, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_uchar, NC_DOUBLE, double, REAL, NC_UBYTE, unsigned char, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_short, NC_DOUBLE, double, REAL, NC_SHORT, short, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_ushort, NC_DOUBLE, double, REAL, NC_USHORT, unsigned short, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_int, NC_DOUBLE, double, REAL, NC_INT, int, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_uint, NC_DOUBLE, double, REAL, NC_UINT, unsigned int, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_ll, NC_DOUBLE, double, REAL, NC_INT64, long long, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, LLONG_MIN_DBL, R_NC_RANGE_MAX, LLONG_MAX_DBL)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_ull, NC_DOUBLE, double, REAL, NC_UINT64, unsigned long long, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, ULLONG_MAX_DBL)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_float, NC_DOUBLE, double, REAL, NC_FLOAT, float, \
-  R_NC_ISNA_REAL, R_NC_RANGE_MIN_D2F, -FLT_MAX, R_NC_RANGE_MAX_D2F, FLT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_dbl_dbl, NC_DOUBLE, double, REAL, NC_DOUBLE, double, \
-  R_NC_ISNA_REAL, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+static const unsigned char*
+R_nc_r2c_pack_int_uchar (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned char *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const int *in;
+  unsigned char fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (unsigned char *) R_alloc (cnt, sizeof(unsigned char));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned char)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const short*
+R_nc_r2c_pack_int_short (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const short *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const int *in;
+  short fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (short *) R_alloc (cnt, sizeof(short));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(short)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned short*
+R_nc_r2c_pack_int_ushort (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned short *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const int *in;
+  unsigned short fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (unsigned short *) R_alloc (cnt, sizeof(unsigned short));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned short)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const int*
+R_nc_r2c_pack_int_int (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const int *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const int *in;
+  int fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (int *) R_alloc (cnt, sizeof(int));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(int)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned int*
+R_nc_r2c_pack_int_uint (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned int *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const int *in;
+  unsigned int fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (unsigned int *) R_alloc (cnt, sizeof(unsigned int));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned int)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const long long*
+R_nc_r2c_pack_int_ll (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const long long *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const int *in;
+  long long fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (long long *) R_alloc (cnt, sizeof(long long));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(long long)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) LLONG_MIN_DBL  <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) LLONG_MIN_DBL  <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned long long*
+R_nc_r2c_pack_int_ull (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned long long *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const int *in;
+  unsigned long long fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (unsigned long long *) R_alloc (cnt, sizeof(unsigned long long));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned long long)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const float*
+R_nc_r2c_pack_int_float (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const float *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const int *in;
+  float fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (float *) R_alloc (cnt, sizeof(float));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(float)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if ((!R_FINITE(dpack)) || (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX))) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if ((!R_FINITE(dpack)) || (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX))) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const double*
+R_nc_r2c_pack_int_dbl (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const double *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const int *in;
+  double fillval=0, *out;
+  in = (int *) INTEGER (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (double *) R_alloc (cnt, sizeof(double));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(double)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        out[ii] = dpack;
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        out[ii] = dpack;
+      }
+    }
+  }
+  return out;
+}
+
+static const signed char*
+R_nc_r2c_pack_dbl_schar (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const signed char *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const double *in;
+  signed char fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (signed char *) R_alloc (cnt, sizeof(signed char));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(signed char)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned char*
+R_nc_r2c_pack_dbl_uchar (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned char *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const double *in;
+  unsigned char fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (unsigned char *) R_alloc (cnt, sizeof(unsigned char));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned char)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const short*
+R_nc_r2c_pack_dbl_short (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const short *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const double *in;
+  short fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (short *) R_alloc (cnt, sizeof(short));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(short)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned short*
+R_nc_r2c_pack_dbl_ushort (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned short *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const double *in;
+  unsigned short fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (unsigned short *) R_alloc (cnt, sizeof(unsigned short));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned short)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const int*
+R_nc_r2c_pack_dbl_int (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const int *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const double *in;
+  int fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (int *) R_alloc (cnt, sizeof(int));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(int)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned int*
+R_nc_r2c_pack_dbl_uint (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned int *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const double *in;
+  unsigned int fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (unsigned int *) R_alloc (cnt, sizeof(unsigned int));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned int)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const long long*
+R_nc_r2c_pack_dbl_ll (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const long long *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const double *in;
+  long long fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (long long *) R_alloc (cnt, sizeof(long long));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(long long)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned long long*
+R_nc_r2c_pack_dbl_ull (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned long long *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const double *in;
+  unsigned long long fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (unsigned long long *) R_alloc (cnt, sizeof(unsigned long long));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned long long)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const float*
+R_nc_r2c_pack_dbl_float (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const float *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const double *in;
+  float fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (float *) R_alloc (cnt, sizeof(float));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(float)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if ((!R_FINITE(dpack)) || (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX))) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if ((!R_FINITE(dpack)) || (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX))) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const double*
+R_nc_r2c_pack_dbl_dbl (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const double *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const double *in;
+  double fillval=0, *out;
+  in = (double *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (double *) R_alloc (cnt, sizeof(double));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(double)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((ISNA(in[ii]))) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        out[ii] = dpack;
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        out[ii] = dpack;
+      }
+    }
+  }
+  return out;
+}
+
 
 /* bit64 is treated by R as signed long long,
    but we may need to store unsigned long long,
    with very large positive values wrapping to negative values in R.
    We allow wrapping in reverse for conversion of bit64 to unsigned long long.
  */
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_schar, NC_INT64, long long, REAL, NC_BYTE, signed char, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, SCHAR_MIN, R_NC_RANGE_MAX, SCHAR_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_uchar, NC_INT64, long long, REAL, NC_UBYTE, unsigned char, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UCHAR_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_short, NC_INT64, long long, REAL, NC_SHORT, short, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, SHRT_MIN, R_NC_RANGE_MAX, SHRT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_ushort, NC_INT64, long long, REAL, NC_USHORT, unsigned short, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, USHRT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_int, NC_INT64, long long, REAL, NC_INT, int, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, INT_MIN, R_NC_RANGE_MAX, INT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_uint, NC_INT64, long long, REAL, NC_UINT, unsigned int, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, UINT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_ll, NC_INT64, long long, REAL, NC_INT64, long long, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, LLONG_MIN_DBL, R_NC_RANGE_MAX, LLONG_MAX_DBL)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_ull, NC_INT64, long long, REAL, NC_UINT64, unsigned long long, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, 0, R_NC_RANGE_MAX, ULLONG_MAX_DBL)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_float, NC_INT64, long long, REAL, NC_FLOAT, float, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_MIN, -FLT_MAX, R_NC_RANGE_MAX, FLT_MAX)
-R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_dbl, NC_INT64, long long, REAL, NC_DOUBLE, double, \
-  R_NC_ISNA_BIT64, R_NC_RANGE_NONE, , R_NC_RANGE_NONE, )
+static const signed char*
+R_nc_r2c_pack_bit64_schar (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const signed char *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const long long *in;
+  signed char fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (signed char *) R_alloc (cnt, sizeof(signed char));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(signed char)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned char*
+R_nc_r2c_pack_bit64_uchar (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned char *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const long long *in;
+  unsigned char fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (unsigned char *) R_alloc (cnt, sizeof(unsigned char));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned char)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const short*
+R_nc_r2c_pack_bit64_short (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const short *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const long long *in;
+  short fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (short *) R_alloc (cnt, sizeof(short));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(short)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned short*
+R_nc_r2c_pack_bit64_ushort (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned short *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const long long *in;
+  unsigned short fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (unsigned short *) R_alloc (cnt, sizeof(unsigned short));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned short)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const int*
+R_nc_r2c_pack_bit64_int (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const int *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const long long *in;
+  int fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (int *) R_alloc (cnt, sizeof(int));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(int)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned int*
+R_nc_r2c_pack_bit64_uint (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned int *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const long long *in;
+  unsigned int fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (unsigned int *) R_alloc (cnt, sizeof(unsigned int));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned int)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const long long*
+R_nc_r2c_pack_bit64_ll (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const long long *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const long long *in;
+  long long fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (long long *) R_alloc (cnt, sizeof(long long));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(long long)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const unsigned long long*
+R_nc_r2c_pack_bit64_ull (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const unsigned long long *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const long long *in;
+  unsigned long long fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (unsigned long long *) R_alloc (cnt, sizeof(unsigned long long));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(unsigned long long)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const float*
+R_nc_r2c_pack_bit64_float (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const float *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const long long *in;
+  float fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (float *) R_alloc (cnt, sizeof(float));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(float)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        if ((!R_FINITE(dpack)) || (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX))) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        if ((!R_FINITE(dpack)) || (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX))) {
+          out[ii] = dpack;
+        } else {
+          error (nc_strerror (NC_ERANGE));
+        }
+      }
+    }
+  }
+  return out;
+}
+
+static const double*
+R_nc_r2c_pack_bit64_dbl (SEXP rv, int ndim, const size_t *xdim,
+     size_t fillsize, const double *fill,
+     const double *scale, const double *add)
+{
+  size_t ii, cnt, hasfill;
+  double factor=1.0, offset=0.0, dpack;
+  const long long *in;
+  double fillval=0, *out;
+  in = (long long *) REAL (rv);
+  cnt = R_nc_length (ndim, xdim);
+  if ((size_t) xlength (rv) < cnt) {
+    error (RNC_EDATALEN);
+  }
+  out = (double *) R_alloc (cnt, sizeof(double));
+  if (scale) {
+    factor = *scale;
+  }
+  if (add) {
+    offset = *add;
+  }
+  hasfill = (fill != NULL);
+  if (hasfill) {
+    if (fillsize != sizeof(double)) {
+      error ("Size of fill value does not match output type");
+    }
+    fillval = *fill;
+  }
+  if (hasfill) {
+    for (ii=0; ii<cnt; ii++) {
+      if ((in[ii]==NA_INTEGER64)) {
+        out[ii] = fillval;
+      } else {
+        dpack = round((in[ii] - offset) / factor);
+        out[ii] = dpack;
+      }
+    }
+  } else {
+    for (ii=0; ii<cnt; ii++) {
+      {
+        dpack = round((in[ii] - offset) / factor);
+        out[ii] = dpack;
+      }
+    }
+  }
+  return out;
+}
+
 
 
 /* Allocate memory for reading a netcdf variable slice
@@ -621,22 +3485,43 @@ R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_dbl, NC_INT64, long long, REAL, NC_DOUBLE,
    On input, the R_nc_buf structure contains dimensions of the buffer (ndim, *xdim).
    On output, the R_nc_buf structure contains an allocated SEXP and a pointer to its data.
  */
-#define R_NC_C2R_NUM_INIT(FUN, SEXPTYPE, OFUN) \
-static SEXP \
-FUN (R_nc_buf *io) \
-{ \
-  io->rxp = PROTECT(R_nc_allocArray (SEXPTYPE, io->ndim, io->xdim)); \
-  io->rbuf = OFUN (io->rxp); \
-  if (!io->cbuf) { \
-    io->cbuf = io->rbuf; \
-  } \
-  UNPROTECT(1); \
-  return io->rxp; \
+
+static SEXP
+R_nc_c2r_int_init (R_nc_buf *io)
+{
+  io->rxp = PROTECT(R_nc_allocArray (INTSXP, io->ndim, io->xdim));
+  io->rbuf = INTEGER (io->rxp);
+  if (!io->cbuf) {
+    io->cbuf = io->rbuf;
+  }
+  UNPROTECT(1);
+  return io->rxp;
 }
 
-R_NC_C2R_NUM_INIT(R_nc_c2r_int_init, INTSXP, INTEGER)
-R_NC_C2R_NUM_INIT(R_nc_c2r_dbl_init, REALSXP, REAL)
-R_NC_C2R_NUM_INIT(R_nc_c2r_bit64_init, REALSXP, REAL)
+static SEXP
+R_nc_c2r_dbl_init (R_nc_buf *io)
+{
+  io->rxp = PROTECT(R_nc_allocArray (REALSXP, io->ndim, io->xdim));
+  io->rbuf = REAL (io->rxp);
+  if (!io->cbuf) {
+    io->cbuf = io->rbuf;
+  }
+  UNPROTECT(1);
+  return io->rxp;
+}
+
+static SEXP
+R_nc_c2r_bit64_init (R_nc_buf *io)
+{
+  io->rxp = PROTECT(R_nc_allocArray (REALSXP, io->ndim, io->xdim));
+  io->rbuf = REAL (io->rxp);
+  if (!io->cbuf) {
+    io->cbuf = io->rbuf;
+  }
+  UNPROTECT(1);
+  return io->rxp;
+}
+
 
 
 /* Convert numeric values from C to R format.
@@ -648,64 +3533,1714 @@ R_NC_C2R_NUM_INIT(R_nc_c2r_bit64_init, REALSXP, REAL)
    but NA or NaN values in floating point data are transferred to the output
    (because all comparisons with NA or NaN are false).
  */
-#define R_NC_C2R_NUM(FUN, NCITYPE, ITYPE, NCOTYPE, OTYPE, MISSVAL) \
-static void \
-FUN (R_nc_buf *io) \
-{ \
-  size_t ii; \
-  ITYPE fillval=0, minval=0, maxval=0, *in; \
-  OTYPE *out; \
-  int hasfill, hasmin, hasmax; \
-  ii = xlength (io->rxp); \
-  in = (ITYPE *) io->cbuf; \
-  out = (OTYPE *) io->rbuf; \
-  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(ITYPE)) { \
-    error ("Size of fill value does not match input type"); \
-  } \
-  hasfill = (io->fill != NULL); \
-  if (hasfill) { \
-    fillval = *((ITYPE *) io->fill); \
-  } \
-  hasmin = (io->min != NULL); \
-  if (hasmin) { \
-    minval = *((ITYPE *) io->min); \
-  } \
-  hasmax = (io->max != NULL); \
-  if (hasmax) { \
-    maxval = *((ITYPE *) io->max); \
-  } \
-  while (ii-- > 0) { \
-    if ((hasfill && in[ii] == fillval) || (hasmin && in[ii] < minval) || (hasmax && maxval < in[ii])) { \
-      out[ii] = MISSVAL; \
-    } else { \
-      out[ii] = in[ii]; \
-    } \
-  } \
+
+
+static void
+R_nc_c2r_schar_int (R_nc_buf *io)
+{
+  size_t ii;
+  signed char fillval=0, minval=0, maxval=0, *in;
+  int *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (signed char *) io->cbuf;
+  out = (int *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(signed char)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((signed char *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((signed char *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((signed char *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
 }
 
-R_NC_C2R_NUM(R_nc_c2r_schar_int, NC_BYTE, signed char, NC_INT, int, NA_INTEGER)
-R_NC_C2R_NUM(R_nc_c2r_uchar_int, NC_UBYTE, unsigned char, NC_INT, int, NA_INTEGER)
-R_NC_C2R_NUM(R_nc_c2r_short_int, NC_SHORT, short, NC_INT, int, NA_INTEGER)
-R_NC_C2R_NUM(R_nc_c2r_ushort_int, NC_USHORT, unsigned short, NC_INT, int, NA_INTEGER)
-R_NC_C2R_NUM(R_nc_c2r_int_int, NC_INT, int, NC_INT, int, NA_INTEGER)
+static void
+R_nc_c2r_uchar_int (R_nc_buf *io)
+{
+  size_t ii;
+  unsigned char fillval=0, minval=0, maxval=0, *in;
+  int *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (unsigned char *) io->cbuf;
+  out = (int *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(unsigned char)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((unsigned char *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((unsigned char *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((unsigned char *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
 
-R_NC_C2R_NUM(R_nc_c2r_schar_dbl, NC_BYTE, signed char, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_uchar_dbl, NC_UBYTE, unsigned char, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_short_dbl, NC_SHORT, short, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_ushort_dbl, NC_USHORT, unsigned short, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_int_dbl, NC_INT, int, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_uint_dbl, NC_UINT, unsigned int, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_float_dbl, NC_FLOAT, float, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_dbl_dbl, NC_DOUBLE, double, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_int64_dbl, NC_INT64, long long, NC_DOUBLE, double, NA_REAL)
-R_NC_C2R_NUM(R_nc_c2r_uint64_dbl, NC_UINT64, unsigned long long, NC_DOUBLE, double, NA_REAL)
+static void
+R_nc_c2r_short_int (R_nc_buf *io)
+{
+  size_t ii;
+  short fillval=0, minval=0, maxval=0, *in;
+  int *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (short *) io->cbuf;
+  out = (int *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(short)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((short *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((short *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((short *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_ushort_int (R_nc_buf *io)
+{
+  size_t ii;
+  unsigned short fillval=0, minval=0, maxval=0, *in;
+  int *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (unsigned short *) io->cbuf;
+  out = (int *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(unsigned short)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((unsigned short *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((unsigned short *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((unsigned short *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_int_int (R_nc_buf *io)
+{
+  size_t ii;
+  int fillval=0, minval=0, maxval=0, *in;
+  int *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (int *) io->cbuf;
+  out = (int *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(int)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((int *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((int *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((int *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_INTEGER;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
+
+
+static void
+R_nc_c2r_schar_dbl (R_nc_buf *io)
+{
+  size_t ii;
+  signed char fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (signed char *) io->cbuf;
+  out = (double *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(signed char)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((signed char *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((signed char *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((signed char *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_uchar_dbl (R_nc_buf *io)
+{
+  size_t ii;
+  unsigned char fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (unsigned char *) io->cbuf;
+  out = (double *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(unsigned char)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((unsigned char *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((unsigned char *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((unsigned char *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_short_dbl (R_nc_buf *io)
+{
+  size_t ii;
+  short fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (short *) io->cbuf;
+  out = (double *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(short)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((short *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((short *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((short *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_ushort_dbl (R_nc_buf *io)
+{
+  size_t ii;
+  unsigned short fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (unsigned short *) io->cbuf;
+  out = (double *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(unsigned short)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((unsigned short *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((unsigned short *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((unsigned short *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_int_dbl (R_nc_buf *io)
+{
+  size_t ii;
+  int fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (int *) io->cbuf;
+  out = (double *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(int)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((int *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((int *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((int *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_uint_dbl (R_nc_buf *io)
+{
+  size_t ii;
+  unsigned int fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (unsigned int *) io->cbuf;
+  out = (double *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(unsigned int)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((unsigned int *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((unsigned int *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((unsigned int *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_float_dbl (R_nc_buf *io)
+{
+  size_t ii;
+  float fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (float *) io->cbuf;
+  out = (double *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(float)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((float *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((float *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((float *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_dbl_dbl (R_nc_buf *io)
+{
+  size_t ii;
+  double fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (double *) io->cbuf;
+  out = (double *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(double)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((double *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((double *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((double *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_int64_dbl (R_nc_buf *io)
+{
+  size_t ii;
+  long long fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (long long *) io->cbuf;
+  out = (double *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(long long)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((long long *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((long long *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((long long *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_uint64_dbl (R_nc_buf *io)
+{
+  size_t ii;
+  unsigned long long fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (unsigned long long *) io->cbuf;
+  out = (double *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(unsigned long long)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((unsigned long long *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((unsigned long long *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((unsigned long long *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
+
 
 /* bit64 is treated by R as signed long long,
    but we may need to store unsigned long long,
    with very large positive values wrapping to negative values in R.
  */
-R_NC_C2R_NUM(R_nc_c2r_int64_bit64, NC_INT64, long long, NC_INT64, long long, NA_INTEGER64)
-R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, NC_UINT64, unsigned long long, NC_INT64, long long, NA_INTEGER64)
+static void
+R_nc_c2r_int64_bit64 (R_nc_buf *io)
+{
+  size_t ii;
+  long long fillval=0, minval=0, maxval=0, *in;
+  long long *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (long long *) io->cbuf;
+  out = (long long *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(long long)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((long long *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((long long *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((long long *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER64;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_INTEGER64;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER64;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_INTEGER64;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER64;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_INTEGER64;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_INTEGER64;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_uint64_bit64 (R_nc_buf *io)
+{
+  size_t ii;
+  unsigned long long fillval=0, minval=0, maxval=0, *in;
+  long long *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (unsigned long long *) io->cbuf;
+  out = (long long *) io->rbuf;
+  if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(unsigned long long)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((unsigned long long *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((unsigned long long *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((unsigned long long *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER64;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_INTEGER64;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER64;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_INTEGER64;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_INTEGER64;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_INTEGER64;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_INTEGER64;
+          } else {
+            out[ii] = in[ii];
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii];
+        }
+      }
+    }
+  }
+}
+
 
 
 /* Convert numeric values from C to R format with unpacking.
@@ -718,58 +5253,1079 @@ R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, NC_UINT64, unsigned long long, NC_INT64, lon
    (because all comparisons with NA or NaN are false).
  */
 
-#define R_NC_C2R_NUM_UNPACK(FUN, ITYPE) \
-static void \
-FUN (R_nc_buf *io) \
-{ \
-  size_t ii; \
-  double factor=1.0, offset=0.0; \
-  ITYPE fillval=0, minval=0, maxval=0, *in; \
-  double *out; \
-  int hasfill, hasmin, hasmax; \
-  ii = xlength (io->rxp); \
-  in = (ITYPE *) io->cbuf; \
-  out = (double *) io->rbuf; \
-  if (io->scale) { \
-    factor = *(io->scale); \
-  } \
-  if (io->add) { \
-    offset = *(io->add); \
-  } \
-  if ((io->fill || io->min || io->max) && io->fillsize != sizeof(ITYPE)) { \
-    error ("Size of fill value does not match input type"); \
-  } \
-  hasfill = (io->fill != NULL); \
-  if (hasfill) { \
-    fillval = *((ITYPE *) io->fill); \
-  } \
-  hasmin = (io->min != NULL); \
-  if (hasmin) { \
-    minval = *((ITYPE *) io->min); \
-  } \
-  hasmax = (io->max != NULL); \
-  if (hasmax) { \
-    maxval = *((ITYPE *) io->max); \
-  } \
-  while (ii-- > 0) { \
-    if ((hasfill && in[ii] == fillval) || (hasmin && in[ii] < minval) || (hasmax && maxval < in[ii])) { \
-      out[ii] = NA_REAL; \
-    } else { \
-      out[ii] = in[ii] * factor + offset; \
-    } \
-  } \
+
+
+
+static void
+R_nc_c2r_unpack_schar (R_nc_buf *io)
+{
+  size_t ii;
+  double factor=1.0, offset=0.0;
+  signed char fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (signed char *) io->cbuf;
+  out = (double *) io->rbuf;
+  if (io->scale) {
+    factor = *(io->scale);
+  }
+  if (io->add) {
+    offset = *(io->add);
+  }
+  if ((io->fill || io->min || io->max) && io->fillsize != sizeof(signed char)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((signed char *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((signed char *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((signed char *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii] * factor + offset;
+        }
+      }
+    }
+  }
 }
 
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_schar, signed char)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uchar, unsigned char)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_short, short)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_ushort, unsigned short)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_int, int)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint, unsigned int)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_float, float)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_dbl, double)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_int64, long long)
-R_NC_C2R_NUM_UNPACK(R_nc_c2r_unpack_uint64, unsigned long long)
+static void
+R_nc_c2r_unpack_uchar (R_nc_buf *io)
+{
+  size_t ii;
+  double factor=1.0, offset=0.0;
+  unsigned char fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (unsigned char *) io->cbuf;
+  out = (double *) io->rbuf;
+  if (io->scale) {
+    factor = *(io->scale);
+  }
+  if (io->add) {
+    offset = *(io->add);
+  }
+  if ((io->fill || io->min || io->max) && io->fillsize != sizeof(unsigned char)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((unsigned char *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((unsigned char *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((unsigned char *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii] * factor + offset;
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_unpack_short (R_nc_buf *io)
+{
+  size_t ii;
+  double factor=1.0, offset=0.0;
+  short fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (short *) io->cbuf;
+  out = (double *) io->rbuf;
+  if (io->scale) {
+    factor = *(io->scale);
+  }
+  if (io->add) {
+    offset = *(io->add);
+  }
+  if ((io->fill || io->min || io->max) && io->fillsize != sizeof(short)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((short *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((short *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((short *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii] * factor + offset;
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_unpack_ushort (R_nc_buf *io)
+{
+  size_t ii;
+  double factor=1.0, offset=0.0;
+  unsigned short fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (unsigned short *) io->cbuf;
+  out = (double *) io->rbuf;
+  if (io->scale) {
+    factor = *(io->scale);
+  }
+  if (io->add) {
+    offset = *(io->add);
+  }
+  if ((io->fill || io->min || io->max) && io->fillsize != sizeof(unsigned short)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((unsigned short *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((unsigned short *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((unsigned short *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii] * factor + offset;
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_unpack_int (R_nc_buf *io)
+{
+  size_t ii;
+  double factor=1.0, offset=0.0;
+  int fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (int *) io->cbuf;
+  out = (double *) io->rbuf;
+  if (io->scale) {
+    factor = *(io->scale);
+  }
+  if (io->add) {
+    offset = *(io->add);
+  }
+  if ((io->fill || io->min || io->max) && io->fillsize != sizeof(int)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((int *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((int *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((int *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii] * factor + offset;
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_unpack_uint (R_nc_buf *io)
+{
+  size_t ii;
+  double factor=1.0, offset=0.0;
+  unsigned int fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (unsigned int *) io->cbuf;
+  out = (double *) io->rbuf;
+  if (io->scale) {
+    factor = *(io->scale);
+  }
+  if (io->add) {
+    offset = *(io->add);
+  }
+  if ((io->fill || io->min || io->max) && io->fillsize != sizeof(unsigned int)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((unsigned int *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((unsigned int *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((unsigned int *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii] * factor + offset;
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_unpack_float (R_nc_buf *io)
+{
+  size_t ii;
+  double factor=1.0, offset=0.0;
+  float fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (float *) io->cbuf;
+  out = (double *) io->rbuf;
+  if (io->scale) {
+    factor = *(io->scale);
+  }
+  if (io->add) {
+    offset = *(io->add);
+  }
+  if ((io->fill || io->min || io->max) && io->fillsize != sizeof(float)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((float *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((float *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((float *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii] * factor + offset;
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_unpack_dbl (R_nc_buf *io)
+{
+  size_t ii;
+  double factor=1.0, offset=0.0;
+  double fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (double *) io->cbuf;
+  out = (double *) io->rbuf;
+  if (io->scale) {
+    factor = *(io->scale);
+  }
+  if (io->add) {
+    offset = *(io->add);
+  }
+  if ((io->fill || io->min || io->max) && io->fillsize != sizeof(double)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((double *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((double *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((double *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii] * factor + offset;
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_unpack_int64 (R_nc_buf *io)
+{
+  size_t ii;
+  double factor=1.0, offset=0.0;
+  long long fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (long long *) io->cbuf;
+  out = (double *) io->rbuf;
+  if (io->scale) {
+    factor = *(io->scale);
+  }
+  if (io->add) {
+    offset = *(io->add);
+  }
+  if ((io->fill || io->min || io->max) && io->fillsize != sizeof(long long)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((long long *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((long long *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((long long *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii] * factor + offset;
+        }
+      }
+    }
+  }
+}
+
+static void
+R_nc_c2r_unpack_uint64 (R_nc_buf *io)
+{
+  size_t ii;
+  double factor=1.0, offset=0.0;
+  unsigned long long fillval=0, minval=0, maxval=0, *in;
+  double *out;
+  int hasfill, hasmin, hasmax;
+  ii = xlength (io->rxp);
+  in = (unsigned long long *) io->cbuf;
+  out = (double *) io->rbuf;
+  if (io->scale) {
+    factor = *(io->scale);
+  }
+  if (io->add) {
+    offset = *(io->add);
+  }
+  if ((io->fill || io->min || io->max) && io->fillsize != sizeof(unsigned long long)) {
+    error ("Size of fill value does not match input type");
+  }
+  hasfill = (io->fill != NULL);
+  if (hasfill) {
+    fillval = *((unsigned long long *) io->fill);
+  }
+  hasmin = (io->min != NULL);
+  if (hasmin) {
+    minval = *((unsigned long long *) io->min);
+  }
+  hasmax = (io->max != NULL);
+  if (hasmax) {
+    maxval = *((unsigned long long *) io->max);
+  }
+  if (hasfill) {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if (in[ii] == fillval || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if (in[ii] == fillval) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    }
+  } else {
+    if (hasmin) {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((in[ii] < minval) || (maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          if ((in[ii] < minval)) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      }
+    } else {
+      if (hasmax) {
+        while (ii-- > 0) {
+          if ((maxval < in[ii])) {
+            out[ii] = NA_REAL;
+          } else {
+            out[ii] = in[ii] * factor + offset;
+          }
+        }
+      } else {
+        while (ii-- > 0) {
+          out[ii] = in[ii] * factor + offset;
+        }
+      }
+    }
+  }
+}
+
 
 
 /*=============================================================================*\
@@ -1818,22 +7374,33 @@ R_nc_c2r (R_nc_buf *io)
 /* Reverse a vector in-place.
    Example: R_nc_rev_int (cv, cnt);
  */
-#define R_NC_REVERSE(FUN, TYPE) \
-void \
-FUN (TYPE *data, size_t cnt) \
-{ \
-  size_t ii, jj; \
-  TYPE tmp; \
-  if (cnt<=0) return; \
-  for (ii=0, jj=cnt-1; ii<jj; ii++, jj--) { \
-    tmp = data[ii]; \
-    data[ii] = data[jj]; \
-    data[jj] = tmp; \
-  } \
+
+void
+R_nc_rev_int (int *data, size_t cnt)
+{
+  size_t ii, jj;
+  int tmp;
+  if (cnt<=0) return;
+  for (ii=0, jj=cnt-1; ii<jj; ii++, jj--) {
+    tmp = data[ii];
+    data[ii] = data[jj];
+    data[jj] = tmp;
+  }
 }
 
-R_NC_REVERSE(R_nc_rev_int, int)
-R_NC_REVERSE(R_nc_rev_size, size_t)
+void
+R_nc_rev_size (size_t *data, size_t cnt)
+{
+  size_t ii, jj;
+  size_t tmp;
+  if (cnt<=0) return;
+  for (ii=0, jj=cnt-1; ii<jj; ii++, jj--) {
+    tmp = data[ii];
+    data[ii] = data[jj];
+    data[jj] = tmp;
+  }
+}
+
 /* Define R_nc_rev for other types as needed */
 
 
@@ -1841,47 +7408,84 @@ R_NC_REVERSE(R_nc_rev_size, size_t)
    reversing from Fortran to C storage order.
    Elements beyond the length of rv and non-finite values are stored as fillval.
  */
-#define R_NC_DIM_R2C(FUN, TYPENAME, TYPE) \
-TYPE * \
-FUN (SEXP rv, size_t N, TYPE fillval) \
-{ \
-  TYPE *cv; \
-  const void *voidbuf; \
-  size_t nr, ii; \
-\
-  /* Allocate new C vector (freed by R) */ \
-  cv = (TYPE *) R_alloc (N, sizeof (TYPE)); \
-\
-  /* Number of elements to copy must not exceed N */ \
-  nr = xlength (rv); \
-  nr = (nr < N) ? nr : N; \
-\
-  /* Copy R elements to cv */ \
-  if (isReal (rv)) { \
-    if (R_nc_inherits (rv, "integer64")) { \
-      voidbuf = R_nc_r2c_bit64_##TYPENAME (rv, 1, &nr, sizeof(TYPE), &fillval); \
-    } else { \
-      voidbuf = R_nc_r2c_dbl_##TYPENAME (rv, 1, &nr, sizeof(TYPE), &fillval); \
-    } \
-  } else if (isInteger (rv)) { \
-    voidbuf = R_nc_r2c_int_##TYPENAME (rv, 1, &nr, sizeof(TYPE), &fillval); \
-  } else { \
-    error ("Unsupported R type in R_NC_DIM_R2C"); \
-  } \
-  memcpy (cv, voidbuf, nr*sizeof (TYPE)); \
-\
-  /* Reverse from Fortran to C order */ \
-  R_nc_rev_##TYPENAME (cv, nr); \
-\
-  /* Fill any remaining elements beyond length of rv */ \
-  for ( ii=nr; ii<N; ii++ ) { \
-    cv[ii] = fillval; \
-  } \
-\
-  return cv; \
+
+int *
+R_nc_dim_r2c_int (SEXP rv, size_t N, int fillval)
+{
+  int *cv;
+  const void *voidbuf;
+  size_t nr, ii;
+
+  /* Allocate new C vector (freed by R) */
+  cv = (int *) R_alloc (N, sizeof (int));
+
+  /* Number of elements to copy must not exceed N */
+  nr = xlength (rv);
+  nr = (nr < N) ? nr : N;
+
+  /* Copy R elements to cv */
+  if (isReal (rv)) {
+    if (R_nc_inherits (rv, "integer64")) {
+      voidbuf = R_nc_r2c_bit64_int (rv, 1, &nr, sizeof(int), &fillval);
+    } else {
+      voidbuf = R_nc_r2c_dbl_int (rv, 1, &nr, sizeof(int), &fillval);
+    }
+  } else if (isInteger (rv)) {
+    voidbuf = R_nc_r2c_int_int (rv, 1, &nr, sizeof(int), &fillval);
+  } else {
+    error ("Unsupported R type in R_nc_dim_r2c_int");
+  }
+  memcpy (cv, voidbuf, nr*sizeof (int));
+
+  /* Reverse from Fortran to C order */
+  R_nc_rev_int (cv, nr);
+
+  /* Fill any remaining elements beyond length of rv */
+  for ( ii=nr; ii<N; ii++ ) {
+    cv[ii] = fillval;
+  }
+
+  return cv;
 }
 
-R_NC_DIM_R2C (R_nc_dim_r2c_int, int, int)
-R_NC_DIM_R2C (R_nc_dim_r2c_size, size, size_t)
+size_t *
+R_nc_dim_r2c_size (SEXP rv, size_t N, size_t fillval)
+{
+  size_t *cv;
+  const void *voidbuf;
+  size_t nr, ii;
+
+  /* Allocate new C vector (freed by R) */
+  cv = (size_t *) R_alloc (N, sizeof (size_t));
+
+  /* Number of elements to copy must not exceed N */
+  nr = xlength (rv);
+  nr = (nr < N) ? nr : N;
+
+  /* Copy R elements to cv */
+  if (isReal (rv)) {
+    if (R_nc_inherits (rv, "integer64")) {
+      voidbuf = R_nc_r2c_bit64_size (rv, 1, &nr, sizeof(size_t), &fillval);
+    } else {
+      voidbuf = R_nc_r2c_dbl_size (rv, 1, &nr, sizeof(size_t), &fillval);
+    }
+  } else if (isInteger (rv)) {
+    voidbuf = R_nc_r2c_int_size (rv, 1, &nr, sizeof(size_t), &fillval);
+  } else {
+    error ("Unsupported R type in R_nc_dim_r2c_size");
+  }
+  memcpy (cv, voidbuf, nr*sizeof (size_t));
+
+  /* Reverse from Fortran to C order */
+  R_nc_rev_size (cv, nr);
+
+  /* Fill any remaining elements beyond length of rv */
+  for ( ii=nr; ii<N; ii++ ) {
+    cv[ii] = fillval;
+  }
+
+  return cv;
+}
+
 
 
