@@ -1,4 +1,4 @@
-VERSION=4.4.1.1-dap
+VERSION=4.7.3
 
 ifeq "$(WIN)" "64"
 PKG_SIZE_T = 8
@@ -14,12 +14,10 @@ PKG_CPPFLAGS = -I../windows/netcdf-${VERSION}/include \
 	-DHAVE_NC_INQ_VAR_SZIP \
 	-DHAVE_NC_INQ_VAR_ENDIAN \
 
-WINLIBS = ../windows/netcdf-${VERSION}/lib${R_ARCH}
+WINLIBS = ../windows/netcdf-${VERSION}/lib${R_ARCH}${CRT}
 
-PKG_LIBS = $(WINLIBS)/libnetcdf.a $(WINLIBS)/libcurl.a \
-  $(WINLIBS)/libhdf5_hl.a $(WINLIBS)/libhdf5.a $(WINLIBS)/libszip.a \
-  $(WINLIBS)/libudunits2.a $(WINLIBS)/libexpat.a \
-  -lz -lws2_32 -lcrypt32 -lwldap32
+PKG_LIBS = -L$(WINLIBS) -lnetcdf -lcurl -lssh2 -lssl -lcrypto \
+	-lhdf5_hl -lhdf5 -ludunits2 -lexpat -lz -lws2_32 -lcrypt32 -lwldap32
 
 all: clean winlibs
 
