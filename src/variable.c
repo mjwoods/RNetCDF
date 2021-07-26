@@ -745,6 +745,11 @@ R_nc_inq_var (SEXP nc, SEXP var)
       status = nc_inq_var_filter (ncid, varid,
                                   (unsigned int *) &filter_id,
                                   &filter_nparams, NULL);
+      /* netcdf>=4.8.0 returns with filter_id==0 if no filters defined for variable;
+         earlier versions returned error status */
+      if (status == NC_NOERR && filter_id == 0) {
+        status = NC_EFILTER;
+      }
       if (status == NC_NOERR) {
 	SET_VECTOR_ELT (result, 16, ScalarInteger (filter_id));
 	rfilter_params = PROTECT(allocVector (INTSXP, filter_nparams));
