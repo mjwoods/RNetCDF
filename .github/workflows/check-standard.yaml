@@ -69,7 +69,7 @@ jobs:
       - name: Install netcdf (macOS-latest)
         if: runner.os == 'macOS'
         run : |
-              brew install netcdf udunits
+          brew install automake netcdf udunits
 
       - name: Install dependencies
         run: |
