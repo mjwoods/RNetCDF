@@ -2,7 +2,7 @@
 #  Initialize                                                    		#
 #-------------------------------------------------------------------------------#
 
-AC_INIT([RNetCDF], [2.4-2])
+AC_INIT([RNetCDF],[2.4-2])
 
 #-------------------------------------------------------------------------------#
 #  Find the compiler and compiler options to use for tests                   	#
@@ -107,7 +107,8 @@ AS_IF([test "x$enable_calendar" == xyes],
 #  Do substitution                               	                 	#
 #-------------------------------------------------------------------------------#
 
-AC_OUTPUT(src/Makevars)
+AC_CONFIG_FILES([src/Makevars])
+AC_OUTPUT
 
 #-------------------------------------------------------------------------------#
 #  Done                                                                         #
