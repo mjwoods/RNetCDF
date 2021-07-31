@@ -493,8 +493,8 @@ sync.nc <- function(ncfile) {
 var.def.nc <- function(ncfile, varname, vartype, dimensions,
                        chunking=NA, chunksizes=NULL,
                        deflate=NA, shuffle=FALSE, big_endian=NA,
-                       fletcher32=FALSE, filter_id=NA,
-                       filter_params=integer(0)) {
+                       fletcher32=FALSE, filter_id=integer(0),
+                       filter_params=list()) {
   #-- Check args -------------------------------------------------------------
   stopifnot(class(ncfile) == "NetCDF")
   stopifnot(is.character(varname))
@@ -511,8 +511,10 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions,
   stopifnot(is.logical(shuffle))
   stopifnot(is.logical(big_endian))
   stopifnot(is.logical(fletcher32))
-  stopifnot(isTRUE(is.na(filter_id)) || is.numeric(filter_id))
-  stopifnot(is.integer(filter_params))
+  stopifnot(is.numeric(filter_id))
+  stopifnot(is.list(filter_params))
+  stopifnot(all(sapply(filter_params, FUN=is.numeric)))
+  stopifnot(length(filter_id) == length(filter_params))
 
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_def_var, ncfile, varname, vartype, dimensions,

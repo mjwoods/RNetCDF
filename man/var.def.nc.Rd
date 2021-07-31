@@ -9,7 +9,7 @@
 \usage{var.def.nc(ncfile, varname, vartype, dimensions,
                   chunking=NA, chunksizes=NULL, deflate=NA, shuffle=FALSE,
                   big_endian=NA, fletcher32=FALSE,
-                  filter_id=NA, filter_params=integer(0))}
+                  filter_id=integer(0), filter_params=list())}
 
 \arguments{
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
@@ -23,8 +23,8 @@
   \item{shuffle}{\code{TRUE} to enable byte shuffling, which may improve compression with \code{deflate}.}
   \item{big_endian}{Byte order of the variable. \code{TRUE} for big-endian, \code{FALSE} for little-endian, \code{NA} for native endianness of the platform.}
   \item{fletcher32}{\code{TRUE} to enable the fletcher32 checksum.}
-  \item{filter_id}{Identifier of filter to associate with the variable, or \code{NA} for no filter. For information about the available filters, please see the NetCDF documentation. Ignored if the installed NetCDF library does not support this feature.}
-  \item{filter_params}{Vector of \code{integer} parameters for the filter specified by \code{filter_id}. The meaning of the parameters depends on the filter implementation, and RNetCDF is unable to perform any validation. Ignored if no filter is defined or if the installed NetCDF library does not support this feature.}
+  \item{filter_id}{Vector of filter IDs to associate with the variable (empty vector denotes no filters). For information about the available filters, please see the NetCDF documentation. Ignored if the installed NetCDF library does not support this feature.}
+  \item{filter_params}{List with one element for each \code{filter_id}. Each list member is a vector of \code{numeric} parameters. The meaning of the parameters depends on the filter implementation, and RNetCDF is unable to perform any validation. Ignored if the installed NetCDF library does not support this feature.}
 }
 
 \value{NetCDF variable identifier, returned invisibly.}

@@ -3843,10 +3843,16 @@ then :
   printf "%s\n" "#define HAVE_NC_INQ_VAR_ENDIAN 1" >>confdefs.h
 
 fi
-ac_fn_c_check_func "$LINENO" "nc_inq_var_filter" "ac_cv_func_nc_inq_var_filter"
-if test "x$ac_cv_func_nc_inq_var_filter" = xyes
+ac_fn_c_check_func "$LINENO" "nc_inq_var_filter_ids" "ac_cv_func_nc_inq_var_filter_ids"
+if test "x$ac_cv_func_nc_inq_var_filter_ids" = xyes
 then :
-  printf "%s\n" "#define HAVE_NC_INQ_VAR_FILTER 1" >>confdefs.h
+  printf "%s\n" "#define HAVE_NC_INQ_VAR_FILTER_IDS 1" >>confdefs.h
+
+fi
+ac_fn_c_check_func "$LINENO" "nc_inq_var_filter_info" "ac_cv_func_nc_inq_var_filter_info"
+if test "x$ac_cv_func_nc_inq_var_filter_info" = xyes
+then :
+  printf "%s\n" "#define HAVE_NC_INQ_VAR_FILTER_INFO 1" >>confdefs.h
 
 fi
 ac_fn_c_check_func "$LINENO" "nc_create_par_fortran" "ac_cv_func_nc_create_par_fortran"
@@ -3869,7 +3875,7 @@ then :
 fi
 
 
-# Check for parallel I/O support.
+# Check for parallel header file.
 ac_fn_c_check_header_compile "$LINENO" "netcdf_par.h" "ac_cv_header_netcdf_par_h" "#include <netcdf.h>
 "
 if test "x$ac_cv_header_netcdf_par_h" = xyes
@@ -3877,6 +3883,17 @@ then :
   printf "%s\n" "#define HAVE_NETCDF_PAR_H 1" >>confdefs.h
 
 fi
+
+
+# Check for filter header file.
+ac_fn_c_check_header_compile "$LINENO" "netcdf_filter.h" "ac_cv_header_netcdf_filter_h" "#include <netcdf.h>
+"
+if test "x$ac_cv_header_netcdf_filter_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_NETCDF_FILTER_H 1" >>confdefs.h
+
+fi
+
 
 
 #-------------------------------------------------------------------------------#
