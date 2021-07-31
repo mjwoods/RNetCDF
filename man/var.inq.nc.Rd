@@ -35,7 +35,7 @@ The list components below apply only to datasets in "netcdf4" format:
   \item{szip_options}{Integer containing a bitmask of szip options. \code{NA} if szip is not used, or \code{NULL} if unsupported.}
   \item{szip_bits}{Number of bits per pixel for szip. \code{NA} if szip is not used, or \code{NULL} if unsupported.}
   \item{filter_id}{Vector of filter IDs associated with the variable, or \code{NULL} if the NetCDF library does not support filters.}
-  \item{filter_params}{List with one element per \code{filter_id}, or \code{NULL} if the NetCDF library does not support filters. Each list member is a vector of parameters for the corresponding filter. Please see the NetCDF documentation for information about the available filters and their parameters.}
+  \item{filter_params}{List with one element per \code{filter_id}, or \code{NULL} if the NetCDF library does not support filters. Each list member is a vector of \code{numeric} parameters for the corresponding filter. Please see the NetCDF documentation for information about the available filters and their parameters.}
 }
 
 \details{This function returns information about a NetCDF variable. Information about a variable include its name, its ID, its type, its number of dimensions, a vector of the dimension IDs of this variable and the number of attributes.}

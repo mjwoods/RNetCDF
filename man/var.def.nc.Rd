@@ -24,7 +24,7 @@
   \item{big_endian}{Byte order of the variable. \code{TRUE} for big-endian, \code{FALSE} for little-endian, \code{NA} for native endianness of the platform.}
   \item{fletcher32}{\code{TRUE} to enable the fletcher32 checksum.}
   \item{filter_id}{Vector of filter IDs to associate with the variable (empty vector denotes no filters). For information about the available filters, please see the NetCDF documentation. Ignored if the installed NetCDF library does not support this feature.}
-  \item{filter_params}{List with one element for each \code{filter_id}. Each list member is a vector of \code{numeric} parameters. The meaning of the parameters depends on the filter implementation, and RNetCDF is unable to perform any validation. Ignored if the installed NetCDF library does not support this feature.}
+  \item{filter_params}{List with one element for each \code{filter_id}. Each list member is a vector of \code{numeric} parameters (which are converted to unsigned integers). The meaning of the parameters depends on the filter implementation, and RNetCDF is unable to perform any validation. Ignored if the installed NetCDF library does not support this feature.}
 }
 
 \value{NetCDF variable identifier, returned invisibly.}
