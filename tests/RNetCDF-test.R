@@ -201,6 +201,19 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
       numtypes <- c(numtypes, "NC_INT64", "NC_UINT64")
       tally <- testfun(TRUE, TRUE, tally)
     }
+
+    inq_filter <- list()
+    inq_filter$filter_id <- c(2,1) # Shuffle, deflate
+    inq_filter$filter_params <- list(numeric(0),c(9))
+    y <- try(var.def.nc(nc, "temp_filter", "NC_FLOAT", c("station", "time"),
+               chunking=TRUE, filter_id=inq_filter$filter_id,
+               filter_params=inq_filter$filter_params), silent=TRUE)
+    has_filter <- !inherits(y, "try-error")
+    if (has_filter) {
+      varcnt <- varcnt+1
+    } else {
+      warning("NetCDF library may not support multi-filter interface")
+    }
   }
 
   for (numtype in numtypes) {
@@ -471,10 +484,15 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     var.put.nc(nc, "rawdata_vector", rawdata[,,1])
     var.put.nc(nc, "snacks", snacks)
     var.put.nc(nc, "person", person)
+    tally <- testfun(TRUE, TRUE, tally)
     if (has_bit64) {
       var.put.nc(nc, "stationid", mybig64)
+      tally <- testfun(TRUE, TRUE, tally)
     }
-    tally <- testfun(TRUE, TRUE, tally)
+    if (has_filter) {
+      var.put.nc(nc, "temp_filter", mytemperature)
+      tally <- testfun(TRUE, TRUE, tally)
+    }
   }
 
   for (numtype in numtypes) {
@@ -570,8 +588,19 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
       cat("Feature not available in this NetCDF library version.\n")
     } else {
       y <- 0.5
+      tally <- testfun(x,y,tally)
     }
-    tally <- testfun(x,y,tally)
+
+    # Check multi-filter inquiry:
+    if (has_filter) {
+      cat("Check filter settings after writing temp_filter ...")
+      x <- var.inq.nc(nc, "temp_filter")
+      if (is.null(x$filter_id) && is.null(x$filter_params)) {
+        cat("Feature not available in this NetCDF library version.\n")
+      } else {
+        tally <- testfun(x[names(inq_filter)], inq_filter, tally)
+      }
+    }
   }
 
 #  sync.nc(nc)
