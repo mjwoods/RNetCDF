@@ -165,12 +165,12 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
       R_nc_check (nc_def_var_fletcher32 (ncid, varid, fletcher_mode));
     }
 
+    nfilter = xlength (filter_id);
+    if (nfilter > 0) {
 #ifdef HAVE_NC_DEF_VAR_FILTER
     /* Convert filter_id to unsigned int;
        memory is allocated by R_alloc and automatically freed.
      */
-    nfilter = xlength (filter_id);
-    if (nfilter > 0) {
       ufiltid = (unsigned int *) R_nc_r2c (
         filter_id, ncid, NC_UINT, 1, &nfilter, 0, NULL, NULL, NULL);
 
@@ -186,8 +186,10 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 	/* Define a filter for the netcdf variable */
 	R_nc_check (nc_def_var_filter (ncid, varid, ufiltid[ifilter], nfiltparm, ufiltparm));
       }
-    }
+#else
+      error("nc_def_var_filter not supported by netcdf library");
 #endif
+    }
   }
 
   return ScalarInteger (varid);
