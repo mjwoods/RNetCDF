@@ -791,7 +791,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
 	  R_nc_check (nc_inq_var_filter_info (ncid, varid, ufiltid[ifilter], &nfiltparm, NULL));
 	  ufiltparm = NULL;
 	  rfiltparm = PROTECT (R_nc_c2r_init (&filtio, (void **) &ufiltparm,
-	    ncid, NC_UINT, 1, &nfiltparm, 0, 0, 0,
+	    ncid, NC_UINT, -1, &nfiltparm, 0, 0, 0,
 	    NULL, NULL, NULL, NULL, NULL));
 	  SET_VECTOR_ELT (rfilter_params, ifilter, rfiltparm);
 	  UNPROTECT(1);
