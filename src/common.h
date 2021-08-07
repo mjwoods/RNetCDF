@@ -40,11 +40,6 @@
   #define NC_MAX_ATOMIC_TYPE NC_STRING
 #endif
 
-#define NA_SIZE SIZE_MAX
-
-/* Definition of missing value used by bit64 package */
-#define NA_INTEGER64 LLONG_MIN
-
 /* Common error strings */
 static const char RNC_EDATALEN[]="Not enough data", \
   RNC_EDATATYPE[]="Incompatible data for external type", \
@@ -103,13 +98,6 @@ R_nc_str2type (int ncid, const char *str, nc_type * xtype);
  */
 const char *
 R_nc_strarg (SEXP str);
-
-
-/* Convert R numeric scalar argument to size_t.
-   Raise an error if R type or value is not compatible.
- */
-size_t
-R_nc_sizearg (SEXP size);
 
 
 /* Enter netcdf define mode if possible.
