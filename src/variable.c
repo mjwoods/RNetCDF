@@ -628,7 +628,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
 #endif
 #if defined HAVE_NC_INQ_VAR_FILTER_IDS && defined HAVE_NC_INQ_VAR_FILTER_INFO
   R_nc_buf filtio;
-  double *dfiltid, *dfiltparm;
+  double *dfiltid;
   unsigned int *ufiltid, *ufiltparm;
   size_t ifilter, nfilter, nfiltparm;
   SEXP rfilter_id, rfilter_params, rfiltparm;
