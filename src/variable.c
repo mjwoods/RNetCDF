@@ -77,7 +77,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 #endif
 #ifdef HAVE_NC_DEF_VAR_FILTER
   unsigned int *ufiltid, *ufiltparm;
-  size_t ifilter, nfilter;
+  size_t ifilter, nfilter, nfiltparm;
   SEXP rfiltparm;
 #endif
 
