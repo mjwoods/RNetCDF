@@ -170,20 +170,22 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
        memory is allocated by R_alloc and automatically freed.
      */
     nfilter = xlength (filter_id);
-    ufiltid = (unsigned int *) R_nc_r2c (
+    if (nfilter > 0) {
+      ufiltid = (unsigned int *) R_nc_r2c (
         filter_id, ncid, NC_UINT, 1, &nfilter, 0, NULL, NULL, NULL);
 
-    for (ifilter=0; ifilter<nfilter; ifilter++) {
-      /* Convert filter_params to unsigned int;
-         memory is allocated by R_alloc and automatically freed.
-       */
-      rfiltparm = VECTOR_ELT (filter_params, ifilter);
-      nfiltparm = xlength (rfiltparm);
-      ufiltparm = (unsigned int *) R_nc_r2c (
-        rfiltparm, ncid, NC_UINT, 1, &nfiltparm, 0, NULL, NULL, NULL);
+      for (ifilter=0; ifilter<nfilter; ifilter++) {
+	/* Convert filter_params to unsigned int;
+	   memory is allocated by R_alloc and automatically freed.
+	 */
+	rfiltparm = VECTOR_ELT (filter_params, ifilter);
+	nfiltparm = xlength (rfiltparm);
+	ufiltparm = (unsigned int *) R_nc_r2c (
+	  rfiltparm, ncid, NC_UINT, 1, &nfiltparm, 0, NULL, NULL, NULL);
 
-      /* Define a filter for the netcdf variable */
-      R_nc_check (nc_def_var_filter (ncid, varid, ufiltid[ifilter], nfiltparm, ufiltparm));
+	/* Define a filter for the netcdf variable */
+	R_nc_check (nc_def_var_filter (ncid, varid, ufiltid[ifilter], nfiltparm, ufiltparm));
+      }
     }
 #endif
   }
@@ -769,31 +771,31 @@ R_nc_inq_var (SEXP nc, SEXP var)
       SET_VECTOR_ELT (result, 16, rfilter_id);
       SET_VECTOR_ELT (result, 17, rfilter_params);
       UNPROTECT(2);
-      dfiltid = REAL (rfilter_id);
 
-      /* Query filter ids, converting from unsigned int to R real */
       if (nfilter > 0) {
+        /* Query filter ids, converting from unsigned int to R real */
+        dfiltid = REAL (rfilter_id);
         ufiltid = (unsigned int *) R_alloc (nfilter, sizeof(unsigned int));
         R_nc_check (nc_inq_var_filter_ids (ncid, varid, &nfilter, ufiltid));
         for (ifilter=0; ifilter<nfilter; ifilter++) {
           dfiltid[ifilter] = ufiltid[ifilter];
         }
-      }
 
-      /* Query filter parameters for each filter,
-         converting from unsigned int to R real.
-         Memory allocated by R_nc_c2r_init is freed automatically by R.
-       */
-      for (ifilter=0; ifilter<nfilter; ifilter++) {
-        R_nc_check (nc_inq_var_filter_info (ncid, varid, ufiltid[ifilter], &nfiltparm, NULL));
-        ufiltparm = NULL;
-        rfiltparm = PROTECT (R_nc_c2r_init (&filtio, (void **) &ufiltparm,
-          ncid, NC_UINT, 1, &nfiltparm, 0, 0, 0,
-          NULL, NULL, NULL, NULL, NULL));
-        SET_VECTOR_ELT (rfilter_params, ifilter, rfiltparm);
-        UNPROTECT(1);
-        R_nc_check (nc_inq_var_filter_info (ncid, varid, ufiltid[ifilter], &nfiltparm, ufiltparm));
-        R_nc_c2r(&filtio);
+	/* Query filter parameters for each filter,
+	   converting from unsigned int to R real.
+	   Memory allocated by R_nc_c2r_init is freed automatically by R.
+	 */
+	for (ifilter=0; ifilter<nfilter; ifilter++) {
+	  R_nc_check (nc_inq_var_filter_info (ncid, varid, ufiltid[ifilter], &nfiltparm, NULL));
+	  ufiltparm = NULL;
+	  rfiltparm = PROTECT (R_nc_c2r_init (&filtio, (void **) &ufiltparm,
+	    ncid, NC_UINT, 1, &nfiltparm, 0, 0, 0,
+	    NULL, NULL, NULL, NULL, NULL));
+	  SET_VECTOR_ELT (rfilter_params, ifilter, rfiltparm);
+	  UNPROTECT(1);
+	  R_nc_check (nc_inq_var_filter_info (ncid, varid, ufiltid[ifilter], &nfiltparm, ufiltparm));
+	  R_nc_c2r(&filtio);
+	}
       }
 
     } else {
