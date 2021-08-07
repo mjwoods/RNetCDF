@@ -3843,6 +3843,12 @@ then :
   printf "%s\n" "#define HAVE_NC_INQ_VAR_ENDIAN 1" >>confdefs.h
 
 fi
+ac_fn_c_check_func "$LINENO" "nc_def_var_filter" "ac_cv_func_nc_def_var_filter"
+if test "x$ac_cv_func_nc_def_var_filter" = xyes
+then :
+  printf "%s\n" "#define HAVE_NC_DEF_VAR_FILTER 1" >>confdefs.h
+
+fi
 ac_fn_c_check_func "$LINENO" "nc_inq_var_filter_ids" "ac_cv_func_nc_inq_var_filter_ids"
 if test "x$ac_cv_func_nc_inq_var_filter_ids" = xyes
 then :
