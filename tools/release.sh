@@ -75,7 +75,7 @@ copyright="Copyright (C) 2004-$year Pavel Michna and Milton Woods."
 # Replace version string in all files (excluding hidden files).
 find . -mindepth 1 -name '.*' -prune -o -type f \
   ! -name NEWS ! -name release.sh -print | while read file; do
-    sed -i "s|$oldver|$newver|g;
+    sed -i "/RNetCDF\|[Vv][Ee][Rr][Ss][Ii][Oo][Nn]/ s|$oldver|$newver|g;
             /Copyright.*Michna/ s|\(.*\)Copyright.*|\1$copyright|" "$file"
   done
 
