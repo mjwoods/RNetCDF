@@ -132,5 +132,12 @@ R_NC_DIM_R2C_H (R_nc_dim_r2c_int, int)
 R_NC_DIM_R2C_H (R_nc_dim_r2c_size, size_t)
 
 
+/* Convert R numeric scalar argument to size_t.
+   Raise an error if R type or value is not compatible.
+ */
+size_t
+R_nc_sizearg (SEXP size);
+
+
 #endif /* RNC_CONVERT_H_INCLUDED */
 

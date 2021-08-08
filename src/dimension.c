@@ -44,6 +44,7 @@
 #include <netcdf.h>
 
 #include "common.h"
+#include "convert.h"
 #include "RNetCDF.h"
 
 

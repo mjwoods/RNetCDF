@@ -51,6 +51,15 @@
 #include <netcdf_par.h>
 #endif
 
+#ifdef HAVE_NETCDF_FILTER_H
+#include <netcdf_filter.h>
+#endif
+
+#if defined HAVE_NC_DEF_VAR_FILTER && \
+    defined HAVE_NC_INQ_VAR_FILTER_IDS && \
+    defined HAVE_NC_INQ_VAR_FILTER_INFO
+#define HAVE_NC_MULTI_FILTER
+#endif
 
 /*-----------------------------------------------------------------------------*\
  *  R_nc_def_var()
@@ -71,8 +80,10 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 #ifdef HAVE_NC_INQ_VAR_ENDIAN
   int endian_mode;
 #endif
-#ifdef HAVE_NC_INQ_VAR_FILTER
-  int filter_mode, filtid, *filtparm;
+#ifdef HAVE_NC_MULTI_FILTER
+  unsigned int *ufiltid, *ufiltparm;
+  size_t ifilter, nfilter, nfiltparm;
+  SEXP rfiltparm;
 #endif
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
@@ -128,11 +139,6 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 
     fletcher_mode = (asLogical (fletcher32) == TRUE);
 
-#ifdef HAVE_NC_INQ_VAR_FILTER
-    filtid = asInteger (filter_id);
-    filter_mode = (filtid != NA_INTEGER);
-    filtparm = INTEGER (filter_params);
-#endif
   }
 
   /*-- Enter define mode ------------------------------------------------------*/
@@ -164,11 +170,29 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
       R_nc_check (nc_def_var_fletcher32 (ncid, varid, fletcher_mode));
     }
 
-#ifdef HAVE_NC_INQ_VAR_FILTER
-    if (filter_mode) {
-      R_nc_check (nc_def_var_filter (ncid, varid, (unsigned int) filtid,
-        xlength (filter_params), (const unsigned int*) filtparm));
+#ifdef HAVE_NC_MULTI_FILTER
+    nfilter = xlength (filter_id);
+    if (nfilter > 0) {
+    /* Convert filter_id to unsigned int;
+       memory is allocated by R_alloc and automatically freed.
+     */
+      ufiltid = (unsigned int *) R_nc_r2c (
+        filter_id, ncid, NC_UINT, 1, &nfilter, 0, NULL, NULL, NULL);
+
+      for (ifilter=0; ifilter<nfilter; ifilter++) {
+	/* Convert filter_params to unsigned int;
+	   memory is allocated by R_alloc and automatically freed.
+	 */
+	rfiltparm = VECTOR_ELT (filter_params, ifilter);
+	nfiltparm = xlength (rfiltparm);
+	ufiltparm = (unsigned int *) R_nc_r2c (
+	  rfiltparm, ncid, NC_UINT, 1, &nfiltparm, 0, NULL, NULL, NULL);
+
+	/* Define a filter for the netcdf variable */
+	R_nc_check (nc_def_var_filter (ncid, varid, ufiltid[ifilter], nfiltparm, ufiltparm));
+      }
     }
+
 #endif
   }
 
@@ -606,10 +630,12 @@ R_nc_inq_var (SEXP nc, SEXP var)
 #ifdef HAVE_NC_INQ_VAR_SZIP
   int szip_options, szip_bits;
 #endif
-#ifdef HAVE_NC_INQ_VAR_FILTER
-  int filter_id;
-  size_t filter_nparams;
-  SEXP rfilter_params;
+#ifdef HAVE_NC_MULTI_FILTER
+  R_nc_buf filtio;
+  double *dfiltid;
+  unsigned int *ufiltid, *ufiltparm;
+  size_t ifilter, nfilter, nfiltparm;
+  SEXP rfilter_id, rfilter_params, rfiltparm;
 #endif
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
@@ -740,39 +766,48 @@ R_nc_inq_var (SEXP nc, SEXP var)
 #endif
 
     /* filter */
-#ifdef HAVE_NC_INQ_VAR_FILTER
+#ifdef HAVE_NC_MULTI_FILTER
     if (storeprop == NC_CHUNKED) {
-      status = nc_inq_var_filter (ncid, varid,
-                                  (unsigned int *) &filter_id,
-                                  &filter_nparams, NULL);
-      /* netcdf>=4.8.0 returns with filter_id==0 if no filters defined for variable;
-         earlier versions returned error status */
-      if (status == NC_NOERR && filter_id == 0) {
-        status = NC_EFILTER;
-      }
-      if (status == NC_NOERR) {
-	SET_VECTOR_ELT (result, 16, ScalarInteger (filter_id));
-	rfilter_params = PROTECT(allocVector (INTSXP, filter_nparams));
-	SET_VECTOR_ELT (result, 17, rfilter_params);
-	UNPROTECT(1);
-	if (filter_nparams > 0) {
-	  R_nc_check (nc_inq_var_filter (ncid, varid, NULL, NULL,
-			(unsigned int *) INTEGER (rfilter_params)));
+      /* Query number of filters for the variable */
+      R_nc_check (nc_inq_var_filter_ids (ncid, varid, &nfilter, NULL));
+
+      /* Prepare R list items */
+      rfilter_id = PROTECT(allocVector(REALSXP, nfilter));
+      rfilter_params = PROTECT(allocVector(VECSXP, nfilter));
+      SET_VECTOR_ELT (result, 16, rfilter_id);
+      SET_VECTOR_ELT (result, 17, rfilter_params);
+      UNPROTECT(2);
+
+      if (nfilter > 0) {
+        /* Query filter ids, converting from unsigned int to R real */
+        dfiltid = REAL (rfilter_id);
+        ufiltid = (unsigned int *) R_alloc (nfilter, sizeof(unsigned int));
+        R_nc_check (nc_inq_var_filter_ids (ncid, varid, &nfilter, ufiltid));
+        for (ifilter=0; ifilter<nfilter; ifilter++) {
+          dfiltid[ifilter] = ufiltid[ifilter];
+        }
+
+	/* Query filter parameters for each filter,
+	   converting from unsigned int to R real.
+	   Memory allocated by R_nc_c2r_init is freed automatically by R.
+	 */
+	for (ifilter=0; ifilter<nfilter; ifilter++) {
+	  R_nc_check (nc_inq_var_filter_info (ncid, varid, ufiltid[ifilter], &nfiltparm, NULL));
+	  ufiltparm = NULL;
+	  rfiltparm = PROTECT (R_nc_c2r_init (&filtio, (void **) &ufiltparm,
+	    ncid, NC_UINT, -1, &nfiltparm, 0, 0, 0,
+	    NULL, NULL, NULL, NULL, NULL));
+	  SET_VECTOR_ELT (rfilter_params, ifilter, rfiltparm);
+	  UNPROTECT(1);
+	  R_nc_check (nc_inq_var_filter_info (ncid, varid, ufiltid[ifilter], &nfiltparm, ufiltparm));
+	  R_nc_c2r(&filtio);
 	}
-#  ifdef NC_ENOFILTER
-      } else if (status == NC_EFILTER || status == NC_ENOFILTER ) {
-#  else
-      } else if (status == NC_EFILTER) {
-#  endif
-	SET_VECTOR_ELT (result, 16, ScalarInteger (NA_INTEGER));
-	SET_VECTOR_ELT (result, 17, ScalarInteger (NA_INTEGER));
-      } else {
-	error (nc_strerror (status));
       }
+
     } else {
       /* netcdf>=4.7.4 returns NC_EINVAL for non-chunked variables */
-      SET_VECTOR_ELT (result, 16, ScalarInteger (NA_INTEGER));
-      SET_VECTOR_ELT (result, 17, ScalarInteger (NA_INTEGER));
+      SET_VECTOR_ELT (result, 16, allocVector(REALSXP, 0));
+      SET_VECTOR_ELT (result, 17, allocVector(VECSXP, 0));
     }
 #else
     SET_VECTOR_ELT (result, 16, R_NilValue);

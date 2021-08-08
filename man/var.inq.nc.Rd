@@ -22,7 +22,7 @@
   \item{dimids}{Vector of dimension IDs corresponding to the variable dimensions (\code{NA} for scalar variables). Order is leftmost varying fastest.}
   \item{natts}{Number of variable attributes assigned to this variable.}
 
-The arguments below apply only to datasets in "netcdf4" format:
+The list components below apply only to datasets in "netcdf4" format:
 
   \item{chunksizes}{Chunk size expressed as the number of elements along each dimension, in the same order as \code{dimids}. \code{NULL} implies contiguous storage.}
   \item{cache_bytes}{Size of chunk cache in bytes (\code{NULL} if unsupported).}
@@ -34,8 +34,8 @@ The arguments below apply only to datasets in "netcdf4" format:
   \item{fletcher32}{\code{TRUE} if the fletcher32 checksum is enabled for this variable, \code{FALSE} otherwise.}
   \item{szip_options}{Integer containing a bitmask of szip options. \code{NA} if szip is not used, or \code{NULL} if unsupported.}
   \item{szip_bits}{Number of bits per pixel for szip. \code{NA} if szip is not used, or \code{NULL} if unsupported.}
-  \item{filter_id}{Identifier of filter associated with the variable. \code{NA} if no filter is defined, or \code{NULL} if unsupported.}
-  \item{filter_params}{Vector of integer parameters for the filter associated with the variable. \code{NA} if no filter is defined, or \code{NULL} if unsupported.}
+  \item{filter_id}{Vector of filter IDs associated with the variable, or \code{NULL} if the NetCDF library does not support the multi-filter interface.}
+  \item{filter_params}{List with one element per \code{filter_id}, or \code{NULL} if the NetCDF library does not support the multi-filter interface. Each list member is a vector of \code{numeric} parameters for the corresponding filter. Please see the NetCDF documentation for information about the available filters and their parameters.}
 }
 
 \details{This function returns information about a NetCDF variable. Information about a variable include its name, its ID, its type, its number of dimensions, a vector of the dimension IDs of this variable and the number of attributes.}

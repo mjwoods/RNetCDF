@@ -57,6 +57,10 @@ dnl Insert warning into generated C code:
  *  Local macros, constants and variables
 \*=============================================================================*/
 
+/* Definition of missing value used by bit64 package */
+#define NA_INTEGER64 LLONG_MIN
+
+/* Maximum length of R character string */
 #define RNC_CHARSXP_MAXLEN 2147483647
 
 /* Conversion from 64-bit integers to double may round upwards,
@@ -2003,3 +2007,15 @@ R_NC_DIM_R2C(R_nc_dim_r2c_int, int, int)
 R_NC_DIM_R2C(R_nc_dim_r2c_size, size, size_t)
 
 
+/* Wrap R_nc_dim_r2c_size for scalar arguments
+ */
+size_t
+R_nc_sizearg (SEXP size)
+{
+  size_t *result;
+  if (xlength (size) < 1) {
+    error ("Size argument must contain at least one numeric value");
+  }
+  result = R_nc_dim_r2c_size (size, 1, 0);
+  return *result;
+}
