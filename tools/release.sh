@@ -68,9 +68,15 @@ fi
 # Get existing version string:
 oldver="$( grep 'Version: ' DESCRIPTION | awk '{ print $2 }' )"
 
+# Define copyright line:
+year=$( date +%Y )
+copyright="Copyright (C) 2004-$year Pavel Michna and Milton Woods."
+
 # Replace version string in all files (excluding hidden files).
-find . -mindepth 1 -name '.*' -prune -o -type f ! -name NEWS -print | while read file; do
-    sed -i "s|$oldver|$newver|g" "$file"
+find . -mindepth 1 -name '.*' -prune -o -type f \
+  ! -name NEWS ! -name release.sh -print | while read file; do
+    sed -i "s|$oldver|$newver|g;
+            /Copyright.*Michna/ s|\(.*\)Copyright.*|\1$copyright|" "$file"
   done
 
 # Update release date in DESCRIPTION:
