@@ -73,7 +73,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 {
   int ncid, ii, jj, *dimids, ndims, varid, chunkmode, format, withnc4;
   int deflate_mode, deflate_level, shuffle_mode, fletcher_mode;
-  size_t *chunksize_t, nfilter;
+  size_t *chunksize_t;
   nc_type xtype;
   const char *varnamep;
 
@@ -82,7 +82,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 #endif
 #ifdef HAVE_NC_MULTI_FILTER
   unsigned int *ufiltid, *ufiltparm;
-  size_t ifilter, nfiltparm;
+  size_t ifilter, nfilter, nfiltparm;
   SEXP rfiltparm;
 #endif
 
@@ -170,9 +170,9 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
       R_nc_check (nc_def_var_fletcher32 (ncid, varid, fletcher_mode));
     }
 
+#ifdef HAVE_NC_MULTI_FILTER
     nfilter = xlength (filter_id);
     if (nfilter > 0) {
-#ifdef HAVE_NC_MULTI_FILTER
     /* Convert filter_id to unsigned int;
        memory is allocated by R_alloc and automatically freed.
      */
@@ -191,8 +191,6 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 	/* Define a filter for the netcdf variable */
 	R_nc_check (nc_def_var_filter (ncid, varid, ufiltid[ifilter], nfiltparm, ufiltparm));
       }
-#else
-      error("Multi-filter interface not supported by netcdf library");
 #endif
     }
   }
