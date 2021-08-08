@@ -2,14 +2,14 @@
  *
  *  Name:       dataset.c
  *
- *  Version:    2.4-2
+ *  Version:    2.5-1
  *
  *  Purpose:    NetCDF dataset functions for RNetCDF
  *
  *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
  *              Milton Woods (miltonjwoods@gmail.com)
  *
- *  Copyright:  (C) 2004-2020 Pavel Michna, Milton Woods
+ *  Copyright (C) 2004-2021 Pavel Michna and Milton Woods.
  *
  *=============================================================================*
  *
