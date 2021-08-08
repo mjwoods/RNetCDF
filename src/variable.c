@@ -191,8 +191,9 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 	/* Define a filter for the netcdf variable */
 	R_nc_check (nc_def_var_filter (ncid, varid, ufiltid[ifilter], nfiltparm, ufiltparm));
       }
-#endif
     }
+
+#endif
   }
 
   return ScalarInteger (varid);
