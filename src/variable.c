@@ -68,7 +68,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 {
   int ncid, ii, jj, *dimids, ndims, varid, chunkmode, format, withnc4;
   int deflate_mode, deflate_level, shuffle_mode, fletcher_mode;
-  size_t *chunksize_t;
+  size_t *chunksize_t, nfilter;
   nc_type xtype;
   const char *varnamep;
 
@@ -77,7 +77,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 #endif
 #ifdef HAVE_NC_DEF_VAR_FILTER
   unsigned int *ufiltid, *ufiltparm;
-  size_t ifilter, nfilter, nfiltparm;
+  size_t ifilter, nfiltparm;
   SEXP rfiltparm;
 #endif
 
