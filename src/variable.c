@@ -55,6 +55,11 @@
 #include <netcdf_filter.h>
 #endif
 
+#if defined HAVE_NC_DEF_VAR_FILTER && \
+    defined HAVE_NC_INQ_VAR_FILTER_IDS && \
+    defined HAVE_NC_INQ_VAR_FILTER_INFO
+#define HAVE_NC_MULTI_FILTER
+#endif
 
 /*-----------------------------------------------------------------------------*\
  *  R_nc_def_var()
@@ -75,7 +80,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 #ifdef HAVE_NC_INQ_VAR_ENDIAN
   int endian_mode;
 #endif
-#ifdef HAVE_NC_DEF_VAR_FILTER
+#ifdef HAVE_NC_MULTI_FILTER
   unsigned int *ufiltid, *ufiltparm;
   size_t ifilter, nfiltparm;
   SEXP rfiltparm;
@@ -167,7 +172,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 
     nfilter = xlength (filter_id);
     if (nfilter > 0) {
-#ifdef HAVE_NC_DEF_VAR_FILTER
+#ifdef HAVE_NC_MULTI_FILTER
     /* Convert filter_id to unsigned int;
        memory is allocated by R_alloc and automatically freed.
      */
@@ -187,7 +192,7 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
 	R_nc_check (nc_def_var_filter (ncid, varid, ufiltid[ifilter], nfiltparm, ufiltparm));
       }
 #else
-      error("nc_def_var_filter not supported by netcdf library");
+      error("Multi-filter interface not supported by netcdf library");
 #endif
     }
   }
@@ -626,7 +631,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
 #ifdef HAVE_NC_INQ_VAR_SZIP
   int szip_options, szip_bits;
 #endif
-#if defined HAVE_NC_INQ_VAR_FILTER_IDS && defined HAVE_NC_INQ_VAR_FILTER_INFO
+#ifdef HAVE_NC_MULTI_FILTER
   R_nc_buf filtio;
   double *dfiltid;
   unsigned int *ufiltid, *ufiltparm;
@@ -762,7 +767,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
 #endif
 
     /* filter */
-#if defined HAVE_NC_INQ_VAR_FILTER_IDS && HAVE_NC_INQ_VAR_FILTER_INFO
+#ifdef HAVE_NC_MULTI_FILTER
     if (storeprop == NC_CHUNKED) {
       /* Query number of filters for the variable */
       R_nc_check (nc_inq_var_filter_ids (ncid, varid, &nfilter, NULL));
