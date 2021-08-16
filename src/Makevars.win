@@ -1,4 +1,4 @@
-VERSION=4.7.3
+VERSION=4.7.4
 
 ifeq "$(WIN)" "64"
 PKG_SIZE_T = 8
