@@ -20,18 +20,18 @@ fi
 thisdir="$( dirname "$0" )"
 cd "$thisdir/.."
 
+# Use GNU versions of some utilities:
+kernel=$( uname )
+if [[ "$kernel" == Darwin ]]; then
+  alias date=gdate # MacPorts coreutils
+  alias find=gfind # MacPorts findutils
+  alias sed=gsed   # MacPorts gsed
+fi
+
 # Define function to convert date formats:
-if date -v 1d >/dev/null 2>&1; then
-  # BSD date
-  DATEFMT() {
-    date -j -f '%Y-%m-%d %H:%M:%S %z' "$1" +%Y%m%d%H%M.%S
-  }
-else
-  # GNU date
-  DATEFMT() {
-    date -d "$1" +%Y%m%d%H%M.%S
-  }
-fi  
+DATEFMT() {
+  date -d "$1" +%Y%m%d%H%M.%S
+}
 
 # Check that generated files are up-to-date:
 if test -n "$( git status --porcelain )"; then
@@ -68,18 +68,17 @@ fi
 # Get existing version string:
 oldver="$( grep 'Version: ' DESCRIPTION | awk '{ print $2 }' )"
 
+# Define copyright line:
+year=$( date +%Y )
+copyright="Copyright (C) 2004-$year Pavel Michna and Milton Woods."
+
 # Replace version string in all files (excluding hidden files).
-# In-place option of sed is not portable between GNU and BSD versions.
-find . -mindepth 1 -name '.*' -prune -o -type f ! -name NEWS -print | while read file; do
-    sed "s|$oldver|$newver|g" "$file" >"$file.sed"
-    if [[ -x "$file" ]]; then
-      # Preserve execute permissions:
-      chmod +x "$file.sed"
-    fi
-    mv "$file.sed" "$file"
+find . -mindepth 1 -name '.*' -prune -o -type f \
+  ! -name NEWS ! -name release.sh -print | while read file; do
+    sed -i "/RNetCDF\|[Vv][Ee][Rr][Ss][Ii][Oo][Nn]/ s|$oldver|$newver|g;
+            /Copyright.*Michna/ s|\(.*\)Copyright.*|\1$copyright|" "$file"
   done
 
 # Update release date in DESCRIPTION:
 newdate="$( date +%Y-%m-%d )"
-sed "s|Date:.*|Date: $newdate|" DESCRIPTION >DESCRIPTION.sed
-mv DESCRIPTION.sed DESCRIPTION
+sed -i "s|Date:.*|Date: $newdate|" DESCRIPTION
