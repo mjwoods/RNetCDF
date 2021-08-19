@@ -1008,11 +1008,7 @@ utcal.nc <- function(unitstring, value, type = "n") {
     colnames(ut) <- c("year", "month", "day", "hour", "minute", "second")
     return(ut)
   } else if (isTRUE(type == "s")) {
-    x <- apply(ut, 1, function(x) {
-      paste(x[1], "-", sprintf("%02g", x[2]), "-", sprintf("%02g", 
-        x[3]), " ", sprintf("%02g", x[4]), ":", sprintf("%02g", x[5]), 
-        ":", sprintf("%02g", x[6]), sep = "")
-    })
+    x <- sprintf("%02g-%02g-%02g %02g:%02g:%02g",ut[,1],ut[,2],ut[,3],ut[,4],ut[,5],ut[,6])
     return(x)
   } else if (isTRUE(type == "c")) {
     ct <- as.POSIXct(utinvcal.nc("seconds since 1970-01-01 00:00:00 +00:00", 
