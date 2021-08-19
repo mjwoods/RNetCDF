@@ -1011,8 +1011,9 @@ utcal.nc <- function(unitstring, value, type = "n") {
     x <- sprintf("%02g-%02g-%02g %02g:%02g:%02g",ut[,1],ut[,2],ut[,3],ut[,4],ut[,5],ut[,6])
     return(x)
   } else if (isTRUE(type == "c")) {
-    ct <- as.POSIXct(utinvcal.nc("seconds since 1970-01-01 00:00:00 +00:00", 
-      ut), tz = "UTC", origin = ISOdatetime(1970, 1, 1, 0, 0, 0, tz = "UTC"))
+    ct <- utinvcal.nc("seconds since 1970-01-01 00:00:00 +00:00", ut)
+    attr(ct, "class") <- c("POSIXct","POSIXt")
+    attr(ct, "tzone") <- "UTC"
     return(ct)
   }
 }
