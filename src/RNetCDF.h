@@ -2,7 +2,7 @@
  *
  *  Name:       RNetCDF.h
  *
- *  Version:    2.5-1
+ *  Version:    2.5-2
  *
  *  Purpose:    Declare RNetCDF functions callable from R
  *
