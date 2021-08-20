@@ -1,7 +1,8 @@
-Version 2.5-1, 2021-08-08
+Version 2.5-2, 2021-08-20
   * Support hdf5 filters via multi-filter interface (netcdf>=4.8.0)
   * Windows: update binary packages to netcdf 4.7.4 with OpenDAP
   * Generate type conversions with m4 macros
+  * Reduce CPU time for utcal.nc example to pass CRAN checks
 
 Version 2.4-2, 2020-09-12
   * Support reading/writing special values (e.g. NA, Inf) without substitution,

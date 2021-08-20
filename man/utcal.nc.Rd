@@ -63,7 +63,7 @@ if (inherits(try(utcal.nc("seconds since 1970-01-01", 0)), "try-error")) {
   att.put.nc(nc, "NC_GLOBAL", "title", "NC_CHAR", "RNetCDF example: time coordinate")
   att.put.nc(nc, "NC_GLOBAL", "institution", "NC_CHAR", "University of Areland")
   att.put.nc(nc, "NC_GLOBAL", "source", "NC_CHAR", 
-    paste("RNetCDF", installed.packages()["RNetCDF","Version"], sep="_"))
+    paste("RNetCDF", utils::packageVersion("RNetCDF"), sep="_"))
   att.put.nc(nc, "NC_GLOBAL", "history", "NC_CHAR",
     paste(Sys.time(), "File created"))
   att.put.nc(nc, "NC_GLOBAL", "references", "NC_CHAR",
@@ -94,6 +94,7 @@ if (inherits(try(utcal.nc("seconds since 1970-01-01", 0)), "try-error")) {
   time_unit2 <- att.get.nc(nc, "time", "units")
 
   close.nc(nc)
+  unlink(file1)
 
   # Convert the time variable to POSIXct:
   time_posixct2 <- utcal.nc(time_unit2, time_coord2, "c")
@@ -101,7 +102,6 @@ if (inherits(try(utcal.nc("seconds since 1970-01-01", 0)), "try-error")) {
   # Compare with original POSIXct variable:
   stopifnot(all.equal(time_posixct, time_posixct2))
 
-  unlink(file1)
 }
 }
 
