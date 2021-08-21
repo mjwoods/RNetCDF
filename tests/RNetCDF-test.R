@@ -1126,6 +1126,21 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   y <- try(file.inq.nc(nc), silent=TRUE)
   tally <- testfun(inherits(y, "try-error"), TRUE, tally)
 
+  # Read entire file:
+  cat("Check read.nc ... ")
+  nc <- open.nc(ncfile)
+  all <- read.nc(nc)
+  if (format == "netcdf4") {
+    tally <- testfun(length(all),0,tally)
+    all <- read.nc(nc, recursive=TRUE)
+    tally <- testfun(names(all),"testgrp",tally)
+    tally <- testfun(length(all[["testgrp"]]),varcnt,tally)
+  } else {
+    tally <- testfun(length(all),varcnt,tally)
+  }
+  close.nc(nc)
+
+  # Cleanup:
   unlink(ncfile)
   cat("Removed test file", ncfile, "\n")
 }
