@@ -38,8 +38,8 @@
 
 att.copy.nc <- function(ncfile.in, variable.in, attribute, ncfile.out, variable.out) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile.in) == "NetCDF")
-  stopifnot(class(ncfile.out) == "NetCDF")
+  stopifnot(inherits(ncfile.in, "NetCDF"))
+  stopifnot(inherits(ncfile.out, "NetCDF"))
   stopifnot(is.character(attribute) || is.numeric(attribute))
   stopifnot(is.character(variable.in) || is.numeric(variable.in))
   stopifnot(is.character(variable.out) || is.numeric(variable.out))
@@ -58,7 +58,7 @@ att.copy.nc <- function(ncfile.in, variable.in, attribute, ncfile.out, variable.
 
 att.delete.nc <- function(ncfile, variable, attribute) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.character(attribute) || is.numeric(attribute))
   
@@ -76,7 +76,7 @@ att.delete.nc <- function(ncfile, variable, attribute) {
 att.get.nc <- function(ncfile, variable, attribute,
                        rawchar = FALSE, fitnum = FALSE) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.character(attribute) || is.numeric(attribute))
   stopifnot(is.logical(rawchar))
@@ -100,7 +100,7 @@ att.get.nc <- function(ncfile, variable, attribute,
 
 att.inq.nc <- function(ncfile, variable, attribute) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.character(attribute) || is.numeric(attribute))
   
@@ -118,7 +118,7 @@ att.inq.nc <- function(ncfile, variable, attribute) {
 
 att.put.nc <- function(ncfile, variable, name, type, value) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.character(name))
   stopifnot(is.character(type) || is.numeric(type))
@@ -139,7 +139,7 @@ att.put.nc <- function(ncfile, variable, name, type, value) {
 
 att.rename.nc <- function(ncfile, variable, attribute, newname) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.character(attribute) || is.numeric(attribute))
   stopifnot(is.character(newname))
@@ -157,7 +157,7 @@ att.rename.nc <- function(ncfile, variable, attribute, newname) {
 
 close.nc <- function(con, ...) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(con) == "NetCDF")
+  stopifnot(inherits(con, "NetCDF"))
   
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_close, attr(con, "handle_ptr"))
@@ -207,7 +207,7 @@ create.nc <- function(filename, clobber = TRUE, share = FALSE, prefill = TRUE,
 
 dim.def.nc <- function(ncfile, dimname, dimlength = 1, unlim = FALSE) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.character(dimname))
   stopifnot(is.numeric(dimlength))
   stopifnot(is.logical(unlim))
@@ -225,7 +225,7 @@ dim.def.nc <- function(ncfile, dimname, dimlength = 1, unlim = FALSE) {
 
 dim.inq.nc <- function(ncfile, dimension) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.character(dimension) || is.numeric(dimension))
   
   #-- C function call --------------------------------------------------------
@@ -243,7 +243,7 @@ dim.inq.nc <- function(ncfile, dimension) {
 
 dim.rename.nc <- function(ncfile, dimension, newname) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.character(dimension) || is.numeric(dimension))
   stopifnot(is.character(newname))
   
@@ -260,7 +260,7 @@ dim.rename.nc <- function(ncfile, dimension, newname) {
 
 file.inq.nc <- function(ncfile) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_inq_file, ncfile)
@@ -345,7 +345,7 @@ print_grp <- function(x, level = 0) {
 
   #-- Inquire about the group ------------------------------------------------
   grpinfo <- try(grp.inq.nc(x, ancestors = FALSE), silent = TRUE)
-  if (class(grpinfo) == "try-error" || is.null(grpinfo)) {
+  if (inherits(grpinfo, "try-error") || is.null(grpinfo)) {
     return(invisible(NULL))
   }
   
@@ -458,7 +458,7 @@ print_grp <- function(x, level = 0) {
 
 print.nc <- function(x, ...) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(x) == "NetCDF")
+  stopifnot(inherits(x, "NetCDF"))
 
   cat("netcdf ", file.inq.nc(x)$format, " {\n", sep="")
 
@@ -477,7 +477,7 @@ print.nc <- function(x, ...) {
 
 sync.nc <- function(ncfile) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   
   #-- C function call --------------------------------------------------------
   nc <- .Call(R_nc_sync, ncfile)
@@ -496,7 +496,7 @@ var.def.nc <- function(ncfile, varname, vartype, dimensions,
                        fletcher32=FALSE, filter_id=integer(0),
                        filter_params=list()) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.character(varname))
   stopifnot(is.character(vartype) || is.numeric(vartype))
 
@@ -532,7 +532,7 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 4,
   collapse = TRUE, unpack = FALSE, rawchar = FALSE, fitnum = FALSE,
   cache_bytes=NA, cache_slots=NA, cache_preemption=NA) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.numeric(start) || is.logical(start))
   stopifnot(is.numeric(count) || is.logical(count))
@@ -594,7 +594,7 @@ var.get.nc <- function(ncfile, variable, start = NA, count = NA, na.mode = 4,
 
 var.inq.nc <- function(ncfile, variable) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.character(variable) || is.numeric(variable))
   
   #-- C function call --------------------------------------------------------
@@ -620,7 +620,7 @@ var.inq.nc <- function(ncfile, variable) {
 
 var.par.nc <- function(ncfile, variable, access="NC_COLLECTIVE") {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.character(access) &&
             access[1] %in% c("NC_COLLECTIVE", "NC_INDEPENDENT"))
@@ -640,7 +640,7 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
   na.mode = 4, pack = FALSE,
   cache_bytes=NA, cache_slots=NA, cache_preemption=NA) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.numeric(data) || is.character(data) || is.raw(data) ||
             is.logical(data) || is.list(data) || is.factor(data))
@@ -763,7 +763,7 @@ var.put.nc <- function(ncfile, variable, data, start = NA, count = NA,
 
 var.rename.nc <- function(ncfile, variable, newname) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.character(variable) || is.numeric(variable))
   stopifnot(is.character(newname))
   
@@ -780,7 +780,7 @@ var.rename.nc <- function(ncfile, variable, newname) {
 
 grp.def.nc <- function(ncid, grpname) {
   # Check arguments:
-  stopifnot(class(ncid) == "NetCDF")
+  stopifnot(inherits(ncid, "NetCDF"))
   stopifnot(is.character(grpname))
   
   # C function call:
@@ -798,7 +798,7 @@ grp.def.nc <- function(ncid, grpname) {
 
 grp.find <- function(ncid, grpname, full = isTRUE(grepl("/", grpname))) {
   # Check arguments:
-  stopifnot(class(ncid) == "NetCDF")
+  stopifnot(inherits(ncid, "NetCDF"))
   stopifnot(is.character(grpname))
   stopifnot(is.logical(full))
   
@@ -817,7 +817,7 @@ grp.find <- function(ncid, grpname, full = isTRUE(grepl("/", grpname))) {
 
 grp.inq.nc <- function(ncid, grpname = NULL, ancestors = TRUE) {
   # Check arguments:
-  stopifnot(class(ncid) == "NetCDF")
+  stopifnot(inherits(ncid, "NetCDF"))
   stopifnot(is.logical(ancestors))
   stopifnot(is.null(grpname) || is.character(grpname))
   
@@ -879,7 +879,7 @@ grp.inq.nc <- function(ncid, grpname = NULL, ancestors = TRUE) {
 
 grp.rename.nc <- function(ncid, newname, oldname = NULL) {
   # Check arguments:
-  stopifnot(class(ncid) == "NetCDF")
+  stopifnot(inherits(ncid, "NetCDF"))
   stopifnot(is.character(newname))
   stopifnot(is.null(oldname) || is.character(oldname))
   
@@ -901,7 +901,7 @@ grp.rename.nc <- function(ncid, newname, oldname = NULL) {
 
 read.nc <- function(ncfile, recursive = FALSE, ...) {
   #-- Check args -------------------------------------------------------------
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.logical(recursive))
   
   #-- Initialise storage -----------------------------------------------------
@@ -945,7 +945,7 @@ read.nc <- function(ncfile, recursive = FALSE, ...) {
 type.def.nc <- function(ncfile, typename, class, size=NULL, basetype=NULL,
                         names=NULL, values=NULL, subtypes=NULL, dimsizes=NULL) {
   # Check arguments
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.character(typename))
   stopifnot(is.character(class))
   if (isTRUE(class == "compound")) {
@@ -976,7 +976,7 @@ type.def.nc <- function(ncfile, typename, class, size=NULL, basetype=NULL,
 
 type.inq.nc <- function(ncfile, type, fields=TRUE) {
   # Check arguments:
-  stopifnot(class(ncfile) == "NetCDF")
+  stopifnot(inherits(ncfile, "NetCDF"))
   stopifnot(is.numeric(type) || is.character(type))
   stopifnot(is.logical(fields))
   
