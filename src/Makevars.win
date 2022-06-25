@@ -23,8 +23,17 @@ PKG_CPPFLAGS = -I../windows/netcdf-${VERSION}/include \
 
 WINLIBS = ../windows/netcdf-${VERSION}/lib${R_ARCH}${CRT}
 
-PKG_LIBS = -L$(WINLIBS) -lnetcdf -lcurl -lssh2 -lssl -lcrypto \
-	-lhdf5_hl -lhdf5 -ludunits2 -lexpat -lz -lws2_32 -lcrypt32 -lwldap32
+# Library list from Rtools40 pkg-config with netcdf 4.9.0-2:
+# echo "-ludunits2 -lexpat $( pkg-config --libs-only-l --static netcdf )"
+PKG_LIBS = -L$(WINLIBS) -ludunits2 -lexpat \
+  -lnetcdf -lhdf5_hl -lhdf5 -lm -lbz2 -lxml2 -lz -liconv -lws2_32 -lcurl \
+  -lnormaliz -lssh2 -lcrypt32 -lgdi32 -lws2_32 -lcrypt32 -lgdi32 -lws2_32 \
+  -lssl -lcrypto -lws2_32 -lgdi32 -lcrypt32 -lz -lssl -lcrypto -lssl -lcrypto \
+  -lws2_32 -lgdi32 -lcrypt32 -lgdi32 -lcrypt32 -lwldap32 -lz -lws2_32 \
+  -lhdf5_hl -lhdf5 -lm -lbz2 -lxml2 -lz -liconv -lws2_32 \-lcurl -lnormaliz \
+  -lssh2 -lcrypt32 -lgdi32 -lws2_32 -lcrypt32 -lgdi32 -lws2_32 -lssl -lcrypto \
+  -lws2_32 -lgdi32 -lcrypt32 -lz -lssl -lcrypto -lssl -lcrypto -lws2_32 \
+  -lgdi32 -lcrypt32 -lgdi32 -lcrypt32 -lwldap32 -lz -lws2_32
 
 all: clean winlibs
 
