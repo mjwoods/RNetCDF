@@ -2,7 +2,7 @@
  *
  *  Name:       attribute.c
  *
- *  Version:    2.5-2
+ *  Version:    2.6-1
  *
  *  Purpose:    NetCDF attribute functions for RNetCDF
  *
