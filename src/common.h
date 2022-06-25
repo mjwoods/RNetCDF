@@ -2,14 +2,14 @@
  *
  *  Name:       common.h
  *
- *  Version:    2.5-2
+ *  Version:    2.6-1
  *
  *  Purpose:    Common definitions for RNetCDF functions
  *
  *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
  *              Milton Woods (miltonjwoods@gmail.com)
  *
- *  Copyright (C) 2004-2021 Pavel Michna and Milton Woods.
+ *  Copyright (C) 2004-2022 Pavel Michna and Milton Woods.
  *
  *=============================================================================*
  *
