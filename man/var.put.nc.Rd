@@ -10,6 +10,7 @@
   cache_bytes=NA, cache_slots=NA, cache_preemption=NA)}
 
 \arguments{
+  Arguments marked for "netcdf4" are optional for datasets in that format and ignored for other formats.
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{variable}{ID or name of the NetCDF variable.}
   \item{data}{An R vector or array of data to be written to the NetCDF variable. Values are taken from \code{data} in the order of R vector elements, so that leftmost indices vary fastest over an array.}
@@ -18,11 +19,9 @@
   \item{na.mode}{Set the mode for handling missing values (\code{NA}) in numeric variables: 0=accept \code{_FillValue}, then \code{missing_value} attribute; 1=accept only \code{_FillValue} attribute; 2=accept only \code{missing_value} attribute; 3=no missing value conversion; 4=valid range from valid_min and valid_max or valid_range, fill value from _FillValue, with defaults for each type except \code{NC_BYTE} and \code{NC_UBYTE} (see \url{https://www.unidata.ucar.edu/software/netcdf/documentation/NUG/attribute_conventions.html}).}
   \item{pack}{Variables are packed if \code{pack=TRUE} and the attributes \code{add_offset} and \code{scale_factor} are defined. Default is \code{FALSE}.}
 
-The arguments below apply only to datasets in "netcdf4" format. Reading and writing of variables involves a "chunk cache", and default cache settings are defined by the NetCDF library. Performance may be improved in some applications by adjusting the cache settings through the following options:
-
-  \item{cache_bytes}{Size of chunk cache in bytes. Value of \code{NA} (default) implies no change.}
-  \item{cache_slots}{Number of slots in chunk cache. Value of \code{NA} (default) implies no change.}
-  \item{cache_preemption}{Value between 0 and 1 (inclusive) that biases the cache scheme towards eviction of chunks that have been fully read. Value of \code{NA} (default) implies no change.}
+  \item{cache_bytes}{(netcdf4) Size of chunk cache in bytes. Value of \code{NA} (default) implies no change.}
+  \item{cache_slots}{(netcdf4) Number of slots in chunk cache. Value of \code{NA} (default) implies no change.}
+  \item{cache_preemption}{(netcdf4) Value between 0 and 1 (inclusive) that biases the cache scheme towards eviction of chunks that have been fully read. Value of \code{NA} (default) implies no change.}
 }
 
 \details{This function writes values to a NetCDF variable. Data values in R are automatically converted to the correct type of NetCDF variable.
@@ -39,7 +38,10 @@ To reduce the storage space required by a NetCDF file, numeric variables can be 
 
 Data in a NetCDF variable is represented as a multi-dimensional array. The number and length of dimensions is determined when the variable is created. The \code{start} and \code{count} arguments of this routine indicate where the writing starts and the number of values to write along each dimension.
 
-Awkwardness arises mainly from one thing: NetCDF data are written with the last dimension varying fastest, whereas R works opposite. Thus, the order of the dimensions according to the CDL conventions (e.g., time, latitude, longitude) is reversed in the R array (e.g., longitude, latitude, time).}
+Awkwardness arises mainly from one thing: NetCDF data are written with the last dimension varying fastest, whereas R works opposite. Thus, the order of the dimensions according to the CDL conventions (e.g., time, latitude, longitude) is reversed in the R array (e.g., longitude, latitude, time).
+
+The arguments marked for "netcdf4" format refer to the "chunk cache" used for reading and writing variables. Default cache settings are defined by the NetCDF library, and they can be adjusted for each variable to improve performance in some applications.
+}
 
 \references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 

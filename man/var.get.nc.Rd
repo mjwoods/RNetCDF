@@ -11,6 +11,7 @@
   cache_bytes=NA, cache_slots=NA, cache_preemption=NA)}
 
 \arguments{
+  Arguments marked for "netcdf4" are optional for datasets in that format and ignored for other formats.
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{variable}{ID or name of the NetCDF variable.}
   \item{start}{A vector of indices specifying the element where reading starts along each dimension of \code{variable}. Indices are numbered from 1 onwards, and the order of dimensions is shown by \code{\link[RNetCDF]{print.nc}} (array elements are stored sequentially with leftmost indices varying fastest). By default (\code{start=NA}), all dimensions of \code{variable} are read from the first element onwards. Otherwise, \code{start} must be a vector whose length is not less than the number of dimensions in \code{variable} (excess elements are ignored). Any \code{NA} values in vector \code{start} are set to 1.}
@@ -33,11 +34,9 @@
     \code{NC_UINT64}     \tab \code{\link[bit64:bit64-package]{integer64}} \cr
   }}
 
-The arguments below apply only to datasets in "netcdf4" format. Reading and writing of variables involves a "chunk cache", and default cache settings are defined by the NetCDF library. Performance may be improved in some applications by adjusting the cache settings through the following options:
-
-  \item{cache_bytes}{Size of chunk cache in bytes. Value of \code{NA} (default) implies no change.}
-  \item{cache_slots}{Number of slots in chunk cache. Value of \code{NA} (default) implies no change.}
-  \item{cache_preemption}{Value between 0 and 1 (inclusive) that biases the cache scheme towards eviction of chunks that have been fully read. Value of \code{NA} (default) implies no change.}
+  \item{cache_bytes}{(netcdf4) Size of chunk cache in bytes. Value of \code{NA} (default) implies no change.}
+  \item{cache_slots}{(netcdf4) Number of slots in chunk cache. Value of \code{NA} (default) implies no change.}
+  \item{cache_preemption}{(netcdf4) Value between 0 and 1 (inclusive) that biases the cache scheme towards eviction of chunks that have been fully read. Value of \code{NA} (default) implies no change.}
 }
 
 \details{
@@ -57,7 +56,10 @@ Variables of user-defined types are supported. "compound" arrays are read into R
 
 The dimension order in the R array is reversed relative to the order reported by NetCDF commands such as \code{ncdump}, because NetCDF arrays are stored in row-major (C) order whereas R arrays are stored in column-major (Fortran) order.
 
-Arrays of type \code{character} drop the fastest-varying dimension of the corresponding \code{NC_CHAR} array, because this dimension corresponds to the length of the individual \code{character} elements. For example, an \code{NC_CHAR} array with dimensions (5,10) would be returned as a \code{character} vector containing 5 elements, each with a maximum length of 10 characters.}
+Arrays of type \code{character} drop the fastest-varying dimension of the corresponding \code{NC_CHAR} array, because this dimension corresponds to the length of the individual \code{character} elements. For example, an \code{NC_CHAR} array with dimensions (5,10) would be returned as a \code{character} vector containing 5 elements, each with a maximum length of 10 characters.
+
+The arguments marked for "netcdf4" format refer to the "chunk cache" used for reading and writing variables. Default cache settings are defined by the NetCDF library, and they can be adjusted for each variable to improve performance in some applications.
+}
 
 \references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 

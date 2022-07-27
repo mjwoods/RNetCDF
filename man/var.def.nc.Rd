@@ -12,19 +12,20 @@
                   filter_id=integer(0), filter_params=list())}
 
 \arguments{
+  Arguments marked for "netcdf4" are optional for datasets in that format and ignored for other formats.
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{varname}{Variable name. Must begin with an alphabetic character, followed by zero or more alphanumeric characters including the underscore ("\code{_}"). Case is significant.}
   \item{vartype}{External NetCDF data type as one of the following labels: \code{NC_BYTE}, \code{NC_UBYTE}, \code{NC_CHAR}, \code{NC_SHORT}, \code{NC_USHORT}, \code{NC_INT}, \code{NC_UINT}, \code{NC_INT64}, \code{NC_UINT64}, \code{NC_FLOAT}, \code{NC_DOUBLE}, \code{NC_STRING}, or a user-defined type name.}
   \item{dimensions}{Vector of \code{ndims} dimension IDs or their names corresponding to the variable dimensions or \code{NA} if a scalar variable should be created. If the ID (or name) of the unlimited dimension is included, it must be last.}
-  The following arguments are optional for datasets in "netcdf4" format (and ignored for other formats):
-  \item{chunking}{\code{TRUE} selects chunking, \code{FALSE} implies contiguous storage, \code{NA} allows the NetCDF library to choose a storage layout. Ignored for scalar variables.}
-  \item{chunksizes}{Chunk size expressed as the number of elements along each dimension, in the same order as \code{dimensions}. If \code{NULL}, the NetCDF library uses a default chunking strategy, which is intended to give reasonable performance in typical applications. Ignored unless \code{chunking} is \code{TRUE}.}
-  \item{deflate}{Integer indicating level of compression, from 0 (minimum) to 9 (maximum), or \code{NA} for no compression. The compression only works in netcdf4 files.}
-  \item{shuffle}{\code{TRUE} to enable byte shuffling, which may improve compression with \code{deflate}.}
-  \item{big_endian}{Byte order of the variable. \code{TRUE} for big-endian, \code{FALSE} for little-endian, \code{NA} for native endianness of the platform.}
-  \item{fletcher32}{\code{TRUE} to enable the fletcher32 checksum.}
-  \item{filter_id}{Vector of filter IDs to associate with the variable (empty vector denotes no filters). For information about the available filters, please see the NetCDF documentation. Ignored if the installed NetCDF library does not support the multi-filter interface.}
-  \item{filter_params}{List with one element for each \code{filter_id}. Each list member is a vector of \code{numeric} parameters (which are converted to unsigned integers). The meaning of the parameters depends on the filter implementation, and RNetCDF is unable to perform any validation. Ignored if the installed NetCDF library does not support the multi-filter interface.}
+
+  \item{chunking}{(netcdf4) \code{TRUE} selects chunking, \code{FALSE} implies contiguous storage, \code{NA} allows the NetCDF library to choose a storage layout. Ignored for scalar variables.}
+  \item{chunksizes}{(netcdf4) Chunk size expressed as the number of elements along each dimension, in the same order as \code{dimensions}. If \code{NULL}, the NetCDF library uses a default chunking strategy, which is intended to give reasonable performance in typical applications. Ignored unless \code{chunking} is \code{TRUE}.}
+  \item{deflate}{(netcdf4) Integer indicating level of compression, from 0 (minimum) to 9 (maximum), or \code{NA} for no compression.}
+  \item{shuffle}{(netcdf4) \code{TRUE} to enable byte shuffling, which may improve compression with \code{deflate}.}
+  \item{big_endian}{(netcdf4) Byte order of the variable. \code{TRUE} for big-endian, \code{FALSE} for little-endian, \code{NA} for native endianness of the platform.}
+  \item{fletcher32}{(netcdf4) \code{TRUE} to enable the fletcher32 checksum.}
+  \item{filter_id}{(netcdf4) Vector of filter IDs to associate with the variable (empty vector denotes no filters). For information about the available filters, please see the NetCDF documentation. Ignored if the installed NetCDF library does not support the multi-filter interface.}
+  \item{filter_params}{(netcdf4) List with one element for each \code{filter_id}. Each list member is a vector of \code{numeric} parameters (which are converted to unsigned integers). The meaning of the parameters depends on the filter implementation, and RNetCDF is unable to perform any validation. Ignored if the installed NetCDF library does not support the multi-filter interface.}
 }
 
 \value{NetCDF variable identifier, returned invisibly.}

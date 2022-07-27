@@ -15,7 +15,7 @@
 
 \value{Object of class "\code{NetCDF}" which points to the NetCDF group, returned invisibly.}
 
-\details{This function may only be used with files in netcdf4 format. It creates a new NetCDF group, which may be used as a container for other NetCDF objects, including groups, dimensions, variables and attributes.
+\details{This function may only be used with datasets in "netcdf4" format. It creates a new NetCDF group, which may be used as a container for other NetCDF objects, including groups, dimensions, variables and attributes.
 
 Most NetCDF object types, including groups, variables and "global" attributes, are visible only in the group where they are defined. However, dimensions are visible in their groups and all child groups.}
 
