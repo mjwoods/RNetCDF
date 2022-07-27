@@ -11,7 +11,7 @@
 \arguments{
   \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset or group.}
   \item{type}{ID or name of a NetCDF data type.}
-  \item{fields}{Read members of enum types or fields of compound types (default \code{TRUE})}.
+  \item{fields}{Read members of enum types or fields of compound types (default \code{TRUE}).}
 }
 
 \value{
