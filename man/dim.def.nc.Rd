@@ -9,8 +9,8 @@
 \usage{dim.def.nc(ncfile, dimname, dimlength=1, unlim=FALSE)}
 
 \arguments{
-  \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
-  \item{dimname}{Dimension name. Must begin with an alphabetic character, followed by zero or more alphanumeric characters including the underscore ("\code{_}"). Case is significant.}
+  \item{ncfile}{Object of class \code{NetCDF} which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
+  \item{dimname}{Dimension name. Must begin with an alphabetic character, followed by zero or more alphanumeric characters including the underscore (\code{"_"}). Case is significant.}
   \item{dimlength}{Length of dimension, that is, number of values for this dimension as an index to variables that use it. This must be a positive integer. If an unlimited dimension is created (\code{unlim=TRUE}), the value of \code{length} is not used.}
   \item{unlim}{Set to \code{TRUE} if an unlimited dimension should be created, otherwise to \code{FALSE}.}
 }

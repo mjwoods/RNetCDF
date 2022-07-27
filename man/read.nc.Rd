@@ -11,7 +11,7 @@
 }
 
 \arguments{
-  \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
+  \item{ncfile}{Object of class \code{NetCDF} which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{recursive}{Descend recursively into any groups in the dataset if \code{TRUE}.}
   \item{...}{Optional arguments passed to \code{var.get.nc}.}
 }

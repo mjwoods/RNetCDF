@@ -9,7 +9,7 @@
 \usage{var.par.nc(ncfile, variable, access="NC_COLLECTIVE")}
 
 \arguments{
-  \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
+  \item{ncfile}{Object of class \code{NetCDF} which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{variable}{Numeric ID or name of the variable for which to change the parallel access mode. Use "NC_GLOBAL" to change the parallel access mode for all variables in the dataset.}
   \item{access}{Parallel access mode as one of the following strings: "\code{NC_COLLECTIVE}" or "\code{NC_INDEPENDENT}".}
 }
@@ -18,7 +18,7 @@
 
 All netCDF metadata writing operations are collective - all creation of groups, types, variables, dimensions, or attributes.
 
-Note that when the file format is "classic" or "offset64", the change always applies to all variables in the file, even if a single variable is specified in argument \code{variable}.}
+Note that when the file format is \code{"classic"} or \code{"offset64"}, the change always applies to all variables in the file, even if a single variable is specified in argument \code{variable}.}
 
 \references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 

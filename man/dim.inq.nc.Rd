@@ -9,7 +9,7 @@
 \usage{dim.inq.nc(ncfile, dimension)}
 
 \arguments{
-  \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
+  \item{ncfile}{Object of class \code{NetCDF} which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{dimension}{Either the ID or the name of the dimension to be inquired.}
 }
 

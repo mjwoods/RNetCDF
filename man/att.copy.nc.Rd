@@ -9,10 +9,10 @@
 \usage{att.copy.nc(ncfile.in, variable.in, attribute, ncfile.out, variable.out)}
 
 \arguments{
-  \item{ncfile.in}{Object of class "\code{NetCDF}" which points to the input NetCDF dataset from which the attribute will be copied (as returned from \code{\link[RNetCDF]{open.nc}}).}
+  \item{ncfile.in}{Object of class \code{NetCDF} which points to the input NetCDF dataset from which the attribute will be copied (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{variable.in}{ID or name of the variable in the input NetCDF dataset from which the attribute will be copied, or \code{"NC_GLOBAL"} for a global attribute.}
   \item{attribute}{Name or ID of the attribute in the input NetCDF dataset to be copied.}
-  \item{ncfile.out}{Object of class "\code{NetCDF}" which points to the output NetCDF dataset to which the attribute will be copied (as returned from \code{\link[RNetCDF]{open.nc}}). It is permissible for the input and output NetCDF object to be the same.}
+  \item{ncfile.out}{Object of class \code{NetCDF} which points to the output NetCDF dataset to which the attribute will be copied (as returned from \code{\link[RNetCDF]{open.nc}}). It is permissible for the input and output NetCDF object to be the same.}
   \item{variable.out}{ID or name of the variable in the output NetCDF dataset to which the attribute will be copied, or \code{"NC_GLOBAL"} to copy to a global attribute.}
 }
 

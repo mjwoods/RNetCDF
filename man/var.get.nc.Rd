@@ -11,8 +11,8 @@
   cache_bytes=NA, cache_slots=NA, cache_preemption=NA)}
 
 \arguments{
-  Arguments marked for "netcdf4" are optional for datasets in that format and ignored for other formats.
-  \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
+  Arguments marked \code{"netcdf4"} are optional for datasets in that format and ignored for other formats.
+  \item{ncfile}{Object of class \code{NetCDF} which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{variable}{ID or name of the NetCDF variable.}
   \item{start}{A vector of indices specifying the element where reading starts along each dimension of \code{variable}. Indices are numbered from 1 onwards, and the order of dimensions is shown by \code{\link[RNetCDF]{print.nc}} (array elements are stored sequentially with leftmost indices varying fastest). By default (\code{start=NA}), all dimensions of \code{variable} are read from the first element onwards. Otherwise, \code{start} must be a vector whose length is not less than the number of dimensions in \code{variable} (excess elements are ignored). Any \code{NA} values in vector \code{start} are set to 1.}
   \item{count}{A vector of integers specifying the number of values to read along each dimension of \code{variable}. The order of dimensions is the same as for \code{start}. By default (\code{count=NA}), all dimensions of \code{variable} are read from \code{start} to end. Otherwise, \code{count} must be a vector whose length is not less than the number of dimensions in \code{variable} (excess elements are ignored). Any \code{NA} value in vector \code{count} indicates that the corresponding dimension should be read from the \code{start} index to the end of the dimension.}
@@ -34,15 +34,15 @@
     \code{NC_UINT64}     \tab \code{\link[bit64:bit64-package]{integer64}} \cr
   }}
 
-  \item{cache_bytes}{(netcdf4) Size of chunk cache in bytes. Value of \code{NA} (default) implies no change.}
-  \item{cache_slots}{(netcdf4) Number of slots in chunk cache. Value of \code{NA} (default) implies no change.}
-  \item{cache_preemption}{(netcdf4) Value between 0 and 1 (inclusive) that biases the cache scheme towards eviction of chunks that have been fully read. Value of \code{NA} (default) implies no change.}
+  \item{cache_bytes}{(\code{"netcdf4"}) Size of chunk cache in bytes. Value of \code{NA} (default) implies no change.}
+  \item{cache_slots}{(\code{"netcdf4"}) Number of slots in chunk cache. Value of \code{NA} (default) implies no change.}
+  \item{cache_preemption}{(\code{"netcdf4"}) Value between 0 and 1 (inclusive) that biases the cache scheme towards eviction of chunks that have been fully read. Value of \code{NA} (default) implies no change.}
 }
 
 \details{
 NetCDF numeric variables cannot portably represent \code{NA} values from R. NetCDF does allow attributes to be defined for variables, and several conventions exist for attributes that define missing values and valid ranges. The convention in use can be specified by argument \code{na.mode}. Values of a NetCDF variable that are deemed to be missing are automatically converted to \code{NA} in the results returned to R. Unusual cases can be handled directly in user code by setting \code{na.mode=3}.
 
-To reduce the storage space required by a NetCDF file, numeric variables are sometimes "packed" into types of lower precision. The original data can be recovered (approximately) by multiplication of the stored values by attribute \code{scale_factor} followed by addition of attribute \code{add_offset}. This unpacking operation is performed automatically for variables with attributes \code{scale_factor} and \code{add_offset} if argument \code{unpack} is set to \code{TRUE}. If \code{unpack} is \code{FALSE}, values are read from each variable without alteration.
+To reduce the storage space required by a NetCDF file, numeric variables are sometimes packed into types of lower precision. The original data can be recovered (approximately) by multiplication of the stored values by attribute \code{scale_factor} followed by addition of attribute \code{add_offset}. This unpacking operation is performed automatically for variables with attributes \code{scale_factor} and \code{add_offset} if argument \code{unpack} is set to \code{TRUE}. If \code{unpack} is \code{FALSE}, values are read from each variable without alteration.
 
 Data in a NetCDF variable is represented as a multi-dimensional array. The number and length of dimensions is determined when the variable is created. The \code{start} and \code{count} arguments of this routine indicate where the reading starts and the number of values to read along each dimension.
 
@@ -52,13 +52,13 @@ Awkwardness arises mainly from one thing: NetCDF data are written with the last 
 
 \value{An array with dimensions determined by \code{count} and a data type that depends on the type of \code{variable}. For NetCDF variables of type \code{NC_CHAR}, the R type is either \code{character} or \code{raw}, as specified by argument \code{rawchar}. For \code{NC_STRING}, the R type is \code{character}. Numeric variables are read as double precision by default, but the smallest R type that exactly represents each external type is used if \code{fitnum} is \code{TRUE}.
 
-Variables of user-defined types are supported. "compound" arrays are read into R as lists, with items named for the compound fields; items of base NetCDF data types are converted to R arrays, with leading dimensions from the field dimensions (if any) and trailing dimensions from the NetCDF variable. "enum" arrays are read into R as factor arrays. "opaque" arrays are read into R as raw (byte) arrays, with a leading dimension for bytes of the opaque type and trailing dimensions from the NetCDF variable. "vlen" arrays are read into R as a list with dimensions of the NetCDF variable; items in the list may have different lengths; base NetCDF data types are converted to R vectors.
+Variables of user-defined types are supported. \code{"compound"} arrays are read into R as lists, with items named for the compound fields; items of base NetCDF data types are converted to R arrays, with leading dimensions from the field dimensions (if any) and trailing dimensions from the NetCDF variable. \code{"enum"} arrays are read into R as factor arrays. \code{"opaque"} arrays are read into R as raw (byte) arrays, with a leading dimension for bytes of the opaque type and trailing dimensions from the NetCDF variable. \code{"vlen"} arrays are read into R as a list with dimensions of the NetCDF variable; items in the list may have different lengths; base NetCDF data types are converted to R vectors.
 
 The dimension order in the R array is reversed relative to the order reported by NetCDF commands such as \code{ncdump}, because NetCDF arrays are stored in row-major (C) order whereas R arrays are stored in column-major (Fortran) order.
 
 Arrays of type \code{character} drop the fastest-varying dimension of the corresponding \code{NC_CHAR} array, because this dimension corresponds to the length of the individual \code{character} elements. For example, an \code{NC_CHAR} array with dimensions (5,10) would be returned as a \code{character} vector containing 5 elements, each with a maximum length of 10 characters.
 
-The arguments marked for "netcdf4" format refer to the "chunk cache" used for reading and writing variables. Default cache settings are defined by the NetCDF library, and they can be adjusted for each variable to improve performance in some applications.
+The arguments marked for \code{"netcdf4"} format refer to the chunk cache used for reading and writing variables. Default cache settings are defined by the NetCDF library, and they can be adjusted for each variable to improve performance in some applications.
 }
 
 \references{\url{https://www.unidata.ucar.edu/software/netcdf/}}

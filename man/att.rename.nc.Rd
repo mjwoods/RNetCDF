@@ -9,7 +9,7 @@
 \usage{att.rename.nc(ncfile, variable, attribute, newname)}
 
 \arguments{
-  \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
+  \item{ncfile}{Object of class \code{NetCDF} which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{variable}{ID or name of the attribute's variable, or \code{"NC_GLOBAL"} for a global attribute.}
   \item{attribute}{The current attribute name or ID.}
   \item{newname}{The new name to be assigned to the specified attribute.}
