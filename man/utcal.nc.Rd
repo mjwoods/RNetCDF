@@ -9,16 +9,16 @@
 \usage{utcal.nc(unitstring, value, type="n")}
 
 \arguments{
-  \item{unitstring}{A temporal unit with an origin (e.g., ``days since 1900-01-01'').}
+  \item{unitstring}{A temporal unit with an origin (e.g., \code{"days since 1900-01-01"}).}
   \item{value}{An amount (quantity) of the given temporal unit.}
-  \item{type}{Character string which determines the output type. Can be \code{n} for numeric, \code{s} for string or \code{c} for POSIXct output.}
+  \item{type}{Character string which determines the output type. Can be \code{"n"} for numeric, \code{"s"} for string or \code{"c"} for POSIXct output.}
 }
 
 \value{If the output type is set to numeric, result is a matrix containing the corresponding date(s) and time(s), with the following columns: year, month, day, hour, minute, second. If the output type is string, result is a vector of strings in the form \code{"YYYY-MM-DD hh:mm:ss"}. Otherwise result is a vector of POSIXct values.}
 
 \details{Converts the amount, \code{value}, of the temporal unit, \code{unitstring}, into a UTC-referenced date and time.
 
-Functions \code{utcal.nc} and \code{utinvcal.nc} provide a convenient way to convert time values between the forms used by NetCDF variables and R functions. Most R functions require times to be expressed as seconds since the beginning of 1970 in the UTC time zone, typically using objects of class \code{POSIXct} or \code{POSIXlt}. NetCDF files store times in numeric variables with a wide variety of units. The units and calendar are stored in attributes of the time variable, as described by the CF Conventions. Units are expressed as a string, in the form of a time unit since a fixed date-time (e.g. ``hours since 2000-01-01 00:00:00 +00:00'', or more simply ``hours since 2000-01-01'').
+Functions \code{utcal.nc} and \code{utinvcal.nc} provide a convenient way to convert time values between the forms used by NetCDF variables and R functions. Most R functions require times to be expressed as seconds since the beginning of 1970 in the UTC time zone, typically using objects of class \code{POSIXct} or \code{POSIXlt}. NetCDF files store times in numeric variables with a wide variety of units. The units and calendar are stored in attributes of the time variable, as described by the CF Conventions. Units are expressed as a string, in the form of a time unit since a fixed date-time (e.g. \code{"hours since 2000-01-01 00:00:00 +00:00"}, or more simply \code{"hours since 2000-01-01"}).
 
 The conversions of times between units are performed by the UDUNITS library using a mixed Gregorian/Julian calendar system. Dates prior to 1582-10-15 are assumed to use the Julian calendar, which was introduced by Julius Caesar in 46 BCE and is based on a year that is exactly 365.25 days long. Dates on and after 1582-10-15 are assumed to use the Gregorian calendar, which was introduced on that date and is based on a year that is exactly 365.2425 days long. (A year is actually approximately 365.242198781 days long.) Seemingly strange behavior of the UDUNITS package can result if a user-given time interval includes the changeover date.
 

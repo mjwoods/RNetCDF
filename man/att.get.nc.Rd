@@ -9,7 +9,7 @@
 \usage{att.get.nc(ncfile, variable, attribute, rawchar=FALSE, fitnum=FALSE)}
 
 \arguments{
-  \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
+  \item{ncfile}{Object of class \code{NetCDF} which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{variable}{ID or name of the variable from which the attribute will be read, or \code{"NC_GLOBAL"} for a global attribute.}
   \item{attribute}{Attribute name or ID.}
   \item{rawchar}{This option only relates to NetCDF attributes of type \code{NC_CHAR}. When \code{rawchar} is \code{FALSE} (default), a NetCDF attribute of type \code{NC_CHAR} is converted to a \code{character} string in R. If \code{rawchar} is \code{TRUE}, the bytes of \code{NC_CHAR} data are read into an R \code{raw} vector.}

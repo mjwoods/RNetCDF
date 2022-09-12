@@ -9,7 +9,7 @@
 \usage{utinvcal.nc(unitstring, value)}
 
 \arguments{
-  \item{unitstring}{A temporal unit with an origin (e.g., ``days since 1900-01-01'').}
+  \item{unitstring}{A temporal unit with an origin (e.g., \code{"days since 1900-01-01"}).}
   \item{value}{Dates to convert as a numeric vector or array, or a vector of strings or POSIXct values.}
 }
 

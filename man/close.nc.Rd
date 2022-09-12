@@ -9,7 +9,7 @@
 \usage{close.nc(con, ...)}
 
 \arguments{
-  \item{con}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
+  \item{con}{Object of class \code{NetCDF} which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{...}{Arguments passed to or from other methods (not used).}
 }
 

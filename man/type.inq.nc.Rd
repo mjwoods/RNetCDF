@@ -9,24 +9,26 @@
 \usage{type.inq.nc(ncfile, type, fields=TRUE)}
 
 \arguments{
-  \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset or group.}
+  \item{ncfile}{Object of class \code{NetCDF} which points to the NetCDF dataset or group.}
   \item{type}{ID or name of a NetCDF data type.}
-  \item{fields}{Read members of enum types or fields of compound types (default \code{TRUE})}.
+  \item{fields}{Read members of enum types or fields of compound types (default \code{TRUE}).}
 }
 
 \value{
   A list containing the following components:
   \item{id}{Type ID.}
   \item{name}{Type name.}
-  \item{class}{One of the keywords "builtin", "compound", "enum", "opaque" or "vlen".}
-  \item{size}{Size in bytes of a single item of the type (or a single element of a "vlen").}
-  \item{basetype}{("enum" or "vlen") Name of the NetCDF type of each element.}
+  \item{class}{One of the keywords \code{"builtin"}, \code{"compound"}, \code{"enum"}, \code{"opaque"} or \code{"vlen"}.}
+  \item{size}{Size in bytes of a single item of the type (or a single element of a \code{"vlen"}).}
+  \item{basetype}{(\code{"enum"} or \code{"vlen"}) Name of the NetCDF type of each element.}
+
 
   If \code{fields=TRUE}, the return list includes details about members of enum types or fields of compound types:
-  \item{value}{("enum" only) Named vector with numeric values of all members.}
-  \item{offset}{("compound" only) Named vector with the offset of each field in bytes from the beginning of the compound type.}
-  \item{subtype}{("compound" only) Named vector with the NetCDF type name of each field.}
-  \item{dimsizes}{("compound" only) Named list with array dimensions of each field. Dimension lengths are reported in R order (leftmost index varies fastest; opposite to CDL conventions). A \code{NULL} length indicates a scalar.}
+
+  \item{value}{(\code{"enum"} only) Named vector with numeric values of all members.}
+  \item{offset}{(\code{"compound"} only) Named vector with the offset of each field in bytes from the beginning of the compound type.}
+  \item{subtype}{(\code{"compound"} only) Named vector with the NetCDF type name of each field.}
+  \item{dimsizes}{(\code{"compound"} only) Named list with array dimensions of each field. Dimension lengths are reported in R order (leftmost index varies fastest; opposite to CDL conventions). A \code{NULL} length indicates a scalar.}
 }
 
 \details{This function obtains information about a NetCDF data type, which could be builtin or user-defined. The items in the return list depend on the class of the NetCDF type.}

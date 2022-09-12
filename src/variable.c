@@ -523,7 +523,7 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
   size_t fillsize;
 
 #ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
-  int storeprop;
+  int storeprop, format, withnc4;
   size_t bytes, slots;
   float preemption;
   double bytes_in, slots_in, preempt_in;
@@ -541,25 +541,29 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
 
   /*-- Chunk cache options for netcdf4 files ----------------------------------*/
 #ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
-  R_nc_check (nc_inq_var_chunking (ncid, varid, &storeprop, NULL));
-  if (storeprop == NC_CHUNKED) {
-    R_nc_check (nc_get_var_chunk_cache(ncid, varid,
-                                       &bytes, &slots, &preemption));
-    bytes_in = asReal (cache_bytes);
-    slots_in = asReal (cache_slots);
-    preempt_in = asReal (cache_preemption);
-    if (R_FINITE(bytes_in) || R_FINITE(slots_in) || R_FINITE(preempt_in)) {
-      if (R_FINITE(bytes_in)) {
-	bytes = bytes_in;
+  R_nc_check (nc_inq_format (ncid, &format));
+  withnc4 = (format == NC_FORMAT_NETCDF4);
+  if (withnc4) {
+    R_nc_check (nc_inq_var_chunking (ncid, varid, &storeprop, NULL));
+    if (storeprop == NC_CHUNKED) {
+      R_nc_check (nc_get_var_chunk_cache(ncid, varid,
+					 &bytes, &slots, &preemption));
+      bytes_in = asReal (cache_bytes);
+      slots_in = asReal (cache_slots);
+      preempt_in = asReal (cache_preemption);
+      if (R_FINITE(bytes_in) || R_FINITE(slots_in) || R_FINITE(preempt_in)) {
+	if (R_FINITE(bytes_in)) {
+	  bytes = bytes_in;
+	}
+	if (R_FINITE(slots_in)) {
+	  slots = slots_in;
+	}
+	if (R_FINITE(preempt_in)) {
+	  preemption = preempt_in;
+	}
+	R_nc_check (nc_set_var_chunk_cache(ncid, varid,
+					   bytes, slots, preemption));
       }
-      if (R_FINITE(slots_in)) {
-	slots = slots_in;
-      }
-      if (R_FINITE(preempt_in)) {
-	preemption = preempt_in;
-      }
-      R_nc_check (nc_set_var_chunk_cache(ncid, varid,
-                                         bytes, slots, preemption));
     }
   }
 #endif
@@ -878,7 +882,7 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
   size_t fillsize;
 
 #ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
-  int storeprop;
+  int storeprop, format, withnc4;
   size_t bytes, slots;
   float preemption;
   double bytes_in, slots_in, preempt_in;
@@ -894,25 +898,29 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
 
   /*-- Chunk cache options for netcdf4 files ----------------------------------*/
 #ifdef HAVE_NC_GET_VAR_CHUNK_CACHE
-  R_nc_check (nc_inq_var_chunking (ncid, varid, &storeprop, NULL));
-  if (storeprop == NC_CHUNKED) {
-    R_nc_check (nc_get_var_chunk_cache(ncid, varid,
-                                       &bytes, &slots, &preemption));
-    bytes_in = asReal (cache_bytes);
-    slots_in = asReal (cache_slots);
-    preempt_in = asReal (cache_preemption);
-    if (R_FINITE(bytes_in) || R_FINITE(slots_in) || R_FINITE(preempt_in)) {
-      if (R_FINITE(bytes_in)) {
-	bytes = bytes_in;
+  R_nc_check (nc_inq_format (ncid, &format));
+  withnc4 = (format == NC_FORMAT_NETCDF4);
+  if (withnc4) {
+    R_nc_check (nc_inq_var_chunking (ncid, varid, &storeprop, NULL));
+    if (storeprop == NC_CHUNKED) {
+      R_nc_check (nc_get_var_chunk_cache(ncid, varid,
+					 &bytes, &slots, &preemption));
+      bytes_in = asReal (cache_bytes);
+      slots_in = asReal (cache_slots);
+      preempt_in = asReal (cache_preemption);
+      if (R_FINITE(bytes_in) || R_FINITE(slots_in) || R_FINITE(preempt_in)) {
+	if (R_FINITE(bytes_in)) {
+	  bytes = bytes_in;
+	}
+	if (R_FINITE(slots_in)) {
+	  slots = slots_in;
+	}
+	if (R_FINITE(preempt_in)) {
+	  preemption = preempt_in;
+	}
+	R_nc_check (nc_set_var_chunk_cache(ncid, varid,
+					   bytes, slots, preemption));
       }
-      if (R_FINITE(slots_in)) {
-	slots = slots_in;
-      }
-      if (R_FINITE(preempt_in)) {
-	preemption = preempt_in;
-      }
-      R_nc_check (nc_set_var_chunk_cache(ncid, varid,
-                                         bytes, slots, preemption));
     }
   }
 #endif

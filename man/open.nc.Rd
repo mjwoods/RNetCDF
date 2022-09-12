@@ -23,7 +23,7 @@
   \item{...}{Arguments passed to or from other methods (not used).}
 }
 
-\value{Object of class "\code{NetCDF}" which points to the NetCDF dataset, returned invisibly.}
+\value{Object of class \code{NetCDF} which points to the NetCDF dataset, returned invisibly.}
 
 \details{This function opens an existing NetCDF dataset for access. By default, the dataset is opened read-only. If \code{write=TRUE}, then the dataset can be changed. This includes appending or changing data, adding dimensions, variables, and attributes.}
 

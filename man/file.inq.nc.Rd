@@ -9,7 +9,7 @@
 \usage{file.inq.nc(ncfile)}
 
 \arguments{
-  \item{ncfile}{Object of class "\code{NetCDF}" which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
+  \item{ncfile}{Object of class \code{NetCDF} which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
 }
 
 \value{
@@ -18,7 +18,7 @@
   \item{nvars}{Number of variables defined for this NetCDF dataset.}
   \item{ngatts}{Number of global attributes for this NetCDF dataset.}
   \item{unlimdimid}{ID of the unlimited dimension, if there is one for this NetCDF dataset. Otherwise \code{NA} will be returned.} 
-  \item{format}{Format of file, typically "classic", "offset64", "data64", "classic4" or "netcdf4".}
+  \item{format}{Format of file, typically \code{"classic"}, \code{"offset64"}, \code{"data64"}, \code{"classic4"} or \code{"netcdf4"}.}
   \item{libvers}{Version string of the NetCDF library in the current R session.}
 }
 
