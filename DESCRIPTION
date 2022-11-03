@@ -8,7 +8,9 @@ Authors@R: c(person("Pavel", "Michna", role = "aut",
                     email = "miltonjwoods@gmail.com"))
 Depends: R (>= 3.0.0)
 SystemRequirements: netcdf udunits-2
-Suggests: bit64
+Suggests:
+    bit64,
+    testthat (>= 3.0.0)
 Enhances: pbdMPI
 Description: An interface to the 'NetCDF' file formats designed by Unidata
   for efficient storage of array-oriented scientific data and descriptions.
@@ -20,3 +22,4 @@ URL: https://github.com/mjwoods/RNetCDF
      https://www.unidata.ucar.edu/software/udunits/
 BugReports: https://github.com/mjwoods/RNetCDF/issues
 NeedsCompilation: yes
+Config/testthat/edition: 3
