@@ -1,4 +1,7 @@
-Version 2.6-1, 2021-06-25
+Version 2.7-0, 2022-11-03
+  * Use testthat for package tests
+
+Version 2.6-1, 2022-06-25
   * Windows: update binary packages to netcdf 4.9.0 with OpenDAP
 
 Version 2.5-2, 2021-08-20

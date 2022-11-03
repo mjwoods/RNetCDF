@@ -2,7 +2,7 @@
  *
  *  Name:       dimension.c
  *
- *  Version:    2.6-1
+ *  Version:    2.7-0
  *
  *  Purpose:    NetCDF dimension functions for RNetCDF
  *
