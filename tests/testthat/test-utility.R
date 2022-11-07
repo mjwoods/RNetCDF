@@ -11,6 +11,6 @@ test_that("print.nc() output matches snapshot", {
 test_that("read.nc() output matches canned data", {
   ncdata <- read.nc(open.nc(test_path("data", "RNetCDF-test-netcdf4.nc")), recursive=TRUE)
   rdata <- readRDS(test_path("data", "RNetCDF-test-netcdf4.rds"))
-  expect_equal(ncdata, rdata)
+  expect_identical(ncdata, rdata)
 })
 
