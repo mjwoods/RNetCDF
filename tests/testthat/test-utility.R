@@ -2,7 +2,6 @@
 # It contains variables and attributes in all data types supported by netcdf4.
 
 test_that("print.nc() output matches snapshot", {
-  withr::local_options(width=80)
   expect_snapshot(
     print.nc(open.nc(test_path("data", "RNetCDF-test-netcdf4.nc")))
   )
