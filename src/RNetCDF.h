@@ -146,7 +146,7 @@ SEXP
 R_nc_inv_calendar (SEXP unitstring, SEXP values);
 
 SEXP
-R_nc_utterm ();
+R_nc_utterm (void);
 
 
 /* Variables */

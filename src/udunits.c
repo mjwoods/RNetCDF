@@ -382,7 +382,7 @@ cleanup:
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_utterm ()
+R_nc_utterm (void)
 {
   if (R_nc_units) {
     ut_free_system (R_nc_units);
