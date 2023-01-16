@@ -4,14 +4,14 @@
  *
  *  Name:       convert.c
  *
- *  Version:    2.6-1
+ *  Version:    2.6-2
  *
  *  Purpose:    Type conversions for RNetCDF
  *
  *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
  *              Milton Woods (miltonjwoods@gmail.com)
  *
- *  Copyright (C) 2004-2022 Pavel Michna and Milton Woods.
+ *  Copyright (C) 2004-2023 Pavel Michna and Milton Woods.
  *
  *=============================================================================*
  *
@@ -6612,7 +6612,7 @@ R_nc_char_symbol (char *in, size_t size, char *work)
   size_t ii;
   work[0]='X';
   for (ii=0; ii<size; ii++) {
-    sprintf(work+1+ii*2, "%02X", in[ii]);
+    snprintf(work+1+ii*2, 3, "%02X", in[ii]);
   }
   work[2*size+1]='\0';
   return install(work);

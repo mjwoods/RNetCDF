@@ -2,14 +2,14 @@
  *
  *  Name:       udunits.c
  *
- *  Version:    2.6-1
+ *  Version:    2.6-2
  *
  *  Purpose:    udunits2 functions for RNetCDF.
  *
  *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
  *              Milton Woods (miltonjwoods@gmail.com)
  *
- *  Copyright (C) 2004-2022 Pavel Michna and Milton Woods.
+ *  Copyright (C) 2004-2023 Pavel Michna and Milton Woods.
  *
  *=============================================================================*
  *
@@ -382,7 +382,7 @@ cleanup:
 \*-----------------------------------------------------------------------------*/
 
 SEXP
-R_nc_utterm ()
+R_nc_utterm (void)
 {
   if (R_nc_units) {
     ut_free_system (R_nc_units);
