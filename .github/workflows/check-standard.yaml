@@ -42,6 +42,11 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
+      - name: Install netcdf (macOS-latest)
+        if: runner.os == 'macOS'
+        run : |
+          brew install automake netcdf udunits
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck, pbdMPI=?ignore
