@@ -1163,7 +1163,7 @@ R_nc_char_symbol (char *in, size_t size, char *work)
   size_t ii;
   work[0]='X';
   for (ii=0; ii<size; ii++) {
-    sprintf(work+1+ii*2, "%02X", in[ii]);
+    snprintf(work+1+ii*2, 3, "%02X", in[ii]);
   }
   work[2*size+1]='\0';
   return install(work);
