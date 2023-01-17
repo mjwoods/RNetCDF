@@ -42,31 +42,37 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - name: Install brew packages on macOS
+      - name: Install brew packages (macOS)
         if: runner.os == 'macOS'
         run : |
           brew install automake netcdf udunits
 
-      - uses: r-lib/actions/setup-r-dependencies@v2
+      - name: Install R dependencies (macOS)
         if: runner.os == 'macOS'
+        uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck, pbdMPI=?ignore
           needs: check
 
-      - uses: r-lib/actions/setup-r-dependencies@v2
+      - name: Install R dependencies (not macOS)
         if: runner.os != 'macOS'
+        uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck
           needs: check
 
-      - uses: r-lib/actions/check-r-package@v2
+      - name: Check RNetCDF package (macOS)
         if: runner.os == 'macOS'
+        uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
 
-      - uses: r-lib/actions/check-r-package@v2
+      - name: Check RNetCDF package (not macOS)
         if: runner.os != 'macOS'
+        uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
+        env:
+          _R_CHECK_FORCE_SUGGESTS_: true
