@@ -6435,7 +6435,10 @@ R_nc_vlen_vecsxp (R_nc_buf *io)
                        0, NULL, NULL, NULL, NULL, NULL));
     R_nc_c2r (&tmpio);
     SET_VECTOR_ELT (io->rxp, ii, tmprxp);
-    nc_free_vlen(&(vbuf[ii]));
+    if (vbuf[ii].len > 0) {
+      /* nc_free_vlen fails if length is 0; no need to free anyway */
+      nc_free_vlen(&(vbuf[ii]));
+    }
     UNPROTECT(1);
   }
 }
