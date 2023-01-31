@@ -6345,7 +6345,9 @@ R_nc_c2r_unpack_uint64 (R_nc_buf *io)
    An error is raised if input values cannot be converted to the vlen base type.
  */
 static nc_vlen_t *
-R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim)
+R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
+                  size_t fillsize, const void *fill,
+                  const double *scale, const double *add)
 {
   size_t ii, cnt, len, size;
   int baseclass;
@@ -6383,7 +6385,7 @@ R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
     vbuf[ii].len = len;
     if (len > 0) {
       vbuf[ii].p = (void *) R_nc_r2c (item, ncid, basetype,
-                                      -1, &len, 0, NULL, NULL, NULL);
+                                      -1, &len, fillsize, fill, scale, add);
     } else {
       vbuf[ii].p = NULL;
     }
@@ -6432,7 +6434,7 @@ R_nc_vlen_vecsxp (R_nc_buf *io)
   for (ii=0; ii<cnt; ii++) {
     tmprxp = PROTECT(R_nc_c2r_init (&tmpio, &(vbuf[ii].p), io->ncid, basetype, -1,
                        &(vbuf[ii].len), io->rawchar, io->fitnum,
-                       0, NULL, NULL, NULL, NULL, NULL));
+                       io->fillsize, io->fill, io->min, io->max, io->scale, io->add));
     R_nc_c2r (&tmpio);
     SET_VECTOR_ELT (io->rxp, ii, tmprxp);
     if (vbuf[ii].len > 0) {
@@ -7098,7 +7100,7 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
     if (xtype > NC_MAX_ATOMIC_TYPE) {
       switch (class) {
       case NC_VLEN:
-        return R_nc_vecsxp_vlen (rv, ncid, xtype, ndim, xdim);
+        return R_nc_vecsxp_vlen (rv, ncid, xtype, ndim, xdim, fillsize, fill, scale, add);
       case NC_COMPOUND:
         return R_nc_vecsxp_compound (rv, ncid, xtype, ndim, xdim);
       }
