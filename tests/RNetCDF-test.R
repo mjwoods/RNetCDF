@@ -182,6 +182,8 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     cat("Defining variables for netcdf4 ...\n")
     var.def.nc(nc, "namestr", "NC_STRING", c("station"))
     var.def.nc(nc, "profile", id_vector, c("station","time"))
+    var.def.nc(nc, "profile_pack", id_vector, c("station","time"))
+    att.put.nc(nc, "profile_pack", "scale_factor", "NC_INT", 10)
     var.def.nc(nc, "profile_char", id_vector_char, c("station","time"))
     var.def.nc(nc, "profile_blob", id_vector_blob, c("time"))
     var.def.nc(nc, "profile_scalar", id_vector, NA)
@@ -190,7 +192,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     var.def.nc(nc, "rawdata_vector", id_blob, c("station"))
     var.def.nc(nc, "snacks", "factor", c("station", "time"))
     var.def.nc(nc, "person", "struct", c("station", "time"))
-    varcnt <- varcnt+10
+    varcnt <- varcnt+11
     tally <- testfun(TRUE, TRUE, tally)
 
     numtypes <- c(numtypes, "NC_UBYTE", "NC_USHORT", "NC_UINT")
@@ -413,7 +415,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     for (ii in seq_len(nstation)) {
       for (jj in seq_len(ntime)) {
         # Profiles have increasing length, starting from 0:
-	profiles[[ii,jj]] <- seq_len(ii+jj-2)*(ii+jj)
+	profiles[[ii,jj]] <- 10*seq_len(ii+jj-2)*(ii+jj)
       }
     }
 
@@ -472,6 +474,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     cat("Writing extra netcdf4 variables ...")
     var.put.nc(nc, "namestr", myname)
     var.put.nc(nc, "profile", profiles)
+    var.put.nc(nc, "profile_pack", profiles, pack=TRUE)
     var.put.nc(nc, "profile_char", profiles_char)
     var.put.nc(nc, "profile_blob", profiles_blob)
     var.put.nc(nc, "profile_scalar", profiles[1])
@@ -1023,6 +1026,12 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     x <- profiles[1]
     y <- var.get.nc(nc, "profile_scalar")
     tally <- testfun(x,y,tally)
+
+    cat("Reading packed vlen ...")
+    x <- profiles
+    y <- var.get.nc(nc, "profile_pack", unpack=TRUE)
+    tally <- testfun(x,y,tally)
+    tally <- testfun(isTRUE(all(sapply(y,is.double))), TRUE, tally)
 
     cat("Read vlen as character ...")
     x <- profiles_char
