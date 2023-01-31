@@ -2,7 +2,7 @@
 #
 #  Name:       RNetCDF-test.R
 #
-#  Version:    2.6-2
+#  Version:    2.7-0
 #
 #  Purpose:    Test functions to the NetCDF interface for R.
 #
@@ -412,7 +412,8 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     dim(profiles) <- c(nstation, ntime)
     for (ii in seq_len(nstation)) {
       for (jj in seq_len(ntime)) {
-	profiles[[ii,jj]] <- seq_len(ii+jj)*(ii+jj)
+        # Profiles have increasing length, starting from 0:
+	profiles[[ii,jj]] <- seq_len(ii+jj-2)*(ii+jj)
       }
     }
 
@@ -422,7 +423,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     rawdata <- as.raw(seq_len(nstation*ntime*128) %% 256)
     dim(rawdata) <- c(128,nstation,ntime)
 
-    profiles_blob <- list(rawdata[,1:2,1], rawdata[,3:5,1])
+    profiles_blob <- list(rawdata[,3:5,1], rawdata[,0,1])
     dim(profiles_blob) <- ntime
 
     snack_foods <- names(inq_factor$value)

@@ -2,7 +2,7 @@
  *
  *  Name:       dataset.c
  *
- *  Version:    2.6-2
+ *  Version:    2.7-0
  *
  *  Purpose:    NetCDF dataset functions for RNetCDF
  *

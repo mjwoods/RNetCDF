@@ -2,7 +2,7 @@
  *
  *  Name:       common.h
  *
- *  Version:    2.6-2
+ *  Version:    2.7-0
  *
  *  Purpose:    Common definitions for RNetCDF functions
  *
