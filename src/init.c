@@ -2,7 +2,7 @@
  *
  *  Name:       common.c
  *
- *  Version:    2.7-0
+ *  Version:    2.7-1
  *
  *  Purpose:    RNetCDF initialisation
  *
