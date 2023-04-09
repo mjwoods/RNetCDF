@@ -1068,13 +1068,14 @@ R_nc_opaque_raw (R_nc_buf *io)
    Memory for the result is allocated if necessary (and freed by R).
  */
 static void *
-R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim)
+R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
+                  size_t fillsize, const void *fill)
 {
   SEXP levels;
   size_t size, imem, nmem, ilev, nlev, *ilev2mem, ifac, nfac, cnt;
   char *memnames, *memname, *memvals, *memval, *out;
   const char **levnames;
-  int ismatch, *in, inval;
+  int hasfill, ismatch, *in, inval;
 
   /* Extract indices and level names of R factor */
   in = INTEGER (rv);
@@ -1121,6 +1122,10 @@ R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
     }
   }
 
+  /* Check if fill value is properly defined */
+  hasfill = (fill != NULL &&
+             fillsize == size);
+
   /* Convert factor indices to enum values */
   nfac = xlength (rv);
   cnt = R_nc_length (ndim, xdim);
@@ -1131,7 +1136,9 @@ R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
 
   for (ifac=0; ifac<nfac; ifac++) {
     inval = in[ifac];
-    if (0 < inval && (size_t) inval <= nlev) {
+    if (hasfill && inval == NA_INTEGER) {
+      memcpy(out + ifac*size, fill, size);
+    } else if (0 < inval && (size_t) inval <= nlev) {
       imem = ilev2mem[inval-1];
       memcpy(out + ifac*size, memvals + imem*size, size);
     } else {
@@ -1217,6 +1224,15 @@ R_nc_enum_factor (R_nc_buf *io)
     SET_STRING_ELT (levels, imem, mkChar (memname));
     symbol = PROTECT (R_nc_char_symbol (memval, size, work));
     index = PROTECT (ScalarInteger (imem+1));
+    defineVar (symbol, index, env);
+    UNPROTECT(2);
+  }
+
+  /* Define symbol for fill value, if properly defined */
+  if (io->fill != NULL &&
+      io->fillsize == size) {
+    symbol = PROTECT (R_nc_char_symbol (io->fill, size, work));
+    index = PROTECT (ScalarInteger( NA_INTEGER));
     defineVar (symbol, index, env);
     UNPROTECT(2);
   }
@@ -1530,7 +1546,7 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
     if (xtype > NC_MAX_ATOMIC_TYPE &&
         class == NC_ENUM &&
         R_nc_inherits (rv, "factor")) {
-      return R_nc_factor_enum (rv, ncid, xtype, ndim, xdim);
+      return R_nc_factor_enum (rv, ncid, xtype, ndim, xdim, fillsize, fill);
     }
     break;
   case REALSXP:

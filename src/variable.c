@@ -244,7 +244,8 @@ R_nc_miss_att (int ncid, int varid, int mode,
                void **fill, void **min, void **max)
 {
   size_t cnt, size;
-  nc_type atype, xtype;
+  nc_type atype, xtype, basetype;
+  int class;
   char *range;
   *fill = NULL;
   *min = NULL;
@@ -252,6 +253,15 @@ R_nc_miss_att (int ncid, int varid, int mode,
 
   /* Get details about type and size of netcdf variable */
   R_nc_check (nc_inq_vartype (ncid, varid, &xtype));
+  if (xtype > NC_MAX_ATOMIC_TYPE) {
+    R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, NULL, &class));
+    /* Missing values may appear in user defined variables with atomic basetype */
+    if (class == NC_VLEN ||
+        class == NC_ENUM) {
+      xtype = basetype;
+    }
+  }
+
   if (xtype == NC_CHAR ||
       xtype == NC_STRING ||
       xtype > NC_MAX_ATOMIC_TYPE) {

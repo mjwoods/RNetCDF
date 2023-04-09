@@ -126,11 +126,11 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     inq_vector_blob <- list(id=id_vector_blob, name="vector_blob", class="vlen",
                             size=NA, basetype="blob")
 
-    id_factor <- type.def.nc(nc, "factor", "enum", basetype="NC_UBYTE",
+    id_factor <- type.def.nc(nc, "factor", "enum", basetype="NC_USHORT",
                              names=c("peanut butter", "jelly"),
                              values=c(101, 102))
     inq_factor <- list(id=id_factor, name="factor", class="enum",
-                       size=1, basetype="NC_UBYTE",
+                       size=2, basetype="NC_USHORT",
                        value=c("peanut butter"=101,"jelly"=102))
 
     id_struct <- type.def.nc(nc, "struct", "compound",
@@ -431,6 +431,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     snack_foods <- names(inq_factor$value)
     snacks <- factor(rep(snack_foods,times=5),
                          levels=snack_foods)
+    snacks[5] <- NA
     dim(snacks) <- c(nstation, ntime)
 
     person <- list(siteid=array(rep(seq(1,nstation),ntime), c(nstation,ntime)),
