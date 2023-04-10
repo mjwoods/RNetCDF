@@ -69,7 +69,7 @@ AC_SEARCH_LIBS(nc_open, netcdf, [],
 # C preprocessor macros HAVE_routine are defined for existing routines.
 AC_CHECK_FUNCS([nc_rename_grp nc_get_var_chunk_cache nc_inq_var_szip \
   nc_inq_var_endian nc_def_var_filter nc_inq_var_filter_ids nc_inq_var_filter_info \
-  nc_create_par_fortran nc_open_par_fortran nc_var_par_access])
+  nc_create_par_fortran nc_open_par_fortran nc_var_par_access nc_reclaim_data])
 
 # Check for parallel header file.
 AC_CHECK_HEADERS(netcdf_par.h, [], [], [#include <netcdf.h>])
