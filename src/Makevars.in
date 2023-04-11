@@ -1,3 +1,9 @@
 PKG_CPPFLAGS = @DEFS@ @CPPFLAGS@
 PKG_LIBS = @LDFLAGS@ @LIBS@
 
+all: $(SHLIB)
+
+convert.c: ../tools/convert.m4
+	echo "Please update source package with: m4 tools/convert.m4 > src/convert.c" >&2
+	false
+
