@@ -37,6 +37,18 @@
 library(RNetCDF)
 has_bit64 <- require(bit64)
 
+
+#===============================================================================#
+#  Optional NetCDF features detected during package installation.
+#  Note that config.nc is not intended for user code.
+#===============================================================================#
+
+cfg <- config.nc()
+has_data64 <- isTRUE(as.logical(cfg["data64"]))
+has_diskless <- isTRUE(as.logical(cfg["diskless"]))
+has_udunits <- isTRUE(as.logical(cfg["udunits"]))
+
+
 #===============================================================================#
 #  Run tests
 #===============================================================================#
@@ -72,19 +84,21 @@ tally <- NULL
 
 ##  Create a new NetCDF dataset and define dimensions
 for (format in c("classic","offset64","data64","classic4","netcdf4")) {
+
   ncfile <- tempfile(paste("RNetCDF-test", format, "", sep="_"),
                      fileext=".nc")
   cat("Test", format, "file format in", ncfile, "...\n")
 
-  if (format == "data64") {
+  if (format == "data64" && !has_data64) {
+    message("NetCDF library does not support file format data64")
     nc <- try(create.nc(ncfile, format=format), silent=TRUE)
-    if (inherits(nc, "try-error")) {
-      warning("NetCDF library may not support file format ", format)
-      next
-    }
-  } else {
-    nc <- create.nc(ncfile, format=format)
+    tally <- testfun(inherits(nc, "try-error"), TRUE, tally)
+    unlink(ncfile)
+    next
   }
+
+  nc <- create.nc(ncfile, format=format)
+  tally <- testfun(TRUE, TRUE, tally)
 
   # Show library version:
   libvers <- file.inq.nc(nc)$libvers
@@ -1134,12 +1148,14 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 # Try diskless files:
 ncfile <- tempfile("RNetCDF-test-diskless", fileext=".nc")
 cat("Test diskless creation of ", ncfile, "...\n")
-nc <- try(create.nc(ncfile, diskless=TRUE))
-if (inherits(nc, "try-error") || file.exists(ncfile)) {
-  warning("NetCDF library may not support diskless files")
-} else {
+if (has_diskless) {
+  nc <- create.nc(ncfile, diskless=TRUE)
+  tally <- testfun(file.exists(ncfile), FALSE, tally)
   close.nc(nc)
-  tally <- testfun(TRUE, TRUE, tally)
+} else {
+  message("NetCDF library does not support diskless datasets")
+  nc <- try(create.nc(ncfile, diskless=TRUE), silent=TRUE)
+  tally <- testfun(inherits(nc, "try-error"), TRUE, tally)
 }
 unlink(ncfile)
 
@@ -1149,8 +1165,11 @@ unlink(ncfile)
 #-------------------------------------------------------------------------------#
 
 # Test if udunits support is available:
-if (inherits(try(utcal.nc("seconds since 1970-01-01", 0)), "try-error")) {
-  warning("UDUNITS calendar conversions not supported by this build of RNetCDF")
+if (!has_udunits) {
+
+  message("UDUNITS calendar conversions not supported by this build of RNetCDF")
+  x <- try(utcal.nc("seconds since 1970-01-01", 0), silent=TRUE)
+  tally <- testfun(inherits(x, "try-error"), TRUE, tally)
 
 } else {
 

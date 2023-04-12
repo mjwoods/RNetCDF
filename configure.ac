@@ -77,6 +77,34 @@ AC_CHECK_HEADERS(netcdf_par.h, [], [], [#include <netcdf.h>])
 # Check for filter header file.
 AC_CHECK_HEADERS(netcdf_filter.h, [], [], [#include <netcdf.h>])
 
+# Check for optional features that depend only on preprocessor declarations:
+has_data64="FALSE"
+AC_CHECK_DECL(
+  [NC_64BIT_DATA],
+  [AC_CHECK_DECL(
+    [NC_FORMAT_64BIT_DATA],
+    [has_data64="TRUE"],
+    [],
+    [#include <netcdf.h>]
+  )],
+  [],
+  [#include <netcdf.h>]
+)
+AC_SUBST(has_data64)
+
+has_diskless="FALSE"
+AC_CHECK_DECL(
+  [NC_DISKLESS],
+  [AC_CHECK_DECL(
+    [NC_PERSIST],
+    [has_diskless="TRUE"],
+    [],
+    [#include <netcdf.h>]
+  )],
+  [],
+  [#include <netcdf.h>]
+)
+AC_SUBST(has_diskless)
 
 #-------------------------------------------------------------------------------#
 #  Find UDUNITS2 library and header files                                       #
@@ -89,12 +117,13 @@ AC_SEARCH_LIBS(XML_ErrorString, expat)
 # including udunits2 in LIBS if needed.
 # Also search for udunits2.h on its own or in a subdirectory,
 # and define macro HAVE_UDUNITS2_H or HAVE_UDUNITS2_UDUNITS2_H accordingly.
+has_udunits="FALSE"
 AC_SEARCH_LIBS(ut_read_xml, udunits2,
   AC_CHECK_FUNC(ut_offset_by_time,
     AC_CHECK_FUNC(ut_decode_time,
       AC_CHECK_FUNC(ut_encode_time,
         AC_CHECK_HEADERS(udunits2.h udunits2/udunits2.h,
-          [enable_calendar=yes; break]
+          [has_udunits="TRUE"; break]
         )
       )
     )
@@ -102,16 +131,17 @@ AC_SEARCH_LIBS(ut_read_xml, udunits2,
 )
 
 # Define HAVE_LIBUDUNITS2 if all udunits2 checks were successful:
-AS_IF([test "x$enable_calendar" == xyes],
+AS_IF([test "x$has_udunits" == xTRUE],
   AC_DEFINE(HAVE_LIBUDUNITS2),
   AC_MSG_WARN([disabling calendar functions in RNetCDF])
 )
+AC_SUBST(has_udunits)
 
 #-------------------------------------------------------------------------------#
 #  Do substitution                               	                 	#
 #-------------------------------------------------------------------------------#
 
-AC_CONFIG_FILES([src/Makevars])
+AC_CONFIG_FILES([src/Makevars R/config.R])
 AC_OUTPUT
 
 #-------------------------------------------------------------------------------#
