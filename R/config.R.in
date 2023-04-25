@@ -43,6 +43,9 @@ config.nc <- function() {
   config <- !is.na(config) & config
   names(config) <- names(config_in)
 
+  # Special case for packages with multiple architectures (e.g. Windows):
+  config["data64"] <- config["data64"] && .Machine$sizeof.pointer >= 8
+
   return(config)
 }
 
