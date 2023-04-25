@@ -44,10 +44,9 @@ has_bit64 <- require(bit64)
 #===============================================================================#
 
 cfg <- config.nc()
-has_data64 <- isTRUE(as.logical(cfg["data64"]))
-has_diskless <- isTRUE(as.logical(cfg["diskless"]))
-has_udunits <- isTRUE(as.logical(cfg["udunits"]))
-
+has_data64 <- cfg["data64"]
+has_diskless <- cfg["diskless"]
+has_udunits <- cfg["udunits"]
 
 #===============================================================================#
 #  Run tests

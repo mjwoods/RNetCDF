@@ -32,11 +32,17 @@
 # but it is not intended for user code,
 # and the output format is subject to change without notice.
 config.nc <- function() {
-  config <- c(
+  config_in <- c(
     data64="@has_data64@",
     diskless="@has_diskless@",
     udunits="@has_udunits@"
   )
+
+  # Convert to logical TRUE/FALSE (not NA):
+  config <- as.logical(config_in)
+  config <- !is.na(config) & config
+  names(config) <- names(config_in)
+
   return(config)
 }
 
