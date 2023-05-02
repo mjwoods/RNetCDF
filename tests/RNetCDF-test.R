@@ -44,9 +44,7 @@ has_bit64 <- require(bit64)
 #===============================================================================#
 
 cfg <- config.nc()
-has_data64 <- cfg["data64"]
-has_diskless <- cfg["diskless"]
-has_udunits <- cfg["udunits"]
+
 
 #===============================================================================#
 #  Run tests
@@ -88,7 +86,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
                      fileext=".nc")
   cat("Test", format, "file format in", ncfile, "...\n")
 
-  if (format == "data64" && !has_data64) {
+  if (format == "data64" && !cfg["data64"]) {
     message("NetCDF library does not support file format data64")
     nc <- try(create.nc(ncfile, format=format), silent=TRUE)
     tally <- testfun(inherits(nc, "try-error"), TRUE, tally)
@@ -1147,7 +1145,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 # Try diskless files:
 ncfile <- tempfile("RNetCDF-test-diskless", fileext=".nc")
 cat("Test diskless creation of ", ncfile, "...\n")
-if (has_diskless) {
+if (cfg["diskless"]) {
   nc <- create.nc(ncfile, diskless=TRUE)
   tally <- testfun(file.exists(ncfile), FALSE, tally)
   close.nc(nc)
@@ -1164,7 +1162,7 @@ unlink(ncfile)
 #-------------------------------------------------------------------------------#
 
 # Test if udunits support is available:
-if (!has_udunits) {
+if (!cfg["udunits"]) {
 
   message("UDUNITS calendar conversions not supported by this build of RNetCDF")
   x <- try(utcal.nc("seconds since 1970-01-01", 0), silent=TRUE)
