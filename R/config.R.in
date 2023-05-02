@@ -32,16 +32,13 @@
 # but it is not intended for user code,
 # and the output format is subject to change without notice.
 config.nc <- function() {
-  config_in <- c(
-    data64="@has_data64@",
-    diskless="@has_diskless@",
-    udunits="@has_udunits@"
+  # RHS values are replaced by configure script:
+  config <- c(
+    data64=@has_data64@,
+    diskless=@has_diskless@,
+    udunits=@has_udunits@,
+    reclaim=@has_reclaim@
   )
-
-  # Convert to logical TRUE/FALSE (not NA):
-  config <- as.logical(config_in)
-  config <- !is.na(config) & config
-  names(config) <- names(config_in)
 
   # Special case for packages with multiple architectures (e.g. Windows):
   config["data64"] <- config["data64"] && .Machine$sizeof.pointer >= 8
