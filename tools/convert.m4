@@ -986,18 +986,12 @@ R_nc_vlen_vecsxp (R_nc_buf *io)
                        0, NULL, NULL, NULL, NULL, NULL));
     R_nc_c2r (&tmpio);
     SET_VECTOR_ELT (io->rxp, ii, tmprxp);
-#ifndef HAVE_NC_RECLAIM_DATA
     if (vbuf[ii].len > 0) {
       /* nc_free_vlen fails if length is 0; no need to free anyway */
       nc_free_vlen(&(vbuf[ii]));
     }
-#endif
     UNPROTECT(1);
   }
-
-#ifdef HAVE_NC_RECLAIM_DATA
-  nc_reclaim_data(io->ncid, io->xtype, vbuf, cnt);
-#endif
 }
 
 
