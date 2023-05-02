@@ -648,7 +648,6 @@ ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 has_udunits
-has_reclaim
 has_diskless
 has_data64
 have_nc_config
@@ -3935,12 +3934,6 @@ then :
   printf "%s\n" "#define HAVE_NC_VAR_PAR_ACCESS 1" >>confdefs.h
 
 fi
-ac_fn_c_check_func "$LINENO" "nc_reclaim_data" "ac_cv_func_nc_reclaim_data"
-if test "x$ac_cv_func_nc_reclaim_data" = xyes
-then :
-  printf "%s\n" "#define HAVE_NC_RECLAIM_DATA 1" >>confdefs.h
-
-fi
 
 
 # Check for parallel header file.
@@ -4246,7 +4239,7 @@ fi
 
 
 # Define HAVE_LIBUDUNITS2 if all udunits2 checks were successful:
-if test "$has_udunits" = "yes"
+if test "$has_udunits" = "TRUE"
 then :
   printf "%s\n" "#define HAVE_LIBUDUNITS2 1" >>confdefs.h
 
@@ -4276,14 +4269,6 @@ then :
   has_diskless=TRUE
 else $as_nop
   has_diskless=FALSE
-fi
-
-
-if test "$ac_cv_func_nc_reclaim_data" = "yes"
-then :
-  has_reclaim=TRUE
-else $as_nop
-  has_reclaim=FALSE
 fi
 
 
