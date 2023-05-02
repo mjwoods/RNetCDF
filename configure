@@ -648,6 +648,7 @@ ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 has_udunits
+has_reclaim
 has_diskless
 has_data64
 have_nc_config
@@ -3963,7 +3964,6 @@ fi
 
 
 # Check for optional features that depend only on preprocessor declarations:
-has_data64="FALSE"
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CC options needed to detect all undeclared functions" >&5
 printf %s "checking for $CC options needed to detect all undeclared functions... " >&6; }
 if test ${ac_cv_c_undeclared_builtin_options+y}
@@ -4045,34 +4045,42 @@ See \`config.log' for more details" "$LINENO" 5; } ;; #(
 esac
 
 ac_fn_check_decl "$LINENO" "NC_64BIT_DATA" "ac_cv_have_decl_NC_64BIT_DATA" "#include <netcdf.h>
-
 " "$ac_c_undeclared_builtin_options" "CFLAGS"
 if test "x$ac_cv_have_decl_NC_64BIT_DATA" = xyes
 then :
-  ac_fn_check_decl "$LINENO" "NC_FORMAT_64BIT_DATA" "ac_cv_have_decl_NC_FORMAT_64BIT_DATA" "#include <netcdf.h>
-
+  ac_have_decl=1
+else $as_nop
+  ac_have_decl=0
+fi
+printf "%s\n" "#define HAVE_DECL_NC_64BIT_DATA $ac_have_decl" >>confdefs.h
+ac_fn_check_decl "$LINENO" "NC_FORMAT_64BIT_DATA" "ac_cv_have_decl_NC_FORMAT_64BIT_DATA" "#include <netcdf.h>
 " "$ac_c_undeclared_builtin_options" "CFLAGS"
 if test "x$ac_cv_have_decl_NC_FORMAT_64BIT_DATA" = xyes
 then :
-  has_data64="TRUE"
+  ac_have_decl=1
+else $as_nop
+  ac_have_decl=0
 fi
-fi
-
-
-has_diskless="FALSE"
+printf "%s\n" "#define HAVE_DECL_NC_FORMAT_64BIT_DATA $ac_have_decl" >>confdefs.h
 ac_fn_check_decl "$LINENO" "NC_DISKLESS" "ac_cv_have_decl_NC_DISKLESS" "#include <netcdf.h>
-
 " "$ac_c_undeclared_builtin_options" "CFLAGS"
 if test "x$ac_cv_have_decl_NC_DISKLESS" = xyes
 then :
-  ac_fn_check_decl "$LINENO" "NC_PERSIST" "ac_cv_have_decl_NC_PERSIST" "#include <netcdf.h>
-
+  ac_have_decl=1
+else $as_nop
+  ac_have_decl=0
+fi
+printf "%s\n" "#define HAVE_DECL_NC_DISKLESS $ac_have_decl" >>confdefs.h
+ac_fn_check_decl "$LINENO" "NC_PERSIST" "ac_cv_have_decl_NC_PERSIST" "#include <netcdf.h>
 " "$ac_c_undeclared_builtin_options" "CFLAGS"
 if test "x$ac_cv_have_decl_NC_PERSIST" = xyes
 then :
-  has_diskless="TRUE"
+  ac_have_decl=1
+else $as_nop
+  ac_have_decl=0
 fi
-fi
+printf "%s\n" "#define HAVE_DECL_NC_PERSIST $ac_have_decl" >>confdefs.h
+
 
 
 #-------------------------------------------------------------------------------#
@@ -4144,7 +4152,7 @@ fi
 # including udunits2 in LIBS if needed.
 # Also search for udunits2.h on its own or in a subdirectory,
 # and define macro HAVE_UDUNITS2_H or HAVE_UDUNITS2_UDUNITS2_H accordingly.
-has_udunits="FALSE"
+has_udunits=FALSE
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing ut_read_xml" >&5
 printf %s "checking for library containing ut_read_xml... " >&6; }
 if test ${ac_cv_search_ut_read_xml+y}
@@ -4219,7 +4227,7 @@ then :
   cat >>confdefs.h <<_ACEOF
 #define `printf "%s\n" "HAVE_$ac_header" | $as_tr_cpp` 1
 _ACEOF
- has_udunits="TRUE"; break
+ has_udunits=TRUE; break
 
 fi
 
@@ -4238,7 +4246,7 @@ fi
 
 
 # Define HAVE_LIBUDUNITS2 if all udunits2 checks were successful:
-if test "x$has_udunits" == xTRUE
+if test "$has_udunits" = "yes"
 then :
   printf "%s\n" "#define HAVE_LIBUDUNITS2 1" >>confdefs.h
 
@@ -4247,6 +4255,39 @@ else $as_nop
 printf "%s\n" "$as_me: WARNING: disabling calendar functions in RNetCDF" >&2;}
 
 fi
+
+
+#-------------------------------------------------------------------------------#
+#  Indicate optional features to R test script                                  #
+#-------------------------------------------------------------------------------#
+
+if test "$ac_cv_have_decl_NC_64BIT_DATA" = "yes" -a \
+         "$ac_cv_have_decl_NC_FORMAT_64BIT_DATA" = "yes"
+then :
+  has_data64=TRUE
+else $as_nop
+  has_data64=FALSE
+fi
+
+
+if test "$ac_cv_have_decl_NC_DISKLESS" = "yes" -a \
+         "$ac_cv_have_decl_NC_PERSIST" = "yes"
+then :
+  has_diskless=TRUE
+else $as_nop
+  has_diskless=FALSE
+fi
+
+
+if test "$ac_cv_func_nc_reclaim_data" = "yes"
+then :
+  has_reclaim=TRUE
+else $as_nop
+  has_reclaim=FALSE
+fi
+
+
+
 
 
 #-------------------------------------------------------------------------------#
