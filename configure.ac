@@ -129,6 +129,11 @@ AS_IF([test "$ac_cv_have_decl_NC_DISKLESS" = "yes" -a \
       [has_diskless=FALSE])
 AC_SUBST(has_diskless)
 
+AS_IF([test "$ac_cv_func_nc_reclaim_data" = "yes"],
+      [has_reclaim=TRUE],
+      [has_reclaim=FALSE])
+AC_SUBST(has_reclaim)
+
 AC_SUBST(has_udunits)
 
 
