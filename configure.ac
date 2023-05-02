@@ -69,7 +69,7 @@ AC_SEARCH_LIBS(nc_open, netcdf, [],
 # C preprocessor macros HAVE_routine are defined for existing routines.
 AC_CHECK_FUNCS([nc_rename_grp nc_get_var_chunk_cache nc_inq_var_szip \
   nc_inq_var_endian nc_def_var_filter nc_inq_var_filter_ids nc_inq_var_filter_info \
-  nc_create_par_fortran nc_open_par_fortran nc_var_par_access nc_reclaim_data])
+  nc_create_par_fortran nc_open_par_fortran nc_var_par_access])
 
 # Check for parallel header file.
 AC_CHECK_HEADERS(netcdf_par.h, [], [], [#include <netcdf.h>])
@@ -128,11 +128,6 @@ AS_IF([test "$ac_cv_have_decl_NC_DISKLESS" = "yes" -a \
       [has_diskless=TRUE],
       [has_diskless=FALSE])
 AC_SUBST(has_diskless)
-
-AS_IF([test "$ac_cv_func_nc_reclaim_data" = "yes"],
-      [has_reclaim=TRUE],
-      [has_reclaim=FALSE])
-AC_SUBST(has_reclaim)
 
 AC_SUBST(has_udunits)
 
