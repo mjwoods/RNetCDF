@@ -134,6 +134,14 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     inq_vector_char <- list(id=id_vector_char, name="vector_char", class="vlen",
                             size=NA, basetype="NC_CHAR")
 
+    id_vector_string <- type.def.nc(nc, "vector_string", "vlen", basetype="NC_STRING")
+    inq_vector_string <- list(id=id_vector_string, name="vector_string", class="vlen",
+                              size=NA, basetype="NC_STRING")
+
+    id_vector_vector <- type.def.nc(nc, "vector_vector", "vlen", basetype=id_vector)
+    inq_vector_vector <- list(id=id_vector_vector, name="vector_vector", class="vlen",
+                              size=NA, basetype="vector")
+
     id_vector_blob <- type.def.nc(nc, "vector_blob", "vlen", basetype=id_blob)
     inq_vector_blob <- list(id=id_vector_blob, name="vector_blob", class="vlen",
                             size=NA, basetype="blob")
@@ -154,8 +162,10 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
                        subtype=c(siteid="NC_INT",height="NC_DOUBLE",colour="NC_SHORT"),
                        dimsizes=list("siteid"=NULL,"height"=NULL,"colour"=c(3)))
 
-    typeids <- c(id_blob,id_vector,id_vector_char,id_vector_blob,id_factor,id_struct)
+    typeids <- c(id_blob, id_vector, id_vector_char, id_vector_string, id_vector_vector,
+                 id_vector_blob, id_factor, id_struct)
     tally <- testfun(TRUE, TRUE, tally)
+
   }
 
   ##  Define variables
@@ -195,6 +205,8 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     var.def.nc(nc, "namestr", "NC_STRING", c("station"))
     var.def.nc(nc, "profile", id_vector, c("station","time"))
     var.def.nc(nc, "profile_char", id_vector_char, c("station","time"))
+    var.def.nc(nc, "profile_string", id_vector_string, c("station","time"))
+    var.def.nc(nc, "profile_vector", id_vector_vector, c("station","time"))
     var.def.nc(nc, "profile_blob", id_vector_blob, c("time"))
     var.def.nc(nc, "profile_scalar", id_vector, NA)
     var.def.nc(nc, "rawdata", id_blob, c("station","time"))
@@ -202,7 +214,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     var.def.nc(nc, "rawdata_vector", id_blob, c("station"))
     var.def.nc(nc, "snacks", "factor", c("station", "time"))
     var.def.nc(nc, "person", "struct", c("station", "time"))
-    varcnt <- varcnt+10
+    varcnt <- varcnt+12
     tally <- testfun(TRUE, TRUE, tally)
 
     numtypes <- c(numtypes, "NC_UBYTE", "NC_USHORT", "NC_UINT")
@@ -432,6 +444,12 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     profiles_char <- lapply(profiles,function(x) {paste(as.character(x),collapse=",")})
     dim(profiles_char) <- dim(profiles)
 
+    profiles_string <- lapply(profiles, as.character)
+    dim(profiles_string) <- dim(profiles)
+
+    profiles_vector <- lapply(profiles, function(x) {lapply(x, seq_len)})
+    dim(profiles_vector) <- dim(profiles)
+
     rawdata <- as.raw(seq_len(nstation*ntime*128) %% 256)
     dim(rawdata) <- c(128,nstation,ntime)
 
@@ -485,6 +503,8 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     var.put.nc(nc, "namestr", myname)
     var.put.nc(nc, "profile", profiles)
     var.put.nc(nc, "profile_char", profiles_char)
+    var.put.nc(nc, "profile_string", profiles_string)
+    var.put.nc(nc, "profile_vector", profiles_vector)
     var.put.nc(nc, "profile_blob", profiles_blob)
     var.put.nc(nc, "profile_scalar", profiles[1])
     var.put.nc(nc, "rawdata", rawdata)
@@ -1036,15 +1056,25 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     y <- var.get.nc(nc, "profile_scalar")
     tally <- testfun(x,y,tally)
 
-    cat("Read vlen as character ...")
+    cat("Read character vlen ...")
     x <- profiles_char
     y <- var.get.nc(nc, "profile_char")
     tally <- testfun(x,y,tally)
 
-    cat("Read vlen as raw ...")
+    cat("Read character vlen as raw ...")
     x <- lapply(profiles_char,charToRaw)
     dim(x) <- dim(profiles_char)
     y <- var.get.nc(nc, "profile_char", rawchar=TRUE)
+    tally <- testfun(x,y,tally)
+
+    cat("Read string vlen ...")
+    x <- profiles_string
+    y <- var.get.nc(nc, "profile_string")
+    tally <- testfun(x,y,tally)
+
+    cat("Read nested vlen ...")
+    x <- profiles_vector
+    y <- var.get.nc(nc, "profile_vector")
     tally <- testfun(x,y,tally)
 
     cat("Read opaque ...")
