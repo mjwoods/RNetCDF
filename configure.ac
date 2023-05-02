@@ -107,7 +107,7 @@ AC_SEARCH_LIBS(ut_read_xml, udunits2,
 )
 
 # Define HAVE_LIBUDUNITS2 if all udunits2 checks were successful:
-AS_IF([test "$has_udunits" = "yes"],
+AS_IF([test "$has_udunits" = "TRUE"],
   AC_DEFINE(HAVE_LIBUDUNITS2),
   AC_MSG_WARN([disabling calendar functions in RNetCDF])
 )
