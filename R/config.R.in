@@ -36,8 +36,7 @@ config.nc <- function() {
   config <- c(
     data64=@has_data64@,
     diskless=@has_diskless@,
-    udunits=@has_udunits@,
-    reclaim=@has_reclaim@
+    udunits=@has_udunits@
   )
 
   # Special case for packages with multiple architectures (e.g. Windows):
