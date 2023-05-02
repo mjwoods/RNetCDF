@@ -41,6 +41,7 @@ has_bit64 <- require(bit64)
 #===============================================================================#
 #  Optional NetCDF features detected during package installation.
 #  Note that config.nc is not intended for user code.
+#  If necessary, users can handle missing features using 'try'.
 #===============================================================================#
 
 cfg <- config.nc()
