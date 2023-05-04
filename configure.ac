@@ -77,6 +77,10 @@ AC_CHECK_HEADERS(netcdf_par.h, [], [], [#include <netcdf.h>])
 # Check for filter header file.
 AC_CHECK_HEADERS(netcdf_filter.h, [], [], [#include <netcdf.h>])
 
+# Check for optional features that depend only on preprocessor declarations:
+AC_CHECK_DECLS([NC_64BIT_DATA, NC_FORMAT_64BIT_DATA, NC_DISKLESS, NC_PERSIST],
+  [], [], [#include <netcdf.h>])
+
 
 #-------------------------------------------------------------------------------#
 #  Find UDUNITS2 library and header files                                       #
@@ -89,12 +93,13 @@ AC_SEARCH_LIBS(XML_ErrorString, expat)
 # including udunits2 in LIBS if needed.
 # Also search for udunits2.h on its own or in a subdirectory,
 # and define macro HAVE_UDUNITS2_H or HAVE_UDUNITS2_UDUNITS2_H accordingly.
+has_udunits=FALSE
 AC_SEARCH_LIBS(ut_read_xml, udunits2,
   AC_CHECK_FUNC(ut_offset_by_time,
     AC_CHECK_FUNC(ut_decode_time,
       AC_CHECK_FUNC(ut_encode_time,
         AC_CHECK_HEADERS(udunits2.h udunits2/udunits2.h,
-          [enable_calendar=yes; break]
+          [has_udunits=TRUE; break]
         )
       )
     )
@@ -102,16 +107,36 @@ AC_SEARCH_LIBS(ut_read_xml, udunits2,
 )
 
 # Define HAVE_LIBUDUNITS2 if all udunits2 checks were successful:
-AS_IF([test "x$enable_calendar" == xyes],
+AS_IF([test "$has_udunits" = "TRUE"],
   AC_DEFINE(HAVE_LIBUDUNITS2),
   AC_MSG_WARN([disabling calendar functions in RNetCDF])
 )
+
+
+#-------------------------------------------------------------------------------#
+#  Indicate optional features to R test script                                  #
+#-------------------------------------------------------------------------------#
+
+AS_IF([test "$ac_cv_have_decl_NC_64BIT_DATA" = "yes" -a \
+         "$ac_cv_have_decl_NC_FORMAT_64BIT_DATA" = "yes"],
+      [has_data64=TRUE],
+      [has_data64=FALSE])
+AC_SUBST(has_data64)
+
+AS_IF([test "$ac_cv_have_decl_NC_DISKLESS" = "yes" -a \
+         "$ac_cv_have_decl_NC_PERSIST" = "yes"],
+      [has_diskless=TRUE],
+      [has_diskless=FALSE])
+AC_SUBST(has_diskless)
+
+AC_SUBST(has_udunits)
+
 
 #-------------------------------------------------------------------------------#
 #  Do substitution                               	                 	#
 #-------------------------------------------------------------------------------#
 
-AC_CONFIG_FILES([src/Makevars])
+AC_CONFIG_FILES([src/Makevars R/config.R])
 AC_OUTPUT
 
 #-------------------------------------------------------------------------------#

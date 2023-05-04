@@ -35,7 +35,7 @@ PKG_LIBS = -L$(WINLIBS) -ludunits2 -lexpat \
   -lws2_32 -lgdi32 -lcrypt32 -lz -lssl -lcrypto -lssl -lcrypto -lws2_32 \
   -lgdi32 -lcrypt32 -lgdi32 -lcrypt32 -lwldap32 -lz -lws2_32
 
-all: clean winlibs
+all: clean winlibs wintest
 
 winlibs:
 	"${R_HOME}/bin${R_ARCH_BIN}/Rscript.exe" "../tools/winlibs.R" ${VERSION}
@@ -43,7 +43,13 @@ winlibs:
 	rm -Rf ../inst/share
 	cp -r ../windows/netcdf-${VERSION}/share ../inst/
 
+wintest:
+	"${R_HOME}/bin${R_ARCH_BIN}/Rscript.exe" "../tools/wintest.R" \
+  has_data64=TRUE \
+  has_diskless=TRUE \
+  has_udunits=TRUE
+
 clean:
 	rm -Rf $(SHLIB) $(OBJECTS)
 
-.PHONY: all winlibs clean
+.PHONY: all winlibs wintest clean
