@@ -1,3 +1,6 @@
+Version 2.7-1, 2023-02-01
+  * Support packing and unpacking of vlen
+
 Version 2.7-0, 2023-01-31
   * Fix crash when calling nc_free_vlen on vlen with zero-length
 
