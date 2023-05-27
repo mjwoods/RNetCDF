@@ -205,7 +205,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     var.def.nc(nc, "namestr", "NC_STRING", c("station"))
     var.def.nc(nc, "profile", id_vector, c("station","time"))
     var.def.nc(nc, "profile_pack", id_vector, c("station","time"))
-    att.put.nc(nc, "profile_pack", "scale_factor", "NC_INT", 10)
+    att.put.nc(nc, "profile_pack", "scale_factor", "NC_FLOAT", 10)
     var.def.nc(nc, "profile_char", id_vector_char, c("station","time"))
     var.def.nc(nc, "profile_string", id_vector_string, c("station","time"))
     var.def.nc(nc, "profile_vector", id_vector_vector, c("station","time"))
