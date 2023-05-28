@@ -231,12 +231,13 @@ R_nc_def_var (SEXP nc, SEXP varname, SEXP type, SEXP dims,
      fill, min and max, which are either NULL or allocated by R_alloc.
      The function returns the in-memory size (bytes) of a missing value.
    Argument mode specifies the attributes used for missing values:
-     0 - _FillValue, or missing_value
-     1 - _FillValue only
-     2 - missing_value only
-     3 - none
-     4 - fill value and valid range determined as described at
+     0 - (numeric types) _FillValue, or missing_value
+     1 - (numeric types) _FillValue only
+     2 - (numeric types) missing_value only
+     3 - (all types) none
+     4 - (numeric types) fill value and valid range determined as described at
          http://www.unidata.ucar.edu/software/netcdf/docs/attribute_conventions.html
+     5 - (all types) mode 4 for numeric types; _FillValue for other types
    Example: R_nc_miss_att (ncid, varid, mode, &fill, &min, &max);
   */
 static size_t
@@ -244,7 +245,7 @@ R_nc_miss_att (int ncid, int varid, int mode,
                void **fill, void **min, void **max)
 {
   size_t cnt, size;
-  nc_type atype, xtype, basetype;
+  nc_type atype, xtype;
   int class;
   char *range;
   *fill = NULL;
@@ -253,23 +254,17 @@ R_nc_miss_att (int ncid, int varid, int mode,
 
   /* Get details about type and size of netcdf variable */
   R_nc_check (nc_inq_vartype (ncid, varid, &xtype));
-  if (xtype > NC_MAX_ATOMIC_TYPE) {
-    R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, NULL, &class));
-    /* Missing values may appear in some classes of user defined types */
-    if (class == NC_ENUM) {
-      xtype = basetype;
+  R_nc_check (nc_inq_type (ncid, xtype, NULL, &size));
+
+  if (mode == 5) {
+    if (xtype == NC_CHAR ||
+        xtype == NC_STRING ||
+        xtype > NC_MAX_ATOMIC_TYPE) {
+      mode = 1;
+    } else {
+      mode = 4;
     }
   }
-
-  if (xtype == NC_CHAR ||
-      xtype == NC_STRING ||
-      xtype > NC_MAX_ATOMIC_TYPE) {
-    /* NetCDF attribute conventions describe the handling of missing values
-       in atomic numeric types. Let users handle other types as needed.
-     */
-    return 0;
-  }
-  R_nc_check (nc_inq_type (ncid, xtype, NULL, &size));
 
   if (mode == 0 || mode == 1) {
     if (nc_inq_att (ncid, varid, "_FillValue", &atype, &cnt) == NC_NOERR &&
