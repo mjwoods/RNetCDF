@@ -255,9 +255,8 @@ R_nc_miss_att (int ncid, int varid, int mode,
   R_nc_check (nc_inq_vartype (ncid, varid, &xtype));
   if (xtype > NC_MAX_ATOMIC_TYPE) {
     R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, NULL, &class));
-    /* Missing values may appear in user defined variables with atomic basetype */
-    if (class == NC_VLEN ||
-        class == NC_ENUM) {
+    /* Missing values may appear in some classes of user defined types */
+    if (class == NC_ENUM) {
       xtype = basetype;
     }
   }
