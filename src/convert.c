@@ -6585,11 +6585,11 @@ R_nc_factor_enum (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
 
   for (ifac=0; ifac<nfac; ifac++) {
     inval = in[ifac];
-    if (hasfill && inval == NA_INTEGER) {
-      memcpy(out + ifac*size, fill, size);
-    } else if (0 < inval && (size_t) inval <= nlev) {
+    if (0 < inval && (size_t) inval <= nlev) {
       imem = ilev2mem[inval-1];
       memcpy(out + ifac*size, memvals + imem*size, size);
+    } else if (hasfill && inval == NA_INTEGER) {
+      memcpy(out + ifac*size, fill, size);
     } else {
       error ("Invalid index in factor");
     }
@@ -6677,15 +6677,6 @@ R_nc_enum_factor (R_nc_buf *io)
     UNPROTECT(2);
   }
 
-  /* Define symbol for fill value, if properly defined */
-  if (io->fill != NULL &&
-      io->fillsize == size) {
-    symbol = PROTECT (R_nc_char_symbol (io->fill, size, work));
-    index = PROTECT (ScalarInteger( NA_INTEGER));
-    defineVar (symbol, index, env);
-    UNPROTECT(2);
-  }
-
   /* Convert netcdf enum values to R indices.
      Use hashed environment prepared above for efficient lookups.
    */
@@ -6697,7 +6688,7 @@ R_nc_enum_factor (R_nc_buf *io)
     index = findVarInFrame3 (env, symbol, TRUE);
     UNPROTECT(1);
     if (index == R_UnboundValue) {
-      error ("Unknown enum value in variable");
+      out[ifac] = NA_INTEGER;
     } else {
       out[ifac] = INTEGER (index)[0];
     }
