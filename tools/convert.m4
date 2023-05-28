@@ -1239,7 +1239,7 @@ R_nc_enum_factor (R_nc_buf *io)
     index = findVarInFrame3 (env, symbol, TRUE);
     UNPROTECT(1);
     if (index == R_UnboundValue) {
-      out[ifac] == NA_INTEGER;
+      out[ifac] = NA_INTEGER;
     } else {
       out[ifac] = INTEGER (index)[0];
     }
