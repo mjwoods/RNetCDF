@@ -1228,6 +1228,15 @@ R_nc_enum_factor (R_nc_buf *io)
     UNPROTECT(2);
   }
 
+  /* Define symbol for fill value, if properly defined */
+  if (io->fill != NULL &&
+      io->fillsize == size) {
+    symbol = PROTECT (R_nc_char_symbol (io->fill, size, work));
+    index = PROTECT (ScalarInteger( NA_INTEGER));
+    defineVar (symbol, index, env);
+    UNPROTECT(2);
+  }
+
   /* Convert netcdf enum values to R indices.
      Use hashed environment prepared above for efficient lookups.
    */
