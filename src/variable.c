@@ -256,12 +256,21 @@ R_nc_miss_att (int ncid, int varid, int mode,
   R_nc_check (nc_inq_type (ncid, xtype, NULL, &size));
 
   if (mode == 5) {
+    /* Mode 5 is equivalent to mode 4 for numeric types
+       and mode 1 for non-numeric types */ 
     if (xtype == NC_CHAR ||
         xtype == NC_STRING ||
         xtype > NC_MAX_ATOMIC_TYPE) {
       mode = 1;
     } else {
       mode = 4;
+    }
+  } else {
+    /* For other modes, let users handle missing values in non-numeric types */
+    if (xtype == NC_CHAR ||
+        xtype == NC_STRING ||
+        xtype > NC_MAX_ATOMIC_TYPE) {
+      return 0;
     }
   }
 
