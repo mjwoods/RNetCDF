@@ -170,29 +170,47 @@ R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount) {
 
 
 static char *
-R_nc_strsxp_char (SEXP rstr, int ndim, const size_t *xdim)
+R_nc_strsxp_char (SEXP rstr, int ndim, const size_t *xdim,
+                  size_t fillsize, const void *fill)
 {
-  size_t ii, strlen, cnt;
-  char *carr, *thisstr;
+  size_t ii, rowlen, cnt, thislen;
+  char *carr, *thiscstr, fillval, *nullchr;
+  const char *thisrstr;
   if (ndim > 0) {
     /* Omit fastest-varying dimension from R character array */
-    strlen = xdim[ndim-1];
+    rowlen = xdim[ndim-1];
     cnt = R_nc_length (ndim-1, xdim);
   } else if (ndim == 0) {
     /* Scalar character */
-    strlen = 1;
+    rowlen = 1;
     cnt = 1;
   } else {
     /* Single string */
-    strlen = xdim[0];
+    rowlen = xdim[0];
     cnt = 1;
   }
   if ((size_t) xlength (rstr) < cnt) {
     error (RNC_EDATALEN);
   }
-  carr = R_alloc (cnt*strlen, sizeof (char));
-  for (ii=0, thisstr=carr; ii<cnt; ii++, thisstr+=strlen) {
-    strncpy(thisstr, CHAR( STRING_ELT (rstr, ii)), strlen);
+  carr = R_alloc (cnt*rowlen, sizeof (char));
+  /* Prefill the buffer with the defined value or the NetCDF default */
+  if (fill != NULL &&
+      fillsize == sizeof (char)) {
+    fillval = *(char *) fill;
+  } else {
+    fillval = NC_FILL_CHAR;
+  }
+  memset(carr, fillval, cnt*rowlen);
+  for (ii=0, thiscstr=carr; ii<cnt; ii++, thiscstr+=rowlen) {
+    /* Copy R string values to rows of the C buffer,
+       without changing fill values after each string.
+       Find the R string length up to a maximum of rowlen,
+       without relying on the non-portable function strnlen.
+     */
+    thisrstr = CHAR( STRING_ELT (rstr, ii));
+    nullchr = memchr(thisrstr, 0, rowlen);
+    thislen = (nullchr == NULL) ? rowlen : ((size_t) nullchr - (size_t) thisrstr);
+    memcpy(thiscstr, thisrstr, thislen);
   }
   return carr;
 }
@@ -1661,7 +1679,7 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
   case STRSXP:
     switch (xtype) {
     case NC_CHAR:
-      return R_nc_strsxp_char (rv, ndim, xdim);
+      return R_nc_strsxp_char (rv, ndim, xdim, fillsize, fill);
     case NC_STRING:
       return R_nc_strsxp_str (rv, ndim, xdim);
     }
