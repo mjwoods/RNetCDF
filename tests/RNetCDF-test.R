@@ -36,6 +36,7 @@
 
 library(RNetCDF)
 has_bit64 <- require(bit64)
+loadNamespace("tools")
 
 
 #===============================================================================#
@@ -147,11 +148,11 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
                             size=NA, basetype="blob")
 
     id_factor <- type.def.nc(nc, "factor", "enum", basetype="NC_USHORT",
-                             names=c("peanut butter", "jelly"),
-                             values=c(101, 102))
+                             names=c("NA", "peanut butter", "jelly"),
+                             values=c(100, 101, 102))
     inq_factor <- list(id=id_factor, name="factor", class="enum",
                        size=2, basetype="NC_USHORT",
-                       value=c("peanut butter"=101,"jelly"=102))
+                       value=c("NA"=100,"peanut butter"=101,"jelly"=102))
 
     id_struct <- type.def.nc(nc, "struct", "compound",
                              names=c("siteid", "height", "colour"),
@@ -215,8 +216,9 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     var.def.nc(nc, "rawdata_scalar", id_blob, NA)
     var.def.nc(nc, "rawdata_vector", id_blob, c("station"))
     var.def.nc(nc, "snacks", "factor", c("station", "time"))
+    var.def.nc(nc, "snacks_empty", "factor", c("station", "time"))
     var.def.nc(nc, "person", "struct", c("station", "time"))
-    varcnt <- varcnt+13
+    varcnt <- varcnt+14
     tally <- testfun(TRUE, TRUE, tally)
 
     numtypes <- c(numtypes, "NC_UBYTE", "NC_USHORT", "NC_UINT")
@@ -238,7 +240,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   }
 
   for (numtype in numtypes) {
-    for (namode in c(0,1,2,3,4)) {
+    for (namode in seq(0,5)) {
       cat("Defining variables of type", numtype, "for na.mode", namode, "...\n")
 
       varname <- paste(numtype,namode,sep="_")
@@ -459,10 +461,13 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     dim(profiles_blob) <- ntime
 
     snack_foods <- names(inq_factor$value)
-    snacks <- factor(rep(snack_foods,times=5),
+    snacks <- factor(rep(snack_foods, length.out=nstation*ntime),
                          levels=snack_foods)
-    snacks[5] <- NA
     dim(snacks) <- c(nstation, ntime)
+    snacks_fill <- snacks
+    snacks_fill[snacks_fill == "NA"] <- NA
+    snacks_empty <- snacks
+    snacks_empty[] <- NA
 
     person <- list(siteid=array(rep(seq(1,nstation),ntime), c(nstation,ntime)),
                    height=array(1+0.1*seq(1,nstation*ntime), c(nstation,ntime)),
@@ -487,6 +492,9 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     att.put.nc(nc, "NC_GLOBAL", "vector_scal_att", "vector", profiles[1])
     att.put.nc(nc, "NC_GLOBAL", "vector_vect_att", "vector", profiles[1:3])
     tally <- testfun(TRUE, TRUE, tally)
+
+    # Fill values for user-defined variables:
+    att.put.nc(nc, "snacks", "_FillValue", "factor", factor("NA"))
   }
 
   ##  Put the data
@@ -514,7 +522,11 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     var.put.nc(nc, "rawdata", rawdata)
     var.put.nc(nc, "rawdata_scalar", rawdata[,1,1])
     var.put.nc(nc, "rawdata_vector", rawdata[,,1])
-    var.put.nc(nc, "snacks", snacks)
+
+    y <- try(var.put.nc(nc, "snacks", snacks_fill, na.mode=3), silent=TRUE)
+    tally <- testfun(inherits(y, "try-error"), TRUE, tally)
+    var.put.nc(nc, "snacks", snacks_fill, na.mode=5)
+
     var.put.nc(nc, "person", person)
     tally <- testfun(TRUE, TRUE, tally)
     if (has_bit64) {
@@ -526,7 +538,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   }
 
   for (numtype in numtypes) {
-    for (namode in c(0,1,2,3,4)) {
+    for (namode in seq(0,5)) {
       cat("Writing to variable type", numtype, "with na.mode", namode, "...\n")
 
       # Should not succeed except for NC_DOUBLE:
@@ -722,7 +734,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   tally <- testfun(is.double(y),TRUE,tally)
 
   for (numtype in numtypes) {
-    for (namode in c(0,1,2,3,4)) {
+    for (namode in seq(0,5)) {
       x <- mysmall
       dim(x) <- length(x)
 
@@ -1110,7 +1122,15 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 
     cat("Read enum ...")
     x <- snacks
-    y <- var.get.nc(nc, "snacks")
+    y <- var.get.nc(nc, "snacks", na.mode=3)
+    tally <- testfun(x,y,tally)
+    x <- snacks_fill
+    y <- var.get.nc(nc, "snacks", na.mode=5)
+    tally <- testfun(x,y,tally)
+
+    cat("Read empty enum ...")
+    x <- snacks_empty
+    tools::assertWarning(y <- var.get.nc(nc, "snacks_empty"))
     tally <- testfun(x,y,tally)
 
     cat("Read compound ...")
