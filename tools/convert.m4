@@ -1191,7 +1191,7 @@ R_nc_enum_factor (R_nc_buf *io)
   SEXP levels, env, cmd, symbol, index;
   size_t size, nmem, ifac, nfac;
   char *memname, *memval, *work, *inval;
-  int ncid, imem, imemmax, *out;
+  int ncid, imem, imemmax, *out, any_undef;
   nc_type xtype;
 
   /* Get size and number of enum members */
@@ -1228,7 +1228,9 @@ R_nc_enum_factor (R_nc_buf *io)
     UNPROTECT(2);
   }
 
-  /* Define symbol for fill value, if properly defined */
+  /* If fill value is defined, convert matching enum values to NA by storing
+     the fill value with index NA in the hashed environment created above.
+   */
   if (io->fill != NULL &&
       io->fillsize == size) {
     symbol = PROTECT (R_nc_char_symbol (io->fill, size, work));
@@ -1243,15 +1245,23 @@ R_nc_enum_factor (R_nc_buf *io)
   nfac = xlength (io->rxp);
 
   out = io->rbuf;
+  any_undef = 0;
   for (ifac=0, inval=io->cbuf; ifac<nfac; ifac++, inval+=size) {
     symbol = PROTECT(R_nc_char_symbol (inval, size, work));
     index = findVarInFrame3 (env, symbol, TRUE);
     UNPROTECT(1);
     if (index == R_UnboundValue) {
+      /* Convert undefined enum values to NA,
+         and issue a warning later */
+      any_undef = 1;
       out[ifac] = NA_INTEGER;
     } else {
       out[ifac] = INTEGER (index)[0];
     }
+  }
+
+  if (any_undef) {
+    warning("Undefined enum value(s) converted to NA");
   }
 
   /* Allow garbage collection of env and levels */
