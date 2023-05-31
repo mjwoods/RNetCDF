@@ -7,8 +7,8 @@ Authors@R: c(person("Pavel", "Michna", role = "aut",
              person("Milton", "Woods", role = c("aut", "cre"),
                     email = "miltonjwoods@gmail.com"))
 Depends: R (>= 3.0.0)
-SystemRequirements: netcdf udunits-2
-Suggests: bit64
+SystemRequirements: netcdf (>=4.1.3), udunits-2 (>=2.0.4)
+Suggests: bit64, tools
 Enhances: pbdMPI
 Description: An interface to the 'NetCDF' file formats designed by Unidata
   for efficient storage of array-oriented scientific data and descriptions.
