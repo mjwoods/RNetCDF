@@ -1299,13 +1299,13 @@ if (!cfg["udunits"]) {
 }
 
 # Check that package can be unloaded:
-cat("Unload RNetCDF ...")
+cat("Unload RNetCDF ...\n")
 detach("package:RNetCDF",unload=TRUE)
 
 #-------------------------------------------------------------------------------#
 #  Overall summary
 #-------------------------------------------------------------------------------#
-cat("Summary:", tally["pass"], "pass /", tally["fail"], "fail. ")
+cat("Summary:", tally["pass"], "pass /", tally["fail"], "fail.\n")
 
 if (tally["fail"]==0) {
   cat("Package seems to work properly.\n")
