@@ -309,17 +309,29 @@ R_nc_char_raw (R_nc_buf *io)
 
 
 static const char **
-R_nc_strsxp_str (SEXP rstr, int ndim, const size_t *xdim)
+R_nc_strsxp_str (SEXP rstr, int ndim, const size_t *xdim,
+                 size_t fillsize, const void *fill)
 {
   size_t ii, cnt;
-  const char **cstr;
+  const char **cstr, *fillval;
+  SEXP thissxp;
+  int hasfill;
+  hasfill = (fill != NULL && fillsize == sizeof (size_t));
+  if (hasfill) {
+    fillval = *(const char **) fill;
+  }
   cnt = R_nc_length (ndim, xdim);
   if ((size_t) xlength (rstr) < cnt) {
     error (RNC_EDATALEN);
   }
   cstr = (const char **) R_alloc (cnt, sizeof(size_t));
   for (ii=0; ii<cnt; ii++) {
-    cstr[ii] = CHAR( STRING_ELT (rstr, ii));
+    thissxp = STRING_ELT (rstr, ii);
+    if (hasfill && thissxp == NA_STRING) {
+      cstr[ii] = fillval;
+    } else {
+      cstr[ii] = CHAR(thissxp);
+    }
   }
   return cstr;
 }
@@ -342,15 +354,21 @@ R_nc_str_strsxp (R_nc_buf *io)
 {
   size_t ii, nchar, cnt;
   char **cstr;
+  const char *fillval;
+  int hasfill;
+  hasfill = (io->fill != NULL && io->fillsize == sizeof (size_t));
+  if (hasfill) {
+    fillval = *(const char **) io->fill;
+  }
   cnt = xlength (io->rxp);
   cstr = (char **) io->cbuf;
   for (ii=0; ii<cnt; ii++) {
-    nchar = strlen (cstr[ii]);
-    if (nchar > RNC_CHARSXP_MAXLEN) {
+    if (hasfill && strcmp (cstr[ii], fillval) == 0) {
+      SET_STRING_ELT (io->rxp, ii, NA_STRING);
+    } else {
       /* Truncate excessively long strings while reading into R */
-      SET_STRING_ELT (io->rxp, ii, mkCharLen (cstr[ii], RNC_CHARSXP_MAXLEN));
-    } else if (nchar > 0) {
-      SET_STRING_ELT (io->rxp, ii, mkChar (cstr[ii]));
+      nchar = R_nc_strnlen (cstr[ii], '\0', RNC_CHARSXP_MAXLEN);
+      SET_STRING_ELT (io->rxp, ii, mkCharLen (cstr[ii], nchar));
     }
   }
   /* Free pointers to strings created by netcdf */
@@ -7142,7 +7160,7 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
     case NC_CHAR:
       return R_nc_strsxp_char (rv, ndim, xdim, fillsize, fill);
     case NC_STRING:
-      return R_nc_strsxp_str (rv, ndim, xdim);
+      return R_nc_strsxp_str (rv, ndim, xdim, fillsize, fill);
     }
     break;
   case RAWSXP:
