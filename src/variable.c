@@ -493,6 +493,29 @@ R_nc_miss_att (int ncid, int varid, int mode,
 }
 
 
+/* Free memory allocated by netcdf for fill values in R_nc_miss_att */
+static void
+R_nc_fill_free (int ncid, int xtype, void *fillp)
+{
+  if (fillp) {
+#ifdef HAVE_NC_RECLAIM_DATA
+    R_nc_check (nc_reclaim_data (ncid, xtype, fillp, 1));
+#else
+    int class;
+    if (xtype == NC_STRING) {
+      R_nc_check (nc_free_string (1, fillp));
+    } else if (xtype > NC_MAX_ATOMIC_TYPE) {
+      R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL,
+                                    NULL, NULL, &class));
+      if (class == NC_VLEN) {
+        R_nc_check (nc_free_vlens (1, fillp));
+      }
+    }
+#endif
+  }
+}
+
+
 /* Find packing attributes for a given netcdf variable.
    On entry, pointers for results are passed from caller.
    On exit, either values are set or pointers are NULLed.
@@ -614,6 +637,9 @@ R_nc_get_var (SEXP nc, SEXP var, SEXP start, SEXP count,
     R_nc_check (nc_get_vara (ncid, varid, cstart, ccount, buf));
   }
   R_nc_c2r (&io);
+
+  /* Free memory allocated by netcdf for fill values */
+  R_nc_fill_free (ncid, xtype, fillp);
 
   UNPROTECT(1);
   return result;
@@ -968,6 +994,9 @@ R_nc_put_var (SEXP nc, SEXP var, SEXP start, SEXP count, SEXP data,
                     fillsize, fillp, scalep, addp);
     R_nc_check (nc_put_vara (ncid, varid, cstart, ccount, buf));
   }
+
+  /* Free memory allocated by netcdf for fill values */
+  R_nc_fill_free (ncid, xtype, fillp);
 
   return R_NilValue;
 }
