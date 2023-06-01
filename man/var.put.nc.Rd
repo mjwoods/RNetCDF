@@ -18,16 +18,20 @@
   \item{count}{A vector of integers specifying the number of values to write along each dimension of \code{variable}. The order of dimensions is the same as for \code{start}. By default (\code{count=NA}), \code{count} is set to \code{dim(data)} for an array or \code{length(data)} for a vector. Otherwise, \code{count} must be a vector whose length is not less than the number of dimensions in \code{variable} (excess elements are ignored). Any \code{NA} value in vector \code{count} indicates that the corresponding dimension should be written from the \code{start} index to the end of the dimension. Note that an unlimited dimension initially has zero length, and the dimension is extended by setting the corresponding element of \code{count} greater than the current length.}
   \item{na.mode}{\code{NA} values in \code{data} are converted to a missing value in the NetCDF dataset. The missing value is defined by attributes of the NetCDF \code{variable}, which are selected by the following modes:
   \tabular{lll}{
-  mode \tab data type \tab attribute(s) \cr
-  0 \tab numeric \tab \code{_FillValue}, then \code{missing_value} \cr
-  1 \tab numeric \tab \code{_FillValue} only \cr
-  2 \tab numeric \tab \code{missing_value} only \cr
-  3 \tab any \tab no conversion \cr
-  4 \tab numeric \tab \url{https://www.unidata.ucar.edu/software/netcdf/documentation/NUG/attribute_conventions.html}) \cr
-  5 \tab any \tab same as mode 4 for numeric types; \code{_FillValue} for other types \cr
-  }}
+    mode \tab data type \tab attribute(s) \cr
+    0 \tab numeric \tab \code{_FillValue}, then \code{missing_value} \cr
+    1 \tab numeric \tab \code{_FillValue} only \cr
+    2 \tab numeric \tab \code{missing_value} only \cr
+    3 \tab any \tab no conversion \cr
+    4 \tab numeric \tab \code{valid_range} \code{valid_min}, \code{valid_max}, \code{_FillValue} \cr
+    5 \tab any \tab same as mode 4 for numeric types; \cr
+      \tab     \tab \code{_FillValue} for other types \cr
+  }
+  For explanation of attribute conventions used by mode 4, please see:
+  \url{https://docs.unidata.ucar.edu/nug/current/attribute_conventions.html}
+  }
 
-  \item{pack}{Variables are packed if \code{pack=TRUE} and the attributes \code{add_offset} and \code{scale_factor} are defined. Default is \code{FALSE}.}
+  \item{pack}{Variables are packed if \code{pack=TRUE} and the attributes \code{add_offset} and/or \code{scale_factor} are defined. Default is \code{FALSE}.}
 
   \item{cache_bytes}{(\code{"netcdf4"}) Size of chunk cache in bytes. Value of \code{NA} (default) implies no change.}
   \item{cache_slots}{(\code{"netcdf4"}) Number of slots in chunk cache. Value of \code{NA} (default) implies no change.}
@@ -38,13 +42,13 @@
 
 Text represented by R type \code{character} can be written to NetCDF types \code{NC_CHAR} and \code{NC_STRING}, and R type \code{raw} can be written to NetCDF type \code{NC_CHAR}. When writing to \code{NC_CHAR} variables, \code{character} variables have an implied dimension corresponding to the string length. This implied dimension must be defined explicitly as the fastest-varying dimension of the \code{NC_CHAR} variable, and it must be included as the first element of arguments \code{start} and \code{count} taken by this function.
 
-Due to the lack of native support for 64-bit integers in R, NetCDF types \code{NC_INT64} and \code{NC_UINT64} require special attention. This function accepts the usual R \code{integer} (signed 32-bit) and \code{numeric} (double precision) types, but to represent integers larger than about 53-bits without truncation, \\code{\link[bit64:bit64-package]{integer64}} vectors are also supported.
+Due to the lack of native support for 64-bit integers in R, NetCDF types \code{NC_INT64} and \code{NC_UINT64} require special attention. This function accepts the usual R \code{integer} (signed 32-bit) and \code{numeric} (double precision) types, but to represent integers larger than about 53-bits without truncation, \code{\link[bit64:bit64-package]{integer64}} vectors are also supported.
 
 NetCDF numeric variables cannot portably represent \code{NA} values from R. NetCDF does allow attributes to be defined for variables, and several conventions exist for attributes that define missing values and valid ranges. The convention in use can be specified by argument \code{na.mode}. Values of \code{NA} in argument \code{data} are converted to a missing or fill value before writing to the NetCDF variable. Unusual cases can be handled directly in user code by setting \code{na.mode=3}.
 
 Variables of user-defined types are supported, subject to conditions on the corresponding data structures in R. \code{"compound"} arrays must be stored in R as lists, with items named for the compound fields; items of base NetCDF data types are stored as R arrays, with leading dimensions from the field dimensions (if any) and trailing dimensions from the NetCDF variable. \code{"enum"} arrays are stored in R as factor arrays. \code{"opaque"} arrays are stored in R as raw (byte) arrays, with a leading dimension for bytes of the opaque type and trailing dimensions from the NetCDF variable. \code{"vlen"} arrays are stored in R as a list with dimensions of the NetCDF variable; items in the list may have different lengths; base NetCDF data types are stored as R vectors.
 
-To reduce the storage space required by a NetCDF file, numeric variables can be packed into types of lower precision. The packing operation involves subtraction of attribute \code{add_offset} before division by attribute \code{scale_factor}. This packing operation is performed automatically for variables defined with the two attributes \code{add_offset} and \code{scale_factor} if argument \code{pack} is set to \code{TRUE}. If \code{pack} is \code{FALSE}, \code{data} values are assumed to be packed correctly and are written to the variable without alteration.
+To reduce the storage space required by a NetCDF file, numeric variables can be packed into types of lower precision. The packing operation involves subtraction of attribute \code{add_offset} before division by attribute \code{scale_factor}. This packing operation is performed automatically for variables defined with the attributes \code{add_offset} and/or \code{scale_factor} if argument \code{pack} is set to \code{TRUE}. If \code{pack} is \code{FALSE}, \code{data} values are assumed to be packed correctly and are written to the variable without alteration.
 
 Data in a NetCDF variable is represented as a multi-dimensional array. The number and length of dimensions is determined when the variable is created. The \code{start} and \code{count} arguments of this routine indicate where the writing starts and the number of values to write along each dimension.
 

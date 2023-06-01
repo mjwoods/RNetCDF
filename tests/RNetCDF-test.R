@@ -105,7 +105,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 
   nstation <- 5
   ntime <- 2
-  nstring <- 32
+  nstring <- 7
   nempty <- 0
 
   cat("Defining dimensions ...\n")
@@ -191,11 +191,12 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 
   var.def.nc(nc, "packvar", "NC_BYTE", c("station"))
   var.def.nc(nc, "name", "NC_CHAR", c("max_string_length", "station"))
+  var.def.nc(nc, "name_fill", "NC_CHAR", c("max_string_length", "station"))
   var.def.nc(nc, "qcflag", "NC_CHAR", c("station"))
   var.def.nc(nc, "int0", "NC_INT", NA)
   var.def.nc(nc, "char0", "NC_CHAR", NA)
   var.def.nc(nc, "numempty", "NC_FLOAT", c("station","empty"))
-  varcnt <- 8
+  varcnt <- 9
 
   numtypes <- c("NC_BYTE", "NC_SHORT", "NC_INT", "NC_FLOAT", "NC_DOUBLE")
 
@@ -382,6 +383,9 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   att.put.nc(nc, "temperature", "_FillValue", "NC_DOUBLE", -99999.9)
   inq_temperature$natts <- inq_temperature$natts + as.integer(1)
 
+  ## Set a _FillValue attribute for name_fill
+  att.put.nc(nc, "name_fill", "_FillValue", "NC_CHAR", "X")
+
   ## Define the packing used by packvar
   id_double <- type.inq.nc(nc, "NC_DOUBLE")$id
   att.put.nc(nc, "packvar", "scale_factor", id_double, 10)
@@ -417,6 +421,12 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   myqcflag      <- "ABCDE"
   myint0        <- 12345
   mychar0       <- "?"
+
+  mynamefill <- myname
+  for (ii in seq_along(myname)) {
+    mynamefill[ii] <- paste(rep("X", nstring), collapse="")
+    substr(mynamefill[ii], 1, nstring) <- myname[ii]
+  }
 
   mysmall       <- as.double(c(1,2,3,4,5))
   mybig         <- mysmall*1e100
@@ -504,6 +514,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
              cache_preemption=0.5)
   var.put.nc(nc, "packvar", mypackvar, pack=TRUE)
   var.put.nc(nc, "name", myname, c(1,1), c(nstring,nstation))
+  var.put.nc(nc, "name_fill", myname, na.mode=5)
   var.put.nc(nc, "qcflag", charToRaw(myqcflag))
   var.put.nc(nc, "int0", myint0)
   var.put.nc(nc, "char0", mychar0)
@@ -961,6 +972,16 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   y <- var.get.nc(nc, "name")
   tally <- testfun(x,y,tally)
 
+  cat("Read 2D char array with fill value ... ")
+  x <- mynamefill
+  dim(x) <- length(x)
+  y <- var.get.nc(nc, "name_fill", na.mode=3)
+  tally <- testfun(x,y,tally)
+  x <- myname
+  dim(x) <- length(x)
+  y <- var.get.nc(nc, "name_fill", na.mode=5)
+  tally <- testfun(x,y,tally)
+
   cat("Read 2D char slice ... ")
   x <- substring(myname[2:3],1,4)
   dim(x) <- length(x)
@@ -1278,13 +1299,13 @@ if (!cfg["udunits"]) {
 }
 
 # Check that package can be unloaded:
-cat("Unload RNetCDF ...")
+cat("Unload RNetCDF ...\n")
 detach("package:RNetCDF",unload=TRUE)
 
 #-------------------------------------------------------------------------------#
 #  Overall summary
 #-------------------------------------------------------------------------------#
-cat("Summary:", tally["pass"], "pass /", tally["fail"], "fail. ")
+cat("Summary:", tally["pass"], "pass /", tally["fail"], "fail.\n")
 
 if (tally["fail"]==0) {
   cat("Package seems to work properly.\n")

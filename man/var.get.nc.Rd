@@ -17,17 +17,21 @@
   \item{start}{A vector of indices specifying the element where reading starts along each dimension of \code{variable}. Indices are numbered from 1 onwards, and the order of dimensions is shown by \code{\link[RNetCDF]{print.nc}} (array elements are stored sequentially with leftmost indices varying fastest). By default (\code{start=NA}), all dimensions of \code{variable} are read from the first element onwards. Otherwise, \code{start} must be a vector whose length is not less than the number of dimensions in \code{variable} (excess elements are ignored). Any \code{NA} values in vector \code{start} are set to 1.}
   \item{count}{A vector of integers specifying the number of values to read along each dimension of \code{variable}. The order of dimensions is the same as for \code{start}. By default (\code{count=NA}), all dimensions of \code{variable} are read from \code{start} to end. Otherwise, \code{count} must be a vector whose length is not less than the number of dimensions in \code{variable} (excess elements are ignored). Any \code{NA} value in vector \code{count} indicates that the corresponding dimension should be read from the \code{start} index to the end of the dimension.}
   \item{na.mode}{Missing values in the NetCDF dataset are converted to \code{NA} values in the result returned to R. The missing values are defined by attributes of the NetCDF \code{variable}, which are selected by the following modes:
-  \tabular{lll}{
-  mode \tab data type \tab attribute(s) \cr
-  0 \tab numeric \tab \code{_FillValue}, then \code{missing_value} \cr
-  1 \tab numeric \tab \code{_FillValue} only \cr
-  2 \tab numeric \tab \code{missing_value} only \cr
-  3 \tab any \tab no conversion \cr
-  4 \tab numeric \tab \url{https://www.unidata.ucar.edu/software/netcdf/documentation/NUG/attribute_conventions.html}) \cr
-  5 \tab any \tab same as mode 4 for numeric types; \code{_FillValue} for other types \cr
-  }}
+    \tabular{lll}{
+    mode \tab data type \tab attribute(s) \cr
+    0 \tab numeric \tab \code{_FillValue}, then \code{missing_value} \cr
+    1 \tab numeric \tab \code{_FillValue} only \cr
+    2 \tab numeric \tab \code{missing_value} only \cr
+    3 \tab any \tab no conversion \cr
+    4 \tab numeric \tab \code{valid_range}, \code{valid_min}, \code{valid_max}, \code{_FillValue} \cr
+    5 \tab any \tab same as mode 4 for numeric types; \cr
+      \tab     \tab \code{_FillValue} for other types \cr
+    }
+For explanation of attribute conventions used by mode 4, please see:
+\url{https://docs.unidata.ucar.edu/nug/current/attribute_conventions.html}
+  }
   \item{collapse}{\code{TRUE} if degenerated dimensions (length=1) should be omitted.}
-  \item{unpack}{Packed variables are unpacked if \code{unpack=TRUE} and the attributes \code{add_offset} and \code{scale_factor} are defined. Default is \code{FALSE}.}
+  \item{unpack}{Packed variables are unpacked if \code{unpack=TRUE} and the attributes \code{add_offset} and/or \code{scale_factor} are defined. Default is \code{FALSE}.}
   \item{rawchar}{This option only relates to NetCDF variables of type \code{NC_CHAR}. When \code{rawchar} is \code{FALSE} (default), a NetCDF variable of type \code{NC_CHAR} is converted to a \code{character} array in R. The \code{character} values are from the fastest-varying dimension of the NetCDF variable, so that the R \code{character} array has one fewer dimensions than the \code{NC_CHAR} array. If \code{rawchar} is \code{TRUE}, the bytes of \code{NC_CHAR} data are read into an R \code{raw} array of the same shape.}
   \item{fitnum}{By default, all numeric variables are read into R as double precision values. When \code{fitnum==TRUE}, the smallest R numeric type that can exactly represent each external type is used, as follows:
   \tabular{ll}{
@@ -51,7 +55,7 @@
 \details{
 NetCDF numeric variables cannot portably represent \code{NA} values from R. NetCDF does allow attributes to be defined for variables, and several conventions exist for attributes that define missing values and valid ranges. The convention in use can be specified by argument \code{na.mode}. Values of a NetCDF variable that are deemed to be missing are automatically converted to \code{NA} in the results returned to R. Unusual cases can be handled directly in user code by setting \code{na.mode=3}.
 
-To reduce the storage space required by a NetCDF file, numeric variables are sometimes packed into types of lower precision. The original data can be recovered (approximately) by multiplication of the stored values by attribute \code{scale_factor} followed by addition of attribute \code{add_offset}. This unpacking operation is performed automatically for variables with attributes \code{scale_factor} and \code{add_offset} if argument \code{unpack} is set to \code{TRUE}. If \code{unpack} is \code{FALSE}, values are read from each variable without alteration.
+To reduce the storage space required by a NetCDF file, numeric variables are sometimes packed into types of lower precision. The original data can be recovered (approximately) by multiplication of the stored values by attribute \code{scale_factor} followed by addition of attribute \code{add_offset}. This unpacking operation is performed automatically for variables with attributes \code{scale_factor} and/or \code{add_offset} if argument \code{unpack} is set to \code{TRUE}. If \code{unpack} is \code{FALSE}, values are read from each variable without alteration.
 
 Data in a NetCDF variable is represented as a multi-dimensional array. The number and length of dimensions is determined when the variable is created. The \code{start} and \code{count} arguments of this routine indicate where the reading starts and the number of values to read along each dimension.
 
