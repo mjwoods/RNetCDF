@@ -31,7 +31,7 @@
   \url{https://docs.unidata.ucar.edu/nug/current/attribute_conventions.html}
   }
 
-  \item{pack}{Variables are packed if \code{pack=TRUE} and the attributes \code{add_offset} and \code{scale_factor} are defined. Default is \code{FALSE}.}
+  \item{pack}{Variables are packed if \code{pack=TRUE} and the attributes \code{add_offset} and/or \code{scale_factor} are defined. Default is \code{FALSE}.}
 
   \item{cache_bytes}{(\code{"netcdf4"}) Size of chunk cache in bytes. Value of \code{NA} (default) implies no change.}
   \item{cache_slots}{(\code{"netcdf4"}) Number of slots in chunk cache. Value of \code{NA} (default) implies no change.}
@@ -48,7 +48,7 @@ NetCDF numeric variables cannot portably represent \code{NA} values from R. NetC
 
 Variables of user-defined types are supported, subject to conditions on the corresponding data structures in R. \code{"compound"} arrays must be stored in R as lists, with items named for the compound fields; items of base NetCDF data types are stored as R arrays, with leading dimensions from the field dimensions (if any) and trailing dimensions from the NetCDF variable. \code{"enum"} arrays are stored in R as factor arrays. \code{"opaque"} arrays are stored in R as raw (byte) arrays, with a leading dimension for bytes of the opaque type and trailing dimensions from the NetCDF variable. \code{"vlen"} arrays are stored in R as a list with dimensions of the NetCDF variable; items in the list may have different lengths; base NetCDF data types are stored as R vectors.
 
-To reduce the storage space required by a NetCDF file, numeric variables can be packed into types of lower precision. The packing operation involves subtraction of attribute \code{add_offset} before division by attribute \code{scale_factor}. This packing operation is performed automatically for variables defined with the two attributes \code{add_offset} and \code{scale_factor} if argument \code{pack} is set to \code{TRUE}. If \code{pack} is \code{FALSE}, \code{data} values are assumed to be packed correctly and are written to the variable without alteration.
+To reduce the storage space required by a NetCDF file, numeric variables can be packed into types of lower precision. The packing operation involves subtraction of attribute \code{add_offset} before division by attribute \code{scale_factor}. This packing operation is performed automatically for variables defined with the attributes \code{add_offset} and/or \code{scale_factor} if argument \code{pack} is set to \code{TRUE}. If \code{pack} is \code{FALSE}, \code{data} values are assumed to be packed correctly and are written to the variable without alteration.
 
 Data in a NetCDF variable is represented as a multi-dimensional array. The number and length of dimensions is determined when the variable is created. The \code{start} and \code{count} arguments of this routine indicate where the writing starts and the number of values to write along each dimension.
 
