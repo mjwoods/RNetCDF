@@ -105,7 +105,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 
   nstation <- 5
   ntime <- 2
-  nstring <- 32
+  nstring <- 7
   nempty <- 0
 
   cat("Defining dimensions ...\n")
