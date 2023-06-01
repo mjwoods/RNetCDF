@@ -55,6 +55,11 @@ R_nc_check(int status);
 int
 R_nc_strcmp (SEXP var, const char *str);
 
+/* Find length of string up to first character chr and a maximum of maxlen characters.
+ */
+size_t
+R_nc_strnlen (const char *str, char chr, size_t maxlen);
+
 /* Determine if an R object inherits from a given class.
    Result is a logical value. */
 int
