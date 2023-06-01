@@ -18,14 +18,18 @@
   \item{count}{A vector of integers specifying the number of values to write along each dimension of \code{variable}. The order of dimensions is the same as for \code{start}. By default (\code{count=NA}), \code{count} is set to \code{dim(data)} for an array or \code{length(data)} for a vector. Otherwise, \code{count} must be a vector whose length is not less than the number of dimensions in \code{variable} (excess elements are ignored). Any \code{NA} value in vector \code{count} indicates that the corresponding dimension should be written from the \code{start} index to the end of the dimension. Note that an unlimited dimension initially has zero length, and the dimension is extended by setting the corresponding element of \code{count} greater than the current length.}
   \item{na.mode}{\code{NA} values in \code{data} are converted to a missing value in the NetCDF dataset. The missing value is defined by attributes of the NetCDF \code{variable}, which are selected by the following modes:
   \tabular{lll}{
-  mode \tab data type \tab attribute(s) \cr
-  0 \tab numeric \tab \code{_FillValue}, then \code{missing_value} \cr
-  1 \tab numeric \tab \code{_FillValue} only \cr
-  2 \tab numeric \tab \code{missing_value} only \cr
-  3 \tab any \tab no conversion \cr
-  4 \tab numeric \tab \url{https://www.unidata.ucar.edu/software/netcdf/documentation/NUG/attribute_conventions.html}) \cr
-  5 \tab any \tab same as mode 4 for numeric types; \code{_FillValue} for other types \cr
-  }}
+    mode \tab data type \tab attribute(s) \cr
+    0 \tab numeric \tab \code{_FillValue}, then \code{missing_value} \cr
+    1 \tab numeric \tab \code{_FillValue} only \cr
+    2 \tab numeric \tab \code{missing_value} only \cr
+    3 \tab any \tab no conversion \cr
+    4 \tab numeric \tab \code{valid_range} \code{valid_min}, \code{valid_max}, \code{_FillValue} \cr
+    5 \tab any \tab same as mode 4 for numeric types; \cr
+      \tab     \tab \code{_FillValue} for other types \cr
+  }
+  For explanation of attribute conventions used by mode 4, please see:
+  \url{https://docs.unidata.ucar.edu/nug/current/attribute_conventions.html}
+  }
 
   \item{pack}{Variables are packed if \code{pack=TRUE} and the attributes \code{add_offset} and \code{scale_factor} are defined. Default is \code{FALSE}.}
 
