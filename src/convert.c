@@ -173,7 +173,7 @@ R_nc_strsxp_char (SEXP rstr, int ndim, const size_t *xdim,
                   size_t fillsize, const void *fill)
 {
   size_t ii, rowlen, cnt, thislen;
-  char *carr, *thiscstr, fillval, *nullchr;
+  char *carr, *thiscstr, fillval;
   const char *thisrstr;
   if (ndim > 0) {
     /* Omit fastest-varying dimension from R character array */
@@ -192,23 +192,20 @@ R_nc_strsxp_char (SEXP rstr, int ndim, const size_t *xdim,
     error (RNC_EDATALEN);
   }
   carr = R_alloc (cnt*rowlen, sizeof (char));
-  /* Prefill the buffer with the defined value or the NetCDF default */
+  /* Prefill the buffer with the defined value or null characters */
   if (fill != NULL &&
       fillsize == sizeof (char)) {
     fillval = *(char *) fill;
   } else {
-    fillval = NC_FILL_CHAR;
+    fillval = '\0';
   }
   memset(carr, fillval, cnt*rowlen);
   for (ii=0, thiscstr=carr; ii<cnt; ii++, thiscstr+=rowlen) {
     /* Copy R string values to rows of the C buffer,
        without changing fill values after each string.
-       Find the R string length up to a maximum of rowlen,
-       without relying on the non-portable function strnlen.
      */
     thisrstr = CHAR( STRING_ELT (rstr, ii));
-    nullchr = memchr(thisrstr, 0, rowlen);
-    thislen = (nullchr == NULL) ? rowlen : ((size_t) nullchr - (size_t) thisrstr);
+    thislen = R_nc_strnlen (thisrstr, '\0', rowlen);
     memcpy(thiscstr, thisrstr, thislen);
   }
   return carr;
@@ -235,14 +232,16 @@ R_nc_char_strsxp_init (R_nc_buf *io)
 static void
 R_nc_char_strsxp (R_nc_buf *io)
 {
-  size_t ii, cnt, clen, rlen;
-  char *thisstr, fillval, *fillchr;
+  size_t ii, cnt, clen, rlen, thislen;
+  char *thisstr, fillval;
+  int hasfill;
   /* Find fill value */
   if (io->fill != NULL &&
       io->fillsize == sizeof (char)) {
+    hasfill = 1;
     fillval = *(char *) io->fill;
   } else {
-    fillval = NC_FILL_CHAR;
+    hasfill = 0;
   }
   /* Find maximum length of strings returned to R,
      based on array dimensions of the C buffer */
@@ -260,17 +259,16 @@ R_nc_char_strsxp (R_nc_buf *io)
   cnt = xlength (io->rxp);
   /* Convert rows of C buffer to separate R strings */
   for (ii=0, thisstr=io->cbuf; ii<cnt; ii++, thisstr+=clen) {
-    /* Replace first fillval in row by null character */
-    fillchr = memchr (thisstr, fillval, rlen);
-    if (fillchr != NULL) {
-      *fillchr = '\0';
-    }
-    /* Convert row to R string, ensuring null termination */
-    if (memchr(thisstr, 0, rlen) == NULL) {
-      SET_STRING_ELT (io->rxp, ii, mkCharLen (thisstr, rlen));
+    /* Find string length to first fill value, not exceeding row length */
+    if (hasfill) {
+      thislen = R_nc_strnlen (thisstr, fillval, rlen);
     } else {
-      SET_STRING_ELT (io->rxp, ii, mkChar (thisstr));
+      thislen = rlen;
     }
+    /* Find string length to first null character, not exceeding thislen */
+    thislen = R_nc_strnlen (thisstr, '\0', thislen);
+    /* Convert row to R string, ensuring null termination */
+    SET_STRING_ELT (io->rxp, ii, mkCharLen (thisstr, thislen));
   }
 }
 
