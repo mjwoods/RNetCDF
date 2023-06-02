@@ -205,6 +205,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   if (format == "netcdf4") {
     cat("Defining variables for netcdf4 ...\n")
     var.def.nc(nc, "namestr", "NC_STRING", c("station"))
+    var.def.nc(nc, "namestr_fill", "NC_STRING", c("station"))
     var.def.nc(nc, "profile", id_vector, c("station","time"))
     var.def.nc(nc, "profile_pack", id_vector, c("station","time"))
     att.put.nc(nc, "profile_pack", "scale_factor", "NC_FLOAT", 10)
@@ -219,7 +220,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     var.def.nc(nc, "snacks", "factor", c("station", "time"))
     var.def.nc(nc, "snacks_empty", "factor", c("station", "time"))
     var.def.nc(nc, "person", "struct", c("station", "time"))
-    varcnt <- varcnt+14
+    varcnt <- varcnt+15
     tally <- testfun(TRUE, TRUE, tally)
 
     numtypes <- c(numtypes, "NC_UBYTE", "NC_USHORT", "NC_UINT")
@@ -383,7 +384,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   att.put.nc(nc, "temperature", "_FillValue", "NC_DOUBLE", -99999.9)
   inq_temperature$natts <- inq_temperature$natts + as.integer(1)
 
-  ## Set a _FillValue attribute for name_fill
+  ## Set a _FillValue attribute for name_fill:
   att.put.nc(nc, "name_fill", "_FillValue", "NC_CHAR", "X")
 
   ## Define the packing used by packvar
@@ -427,6 +428,11 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     mynamefill[ii] <- paste(rep("X", nstring), collapse="")
     substr(mynamefill[ii], 1, nstring) <- myname[ii]
   }
+
+  mynamestr <- myname
+  mynamestr[5] <- "NA"
+  mynamestr_fill <- myname
+  mynamestr_fill[5] <- NA
 
   mysmall       <- as.double(c(1,2,3,4,5))
   mybig         <- mysmall*1e100
@@ -503,7 +509,8 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     att.put.nc(nc, "NC_GLOBAL", "vector_vect_att", "vector", profiles[1:3])
     tally <- testfun(TRUE, TRUE, tally)
 
-    # Fill values for user-defined variables:
+    # Fill values for strings and user-defined variables:
+    att.put.nc(nc, "namestr_fill", "_FillValue", "NC_STRING", "_MISSING")
     att.put.nc(nc, "snacks", "_FillValue", "factor", factor("NA"))
   }
 
@@ -522,7 +529,8 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 
   if (format == "netcdf4") {
     cat("Writing extra netcdf4 variables ...")
-    var.put.nc(nc, "namestr", myname)
+    var.put.nc(nc, "namestr", mynamestr_fill)
+    var.put.nc(nc, "namestr_fill", mynamestr_fill, na.mode=5)
     var.put.nc(nc, "profile", profiles)
     var.put.nc(nc, "profile_pack", profiles, pack=TRUE)
     var.put.nc(nc, "profile_char", profiles_char)
@@ -1021,13 +1029,19 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 
   if (format == "netcdf4") {
     cat("Read 1D string array ...")
-    x <- myname
+    x <- mynamestr
     dim(x) <- length(x)
     y <- var.get.nc(nc, "namestr")
     tally <- testfun(x,y,tally)
 
+    cat("Read 1D string array with fill values ...")
+    x <- mynamestr_fill
+    dim(x) <- length(x)
+    y <- var.get.nc(nc, "namestr_fill", na.mode=5)
+    tally <- testfun(x,y,tally)
+
     cat("Read 1D string slice ...")
-    x <- myname[2:3]
+    x <- mynamestr[2:3]
     dim(x) <- length(x)
     y <- var.get.nc(nc, "namestr", c(2), c(2))
     tally <- testfun(x,y,tally)
