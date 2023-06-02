@@ -1468,18 +1468,25 @@ static void
 R_nc_compound_vecsxp (R_nc_buf *io)
 {
   int ncid, ifld, ifldmax, idim, ndim, idimfld, ndimfld, *dimlenfld, ndimslice;
+  int hasfill;
   nc_type xtype, typefld;
   size_t size, nfld, cnt, offset, fldsize, *dimslice, fldcnt, fldlen, ielem;
+  size_t fillfldlen;
   SEXP namelist, rxpfld;
   char namefld[NC_MAX_NAME+1], *buffld, *bufcmp;
   R_nc_buf iofld;
   void *highwater;
+  const char *fillfld;
 
   /* Get size and number of fields in compound type */
   ncid = io->ncid;
   xtype = io->xtype;
   R_nc_check (nc_inq_compound(ncid, xtype, NULL, &size, &nfld));
   cnt = R_nc_length (io->ndim, io->xdim);
+
+  /* Check if fill value is properly defined */
+  hasfill = (io->fill != NULL &&
+             io->fillsize == size);
 
   /* Set names attribute of R list */
   namelist = PROTECT(R_nc_allocArray (STRSXP, -1, &nfld));
@@ -1524,15 +1531,22 @@ R_nc_compound_vecsxp (R_nc_buf *io)
       dimslice[ndim+idimfld] = dimlenfld[idimfld];
     }
     fldcnt = R_nc_length (ndimfld, dimslice+ndim);
+    fldlen = fldsize * fldcnt;
 
     /* Prepare to convert field data from C to R */
+    if (hasfill && fldlen > 0) {
+      fillfld = (const char *) io->fill + offset;
+      fillfldlen = fldsize;
+    } else {
+      fillfld = NULL;
+      fillfldlen = 0;
+    }
     buffld = NULL;
     rxpfld = PROTECT(R_nc_c2r_init (&iofld, (void **) &buffld, ncid, typefld,
                ndimslice, dimslice, io->rawchar, io->fitnum,
-               0, NULL, NULL, NULL, NULL, NULL));
+               fillfldlen, fillfld, NULL, NULL, NULL, NULL));
 
     /* Copy elements from the compound array into the field array */
-    fldlen = fldsize * fldcnt;
     for (ielem=0; ielem<cnt; ielem++) {
       memcpy (buffld+ielem*fldlen, bufcmp+ielem*size+offset, fldlen);
     }
