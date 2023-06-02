@@ -1399,9 +1399,13 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
     }
     fldcnt = R_nc_length (ndimfld, dimsizefld+1);
     fldlen = fldsize * fldcnt;
-    if (hasfill) {
+    if (hasfill && fldlen > 0) {
+      /* Use the first element of this field in fill as the fill value,
+         because fill values are generally required to be scalar;
+         this allows us to convert arrays with a single R_nc_r2c call.
+       */
       fillfld = (const char *) fill + offset;
-      fillfldlen = fldlen;
+      fillfldlen = fldsize;
     } else {
       fillfld = NULL;
       fillfldlen = 0;
