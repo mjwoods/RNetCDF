@@ -1323,19 +1323,24 @@ R_nc_enum_factor (R_nc_buf *io)
    Memory for the result is allocated (and freed by R).
  */
 static void *
-R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim)
+R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
+                      size_t fillsize, const void *fill)
 {
   size_t cnt, size, nfld, offset, fldsize, fldcnt, fldlen,
-         nlist, ilist, ielem, *dimsizefld;
+         nlist, ilist, ielem, *dimsizefld, fillfldlen;
   nc_type typefld;
-  int ifldmax, ifld, idimfld, ndimfld, *dimlenfld, ismatch;
+  int ifldmax, ifld, idimfld, ndimfld, *dimlenfld, ismatch, hasfill;
   char *bufout, namefld[NC_MAX_NAME+1];
-  const char *buffld;
+  const char *buffld, *fillfld;
   void *highwater;
   SEXP namelist;
 
   /* Get size and number of fields in compound type */
   R_nc_check (nc_inq_compound(ncid, xtype, NULL, &size, &nfld));
+
+  /* Check if fill value is properly defined */
+  hasfill = (fill != NULL &&
+             fillsize == size);
 
   /* Check names attribute of R list */
   namelist = PROTECT(getAttrib (rv, R_NamesSymbol));
@@ -1392,12 +1397,19 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
     for (idimfld=0; idimfld<ndimfld; idimfld++) {
       dimsizefld[idimfld+1] = dimlenfld[idimfld];
     }
-    buffld = R_nc_r2c (VECTOR_ELT (rv, ilist), ncid, typefld, ndimfld+1, dimsizefld,
-                       0, NULL, NULL, NULL);
-
-    /* Copy elements from the field array into the compound array */
     fldcnt = R_nc_length (ndimfld, dimsizefld+1);
     fldlen = fldsize * fldcnt;
+    if (hasfill) {
+      fillfld = (const char *) fill + offset;
+      fillfldlen = fldlen;
+    } else {
+      fillfld = NULL;
+      fillfldlen = 0;
+    }
+    buffld = R_nc_r2c (VECTOR_ELT (rv, ilist), ncid, typefld, ndimfld+1, dimsizefld,
+                       fillfldlen, fillfld, NULL, NULL);
+
+    /* Copy elements from the field array into the compound array */
     for (ielem=0; ielem<cnt; ielem++) {
       memcpy (bufout+ielem*size+offset, buffld+ielem*fldlen, fldlen);
     }
@@ -1727,7 +1739,7 @@ R_nc_r2c (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim,
       case NC_VLEN:
         return R_nc_vecsxp_vlen (rv, ncid, xtype, ndim, xdim, fillsize, fill, scale, add);
       case NC_COMPOUND:
-        return R_nc_vecsxp_compound (rv, ncid, xtype, ndim, xdim);
+        return R_nc_vecsxp_compound (rv, ncid, xtype, ndim, xdim, fillsize, fill);
       }
     }
     break;
