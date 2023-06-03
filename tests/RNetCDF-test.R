@@ -220,7 +220,8 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     var.def.nc(nc, "snacks", "factor", c("station", "time"))
     var.def.nc(nc, "snacks_empty", "factor", c("station", "time"))
     var.def.nc(nc, "person", "struct", c("station", "time"))
-    varcnt <- varcnt+15
+    var.def.nc(nc, "person_fill", "struct", c("station", "time"))
+    varcnt <- varcnt+16
     tally <- testfun(TRUE, TRUE, tally)
 
     numtypes <- c(numtypes, "NC_UBYTE", "NC_USHORT", "NC_UINT")
@@ -488,6 +489,14 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     person <- list(siteid=array(rep(seq(1,nstation),ntime), c(nstation,ntime)),
                    height=array(1+0.1*seq(1,nstation*ntime), c(nstation,ntime)),
                    colour=array(rep(c(0,0,0,64,128,192),nstation), c(3,nstation,ntime)))
+    person_fillval <- list(siteid=person$siteid[1,1],
+                        height=person$height[1,1],
+                        colour=person$colour[,1,1])
+    person_fill <- person
+    person_fill$siteid[person_fill$siteid == person_fillval$siteid] <- NA
+    person_fill$height[person_fill$height == person_fillval$height] <- NA
+    # Note that array in compound uses same fill value for all elements:
+    person_fill$colour[person_fill$colour == person_fillval$colour[1]] <- NA
   }
 
   ## Define some user-defined test attributes:
@@ -512,6 +521,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     # Fill values for strings and user-defined variables:
     att.put.nc(nc, "namestr_fill", "_FillValue", "NC_STRING", "_MISSING")
     att.put.nc(nc, "snacks", "_FillValue", "factor", factor("NA"))
+    att.put.nc(nc, "person_fill", "_FillValue", "struct", person_fillval)
   }
 
   ##  Put the data
@@ -545,9 +555,13 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     y <- try(var.put.nc(nc, "snacks", snacks_fill, na.mode=3), silent=TRUE)
     tally <- testfun(inherits(y, "try-error"), TRUE, tally)
     var.put.nc(nc, "snacks", snacks_fill, na.mode=5)
-
-    var.put.nc(nc, "person", person)
     tally <- testfun(TRUE, TRUE, tally)
+
+    var.put.nc(nc, "person", person, na.mode=3)
+    tally <- testfun(TRUE, TRUE, tally)
+    var.put.nc(nc, "person_fill", person_fill, na.mode=5)
+    tally <- testfun(TRUE, TRUE, tally)
+
     if (has_bit64) {
       var.put.nc(nc, "stationid", mybig64)
       tally <- testfun(TRUE, TRUE, tally)
@@ -1170,7 +1184,12 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 
     cat("Read compound ...")
     x <- person
-    y <- var.get.nc(nc, "person")
+    y <- var.get.nc(nc, "person", na.mode=3)
+    tally <- testfun(x,y,tally)
+
+    cat("Read compound with fill ...")
+    x <- person_fill
+    y <- var.get.nc(nc, "person_fill", na.mode=5)
     tally <- testfun(x,y,tally)
 
     cat("Read compound scalar attribute ...")
