@@ -948,25 +948,40 @@ R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
                   size_t fillsize, const void *fill,
                   const double *scale, const double *add)
 {
-  size_t ii, cnt, len, size;
-  int baseclass;
+  size_t ii, cnt, len, size, basesize, basefillsize;
+  int baseclass, hasfill;
   nc_type basetype;
-  nc_vlen_t *vbuf;
+  nc_vlen_t *vbuf, *vfill;
   SEXP item;
+  const void *basefill;
 
   cnt = R_nc_length (ndim, xdim);
   if ((size_t) xlength (rv) < cnt) {
     error (RNC_EDATALEN);
   }
 
-  R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, NULL, NULL));
+  R_nc_check (nc_inq_user_type (ncid, xtype, NULL, &size, &basetype, NULL, NULL));
   if (basetype > NC_MAX_ATOMIC_TYPE) {
-    R_nc_check (nc_inq_user_type (ncid, basetype, NULL, &size, NULL, NULL, &baseclass));
+    R_nc_check (nc_inq_user_type (ncid, basetype, NULL, &basesize, NULL, NULL, &baseclass));
   } else {
+    R_nc_check (nc_inq_type (ncid, basetype, NULL, &basesize)); 
     baseclass = NC_NAT;
-    size = 0;
   }
 
+  /* Check if fill value is properly defined */
+  hasfill = (fill != NULL &&
+             fillsize == size);
+  basefill = NULL;
+  basefillsize = 0;
+  if (hasfill) {
+    vfill = (nc_vlen_t *) fill;
+    if (vfill[0].len > 0) {
+      basefill = vfill[0].p;
+      basefillsize = basesize;
+    }
+  }
+
+  /* Convert list items to vlen elements */
   vbuf = (nc_vlen_t *) R_alloc (cnt, sizeof(nc_vlen_t));
   for (ii=0; ii<cnt; ii++) {
     item = VECTOR_ELT(rv, ii);
@@ -977,14 +992,14 @@ R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
         len = 0;
       }
     } else if (baseclass == NC_OPAQUE && TYPEOF (item) == RAWSXP) {
-      len = xlength(item) / size;
+      len = xlength(item) / basesize;
     } else {
       len = xlength(item);
     }
     vbuf[ii].len = len;
     if (len > 0) {
-      vbuf[ii].p = (void *) R_nc_r2c (item, ncid, basetype,
-                                      -1, &len, fillsize, fill, scale, add);
+      vbuf[ii].p = (void *) R_nc_r2c (item, ncid, basetype, -1, &len,
+                                      basefillsize, basefill, scale, add);
     } else {
       vbuf[ii].p = NULL;
     }
