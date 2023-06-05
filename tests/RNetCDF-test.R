@@ -102,6 +102,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   # Show library version:
   libvers <- file.inq.nc(nc)$libvers
   cat("Version of netcdf library ... ", libvers, "\n")
+  verstr <- sub(' .*', '', file.inq.nc(nc)$libvers)
 
   nstation <- 5
   ntime <- 2
@@ -139,10 +140,6 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     inq_vector_string <- list(id=id_vector_string, name="vector_string", class="vlen",
                               size=NA, basetype="NC_STRING")
 
-    id_vector_vector <- type.def.nc(nc, "vector_vector", "vlen", basetype=id_vector)
-    inq_vector_vector <- list(id=id_vector_vector, name="vector_vector", class="vlen",
-                              size=NA, basetype="vector")
-
     id_vector_blob <- type.def.nc(nc, "vector_blob", "vlen", basetype=id_blob)
     inq_vector_blob <- list(id=id_vector_blob, name="vector_blob", class="vlen",
                             size=NA, basetype="blob")
@@ -163,8 +160,16 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
                        subtype=c(siteid="NC_INT",height="NC_DOUBLE",colour="NC_SHORT"),
                        dimsizes=list("siteid"=NULL,"height"=NULL,"colour"=c(3)))
 
-    typeids <- c(id_blob, id_vector, id_vector_char, id_vector_string, id_vector_vector,
+    typeids <- c(id_blob, id_vector, id_vector_char, id_vector_string,
                  id_vector_blob, id_factor, id_struct)
+
+    if (package_version(verstr) >= package_version("4.9.0")) {
+      id_vector_vector <- type.def.nc(nc, "vector_vector", "vlen", basetype=id_vector)
+      inq_vector_vector <- list(id=id_vector_vector, name="vector_vector", class="vlen",
+                              size=NA, basetype="vector")
+      typeids <- c(typeids, id_vector_vector)
+    }
+
     tally <- testfun(TRUE, TRUE, tally)
 
   }
@@ -211,8 +216,6 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     att.put.nc(nc, "profile_pack", "scale_factor", "NC_FLOAT", 10)
     var.def.nc(nc, "profile_char", id_vector_char, c("station","time"))
     var.def.nc(nc, "profile_string", id_vector_string, c("station","time"))
-    var.def.nc(nc, "profile_vector", id_vector_vector, c("station","time"))
-    var.def.nc(nc, "profile_vector_fill", id_vector_vector, c("station","time"))
     var.def.nc(nc, "profile_blob", id_vector_blob, c("time"))
     var.def.nc(nc, "profile_scalar", id_vector, NA)
     var.def.nc(nc, "rawdata", id_blob, c("station","time"))
@@ -222,7 +225,14 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     var.def.nc(nc, "snacks_empty", "factor", c("station", "time"))
     var.def.nc(nc, "person", "struct", c("station", "time"))
     var.def.nc(nc, "person_fill", "struct", c("station", "time"))
-    varcnt <- varcnt+17
+    varcnt <- varcnt+15
+
+    if (package_version(verstr) >= package_version("4.9.0")) {
+      var.def.nc(nc, "profile_vector", id_vector_vector, c("station","time"))
+      var.def.nc(nc, "profile_vector_fill", id_vector_vector, c("station","time"))
+      varcnt <- varcnt+2
+    }
+
     tally <- testfun(TRUE, TRUE, tally)
 
     numtypes <- c(numtypes, "NC_UBYTE", "NC_USHORT", "NC_UINT")
@@ -469,12 +479,14 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     profiles_string <- lapply(profiles, as.character)
     dim(profiles_string) <- dim(profiles)
 
-    profiles_vector <- lapply(profiles, function(x) {lapply(x, seq_len)})
-    dim(profiles_vector) <- dim(profiles)
-    profiles_vector_fill <- profiles_vector
-    profiles_vector_fillval <- list(list(-999999999))
-    profiles_vector[[3]][[2]][5] <- -999999999
-    profiles_vector_fill[[3]][[2]][5] <- NA
+    if (package_version(verstr) >= package_version("4.9.0")) {
+      profiles_vector <- lapply(profiles, function(x) {lapply(x, seq_len)})
+      dim(profiles_vector) <- dim(profiles)
+      profiles_vector_fill <- profiles_vector
+      profiles_vector_fillval <- list(list(-999999999))
+      profiles_vector[[3]][[2]][5] <- -999999999
+      profiles_vector_fill[[3]][[2]][5] <- NA
+    }
 
     rawdata <- as.raw(seq_len(nstation*ntime*128) %% 256)
     dim(rawdata) <- c(128,nstation,ntime)
@@ -527,8 +539,11 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     att.put.nc(nc, "namestr_fill", "_FillValue", "NC_STRING", "_MISSING")
     att.put.nc(nc, "snacks", "_FillValue", "factor", factor("NA"))
     att.put.nc(nc, "person_fill", "_FillValue", "struct", person_fillval)
-    att.put.nc(nc, "profile_vector_fill", "_FillValue", id_vector_vector,
-               profiles_vector_fillval)
+
+    if (package_version(verstr) >= package_version("4.9.0")) {
+      att.put.nc(nc, "profile_vector_fill", "_FillValue", id_vector_vector,
+                 profiles_vector_fillval)
+    }
   }
 
   ##  Put the data
@@ -552,13 +567,16 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     var.put.nc(nc, "profile_pack", profiles, pack=TRUE)
     var.put.nc(nc, "profile_char", profiles_char)
     var.put.nc(nc, "profile_string", profiles_string)
-    var.put.nc(nc, "profile_vector", profiles_vector)
-    var.put.nc(nc, "profile_vector_fill", profiles_vector_fill, na.mode=5)
     var.put.nc(nc, "profile_blob", profiles_blob)
     var.put.nc(nc, "profile_scalar", profiles[1])
     var.put.nc(nc, "rawdata", rawdata)
     var.put.nc(nc, "rawdata_scalar", rawdata[,1,1])
     var.put.nc(nc, "rawdata_vector", rawdata[,,1])
+
+    if (package_version(verstr) >= package_version("4.9.0")) {
+      var.put.nc(nc, "profile_vector", profiles_vector)
+      var.put.nc(nc, "profile_vector_fill", profiles_vector_fill, na.mode=5)
+    }
 
     y <- try(var.put.nc(nc, "snacks", snacks_fill, na.mode=3), silent=TRUE)
     tally <- testfun(inherits(y, "try-error"), TRUE, tally)
@@ -1151,15 +1169,17 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
     y <- var.get.nc(nc, "profile_string")
     tally <- testfun(x,y,tally)
 
-    cat("Read nested vlen ...")
-    x <- profiles_vector
-    y <- var.get.nc(nc, "profile_vector", na.mode=3)
-    tally <- testfun(x,y,tally)
+    if (package_version(verstr) >= package_version("4.9.0")) {
+      cat("Read nested vlen ...")
+      x <- profiles_vector
+      y <- var.get.nc(nc, "profile_vector", na.mode=3)
+      tally <- testfun(x,y,tally)
 
-    cat("Read nested vlen with fill ...")
-    x <- profiles_vector_fill
-    y <- var.get.nc(nc, "profile_vector_fill", na.mode=5)
-    tally <- testfun(x,y,tally)
+      cat("Read nested vlen with fill ...")
+      x <- profiles_vector_fill
+      y <- var.get.nc(nc, "profile_vector_fill", na.mode=5)
+      tally <- testfun(x,y,tally)
+    }
 
     cat("Read opaque ...")
     x <- rawdata
