@@ -6397,25 +6397,40 @@ R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
                   size_t fillsize, const void *fill,
                   const double *scale, const double *add)
 {
-  size_t ii, cnt, len, size;
-  int baseclass;
+  size_t ii, cnt, len, size, basesize, basefillsize;
+  int baseclass, hasfill;
   nc_type basetype;
-  nc_vlen_t *vbuf;
+  nc_vlen_t *vbuf, *vfill;
   SEXP item;
+  const void *basefill;
 
   cnt = R_nc_length (ndim, xdim);
   if ((size_t) xlength (rv) < cnt) {
     error (RNC_EDATALEN);
   }
 
-  R_nc_check (nc_inq_user_type (ncid, xtype, NULL, NULL, &basetype, NULL, NULL));
+  R_nc_check (nc_inq_user_type (ncid, xtype, NULL, &size, &basetype, NULL, NULL));
   if (basetype > NC_MAX_ATOMIC_TYPE) {
-    R_nc_check (nc_inq_user_type (ncid, basetype, NULL, &size, NULL, NULL, &baseclass));
+    R_nc_check (nc_inq_user_type (ncid, basetype, NULL, &basesize, NULL, NULL, &baseclass));
   } else {
+    R_nc_check (nc_inq_type (ncid, basetype, NULL, &basesize)); 
     baseclass = NC_NAT;
-    size = 0;
   }
 
+  /* Check if fill value is properly defined */
+  hasfill = (fill != NULL &&
+             fillsize == size);
+  basefill = NULL;
+  basefillsize = 0;
+  if (hasfill) {
+    vfill = (nc_vlen_t *) fill;
+    if (vfill[0].len > 0) {
+      basefill = vfill[0].p;
+      basefillsize = basesize;
+    }
+  }
+
+  /* Convert list items to vlen elements */
   vbuf = (nc_vlen_t *) R_alloc (cnt, sizeof(nc_vlen_t));
   for (ii=0; ii<cnt; ii++) {
     item = VECTOR_ELT(rv, ii);
@@ -6426,14 +6441,14 @@ R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
         len = 0;
       }
     } else if (baseclass == NC_OPAQUE && TYPEOF (item) == RAWSXP) {
-      len = xlength(item) / size;
+      len = xlength(item) / basesize;
     } else {
       len = xlength(item);
     }
     vbuf[ii].len = len;
     if (len > 0) {
-      vbuf[ii].p = (void *) R_nc_r2c (item, ncid, basetype,
-                                      -1, &len, fillsize, fill, scale, add);
+      vbuf[ii].p = (void *) R_nc_r2c (item, ncid, basetype, -1, &len,
+                                      basefillsize, basefill, scale, add);
     } else {
       vbuf[ii].p = NULL;
     }
@@ -6469,20 +6484,43 @@ R_nc_vlen_vecsxp_init (R_nc_buf *io)
 static void
 R_nc_vlen_vecsxp (R_nc_buf *io)
 {
-  size_t ii, cnt;
+  size_t ii, cnt, size, basesize, basefillsize;
   nc_type basetype;
-  nc_vlen_t *vbuf;
+  nc_vlen_t *vbuf, *vfill;
   R_nc_buf tmpio;
   SEXP tmprxp;
+  int baseclass, hasfill;
+  const void *basefill;
 
   vbuf = io->cbuf;
   cnt = xlength (io->rxp);
-  R_nc_check (nc_inq_user_type (io->ncid, io->xtype, NULL, NULL, &basetype, NULL, NULL));
 
+  R_nc_check (nc_inq_user_type (io->ncid, io->xtype, NULL, &size, &basetype, NULL, NULL));
+  if (basetype > NC_MAX_ATOMIC_TYPE) {
+    R_nc_check (nc_inq_user_type (io->ncid, basetype, NULL, &basesize, NULL, NULL, &baseclass));
+  } else {
+    R_nc_check (nc_inq_type (io->ncid, basetype, NULL, &basesize)); 
+    baseclass = NC_NAT;
+  }
+
+  /* Check if fill value is properly defined */
+  hasfill = (io->fill != NULL &&
+             io->fillsize == size);
+  basefill = NULL;
+  basefillsize = 0;
+  if (hasfill) {
+    vfill = (nc_vlen_t *) io->fill;
+    if (vfill[0].len > 0) {
+      basefill = vfill[0].p;
+      basefillsize = basesize;
+    }
+  }
+
+  /* Convert vlen elements to list items */
   for (ii=0; ii<cnt; ii++) {
     tmprxp = PROTECT(R_nc_c2r_init (&tmpio, &(vbuf[ii].p), io->ncid, basetype, -1,
                        &(vbuf[ii].len), io->rawchar, io->fitnum,
-                       io->fillsize, io->fill, io->min, io->max, io->scale, io->add));
+                       basefillsize, basefill, io->min, io->max, io->scale, io->add));
     R_nc_c2r (&tmpio);
     SET_VECTOR_ELT (io->rxp, ii, tmprxp);
     if (vbuf[ii].len > 0) {
