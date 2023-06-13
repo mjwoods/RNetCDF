@@ -33,32 +33,14 @@ DATEFMT() {
   date -d "$1" +%Y%m%d%H%M.%S
 }
 
-# Check that generated files are up-to-date:
+# Check that package changes have been committed to git:
 if test -n "$( git status --porcelain )"; then
   echo "WARNING: uncommitted changes in package" >&2
 fi
 
-for file in configure configure.ac tools/convert.m4 src/convert.c ; do
-  if test -n "$(git status --porcelain "$file")"; then
-    echo "ERROR: $file has uncommitted changes" >&2
-    exit 2
-  else
-    # Set timestamp on file to match last commit:
-    time="$(git log --pretty=format:%ad -n 1 --date=iso -- "$file")"
-    time="$(DATEFMT "$time")"
-    touch -m -t "$time" "$file"
-  fi
-done
-
-if [[ "configure.ac" -nt "configure" ]]; then
-  echo "ERROR: configure.ac is newer than configure" >&2
-  exit 2
-fi
-
-if [[ "tools/convert.m4" -nt "src/convert.c" ]]; then
-  echo "ERROR: tools/convert.m4 is newer than src/convert.c" >&2
-  exit 3
-fi
+# Ensure that generated files are up-to-date:
+tools/update-configure.sh
+tools/update-convert-c.sh
 
 # Check that NEWS contains a description of the release:
 if ! grep -q "$newver" NEWS; then
