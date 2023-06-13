@@ -31,47 +31,47 @@ AC_CHECK_SIZEOF([size_t])
 #  Find possible dependencies of NetCDF on Windows                              #
 #-------------------------------------------------------------------------------#
 
-AC_SEARCH_LIBS(atan, m)
+AC_CHECK_LIB(m, atan)
 
-AC_SEARCH_LIBS(getnameinfo, ws2_32)
-AC_SEARCH_LIBS(sethostname, wsock32)
-AC_SEARCH_LIBS(ldap_init, wldap32)
-AC_SEARCH_LIBS(CryptDecodeMessage, crypt32)
-AC_SEARCH_LIBS(GdiConvertBitmap, gdi32)
-AC_SEARCH_LIBS(RegOpenKeyExA, advapi32)
+AC_CHECK_LIB(ws2_32, getnameinfo)
+AC_CHECK_LIB(wsock32, sethostname)
+AC_CHECK_LIB(wldap32, ldap_init)
+AC_CHECK_LIB(crypt32, CryptDecodeMessage)
+AC_CHECK_LIB(gdi32, GdiConvertBitmap)
+AC_CHECK_LIB(advapi32, RegOpenKeyExA)
 
-AC_SEARCH_LIBS(pthread_mutex_init, pthread)
+AC_CHECK_LIB(pthread, pthread_mutex_init)
 
-AC_SEARCH_LIBS(lzma_lzma_decoder_init, lzma)
-AC_SEARCH_LIBS(deflate, z)
-AC_SEARCH_LIBS(ZSTD_decompress, zstd)
-AC_SEARCH_LIBS(SZ_BufftoBuffDecompress, sz)
+AC_CHECK_LIB(lzma, lzma_lzma_decoder_init)
+AC_CHECK_LIB(z, deflate)
+AC_CHECK_LIB(zstd, ZSTD_decompress)
+AC_CHECK_LIB(sz, SZ_BufftoBuffDecompress)
 
-AC_SEARCH_LIBS(BCryptDecrypt, bcrypt)
-AC_SEARCH_LIBS(gpg_strerror, gpg-error)
-AC_SEARCH_LIBS(gcry_md_open, gcrypt)
-AC_SEARCH_LIBS(EVP_CIPHER_CTX_new, crypto)
-AC_SEARCH_LIBS(SSL_CTX_new, ssl)
-AC_SEARCH_LIBS(libssh2_init, ssh2)
+AC_CHECK_LIB(bcrypt, BCryptDecrypt)
+AC_CHECK_LIB(gpg-error, gpg_strerror)
+AC_CHECK_LIB(gcrypt, gcry_md_open)
+AC_CHECK_LIB(crypto, EVP_CIPHER_CTX_new)
+AC_CHECK_LIB(ssl, SSL_CTX_new)
+AC_CHECK_LIB(ssh2, libssh2_init)
 
-AC_SEARCH_LIBS(libiconv_open, iconv)
-AC_SEARCH_LIBS(locale_charset, charset)
-AC_SEARCH_LIBS(u8_to_u16, unistring)
-AC_SEARCH_LIBS(idn2_to_ascii_8z, idn2)
+AC_CHECK_LIB(iconv, libiconv_open)
+AC_CHECK_LIB(charset, locale_charset)
+AC_CHECK_LIB(unistring, u8_to_u16)
+AC_CHECK_LIB(idn2, idn2_to_ascii_8z)
 
-AC_SEARCH_LIBS(H5Fopen, hdf5)
-AC_SEARCH_LIBS(H5TBmake_table, hdf5_hl)
+AC_CHECK_LIB(hdf5, H5Fopen)
+AC_CHECK_LIB(hdf5_hl, H5TBmake_table)
 
-AC_SEARCH_LIBS(xdr_int, portablexdr)
+AC_CHECK_LIB(portablexdr, xdr_int)
 
-AC_SEARCH_LIBS(xmlReadMemory, xml2)
+AC_CHECK_LIB(xml2, xmlReadMemory)
 
-AC_SEARCH_LIBS(curl_easy_init, curl)
+AC_CHECK_LIB(curl, curl_easy_init)
 
-AC_SEARCH_LIBS(jpeg_start_compress, jpeg)
+AC_CHECK_LIB(jpeg, jpeg_start_compress)
 
-AC_SEARCH_LIBS(Hopen, df)
-AC_SEARCH_LIBS(SDstart, mfhdf)
+AC_CHECK_LIB(df, Hopen)
+AC_CHECK_LIB(mfhdf, SDstart)
 
 #-------------------------------------------------------------------------------#
 #  Find NetCDF library and header files                                         #
@@ -108,7 +108,7 @@ AC_CHECK_DECLS([NC_64BIT_DATA, NC_FORMAT_64BIT_DATA, NC_DISKLESS, NC_PERSIST],
 #-------------------------------------------------------------------------------#
 
 # The udunits2 library depends on expat, which may need to be linked explicitly:
-AC_SEARCH_LIBS(XML_ErrorString, expat)
+AC_CHECK_LIB(expat, XML_ErrorString)
 
 # Check that selected routines from udunits2 can be used in programs,
 # including udunits2 in LIBS if needed.
