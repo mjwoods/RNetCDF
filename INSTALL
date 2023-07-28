@@ -24,6 +24,7 @@ The configure script can accept variables to define extra paths or libraries:
 CPPFLAGS='-I<incdir> [-I<incdir> ...]'  extra directories of header files
 LDFLAGS='-L<libdir> [-L<libdir> ...]'   extra directories for libraries
 LIBS='-l<libname> [-l<libname> ...]'    libraries to link
+CC=mpicc                                C compiler
 
 Definitions for the above variables may be appended to the configure command line.
 
@@ -33,6 +34,11 @@ typically search for a library called lib<libname>.so and then lib<libname>.a.
 But you can also specify the full pathname of a library if necessary,
 perhaps to force the use of a particular netcdf or udunits library
 on systems with multiple versions available.
+
+The specified C compiler must be compatible with both the R executable and the 
+NetCDF library. When NetCDF is built with MPI support, the same MPI library
+should be used when installing RNetCDF, which can usually be achieved
+by using a compiler driver provided by the MPI installation (e.g. mpicc).
 
 
 R CMD INSTALL Example
