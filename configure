@@ -3942,15 +3942,35 @@ then :
 fi
 
 
-# Check for parallel header file.
-ac_fn_c_check_header_compile "$LINENO" "netcdf_par.h" "ac_cv_header_netcdf_par_h" "#include <netcdf.h>
+# Check for parallel features.
+ac_fn_c_check_header_compile "$LINENO" "mpi.h" "ac_cv_header_mpi_h" "$ac_includes_default"
+if test "x$ac_cv_header_mpi_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_MPI_H 1" >>confdefs.h
+
+fi
+
+ac_fn_c_check_func "$LINENO" "MPI_Info_c2f" "ac_cv_func_MPI_Info_c2f"
+if test "x$ac_cv_func_MPI_Info_c2f" = xyes
+then :
+  printf "%s\n" "#define HAVE_MPI_INFO_C2F 1" >>confdefs.h
+
+fi
+
+       for ac_header in netcdf_par.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "netcdf_par.h" "ac_cv_header_netcdf_par_h" "#include <netcdf.h>
 "
 if test "x$ac_cv_header_netcdf_par_h" = xyes
 then :
   printf "%s\n" "#define HAVE_NETCDF_PAR_H 1" >>confdefs.h
 
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: disabling MPI support in RNetCDF" >&5
+printf "%s\n" "$as_me: WARNING: disabling MPI support in RNetCDF" >&2;}
 fi
 
+done
 
 # Check for filter header file.
 ac_fn_c_check_header_compile "$LINENO" "netcdf_filter.h" "ac_cv_header_netcdf_filter_h" "#include <netcdf.h>
