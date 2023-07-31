@@ -178,11 +178,19 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
   if (strlen (filep) > 0) {
     icommf = asInteger(mpi_comm);
     iinfof = asInteger(mpi_info);
-    if (icommf == NA_INTEGER || iinfof == NA_INTEGER) {
+    if (icommf == NA_INTEGER) {
       R_nc_check (nc_create (R_ExpandFileName (filep), cmode, &ncid));
     } else {
 #if defined HAVE_NETCDF_PAR_H && \
     defined HAVE_NC_CREATE_PAR_FORTRAN
+      if (iinfof == NA_INTEGER) {
+#  if defined HAVE_MPI_INFO_C2F && \
+      defined MPI_INFO_NULL
+        iinfof = MPI_Info_c2f(MPI_INFO_NULL);
+#  else
+        error("MPI_INFO_NULL not supported");
+#  endif
+      }
       R_nc_check (nc_create_par_fortran (R_ExpandFileName (filep),
                     cmode, icommf, iinfof, &ncid));
 #else
@@ -294,11 +302,19 @@ R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill,
   if (strlen (filep) > 0) {
     icommf = asInteger(mpi_comm);
     iinfof = asInteger(mpi_info);
-    if (icommf == NA_INTEGER || iinfof == NA_INTEGER) {
+    if (icommf == NA_INTEGER) {
       R_nc_check (nc_open (R_ExpandFileName (filep), omode, &ncid));
     } else {
 #if defined HAVE_NETCDF_PAR_H && \
     defined HAVE_NC_OPEN_PAR_FORTRAN
+      if (iinfof == NA_INTEGER) {
+#  if defined HAVE_MPI_INFO_C2F && \
+      defined MPI_INFO_NULL
+        iinfof = MPI_Info_c2f(MPI_INFO_NULL);
+#  else
+        error("MPI_INFO_NULL not supported");
+#  endif
+      }
       R_nc_check (nc_open_par_fortran (R_ExpandFileName (filep),
                     omode, icommf, iinfof, &ncid)); 
 #else
