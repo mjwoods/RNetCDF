@@ -84,14 +84,7 @@ AC_SEARCH_LIBS(nc_open, netcdf, [],
 # C preprocessor macros HAVE_routine are defined for existing routines.
 AC_CHECK_FUNCS([nc_rename_grp nc_get_var_chunk_cache nc_inq_var_szip \
   nc_inq_var_endian nc_def_var_filter nc_inq_var_filter_ids nc_inq_var_filter_info \
-  nc_create_par_fortran nc_open_par_fortran nc_var_par_access nc_reclaim_data])
-
-# Check for parallel features.
-AC_CHECK_HEADERS(mpi.h, [], [], [])
-AC_CHECK_FUNCS([MPI_Info_c2f], [], [], [#include <mpi.h>])
-AC_CHECK_HEADERS(netcdf_par.h, [],
-  [AC_MSG_WARN([disabling MPI support in RNetCDF])],
-  [#include <netcdf.h>])
+  nc_reclaim_data])
 
 # Check for filter header file.
 AC_CHECK_HEADERS(netcdf_filter.h, [], [], [#include <netcdf.h>])
@@ -99,6 +92,34 @@ AC_CHECK_HEADERS(netcdf_filter.h, [], [], [#include <netcdf.h>])
 # Check for optional features that depend only on preprocessor declarations:
 AC_CHECK_DECLS([NC_64BIT_DATA, NC_FORMAT_64BIT_DATA, NC_DISKLESS, NC_PERSIST],
   [], [], [#include <netcdf.h>])
+
+
+#-------------------------------------------------------------------------------#
+#  Check for parallel netcdf features                                           #
+#-------------------------------------------------------------------------------#
+
+has_parallel=TRUE
+AC_CHECK_FUNCS([nc_create_par_fortran nc_open_par_fortran nc_var_par_access],
+               [],
+               [has_parallel=FALSE])
+AC_CHECK_HEADERS([netcdf_par.h],
+  [],
+  [has_parallel=FALSE],
+  [#include <netcdf.h>])
+AS_IF([test "$has_parallel" != "TRUE"],
+  [AC_MSG_WARN([disabling parallel I/O functions in RNetCDF])]
+)
+
+has_info_null=FALSE
+AC_CHECK_HEADERS([mpi.h],
+  [AC_CHECK_DECLS([MPI_INFO_NULL],
+    [AC_CHECK_FUNCS([MPI_Info_c2f], [has_info_null=TRUE], [], [#include <mpi.h>])],
+    [],
+    [#include <mpi.h>])
+  ])
+AS_IF([test "$has_info_null" != "TRUE"],
+  [AC_MSG_WARN([disabling support for MPI_INFO_NULL in RNetCDF])]
+)
 
 
 #-------------------------------------------------------------------------------#
