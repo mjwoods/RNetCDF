@@ -5,19 +5,34 @@
 AC_INIT([RNetCDF],[2.7-1])
 
 #-------------------------------------------------------------------------------#
-#  Find the compiler and compiler options to use for tests                   	#
+#  Find the compiler and compiler options                                       #
 #-------------------------------------------------------------------------------#
 
 : ${R_HOME=`R RHOME`}
 AS_IF([test -z "${R_HOME}"],
   AC_MSG_ERROR([could not determine R_HOME])
 )
-CC=`"${R_HOME}/bin/R" CMD config CC`
-CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 
-# Prepend user-specified CPPFLAGS to those from R:
+# Get compilers and flags used when building R:
+R_CC=`"${R_HOME}/bin/R" CMD config CC`
+R_CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
-CPPFLAGS="$CPPFLAGS $R_CPPFLAGS"
+R_LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
+
+# Use compiler and flags from command-line, then environment,
+# defaulting to those from R:
+AC_ARG_WITH([mpicc],
+    AS_HELP_STRING([--with-mpicc],
+                   [C compiler command for MPI support]),
+    [CC="$withval"])
+
+AS_IF([test -z "$CC"], [CC="${R_CC}"])
+AS_IF([test -z "$CFLAGS"], [CFLAGS="${R_CFLAGS}"])
+
+# Prepend preprocessor and linker flags from environment to those from R:
+CPPFLAGS="$CPPFLAGS ${R_CPPFLAGS}"
+LDFLAGS="$LDFLAGS ${R_LDFLAGS}"
+
 
 #-------------------------------------------------------------------------------#
 #  Find sizes of selected data types                                            #
