@@ -43,33 +43,84 @@ AC_CHECK_SIZEOF([long long])
 AC_CHECK_SIZEOF([size_t])
 
 #-------------------------------------------------------------------------------#
-#  Find NetCDF library and header files                                         #
+#  Find possible dependencies of NetCDF on Windows,                             #
+#  or try nc-config on other platforms                                          #
 #-------------------------------------------------------------------------------#
 
-AC_ARG_WITH([nc-config],
+AC_CHECK_DECLS([_WIN32], [
+
+  AC_CHECK_LIB(m, atan)
+
+  AC_CHECK_LIB(ws2_32, getnameinfo)
+  AC_CHECK_LIB(wsock32, sethostname)
+  AC_CHECK_LIB(wldap32, ldap_init)
+  AC_CHECK_LIB(crypt32, CryptDecodeMessage)
+  AC_CHECK_LIB(gdi32, GdiConvertBitmap)
+  AC_CHECK_LIB(advapi32, RegOpenKeyExA)
+
+  AC_CHECK_LIB(pthread, pthread_mutex_init)
+
+  AC_CHECK_LIB(lzma, lzma_lzma_decoder_init)
+  AC_CHECK_LIB(z, deflate)
+  AC_CHECK_LIB(zstd, ZSTD_decompress)
+  AC_CHECK_LIB(sz, SZ_BufftoBuffDecompress)
+
+  AC_CHECK_LIB(bcrypt, BCryptDecrypt)
+  AC_CHECK_LIB(gpg-error, gpg_strerror)
+  AC_CHECK_LIB(gcrypt, gcry_md_open)
+  AC_CHECK_LIB(crypto, EVP_CIPHER_CTX_new)
+  AC_CHECK_LIB(ssl, SSL_CTX_new)
+  AC_CHECK_LIB(ssh2, libssh2_init)
+
+  AC_CHECK_LIB(iconv, libiconv_open)
+  AC_CHECK_LIB(charset, locale_charset)
+  AC_CHECK_LIB(unistring, u8_to_u16)
+  AC_CHECK_LIB(idn2, idn2_to_ascii_8z)
+
+  AC_CHECK_LIB(hdf5, H5Fopen)
+  AC_CHECK_LIB(hdf5_hl, H5TBmake_table)
+
+  AC_CHECK_LIB(portablexdr, xdr_int)
+
+  AC_CHECK_LIB(xml2, xmlReadMemory)
+
+  AC_CHECK_LIB(curl, curl_easy_init)
+
+  AC_CHECK_LIB(jpeg, jpeg_start_compress)
+
+  AC_CHECK_LIB(df, Hopen)
+  AC_CHECK_LIB(mfhdf, SDstart)
+
+], [
+
+  AC_ARG_WITH([nc-config],
     AS_HELP_STRING([--without-nc-config],
-        [do not use nc-config to get netcdf configuration]),
+      [do not use nc-config to get netcdf configuration]),
     [],
     [with_nc_config=yes])
 
-AS_IF([test "x$with_nc_config" != xno],
-      [AC_CHECK_PROG(have_nc_config, nc-config, yes, no, [], [])]
-)
+  AS_IF([test "x$with_nc_config" != xno],
+    [AC_CHECK_PROG(have_nc_config, nc-config, yes, no, [], [])])
 
-AS_IF([test "x$have_nc_config" == xyes],
-  [
-    # Prepend linker flags to LDFLAGS:
-    AC_MSG_CHECKING(netcdf linker flags)
-    NETCDF_LIBS=`nc-config --libs`
-    AC_MSG_RESULT($NETCDF_LIBS)
-    LDFLAGS="$NETCDF_LIBS $LDFLAGS"
-    # Prepend preprocessor and compiler flags to CPPFLAGS:
-    AC_MSG_CHECKING(netcdf preprocessor and compiler flags)
-    NETCDF_CFLAGS=`nc-config --cflags`
-    AC_MSG_RESULT($NETCDF_CFLAGS)
-    CPPFLAGS="$NETCDF_CFLAGS $CPPFLAGS"
-  ]
-)
+  AS_IF([test "x$have_nc_config" == xyes],
+    [
+      # Prepend linker flags to LDFLAGS:
+      AC_MSG_CHECKING(netcdf linker flags)
+      NETCDF_LIBS=`nc-config --libs`
+      AC_MSG_RESULT($NETCDF_LIBS)
+      LDFLAGS="$NETCDF_LIBS $LDFLAGS"
+      # Prepend preprocessor and compiler flags to CPPFLAGS:
+      AC_MSG_CHECKING(netcdf preprocessor and compiler flags)
+      NETCDF_CFLAGS=`nc-config --cflags`
+      AC_MSG_RESULT($NETCDF_CFLAGS)
+      CPPFLAGS="$NETCDF_CFLAGS $CPPFLAGS"
+    ])
+
+])
+
+#-------------------------------------------------------------------------------#
+#  Check NetCDF features                                                        #
+#-------------------------------------------------------------------------------#
 
 # Check that netcdf header files can be compiled:
 AC_CHECK_HEADERS(netcdf.h, [],
