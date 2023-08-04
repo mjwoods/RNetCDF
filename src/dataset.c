@@ -46,7 +46,11 @@
 #include "common.h"
 #include "RNetCDF.h"
 
-#ifdef HAVE_NETCDF_PAR_H
+#if defined HAVE_MPI_H
+#include <mpi.h>
+#endif
+
+#if defined HAVE_NETCDF_PAR_H
 #include <netcdf_par.h>
 #endif
 
