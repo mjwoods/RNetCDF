@@ -189,7 +189,7 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
     defined HAVE_NC_CREATE_PAR_FORTRAN
       if (iinfof == NA_INTEGER) {
 #  if defined HAVE_MPI_INFO_C2F && \
-      defined MPI_INFO_NULL
+      defined HAVE_DECL_MPI_INFO_NULL
         iinfof = MPI_Info_c2f(MPI_INFO_NULL);
 #  else
         error("MPI_INFO_NULL not supported");
@@ -313,7 +313,7 @@ R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill,
     defined HAVE_NC_OPEN_PAR_FORTRAN
       if (iinfof == NA_INTEGER) {
 #  if defined HAVE_MPI_INFO_C2F && \
-      defined MPI_INFO_NULL
+      defined HAVE_DECL_MPI_INFO_NULL
         iinfof = MPI_Info_c2f(MPI_INFO_NULL);
 #  else
         error("MPI_INFO_NULL not supported");
