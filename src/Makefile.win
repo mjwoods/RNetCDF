@@ -1,6 +1,0 @@
-## Makefile for RNetCDF on Windows.
-
-include Makefile
-
-R_SHLIB_MK = $(R_HOME)/share/make/winshlib.mk
-
