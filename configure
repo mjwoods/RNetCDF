@@ -700,6 +700,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+with_mpicc
 with_nc_config
 '
       ac_precious_vars='build_alias
@@ -1327,6 +1328,7 @@ if test -n "$ac_init_help"; then
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-mpicc            C compiler command for MPI support
   --without-nc-config     do not use nc-config to get netcdf configuration
 
 Some influential environment variables:
@@ -2566,7 +2568,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 #-------------------------------------------------------------------------------#
-#  Find the compiler and compiler options to use for tests                   	#
+#  Find the compiler and compiler options                                       #
 #-------------------------------------------------------------------------------#
 
 : ${R_HOME=`R RHOME`}
@@ -2575,12 +2577,36 @@ then :
   as_fn_error $? "could not determine R_HOME" "$LINENO" 5
 
 fi
-CC=`"${R_HOME}/bin/R" CMD config CC`
-CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 
-# Prepend user-specified CPPFLAGS to those from R:
+# Get compilers and flags used when building R:
+R_CC=`"${R_HOME}/bin/R" CMD config CC`
+R_CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
-CPPFLAGS="$CPPFLAGS $R_CPPFLAGS"
+R_LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
+
+# Use compiler and flags from command-line, then environment,
+# defaulting to those from R:
+
+# Check whether --with-mpicc was given.
+if test ${with_mpicc+y}
+then :
+  withval=$with_mpicc; CC="$withval"
+fi
+
+
+if test -z "$CC"
+then :
+  CC="${R_CC}"
+fi
+if test -z "$CFLAGS"
+then :
+  CFLAGS="${R_CFLAGS}"
+fi
+
+# Prepend preprocessor and linker flags from environment to those from R:
+CPPFLAGS="$CPPFLAGS ${R_CPPFLAGS}"
+LDFLAGS="$LDFLAGS ${R_LDFLAGS}"
+
 
 #-------------------------------------------------------------------------------#
 #  Find sizes of selected data types                                            #
@@ -3916,24 +3942,6 @@ then :
   printf "%s\n" "#define HAVE_NC_INQ_VAR_FILTER_INFO 1" >>confdefs.h
 
 fi
-ac_fn_c_check_func "$LINENO" "nc_create_par_fortran" "ac_cv_func_nc_create_par_fortran"
-if test "x$ac_cv_func_nc_create_par_fortran" = xyes
-then :
-  printf "%s\n" "#define HAVE_NC_CREATE_PAR_FORTRAN 1" >>confdefs.h
-
-fi
-ac_fn_c_check_func "$LINENO" "nc_open_par_fortran" "ac_cv_func_nc_open_par_fortran"
-if test "x$ac_cv_func_nc_open_par_fortran" = xyes
-then :
-  printf "%s\n" "#define HAVE_NC_OPEN_PAR_FORTRAN 1" >>confdefs.h
-
-fi
-ac_fn_c_check_func "$LINENO" "nc_var_par_access" "ac_cv_func_nc_var_par_access"
-if test "x$ac_cv_func_nc_var_par_access" = xyes
-then :
-  printf "%s\n" "#define HAVE_NC_VAR_PAR_ACCESS 1" >>confdefs.h
-
-fi
 ac_fn_c_check_func "$LINENO" "nc_reclaim_data" "ac_cv_func_nc_reclaim_data"
 if test "x$ac_cv_func_nc_reclaim_data" = xyes
 then :
@@ -3941,36 +3949,6 @@ then :
 
 fi
 
-
-# Check for parallel features.
-ac_fn_c_check_header_compile "$LINENO" "mpi.h" "ac_cv_header_mpi_h" "$ac_includes_default"
-if test "x$ac_cv_header_mpi_h" = xyes
-then :
-  printf "%s\n" "#define HAVE_MPI_H 1" >>confdefs.h
-
-fi
-
-ac_fn_c_check_func "$LINENO" "MPI_Info_c2f" "ac_cv_func_MPI_Info_c2f"
-if test "x$ac_cv_func_MPI_Info_c2f" = xyes
-then :
-  printf "%s\n" "#define HAVE_MPI_INFO_C2F 1" >>confdefs.h
-
-fi
-
-       for ac_header in netcdf_par.h
-do :
-  ac_fn_c_check_header_compile "$LINENO" "netcdf_par.h" "ac_cv_header_netcdf_par_h" "#include <netcdf.h>
-"
-if test "x$ac_cv_header_netcdf_par_h" = xyes
-then :
-  printf "%s\n" "#define HAVE_NETCDF_PAR_H 1" >>confdefs.h
-
-else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: disabling MPI support in RNetCDF" >&5
-printf "%s\n" "$as_me: WARNING: disabling MPI support in RNetCDF" >&2;}
-fi
-
-done
 
 # Check for filter header file.
 ac_fn_c_check_header_compile "$LINENO" "netcdf_filter.h" "ac_cv_header_netcdf_filter_h" "#include <netcdf.h>
@@ -4100,6 +4078,90 @@ else $as_nop
 fi
 printf "%s\n" "#define HAVE_DECL_NC_PERSIST $ac_have_decl" >>confdefs.h
 
+
+
+#-------------------------------------------------------------------------------#
+#  Check for parallel netcdf features                                           #
+#-------------------------------------------------------------------------------#
+
+has_parallel=TRUE
+
+  for ac_func in nc_create_par_fortran nc_open_par_fortran nc_var_par_access
+do :
+  as_ac_var=`printf "%s\n" "ac_cv_func_$ac_func" | $as_tr_sh`
+ac_fn_c_check_func "$LINENO" "$ac_func" "$as_ac_var"
+if eval test \"x\$"$as_ac_var"\" = x"yes"
+then :
+  cat >>confdefs.h <<_ACEOF
+#define `printf "%s\n" "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+
+else $as_nop
+  has_parallel=FALSE
+fi
+
+done
+       for ac_header in netcdf_par.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "netcdf_par.h" "ac_cv_header_netcdf_par_h" "#include <netcdf.h>
+"
+if test "x$ac_cv_header_netcdf_par_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_NETCDF_PAR_H 1" >>confdefs.h
+
+else $as_nop
+  has_parallel=FALSE
+fi
+
+done
+if test "$has_parallel" != "TRUE"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: disabling parallel I/O functions in RNetCDF" >&5
+printf "%s\n" "$as_me: WARNING: disabling parallel I/O functions in RNetCDF" >&2;}
+
+fi
+
+has_info_null=FALSE
+       for ac_header in mpi.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "mpi.h" "ac_cv_header_mpi_h" "$ac_includes_default"
+if test "x$ac_cv_header_mpi_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_MPI_H 1" >>confdefs.h
+ ac_fn_check_decl "$LINENO" "MPI_INFO_NULL" "ac_cv_have_decl_MPI_INFO_NULL" "#include <mpi.h>
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_MPI_INFO_NULL" = xyes
+then :
+  ac_have_decl=1
+else $as_nop
+  ac_have_decl=0
+fi
+printf "%s\n" "#define HAVE_DECL_MPI_INFO_NULL $ac_have_decl" >>confdefs.h
+if test $ac_have_decl = 1
+then :
+
+  for ac_func in MPI_Info_c2f
+do :
+  ac_fn_c_check_func "$LINENO" "MPI_Info_c2f" "ac_cv_func_MPI_Info_c2f"
+if test "x$ac_cv_func_MPI_Info_c2f" = xyes
+then :
+  printf "%s\n" "#define HAVE_MPI_INFO_C2F 1" >>confdefs.h
+ has_info_null=TRUE
+fi
+
+done
+fi
+
+
+fi
+
+done
+if test "$has_info_null" != "TRUE"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: disabling support for MPI_INFO_NULL in RNetCDF" >&5
+printf "%s\n" "$as_me: WARNING: disabling support for MPI_INFO_NULL in RNetCDF" >&2;}
+
+fi
 
 
 #-------------------------------------------------------------------------------#
@@ -4305,7 +4367,7 @@ fi
 #  Do substitution                               	                 	#
 #-------------------------------------------------------------------------------#
 
-ac_config_files="$ac_config_files src/Makevars R/config.R"
+ac_config_files="$ac_config_files src/Makefile.common R/config.R"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -5007,7 +5069,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
-    "src/Makevars") CONFIG_FILES="$CONFIG_FILES src/Makevars" ;;
+    "src/Makefile.common") CONFIG_FILES="$CONFIG_FILES src/Makefile.common" ;;
     "R/config.R") CONFIG_FILES="$CONFIG_FILES R/config.R" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
