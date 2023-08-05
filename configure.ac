@@ -128,11 +128,15 @@ AC_CHECK_FUNCS([nc_rename_grp nc_get_var_chunk_cache nc_inq_var_szip \
   nc_reclaim_data])
 
 # Check for filter header file.
-AC_CHECK_HEADERS(netcdf_filter.h, [], [], [#include <netcdf.h>])
+AC_CHECK_HEADERS(netcdf_filter.h, [], [],
+  [#include <netcdf.h>
+  ])
 
 # Check for optional features that depend only on preprocessor declarations:
 AC_CHECK_DECLS([NC_64BIT_DATA, NC_FORMAT_64BIT_DATA, NC_DISKLESS, NC_PERSIST],
-  [], [], [#include <netcdf.h>])
+  [], [],
+  [#include <netcdf.h>
+  ])
 
 
 #-------------------------------------------------------------------------------#
