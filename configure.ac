@@ -232,6 +232,8 @@ AC_SUBST(has_diskless)
 
 AC_SUBST(has_udunits)
 
+AC_SUBST(has_parallel)
+
 
 #-------------------------------------------------------------------------------#
 #  Do substitution                               	                 	#

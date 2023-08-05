@@ -36,7 +36,8 @@ config.nc <- function() {
   config <- c(
     data64=@has_data64@,
     diskless=@has_diskless@,
-    udunits=@has_udunits@
+    udunits=@has_udunits@,
+    parallel=@has_parallel@
   )
 
   # Special case for packages with multiple architectures (e.g. Windows):
