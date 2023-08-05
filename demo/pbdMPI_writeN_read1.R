@@ -36,8 +36,10 @@ if (rank==0) {
 
 ### Check global data on rank 0
 if (rank==0) {
-  cat("data_global =", data_global, "\n")
-  cat("data_global2 =", data_global2, "\n")
+  cat("data_global=\n")
+  print(data_global)
+  cat("data_global2=\n")
+  print(data_global2)
   if (!isTRUE(all.equal(data_global, data_global2))) {
     comm.abort()
   }
