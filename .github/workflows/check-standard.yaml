@@ -51,7 +51,7 @@ jobs:
         if: runner.os == 'macOS'
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck, pbdMPI=?ignore
+          extra-packages: any::rcmdcheck, pbdMPI=?ignore, Rmpi=?ignore
           needs: check
 
       - name: Install R dependencies (not macOS)
