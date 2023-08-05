@@ -143,28 +143,44 @@ AC_CHECK_DECLS([NC_64BIT_DATA, NC_FORMAT_64BIT_DATA, NC_DISKLESS, NC_PERSIST],
 #  Check for parallel netcdf features                                           #
 #-------------------------------------------------------------------------------#
 
-has_parallel=TRUE
-AC_CHECK_FUNCS([nc_create_par_fortran nc_open_par_fortran nc_var_par_access],
-               [],
-               [has_parallel=FALSE])
-AC_CHECK_HEADERS([netcdf_par.h],
-  [],
-  [has_parallel=FALSE],
-  [#include <netcdf.h>])
-AS_IF([test "$has_parallel" != "TRUE"],
-  [AC_MSG_WARN([disabling parallel I/O functions in RNetCDF])]
-)
+# MPI support:
+has_mpi=TRUE
+AC_CHECK_HEADERS([mpi.h], [], [has_mpi=FALSE])
 
-has_info_null=FALSE
-AC_CHECK_HEADERS([mpi.h],
-  [AC_CHECK_DECLS([MPI_INFO_NULL],
-    [AC_CHECK_FUNCS([MPI_Info_c2f], [has_info_null=TRUE], [], [#include <mpi.h>])],
-    [],
-    [#include <mpi.h>])
+AC_CHECK_FUNCS([MPI_Init], [], [has_mpi=FALSE])
+
+AS_IF([test "$has_mpi" != TRUE],
+  [AC_MSG_WARN([MPI not available. To enable MPI, try setting CC=mpicc in ~/.R/Makevars(.win)])])
+
+# Parallel I/O support in NetCDF:
+AS_IF([test "$has_mpi" = TRUE],
+  [
+    has_parallel=TRUE
+    AC_CHECK_HEADERS([netcdf_par.h], [], [has_parallel=FALSE],
+      [#include <netcdf.h>
+      ])
+
+    AC_CHECK_DECLS([NC_COLLECTIVE, NC_INDEPENDENT], [], [has_parallel=FALSE],
+      [#include <netcdf.h>
+       #include <netcdf_par.h>
+      ])
+
+    AC_CHECK_DECLS([MPI_INFO_NULL], [], [has_parallel=FALSE],
+      [#include <mpi.h>
+      ])
+
+    AC_CHECK_FUNCS(
+      [nc_create_par_fortran nc_open_par_fortran nc_var_par_access MPI_Info_c2f],
+      [], [has_parallel=FALSE])
+
+    AS_IF([test "$has_parallel" = TRUE],
+      [AC_DEFINE(HAVE_NETCDF_MPI)],
+      [AC_MSG_WARN([Parallel I/O not supported by NetCDF installation])])
+
+  ], [
+    has_parallel=FALSE
+    AC_MSG_WARN([NetCDF parallel I/O requires MPI])
   ])
-AS_IF([test "$has_info_null" != "TRUE"],
-  [AC_MSG_WARN([disabling support for MPI_INFO_NULL in RNetCDF])]
-)
 
 
 #-------------------------------------------------------------------------------#
