@@ -14,20 +14,10 @@ AS_IF([test -z "${R_HOME}"],
 )
 
 # Get compilers and flags used when building R:
-R_CC=`"${R_HOME}/bin/R" CMD config CC`
-R_CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
+CC=`"${R_HOME}/bin/R" CMD config CC`
+CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 R_LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
-
-# Use compiler and flags from command-line, then environment,
-# defaulting to those from R:
-AC_ARG_WITH([mpicc],
-    AS_HELP_STRING([--with-mpicc],
-                   [C compiler command for MPI support]),
-    [CC="$withval"])
-
-AS_IF([test -z "$CC"], [CC="${R_CC}"])
-AS_IF([test -z "$CFLAGS"], [CFLAGS="${R_CFLAGS}"])
 
 # Prepend preprocessor and linker flags from environment to those from R:
 CPPFLAGS="$CPPFLAGS ${R_CPPFLAGS}"
