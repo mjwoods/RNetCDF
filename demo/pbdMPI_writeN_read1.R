@@ -32,6 +32,7 @@ if (rank==0) {
   ncid2 <- open.nc(filename)
   data_global2 <- var.get.nc(ncid2, "data")
   close.nc(ncid2)
+  unlink(filename)
 }
 
 ### Check global data on rank 0
