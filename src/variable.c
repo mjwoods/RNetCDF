@@ -47,7 +47,7 @@
 #include "convert.h"
 #include "RNetCDF.h"
 
-#ifdef HAVE_NETCDF_PAR_H
+#ifdef HAVE_NETCDF_MPI
 #include <netcdf_par.h>
 #endif
 
@@ -869,9 +869,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
 SEXP
 R_nc_par_var (SEXP nc, SEXP var, SEXP access)
 {
-#if defined NC_COLLECTIVE && defined NC_INDEPENDENT && \
-    defined HAVE_NC_VAR_PAR_ACCESS
-
+#ifdef HAVE_NETCDF_MPI
   int ncid, varid, iaccess;
 
   /*-- Convert arguments to netcdf ids ----------------------------------------*/
@@ -897,7 +895,7 @@ R_nc_par_var (SEXP nc, SEXP var, SEXP access)
   return R_NilValue;
 
 #else
-  error("Changing parallel access mode not supported by NetCDF library");
+  error("MPI not supported");
 #endif
 }
 
