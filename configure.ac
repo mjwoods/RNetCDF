@@ -14,10 +14,18 @@ AS_IF([test -z "${R_HOME}"],
 )
 
 # Get compilers and flags used when building R:
-CC=`"${R_HOME}/bin/R" CMD config CC`
-CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
+R_CC=`"${R_HOME}/bin/R" CMD config CC`
+R_CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 R_LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
+
+# Inherit CC and CFLAGS from environment if defined:
+AS_IF([test -z "$CC"],
+  [CC="${R_CC}"]
+)
+AS_IF([test -z "$CFLAGS"],
+  [CFLAGS="${R_CFLAGS}"]
+)
 
 # Prepend preprocessor and linker flags from environment to those from R:
 CPPFLAGS="$CPPFLAGS ${R_CPPFLAGS}"
