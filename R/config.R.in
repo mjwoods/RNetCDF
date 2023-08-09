@@ -38,6 +38,7 @@ config.nc <- function() {
     diskless=@has_diskless@,
     udunits=@has_udunits@,
     parallel=@has_parallel@,
+    mpitest_cmd="@mpitest_cmd@"
   )
 
   # Special case for packages with multiple architectures (e.g. Windows):

@@ -143,6 +143,15 @@ AC_CHECK_DECLS([NC_64BIT_DATA, NC_FORMAT_64BIT_DATA, NC_DISKLESS, NC_PERSIST],
 #  Check for parallel netcdf features                                           #
 #-------------------------------------------------------------------------------#
 
+AC_ARG_WITH([mpitest-cmd],
+  [AS_HELP_STRING(
+    [--with-mpitest-cmd],
+    [MPI command to run small parallel tests after installation - e.g. 'mpiexec -np 2']
+  )],
+  [mpitest_cmd="$withval"],
+  [mpitest_cmd=""])
+
+
 # MPI support:
 has_mpi=TRUE
 AC_CHECK_HEADERS([mpi.h], [], [has_mpi=FALSE])
@@ -233,6 +242,8 @@ AC_SUBST(has_diskless)
 AC_SUBST(has_udunits)
 
 AC_SUBST(has_parallel)
+
+AC_SUBST(mpitest_cmd)
 
 
 #-------------------------------------------------------------------------------#
