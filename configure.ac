@@ -250,7 +250,7 @@ AC_SUBST(mpitest_cmd)
 #  Do substitution                               	                 	#
 #-------------------------------------------------------------------------------#
 
-AC_CONFIG_FILES([src/Makevars R/config.R])
+AC_CONFIG_FILES([src/Makefile.common R/config.R])
 AC_OUTPUT
 
 #-------------------------------------------------------------------------------#

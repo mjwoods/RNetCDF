@@ -1,3 +1,16 @@
+## Override CC defined by R to enable use of MPI compiler wrapper.
+
+# This file is included after $(R_HOME)/etc${R_ARCH}/Makeconf
+# and before $(R_HOME)/share/make/shlib.mk (or winshlib.sh on Windows).
+
+SHLIB = RNetCDF$(SHLIB_EXT)
+
+OBJECTS = attribute.o common.o convert.o dataset.o dimension.o group.o \
+  init.o type.o udunits.o variable.o
+
+CC = @CC@
 PKG_CPPFLAGS = @DEFS@ @CPPFLAGS@
 PKG_LIBS = @LDFLAGS@ @LIBS@
+
+RNetCDF_all: $(SHLIB) symbols.rds
 
