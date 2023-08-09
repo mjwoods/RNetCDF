@@ -25,14 +25,6 @@ LDFLAGS="$LDFLAGS ${R_LDFLAGS}"
 
 
 #-------------------------------------------------------------------------------#
-#  Find sizes of selected data types                                            #
-#-------------------------------------------------------------------------------#
-
-AC_CHECK_SIZEOF([int])
-AC_CHECK_SIZEOF([long long])
-AC_CHECK_SIZEOF([size_t])
-
-#-------------------------------------------------------------------------------#
 #  Find possible dependencies of NetCDF on Windows,                             #
 #  or try nc-config on other platforms                                          #
 #-------------------------------------------------------------------------------#
@@ -94,6 +86,11 @@ AC_CHECK_DECLS([_WIN32], [
 
   AS_IF([test "x$have_nc_config" == xyes],
     [
+      # Set compiler in CC (may be an MPI wrapper):
+      AC_MSG_CHECKING(netcdf C compiler)
+      NETCDF_CC=`nc-config --cc`
+      AC_MSG_RESULT($NETCDF_CC)
+      CC="$NETCDF_CC"
       # Prepend linker flags to LDFLAGS:
       AC_MSG_CHECKING(netcdf linker flags)
       NETCDF_LIBS=`nc-config --libs`
@@ -107,6 +104,16 @@ AC_CHECK_DECLS([_WIN32], [
     ])
 
 ])
+
+
+#-------------------------------------------------------------------------------#
+#  Find sizes of selected data types                                            #
+#-------------------------------------------------------------------------------#
+
+AC_CHECK_SIZEOF([int])
+AC_CHECK_SIZEOF([long long])
+AC_CHECK_SIZEOF([size_t])
+
 
 #-------------------------------------------------------------------------------#
 #  Check NetCDF features                                                        #
