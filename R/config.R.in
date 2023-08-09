@@ -33,15 +33,15 @@
 # and the output format is subject to change without notice.
 config.nc <- function() {
   # RHS values are replaced by configure script:
-  config <- c(
+  config <- list(
     data64=@has_data64@,
     diskless=@has_diskless@,
     udunits=@has_udunits@,
-    parallel=@has_parallel@
+    parallel=@has_parallel@,
   )
 
   # Special case for packages with multiple architectures (e.g. Windows):
-  config["data64"] <- config["data64"] && .Machine$sizeof.pointer >= 8
+  config$data64 <- config$data64 && .Machine$sizeof.pointer >= 8
 
   return(config)
 }
