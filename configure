@@ -647,6 +647,11 @@ ac_includes_default="\
 ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+PKG_LIBS
+PKG_LDFLAGS
+PKG_CPPFLAGS
+PKG_CFLAGS
+PKG_CC
 mpitest_cmd
 has_parallel
 has_udunits
@@ -703,6 +708,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 with_nc_config
+with_nc_config_static
 with_mpitest_cmd
 '
       ac_precious_vars='build_alias
@@ -1330,7 +1336,10 @@ if test -n "$ac_init_help"; then
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --without-nc-config     do not use nc-config to get netcdf configuration
+  --without-nc-config     use environment variables instead of nc-config to
+                          get compiler and linker options
+  --with-nc-config-static use static libraries from nc-config (default on
+                          Windows & macOS)
   --with-mpitest-cmd      MPI command to run small parallel tests after
                           installation - e.g. 'mpiexec -np 2'
 
@@ -2570,8 +2579,27 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
+
 #-------------------------------------------------------------------------------#
-#  Find the compiler and compiler options                                       #
+#  Store original environment variables for later use                           #
+#-------------------------------------------------------------------------------#
+
+ENV_CC="$CC"
+ENV_CFLAGS="$CFLAGS"
+ENV_CPPFLAGS="$CPPFLAGS"
+ENV_LDFLAGS="$LDFLAGS"
+ENV_LIBS="$LIBS"
+
+# Clear variables to ensure they are redefined later:
+CC=
+CFLAGS=
+CPPFLAGS=
+LDFLAGS=
+LIBS=
+
+
+#-------------------------------------------------------------------------------#
+#  Use the compiler and compiler options from R for initial tests               #
 #-------------------------------------------------------------------------------#
 
 : ${R_HOME=`R RHOME`}
@@ -2581,32 +2609,34 @@ then :
 
 fi
 
-# Get compilers and flags used when building R:
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find compilers and flags from R:" >&5
+printf "%s\n" "$as_me: Find compilers and flags from R:" >&6;}
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking R_CC" >&5
+printf %s "checking R_CC... " >&6; }
 R_CC=`"${R_HOME}/bin/R" CMD config CC`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${R_CC}" >&5
+printf "%s\n" "${R_CC}" >&6; }
+CC="${R_CC}"
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking R_CFLAGS" >&5
+printf %s "checking R_CFLAGS... " >&6; }
 R_CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${R_CFLAGS}" >&5
+printf "%s\n" "${R_CFLAGS}" >&6; }
+CFLAGS="${R_CFLAGS}"
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking R_CPPFLAGS" >&5
+printf %s "checking R_CPPFLAGS... " >&6; }
 R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
-R_LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${R_CPPFLAGS}" >&5
+printf "%s\n" "${R_CPPFLAGS}" >&6; }
+CPPFLAGS="${R_CPPFLAGS}"
 
-# Inherit CC and CFLAGS from environment if defined:
-if test -z "$CC"
-then :
-  CC="${R_CC}"
-
-fi
-if test -z "$CFLAGS"
-then :
-  CFLAGS="${R_CFLAGS}"
-
-fi
-
-# Prepend preprocessor and linker flags from environment to those from R:
-CPPFLAGS="$CPPFLAGS ${R_CPPFLAGS}"
-LDFLAGS="$LDFLAGS ${R_LDFLAGS}"
-
+# No need for R_LDFLAGS; no R_LIBS defined
 
 #-------------------------------------------------------------------------------#
-#  Find possible dependencies of NetCDF on Windows,                             #
-#  or try nc-config on other platforms                                          #
+#  Identify OS                                                                  #
 #-------------------------------------------------------------------------------#
 
 
@@ -3724,1313 +3754,32 @@ fi
 printf "%s\n" "#define HAVE_DECL__WIN32 $ac_have_decl" >>confdefs.h
 if test $ac_have_decl = 1
 then :
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for atan in -lm" >&5
-printf %s "checking for atan in -lm... " >&6; }
-if test ${ac_cv_lib_m_atan+y}
-then :
-  printf %s "(cached) " >&6
+  platform=Windows
 else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lm  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char atan ();
-int
-main (void)
-{
-return atan ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
+  ac_fn_check_decl "$LINENO" "__APPLE__" "ac_cv_have_decl___APPLE__" "$ac_includes_default" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl___APPLE__" = xyes
 then :
-  ac_cv_lib_m_atan=yes
+  ac_have_decl=1
 else $as_nop
-  ac_cv_lib_m_atan=no
+  ac_have_decl=0
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_m_atan" >&5
-printf "%s\n" "$ac_cv_lib_m_atan" >&6; }
-if test "x$ac_cv_lib_m_atan" = xyes
+printf "%s\n" "#define HAVE_DECL___APPLE__ $ac_have_decl" >>confdefs.h
+if test $ac_have_decl = 1
 then :
-  printf "%s\n" "#define HAVE_LIBM 1" >>confdefs.h
-
-  LIBS="-lm $LIBS"
-
-fi
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for getnameinfo in -lws2_32" >&5
-printf %s "checking for getnameinfo in -lws2_32... " >&6; }
-if test ${ac_cv_lib_ws2_32_getnameinfo+y}
-then :
-  printf %s "(cached) " >&6
+  platform=macOS
 else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lws2_32  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char getnameinfo ();
-int
-main (void)
-{
-return getnameinfo ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_ws2_32_getnameinfo=yes
-else $as_nop
-  ac_cv_lib_ws2_32_getnameinfo=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ws2_32_getnameinfo" >&5
-printf "%s\n" "$ac_cv_lib_ws2_32_getnameinfo" >&6; }
-if test "x$ac_cv_lib_ws2_32_getnameinfo" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBWS2_32 1" >>confdefs.h
-
-  LIBS="-lws2_32 $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for sethostname in -lwsock32" >&5
-printf %s "checking for sethostname in -lwsock32... " >&6; }
-if test ${ac_cv_lib_wsock32_sethostname+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lwsock32  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char sethostname ();
-int
-main (void)
-{
-return sethostname ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_wsock32_sethostname=yes
-else $as_nop
-  ac_cv_lib_wsock32_sethostname=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_wsock32_sethostname" >&5
-printf "%s\n" "$ac_cv_lib_wsock32_sethostname" >&6; }
-if test "x$ac_cv_lib_wsock32_sethostname" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBWSOCK32 1" >>confdefs.h
-
-  LIBS="-lwsock32 $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for ldap_init in -lwldap32" >&5
-printf %s "checking for ldap_init in -lwldap32... " >&6; }
-if test ${ac_cv_lib_wldap32_ldap_init+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lwldap32  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char ldap_init ();
-int
-main (void)
-{
-return ldap_init ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_wldap32_ldap_init=yes
-else $as_nop
-  ac_cv_lib_wldap32_ldap_init=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_wldap32_ldap_init" >&5
-printf "%s\n" "$ac_cv_lib_wldap32_ldap_init" >&6; }
-if test "x$ac_cv_lib_wldap32_ldap_init" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBWLDAP32 1" >>confdefs.h
-
-  LIBS="-lwldap32 $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for CryptDecodeMessage in -lcrypt32" >&5
-printf %s "checking for CryptDecodeMessage in -lcrypt32... " >&6; }
-if test ${ac_cv_lib_crypt32_CryptDecodeMessage+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcrypt32  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char CryptDecodeMessage ();
-int
-main (void)
-{
-return CryptDecodeMessage ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_crypt32_CryptDecodeMessage=yes
-else $as_nop
-  ac_cv_lib_crypt32_CryptDecodeMessage=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_crypt32_CryptDecodeMessage" >&5
-printf "%s\n" "$ac_cv_lib_crypt32_CryptDecodeMessage" >&6; }
-if test "x$ac_cv_lib_crypt32_CryptDecodeMessage" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBCRYPT32 1" >>confdefs.h
-
-  LIBS="-lcrypt32 $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for GdiConvertBitmap in -lgdi32" >&5
-printf %s "checking for GdiConvertBitmap in -lgdi32... " >&6; }
-if test ${ac_cv_lib_gdi32_GdiConvertBitmap+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgdi32  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char GdiConvertBitmap ();
-int
-main (void)
-{
-return GdiConvertBitmap ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_gdi32_GdiConvertBitmap=yes
-else $as_nop
-  ac_cv_lib_gdi32_GdiConvertBitmap=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gdi32_GdiConvertBitmap" >&5
-printf "%s\n" "$ac_cv_lib_gdi32_GdiConvertBitmap" >&6; }
-if test "x$ac_cv_lib_gdi32_GdiConvertBitmap" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBGDI32 1" >>confdefs.h
-
-  LIBS="-lgdi32 $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for RegOpenKeyExA in -ladvapi32" >&5
-printf %s "checking for RegOpenKeyExA in -ladvapi32... " >&6; }
-if test ${ac_cv_lib_advapi32_RegOpenKeyExA+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ladvapi32  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char RegOpenKeyExA ();
-int
-main (void)
-{
-return RegOpenKeyExA ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_advapi32_RegOpenKeyExA=yes
-else $as_nop
-  ac_cv_lib_advapi32_RegOpenKeyExA=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_advapi32_RegOpenKeyExA" >&5
-printf "%s\n" "$ac_cv_lib_advapi32_RegOpenKeyExA" >&6; }
-if test "x$ac_cv_lib_advapi32_RegOpenKeyExA" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBADVAPI32 1" >>confdefs.h
-
-  LIBS="-ladvapi32 $LIBS"
-
-fi
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for pthread_mutex_init in -lpthread" >&5
-printf %s "checking for pthread_mutex_init in -lpthread... " >&6; }
-if test ${ac_cv_lib_pthread_pthread_mutex_init+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lpthread  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char pthread_mutex_init ();
-int
-main (void)
-{
-return pthread_mutex_init ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_pthread_pthread_mutex_init=yes
-else $as_nop
-  ac_cv_lib_pthread_pthread_mutex_init=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_pthread_pthread_mutex_init" >&5
-printf "%s\n" "$ac_cv_lib_pthread_pthread_mutex_init" >&6; }
-if test "x$ac_cv_lib_pthread_pthread_mutex_init" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBPTHREAD 1" >>confdefs.h
-
-  LIBS="-lpthread $LIBS"
-
-fi
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for lzma_lzma_decoder_init in -llzma" >&5
-printf %s "checking for lzma_lzma_decoder_init in -llzma... " >&6; }
-if test ${ac_cv_lib_lzma_lzma_lzma_decoder_init+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-llzma  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char lzma_lzma_decoder_init ();
-int
-main (void)
-{
-return lzma_lzma_decoder_init ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_lzma_lzma_lzma_decoder_init=yes
-else $as_nop
-  ac_cv_lib_lzma_lzma_lzma_decoder_init=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_lzma_lzma_lzma_decoder_init" >&5
-printf "%s\n" "$ac_cv_lib_lzma_lzma_lzma_decoder_init" >&6; }
-if test "x$ac_cv_lib_lzma_lzma_lzma_decoder_init" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBLZMA 1" >>confdefs.h
-
-  LIBS="-llzma $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for deflate in -lz" >&5
-printf %s "checking for deflate in -lz... " >&6; }
-if test ${ac_cv_lib_z_deflate+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lz  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char deflate ();
-int
-main (void)
-{
-return deflate ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_z_deflate=yes
-else $as_nop
-  ac_cv_lib_z_deflate=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_z_deflate" >&5
-printf "%s\n" "$ac_cv_lib_z_deflate" >&6; }
-if test "x$ac_cv_lib_z_deflate" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBZ 1" >>confdefs.h
-
-  LIBS="-lz $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for ZSTD_decompress in -lzstd" >&5
-printf %s "checking for ZSTD_decompress in -lzstd... " >&6; }
-if test ${ac_cv_lib_zstd_ZSTD_decompress+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lzstd  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char ZSTD_decompress ();
-int
-main (void)
-{
-return ZSTD_decompress ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_zstd_ZSTD_decompress=yes
-else $as_nop
-  ac_cv_lib_zstd_ZSTD_decompress=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_zstd_ZSTD_decompress" >&5
-printf "%s\n" "$ac_cv_lib_zstd_ZSTD_decompress" >&6; }
-if test "x$ac_cv_lib_zstd_ZSTD_decompress" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBZSTD 1" >>confdefs.h
-
-  LIBS="-lzstd $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for SZ_BufftoBuffDecompress in -lsz" >&5
-printf %s "checking for SZ_BufftoBuffDecompress in -lsz... " >&6; }
-if test ${ac_cv_lib_sz_SZ_BufftoBuffDecompress+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lsz  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char SZ_BufftoBuffDecompress ();
-int
-main (void)
-{
-return SZ_BufftoBuffDecompress ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_sz_SZ_BufftoBuffDecompress=yes
-else $as_nop
-  ac_cv_lib_sz_SZ_BufftoBuffDecompress=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_sz_SZ_BufftoBuffDecompress" >&5
-printf "%s\n" "$ac_cv_lib_sz_SZ_BufftoBuffDecompress" >&6; }
-if test "x$ac_cv_lib_sz_SZ_BufftoBuffDecompress" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBSZ 1" >>confdefs.h
-
-  LIBS="-lsz $LIBS"
-
-fi
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for BCryptDecrypt in -lbcrypt" >&5
-printf %s "checking for BCryptDecrypt in -lbcrypt... " >&6; }
-if test ${ac_cv_lib_bcrypt_BCryptDecrypt+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbcrypt  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char BCryptDecrypt ();
-int
-main (void)
-{
-return BCryptDecrypt ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_bcrypt_BCryptDecrypt=yes
-else $as_nop
-  ac_cv_lib_bcrypt_BCryptDecrypt=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_bcrypt_BCryptDecrypt" >&5
-printf "%s\n" "$ac_cv_lib_bcrypt_BCryptDecrypt" >&6; }
-if test "x$ac_cv_lib_bcrypt_BCryptDecrypt" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBBCRYPT 1" >>confdefs.h
-
-  LIBS="-lbcrypt $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for gpg_strerror in -lgpg-error" >&5
-printf %s "checking for gpg_strerror in -lgpg-error... " >&6; }
-if test ${ac_cv_lib_gpg_error_gpg_strerror+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgpg-error  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char gpg_strerror ();
-int
-main (void)
-{
-return gpg_strerror ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_gpg_error_gpg_strerror=yes
-else $as_nop
-  ac_cv_lib_gpg_error_gpg_strerror=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gpg_error_gpg_strerror" >&5
-printf "%s\n" "$ac_cv_lib_gpg_error_gpg_strerror" >&6; }
-if test "x$ac_cv_lib_gpg_error_gpg_strerror" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBGPG_ERROR 1" >>confdefs.h
-
-  LIBS="-lgpg-error $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for gcry_md_open in -lgcrypt" >&5
-printf %s "checking for gcry_md_open in -lgcrypt... " >&6; }
-if test ${ac_cv_lib_gcrypt_gcry_md_open+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgcrypt  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char gcry_md_open ();
-int
-main (void)
-{
-return gcry_md_open ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_gcrypt_gcry_md_open=yes
-else $as_nop
-  ac_cv_lib_gcrypt_gcry_md_open=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_gcrypt_gcry_md_open" >&5
-printf "%s\n" "$ac_cv_lib_gcrypt_gcry_md_open" >&6; }
-if test "x$ac_cv_lib_gcrypt_gcry_md_open" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBGCRYPT 1" >>confdefs.h
-
-  LIBS="-lgcrypt $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for EVP_CIPHER_CTX_new in -lcrypto" >&5
-printf %s "checking for EVP_CIPHER_CTX_new in -lcrypto... " >&6; }
-if test ${ac_cv_lib_crypto_EVP_CIPHER_CTX_new+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcrypto  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char EVP_CIPHER_CTX_new ();
-int
-main (void)
-{
-return EVP_CIPHER_CTX_new ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_crypto_EVP_CIPHER_CTX_new=yes
-else $as_nop
-  ac_cv_lib_crypto_EVP_CIPHER_CTX_new=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_crypto_EVP_CIPHER_CTX_new" >&5
-printf "%s\n" "$ac_cv_lib_crypto_EVP_CIPHER_CTX_new" >&6; }
-if test "x$ac_cv_lib_crypto_EVP_CIPHER_CTX_new" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBCRYPTO 1" >>confdefs.h
-
-  LIBS="-lcrypto $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for SSL_CTX_new in -lssl" >&5
-printf %s "checking for SSL_CTX_new in -lssl... " >&6; }
-if test ${ac_cv_lib_ssl_SSL_CTX_new+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lssl  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char SSL_CTX_new ();
-int
-main (void)
-{
-return SSL_CTX_new ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_ssl_SSL_CTX_new=yes
-else $as_nop
-  ac_cv_lib_ssl_SSL_CTX_new=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ssl_SSL_CTX_new" >&5
-printf "%s\n" "$ac_cv_lib_ssl_SSL_CTX_new" >&6; }
-if test "x$ac_cv_lib_ssl_SSL_CTX_new" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBSSL 1" >>confdefs.h
-
-  LIBS="-lssl $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libssh2_init in -lssh2" >&5
-printf %s "checking for libssh2_init in -lssh2... " >&6; }
-if test ${ac_cv_lib_ssh2_libssh2_init+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lssh2  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char libssh2_init ();
-int
-main (void)
-{
-return libssh2_init ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_ssh2_libssh2_init=yes
-else $as_nop
-  ac_cv_lib_ssh2_libssh2_init=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ssh2_libssh2_init" >&5
-printf "%s\n" "$ac_cv_lib_ssh2_libssh2_init" >&6; }
-if test "x$ac_cv_lib_ssh2_libssh2_init" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBSSH2 1" >>confdefs.h
-
-  LIBS="-lssh2 $LIBS"
-
-fi
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libiconv_open in -liconv" >&5
-printf %s "checking for libiconv_open in -liconv... " >&6; }
-if test ${ac_cv_lib_iconv_libiconv_open+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-liconv  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char libiconv_open ();
-int
-main (void)
-{
-return libiconv_open ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_iconv_libiconv_open=yes
-else $as_nop
-  ac_cv_lib_iconv_libiconv_open=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_iconv_libiconv_open" >&5
-printf "%s\n" "$ac_cv_lib_iconv_libiconv_open" >&6; }
-if test "x$ac_cv_lib_iconv_libiconv_open" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBICONV 1" >>confdefs.h
-
-  LIBS="-liconv $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for locale_charset in -lcharset" >&5
-printf %s "checking for locale_charset in -lcharset... " >&6; }
-if test ${ac_cv_lib_charset_locale_charset+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcharset  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char locale_charset ();
-int
-main (void)
-{
-return locale_charset ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_charset_locale_charset=yes
-else $as_nop
-  ac_cv_lib_charset_locale_charset=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_charset_locale_charset" >&5
-printf "%s\n" "$ac_cv_lib_charset_locale_charset" >&6; }
-if test "x$ac_cv_lib_charset_locale_charset" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBCHARSET 1" >>confdefs.h
-
-  LIBS="-lcharset $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for u8_to_u16 in -lunistring" >&5
-printf %s "checking for u8_to_u16 in -lunistring... " >&6; }
-if test ${ac_cv_lib_unistring_u8_to_u16+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lunistring  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char u8_to_u16 ();
-int
-main (void)
-{
-return u8_to_u16 ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_unistring_u8_to_u16=yes
-else $as_nop
-  ac_cv_lib_unistring_u8_to_u16=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_unistring_u8_to_u16" >&5
-printf "%s\n" "$ac_cv_lib_unistring_u8_to_u16" >&6; }
-if test "x$ac_cv_lib_unistring_u8_to_u16" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBUNISTRING 1" >>confdefs.h
-
-  LIBS="-lunistring $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for idn2_to_ascii_8z in -lidn2" >&5
-printf %s "checking for idn2_to_ascii_8z in -lidn2... " >&6; }
-if test ${ac_cv_lib_idn2_idn2_to_ascii_8z+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lidn2  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char idn2_to_ascii_8z ();
-int
-main (void)
-{
-return idn2_to_ascii_8z ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_idn2_idn2_to_ascii_8z=yes
-else $as_nop
-  ac_cv_lib_idn2_idn2_to_ascii_8z=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_idn2_idn2_to_ascii_8z" >&5
-printf "%s\n" "$ac_cv_lib_idn2_idn2_to_ascii_8z" >&6; }
-if test "x$ac_cv_lib_idn2_idn2_to_ascii_8z" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBIDN2 1" >>confdefs.h
-
-  LIBS="-lidn2 $LIBS"
-
-fi
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for H5Fopen in -lhdf5" >&5
-printf %s "checking for H5Fopen in -lhdf5... " >&6; }
-if test ${ac_cv_lib_hdf5_H5Fopen+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lhdf5  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char H5Fopen ();
-int
-main (void)
-{
-return H5Fopen ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_hdf5_H5Fopen=yes
-else $as_nop
-  ac_cv_lib_hdf5_H5Fopen=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_hdf5_H5Fopen" >&5
-printf "%s\n" "$ac_cv_lib_hdf5_H5Fopen" >&6; }
-if test "x$ac_cv_lib_hdf5_H5Fopen" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBHDF5 1" >>confdefs.h
-
-  LIBS="-lhdf5 $LIBS"
-
+  platform=Unix-alike
 fi
 
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for H5TBmake_table in -lhdf5_hl" >&5
-printf %s "checking for H5TBmake_table in -lhdf5_hl... " >&6; }
-if test ${ac_cv_lib_hdf5_hl_H5TBmake_table+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lhdf5_hl  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char H5TBmake_table ();
-int
-main (void)
-{
-return H5TBmake_table ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_hdf5_hl_H5TBmake_table=yes
-else $as_nop
-  ac_cv_lib_hdf5_hl_H5TBmake_table=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_hdf5_hl_H5TBmake_table" >&5
-printf "%s\n" "$ac_cv_lib_hdf5_hl_H5TBmake_table" >&6; }
-if test "x$ac_cv_lib_hdf5_hl_H5TBmake_table" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBHDF5_HL 1" >>confdefs.h
-
-  LIBS="-lhdf5_hl $LIBS"
-
-fi
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for xdr_int in -lportablexdr" >&5
-printf %s "checking for xdr_int in -lportablexdr... " >&6; }
-if test ${ac_cv_lib_portablexdr_xdr_int+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lportablexdr  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char xdr_int ();
-int
-main (void)
-{
-return xdr_int ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_portablexdr_xdr_int=yes
-else $as_nop
-  ac_cv_lib_portablexdr_xdr_int=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_portablexdr_xdr_int" >&5
-printf "%s\n" "$ac_cv_lib_portablexdr_xdr_int" >&6; }
-if test "x$ac_cv_lib_portablexdr_xdr_int" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBPORTABLEXDR 1" >>confdefs.h
-
-  LIBS="-lportablexdr $LIBS"
-
-fi
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for xmlReadMemory in -lxml2" >&5
-printf %s "checking for xmlReadMemory in -lxml2... " >&6; }
-if test ${ac_cv_lib_xml2_xmlReadMemory+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lxml2  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char xmlReadMemory ();
-int
-main (void)
-{
-return xmlReadMemory ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_xml2_xmlReadMemory=yes
-else $as_nop
-  ac_cv_lib_xml2_xmlReadMemory=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_xml2_xmlReadMemory" >&5
-printf "%s\n" "$ac_cv_lib_xml2_xmlReadMemory" >&6; }
-if test "x$ac_cv_lib_xml2_xmlReadMemory" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBXML2 1" >>confdefs.h
-
-  LIBS="-lxml2 $LIBS"
-
-fi
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for curl_easy_init in -lcurl" >&5
-printf %s "checking for curl_easy_init in -lcurl... " >&6; }
-if test ${ac_cv_lib_curl_curl_easy_init+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lcurl  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char curl_easy_init ();
-int
-main (void)
-{
-return curl_easy_init ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_curl_curl_easy_init=yes
-else $as_nop
-  ac_cv_lib_curl_curl_easy_init=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
 fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_curl_curl_easy_init" >&5
-printf "%s\n" "$ac_cv_lib_curl_curl_easy_init" >&6; }
-if test "x$ac_cv_lib_curl_curl_easy_init" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBCURL 1" >>confdefs.h
-
-  LIBS="-lcurl $LIBS"
-
-fi
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for jpeg_start_compress in -ljpeg" >&5
-printf %s "checking for jpeg_start_compress in -ljpeg... " >&6; }
-if test ${ac_cv_lib_jpeg_jpeg_start_compress+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ljpeg  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char jpeg_start_compress ();
-int
-main (void)
-{
-return jpeg_start_compress ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_jpeg_jpeg_start_compress=yes
-else $as_nop
-  ac_cv_lib_jpeg_jpeg_start_compress=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_jpeg_jpeg_start_compress" >&5
-printf "%s\n" "$ac_cv_lib_jpeg_jpeg_start_compress" >&6; }
-if test "x$ac_cv_lib_jpeg_jpeg_start_compress" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBJPEG 1" >>confdefs.h
-
-  LIBS="-ljpeg $LIBS"
-
-fi
-
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Hopen in -ldf" >&5
-printf %s "checking for Hopen in -ldf... " >&6; }
-if test ${ac_cv_lib_df_Hopen+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-ldf  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char Hopen ();
-int
-main (void)
-{
-return Hopen ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_df_Hopen=yes
-else $as_nop
-  ac_cv_lib_df_Hopen=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_df_Hopen" >&5
-printf "%s\n" "$ac_cv_lib_df_Hopen" >&6; }
-if test "x$ac_cv_lib_df_Hopen" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBDF 1" >>confdefs.h
-
-  LIBS="-ldf $LIBS"
-
-fi
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for SDstart in -lmfhdf" >&5
-printf %s "checking for SDstart in -lmfhdf... " >&6; }
-if test ${ac_cv_lib_mfhdf_SDstart+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lmfhdf  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-char SDstart ();
-int
-main (void)
-{
-return SDstart ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  ac_cv_lib_mfhdf_SDstart=yes
-else $as_nop
-  ac_cv_lib_mfhdf_SDstart=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_mfhdf_SDstart" >&5
-printf "%s\n" "$ac_cv_lib_mfhdf_SDstart" >&6; }
-if test "x$ac_cv_lib_mfhdf_SDstart" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBMFHDF 1" >>confdefs.h
-
-  LIBS="-lmfhdf $LIBS"
-
-fi
-
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Operating system is $platform" >&5
+printf "%s\n" "$as_me: Operating system is $platform" >&6;}
 
-else $as_nop
 
+#-------------------------------------------------------------------------------#
+#  Get package compilers and flags from nc-config or environment variables      #
+#-------------------------------------------------------------------------------#
 
 
 # Check whether --with-nc-config was given.
@@ -5042,7 +3791,7 @@ else $as_nop
 fi
 
 
-  if test "x$with_nc_config" != xno
+if test "x$with_nc_config" != xno
 then :
   # Extract the first word of "nc-config", so it can be a program name with args.
 set dummy nc-config; ac_word=$2
@@ -5089,36 +3838,1544 @@ fi
 
 fi
 
-  if test "x$have_nc_config" == xyes
+
+# Check whether --with-nc-config-static was given.
+if test ${with_nc_config_static+y}
+then :
+  withval=$with_nc_config_static;
+else $as_nop
+  with_nc_config_static=unset
+fi
+
+
+
+if test "x$have_nc_config" = xyes
 then :
 
-      # Set compiler in CC (may be an MPI wrapper):
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking netcdf C compiler" >&5
-printf %s "checking netcdf C compiler... " >&6; }
-      NETCDF_CC=`nc-config --cc`
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $NETCDF_CC" >&5
-printf "%s\n" "$NETCDF_CC" >&6; }
-      CC="$NETCDF_CC"
-      # Prepend linker flags to LDFLAGS:
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking netcdf linker flags" >&5
-printf %s "checking netcdf linker flags... " >&6; }
-      NETCDF_LIBS=`nc-config --libs`
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $NETCDF_LIBS" >&5
-printf "%s\n" "$NETCDF_LIBS" >&6; }
-      LDFLAGS="$NETCDF_LIBS $LDFLAGS"
-      # Prepend preprocessor and compiler flags to CPPFLAGS:
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking netcdf preprocessor and compiler flags" >&5
-printf %s "checking netcdf preprocessor and compiler flags... " >&6; }
-      NETCDF_CFLAGS=`nc-config --cflags`
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $NETCDF_CFLAGS" >&5
-printf "%s\n" "$NETCDF_CFLAGS" >&6; }
-      CPPFLAGS="$NETCDF_CFLAGS $CPPFLAGS"
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find package compilers and flags from nc-config:" >&5
+printf "%s\n" "$as_me: Find package compilers and flags from nc-config:" >&6;}
 
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CC" >&5
+printf %s "checking PKG_CC... " >&6; }
+    PKG_CC=`nc-config --cc`
+    if test -z "${PKG_CC}"
+then :
+  PKG_CC="${R_CC}"
+
+fi
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CC}" >&5
+printf "%s\n" "${PKG_CC}" >&6; }
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CFLAGS" >&5
+printf %s "checking PKG_CFLAGS... " >&6; }
+    PKG_CFLAGS=`nc-config --cflags`
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CFLAGS}" >&5
+printf "%s\n" "${PKG_CFLAGS}" >&6; }
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CPPFLAGS" >&5
+printf %s "checking PKG_CPPFLAGS... " >&6; }
+    PKG_CPPFLAGS=
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CPPFLAGS}" >&5
+printf "%s\n" "${PKG_CPPFLAGS}" >&6; }
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_LDFLAGS" >&5
+printf %s "checking PKG_LDFLAGS... " >&6; }
+    PKG_LDFLAGS=
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_LDFLAGS}" >&5
+printf "%s\n" "${PKG_LDFLAGS}" >&6; }
+
+    if test "${with_nc_config_static}" = unset
+then :
+  if test "$platform" = Windows -o "$platform" = macOS
+then :
+  with_nc_config_static=yes
+else $as_nop
+  with_nc_config_static=no
 fi
 
 
 fi
 
+    if test "x$with_nc_config_static" = xyes
+then :
+  nc_config_static_flag="--static"
+       nc_config_static_label=" (static)"
+else $as_nop
+  nc_config_static_flag=""
+       nc_config_static_label=""
+
+fi
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_LIBS${nc_config_static_label}" >&5
+printf %s "checking PKG_LIBS${nc_config_static_label}... " >&6; }
+    PKG_LIBS=`nc-config ${nc_config_static_flag} --libs`
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_LIBS}" >&5
+printf "%s\n" "${PKG_LIBS}" >&6; }
+
+
+else $as_nop
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find package compilers and flags from environment variables:" >&5
+printf "%s\n" "$as_me: Find package compilers and flags from environment variables:" >&6;}
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CC" >&5
+printf %s "checking PKG_CC... " >&6; }
+    PKG_CC="${ENV_CC}"
+    if test -z "${PKG_CC}"
+then :
+  PKG_CC="${R_CC}"
+fi
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CC}" >&5
+printf "%s\n" "${PKG_CC}" >&6; }
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CFLAGS" >&5
+printf %s "checking PKG_CFLAGS... " >&6; }
+    PKG_CFLAGS="${ENV_CFLAGS}"
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CFLAGS}" >&5
+printf "%s\n" "${PKG_CFLAGS}" >&6; }
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CPPFLAGS" >&5
+printf %s "checking PKG_CPPFLAGS... " >&6; }
+    PKG_CPPFLAGS="${ENV_CPPFLAGS}"
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CPPFLAGS}" >&5
+printf "%s\n" "${PKG_CPPFLAGS}" >&6; }
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_LDFLAGS" >&5
+printf %s "checking PKG_LDFLAGS... " >&6; }
+    PKG_LDFLAGS="${ENV_LDFLAGS}"
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_LDFLAGS}" >&5
+printf "%s\n" "${PKG_LDFLAGS}" >&6; }
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_LIBS" >&5
+printf %s "checking PKG_LIBS... " >&6; }
+    PKG_LIBS="${ENV_LIBS}"
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_LIBS}" >&5
+printf "%s\n" "${PKG_LIBS}" >&6; }
+
+
+
+fi
+
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Combine flags from package and R for configure tests:" >&5
+printf "%s\n" "$as_me: Combine flags from package and R for configure tests:" >&6;}
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CC" >&5
+printf %s "checking CC... " >&6; }
+CC="${PKG_CC}"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CC" >&5
+printf "%s\n" "$CC" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
+printf %s "checking CFLAGS... " >&6; }
+CFLAGS="${PKG_CFLAGS} ${R_CFLAGS}"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CFLAGS" >&5
+printf "%s\n" "$CFLAGS" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
+printf %s "checking CPPFLAGS... " >&6; }
+CPPFLAGS="${PKG_CPPFLAGS} ${R_CPPFLAGS}"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CPPFLAGS" >&5
+printf "%s\n" "$CPPFLAGS" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS" >&5
+printf %s "checking LIBS... " >&6; }
+LIBS="${PKG_LIBS}" # No R_LIBS defined
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LIBS" >&5
+printf "%s\n" "$LIBS" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
+printf %s "checking LDFLAGS... " >&6; }
+LDFLAGS="${PKG_LDFLAGS}" # No need for R_LDFLAGS
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LDFLAGS" >&5
+printf "%s\n" "$LDFLAGS" >&6; }
+
+
+#-------------------------------------------------------------------------------#
+#  Find extra libraries that may be needed on Windows                           #
+#-------------------------------------------------------------------------------#
+# (nc-config seems not to capture some of these static libraries on Windows)
+
+if test "$platform" = Windows
+then :
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find extra libraries that may be needed on Windows:" >&5
+printf "%s\n" "$as_me: Find extra libraries that may be needed on Windows:" >&6;}
+
+  # Start with empty LIBS, storing original LIBS to prepend later:
+  PRELIBS="$LIBS"
+  LIBS=
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing atan" >&5
+printf %s "checking for library containing atan... " >&6; }
+if test ${ac_cv_search_atan+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char atan ();
+int
+main (void)
+{
+return atan ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' m
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_atan=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_atan+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_atan+y}
+then :
+
+else $as_nop
+  ac_cv_search_atan=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_atan" >&5
+printf "%s\n" "$ac_cv_search_atan" >&6; }
+ac_res=$ac_cv_search_atan
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing getnameinfo" >&5
+printf %s "checking for library containing getnameinfo... " >&6; }
+if test ${ac_cv_search_getnameinfo+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char getnameinfo ();
+int
+main (void)
+{
+return getnameinfo ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ws2_32
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_getnameinfo=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_getnameinfo+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_getnameinfo+y}
+then :
+
+else $as_nop
+  ac_cv_search_getnameinfo=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_getnameinfo" >&5
+printf "%s\n" "$ac_cv_search_getnameinfo" >&6; }
+ac_res=$ac_cv_search_getnameinfo
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing sethostname" >&5
+printf %s "checking for library containing sethostname... " >&6; }
+if test ${ac_cv_search_sethostname+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char sethostname ();
+int
+main (void)
+{
+return sethostname ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' wsock32
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_sethostname=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_sethostname+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_sethostname+y}
+then :
+
+else $as_nop
+  ac_cv_search_sethostname=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_sethostname" >&5
+printf "%s\n" "$ac_cv_search_sethostname" >&6; }
+ac_res=$ac_cv_search_sethostname
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing ldap_init" >&5
+printf %s "checking for library containing ldap_init... " >&6; }
+if test ${ac_cv_search_ldap_init+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char ldap_init ();
+int
+main (void)
+{
+return ldap_init ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' wldap32
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_ldap_init=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_ldap_init+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_ldap_init+y}
+then :
+
+else $as_nop
+  ac_cv_search_ldap_init=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_ldap_init" >&5
+printf "%s\n" "$ac_cv_search_ldap_init" >&6; }
+ac_res=$ac_cv_search_ldap_init
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing CryptDecodeMessage" >&5
+printf %s "checking for library containing CryptDecodeMessage... " >&6; }
+if test ${ac_cv_search_CryptDecodeMessage+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char CryptDecodeMessage ();
+int
+main (void)
+{
+return CryptDecodeMessage ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' crypt32
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_CryptDecodeMessage=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_CryptDecodeMessage+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_CryptDecodeMessage+y}
+then :
+
+else $as_nop
+  ac_cv_search_CryptDecodeMessage=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_CryptDecodeMessage" >&5
+printf "%s\n" "$ac_cv_search_CryptDecodeMessage" >&6; }
+ac_res=$ac_cv_search_CryptDecodeMessage
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing GdiConvertBitmap" >&5
+printf %s "checking for library containing GdiConvertBitmap... " >&6; }
+if test ${ac_cv_search_GdiConvertBitmap+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char GdiConvertBitmap ();
+int
+main (void)
+{
+return GdiConvertBitmap ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' gdi32
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_GdiConvertBitmap=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_GdiConvertBitmap+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_GdiConvertBitmap+y}
+then :
+
+else $as_nop
+  ac_cv_search_GdiConvertBitmap=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_GdiConvertBitmap" >&5
+printf "%s\n" "$ac_cv_search_GdiConvertBitmap" >&6; }
+ac_res=$ac_cv_search_GdiConvertBitmap
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing RegOpenKeyExA" >&5
+printf %s "checking for library containing RegOpenKeyExA... " >&6; }
+if test ${ac_cv_search_RegOpenKeyExA+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char RegOpenKeyExA ();
+int
+main (void)
+{
+return RegOpenKeyExA ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' advapi32
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_RegOpenKeyExA=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_RegOpenKeyExA+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_RegOpenKeyExA+y}
+then :
+
+else $as_nop
+  ac_cv_search_RegOpenKeyExA=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_RegOpenKeyExA" >&5
+printf "%s\n" "$ac_cv_search_RegOpenKeyExA" >&6; }
+ac_res=$ac_cv_search_RegOpenKeyExA
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing pthread_mutex_init" >&5
+printf %s "checking for library containing pthread_mutex_init... " >&6; }
+if test ${ac_cv_search_pthread_mutex_init+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char pthread_mutex_init ();
+int
+main (void)
+{
+return pthread_mutex_init ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' pthread
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_pthread_mutex_init=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_pthread_mutex_init+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_pthread_mutex_init+y}
+then :
+
+else $as_nop
+  ac_cv_search_pthread_mutex_init=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_pthread_mutex_init" >&5
+printf "%s\n" "$ac_cv_search_pthread_mutex_init" >&6; }
+ac_res=$ac_cv_search_pthread_mutex_init
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing lzma_lzma_decoder_init" >&5
+printf %s "checking for library containing lzma_lzma_decoder_init... " >&6; }
+if test ${ac_cv_search_lzma_lzma_decoder_init+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char lzma_lzma_decoder_init ();
+int
+main (void)
+{
+return lzma_lzma_decoder_init ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' lzma
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_lzma_lzma_decoder_init=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_lzma_lzma_decoder_init+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_lzma_lzma_decoder_init+y}
+then :
+
+else $as_nop
+  ac_cv_search_lzma_lzma_decoder_init=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_lzma_lzma_decoder_init" >&5
+printf "%s\n" "$ac_cv_search_lzma_lzma_decoder_init" >&6; }
+ac_res=$ac_cv_search_lzma_lzma_decoder_init
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing ZSTD_decompress" >&5
+printf %s "checking for library containing ZSTD_decompress... " >&6; }
+if test ${ac_cv_search_ZSTD_decompress+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char ZSTD_decompress ();
+int
+main (void)
+{
+return ZSTD_decompress ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' zstd
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_ZSTD_decompress=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_ZSTD_decompress+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_ZSTD_decompress+y}
+then :
+
+else $as_nop
+  ac_cv_search_ZSTD_decompress=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_ZSTD_decompress" >&5
+printf "%s\n" "$ac_cv_search_ZSTD_decompress" >&6; }
+ac_res=$ac_cv_search_ZSTD_decompress
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing SZ_BufftoBuffDecompress" >&5
+printf %s "checking for library containing SZ_BufftoBuffDecompress... " >&6; }
+if test ${ac_cv_search_SZ_BufftoBuffDecompress+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char SZ_BufftoBuffDecompress ();
+int
+main (void)
+{
+return SZ_BufftoBuffDecompress ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' sz
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_SZ_BufftoBuffDecompress=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_SZ_BufftoBuffDecompress+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_SZ_BufftoBuffDecompress+y}
+then :
+
+else $as_nop
+  ac_cv_search_SZ_BufftoBuffDecompress=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_SZ_BufftoBuffDecompress" >&5
+printf "%s\n" "$ac_cv_search_SZ_BufftoBuffDecompress" >&6; }
+ac_res=$ac_cv_search_SZ_BufftoBuffDecompress
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing BCryptDecrypt" >&5
+printf %s "checking for library containing BCryptDecrypt... " >&6; }
+if test ${ac_cv_search_BCryptDecrypt+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char BCryptDecrypt ();
+int
+main (void)
+{
+return BCryptDecrypt ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' bcrypt
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_BCryptDecrypt=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_BCryptDecrypt+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_BCryptDecrypt+y}
+then :
+
+else $as_nop
+  ac_cv_search_BCryptDecrypt=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_BCryptDecrypt" >&5
+printf "%s\n" "$ac_cv_search_BCryptDecrypt" >&6; }
+ac_res=$ac_cv_search_BCryptDecrypt
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing gpg_strerror" >&5
+printf %s "checking for library containing gpg_strerror... " >&6; }
+if test ${ac_cv_search_gpg_strerror+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char gpg_strerror ();
+int
+main (void)
+{
+return gpg_strerror ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' gpg-error
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_gpg_strerror=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_gpg_strerror+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_gpg_strerror+y}
+then :
+
+else $as_nop
+  ac_cv_search_gpg_strerror=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_gpg_strerror" >&5
+printf "%s\n" "$ac_cv_search_gpg_strerror" >&6; }
+ac_res=$ac_cv_search_gpg_strerror
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing gcry_md_open" >&5
+printf %s "checking for library containing gcry_md_open... " >&6; }
+if test ${ac_cv_search_gcry_md_open+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char gcry_md_open ();
+int
+main (void)
+{
+return gcry_md_open ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' gcrypt
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_gcry_md_open=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_gcry_md_open+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_gcry_md_open+y}
+then :
+
+else $as_nop
+  ac_cv_search_gcry_md_open=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_gcry_md_open" >&5
+printf "%s\n" "$ac_cv_search_gcry_md_open" >&6; }
+ac_res=$ac_cv_search_gcry_md_open
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing EVP_CIPHER_CTX_new" >&5
+printf %s "checking for library containing EVP_CIPHER_CTX_new... " >&6; }
+if test ${ac_cv_search_EVP_CIPHER_CTX_new+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char EVP_CIPHER_CTX_new ();
+int
+main (void)
+{
+return EVP_CIPHER_CTX_new ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' crypto
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_EVP_CIPHER_CTX_new=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_EVP_CIPHER_CTX_new+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_EVP_CIPHER_CTX_new+y}
+then :
+
+else $as_nop
+  ac_cv_search_EVP_CIPHER_CTX_new=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_EVP_CIPHER_CTX_new" >&5
+printf "%s\n" "$ac_cv_search_EVP_CIPHER_CTX_new" >&6; }
+ac_res=$ac_cv_search_EVP_CIPHER_CTX_new
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing SSL_CTX_new" >&5
+printf %s "checking for library containing SSL_CTX_new... " >&6; }
+if test ${ac_cv_search_SSL_CTX_new+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char SSL_CTX_new ();
+int
+main (void)
+{
+return SSL_CTX_new ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ssl
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_SSL_CTX_new=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_SSL_CTX_new+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_SSL_CTX_new+y}
+then :
+
+else $as_nop
+  ac_cv_search_SSL_CTX_new=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_SSL_CTX_new" >&5
+printf "%s\n" "$ac_cv_search_SSL_CTX_new" >&6; }
+ac_res=$ac_cv_search_SSL_CTX_new
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing libssh2_init" >&5
+printf %s "checking for library containing libssh2_init... " >&6; }
+if test ${ac_cv_search_libssh2_init+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char libssh2_init ();
+int
+main (void)
+{
+return libssh2_init ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ssh2
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_libssh2_init=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_libssh2_init+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_libssh2_init+y}
+then :
+
+else $as_nop
+  ac_cv_search_libssh2_init=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_libssh2_init" >&5
+printf "%s\n" "$ac_cv_search_libssh2_init" >&6; }
+ac_res=$ac_cv_search_libssh2_init
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing libiconv_open" >&5
+printf %s "checking for library containing libiconv_open... " >&6; }
+if test ${ac_cv_search_libiconv_open+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char libiconv_open ();
+int
+main (void)
+{
+return libiconv_open ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' iconv
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_libiconv_open=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_libiconv_open+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_libiconv_open+y}
+then :
+
+else $as_nop
+  ac_cv_search_libiconv_open=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_libiconv_open" >&5
+printf "%s\n" "$ac_cv_search_libiconv_open" >&6; }
+ac_res=$ac_cv_search_libiconv_open
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing locale_charset" >&5
+printf %s "checking for library containing locale_charset... " >&6; }
+if test ${ac_cv_search_locale_charset+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char locale_charset ();
+int
+main (void)
+{
+return locale_charset ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' charset
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_locale_charset=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_locale_charset+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_locale_charset+y}
+then :
+
+else $as_nop
+  ac_cv_search_locale_charset=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_locale_charset" >&5
+printf "%s\n" "$ac_cv_search_locale_charset" >&6; }
+ac_res=$ac_cv_search_locale_charset
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing u8_to_u16" >&5
+printf %s "checking for library containing u8_to_u16... " >&6; }
+if test ${ac_cv_search_u8_to_u16+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char u8_to_u16 ();
+int
+main (void)
+{
+return u8_to_u16 ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' unistring
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_u8_to_u16=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_u8_to_u16+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_u8_to_u16+y}
+then :
+
+else $as_nop
+  ac_cv_search_u8_to_u16=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_u8_to_u16" >&5
+printf "%s\n" "$ac_cv_search_u8_to_u16" >&6; }
+ac_res=$ac_cv_search_u8_to_u16
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing idn2_to_ascii_8z" >&5
+printf %s "checking for library containing idn2_to_ascii_8z... " >&6; }
+if test ${ac_cv_search_idn2_to_ascii_8z+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char idn2_to_ascii_8z ();
+int
+main (void)
+{
+return idn2_to_ascii_8z ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' idn2
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_idn2_to_ascii_8z=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_idn2_to_ascii_8z+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_idn2_to_ascii_8z+y}
+then :
+
+else $as_nop
+  ac_cv_search_idn2_to_ascii_8z=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_idn2_to_ascii_8z" >&5
+printf "%s\n" "$ac_cv_search_idn2_to_ascii_8z" >&6; }
+ac_res=$ac_cv_search_idn2_to_ascii_8z
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing xdr_int" >&5
+printf %s "checking for library containing xdr_int... " >&6; }
+if test ${ac_cv_search_xdr_int+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char xdr_int ();
+int
+main (void)
+{
+return xdr_int ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' portablexdr
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_xdr_int=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_xdr_int+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_xdr_int+y}
+then :
+
+else $as_nop
+  ac_cv_search_xdr_int=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_xdr_int" >&5
+printf "%s\n" "$ac_cv_search_xdr_int" >&6; }
+ac_res=$ac_cv_search_xdr_int
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing jpeg_start_compress" >&5
+printf %s "checking for library containing jpeg_start_compress... " >&6; }
+if test ${ac_cv_search_jpeg_start_compress+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char jpeg_start_compress ();
+int
+main (void)
+{
+return jpeg_start_compress ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' jpeg
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_jpeg_start_compress=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_jpeg_start_compress+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_jpeg_start_compress+y}
+then :
+
+else $as_nop
+  ac_cv_search_jpeg_start_compress=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_jpeg_start_compress" >&5
+printf "%s\n" "$ac_cv_search_jpeg_start_compress" >&6; }
+ac_res=$ac_cv_search_jpeg_start_compress
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+
+  # Prepend original LIBS:
+  LIBS="$PRELIBS $LIBS"
+
+
+fi
 
 
 #-------------------------------------------------------------------------------#
@@ -5777,6 +6034,35 @@ fi
 
 
 
+
+#-------------------------------------------------------------------------------#
+#  Final configuration variables                                                #
+#-------------------------------------------------------------------------------#
+
+# LIBS is modified during configure, so update PKG_LIBS accordingly.
+# Note that LIBS should not include R libraries.
+PKG_LIBS="$LIBS"
+
+# Display PKG variables:
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Final package variables for make:
+PKG_CC=${PKG_CC}
+PKG_CFLAGS=${PKG_CFLAGS}
+PKG_CPPFLAGS=${PKG_CPPFLAGS}
+PKG_LDFLAGS=${PKG_LDFLAGS}
+PKG_LIBS=${PKG_LIBS}" >&5
+printf "%s\n" "$as_me: Final package variables for make:
+PKG_CC=${PKG_CC}
+PKG_CFLAGS=${PKG_CFLAGS}
+PKG_CPPFLAGS=${PKG_CPPFLAGS}
+PKG_LDFLAGS=${PKG_LDFLAGS}
+PKG_LIBS=${PKG_LIBS}" >&6;}
+
+
+
+
+
+
+# We also need DEFS, which is substituted automatically
 
 #-------------------------------------------------------------------------------#
 #  Do substitution                               	                 	#
@@ -6934,6 +7220,7 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
 printf "%s\n" "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
+
 
 
 #-------------------------------------------------------------------------------#
