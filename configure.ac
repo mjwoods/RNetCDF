@@ -9,11 +9,27 @@ AC_INIT([RNetCDF],[2.7-1])
 #  Store original environment variables for later use                           #
 #-------------------------------------------------------------------------------#
 
+AC_MSG_NOTICE([Store original environment variables for later use:])
+
+AC_MSG_CHECKING([ENV_CC])
 ENV_CC="$CC"
+AC_MSG_RESULT([${ENV_CC}])
+
+AC_MSG_CHECKING([ENV_CFLAGS])
 ENV_CFLAGS="$CFLAGS"
+AC_MSG_RESULT([${ENV_CFLAGS}])
+
+AC_MSG_CHECKING([ENV_CPPFLAGS])
 ENV_CPPFLAGS="$CPPFLAGS"
+AC_MSG_RESULT([${ENV_CPPFLAGS}])
+
+AC_MSG_CHECKING([ENV_LDFLAGS])
 ENV_LDFLAGS="$LDFLAGS"
+AC_MSG_RESULT([${ENV_LDFLAGS}])
+
+AC_MSG_CHECKING([ENV_LIBS])
 ENV_LIBS="$LIBS"
+AC_MSG_RESULT([${ENV_LIBS}])
 
 # Clear variables to ensure they are redefined later:
 CC=
