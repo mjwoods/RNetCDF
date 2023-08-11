@@ -4,8 +4,27 @@
 
 AC_INIT([RNetCDF],[2.7-1])
 
+
 #-------------------------------------------------------------------------------#
-#  Find the compiler and compiler options                                       #
+#  Store original environment variables for later use                           #
+#-------------------------------------------------------------------------------#
+
+ENV_CC="$CC"
+ENV_CFLAGS="$CFLAGS"
+ENV_CPPFLAGS="$CPPFLAGS"
+ENV_LDFLAGS="$LDFLAGS"
+ENV_LIBS="$LIBS"
+
+# Clear variables to ensure they are redefined later:
+CC=
+CFLAGS=
+CPPFLAGS=
+LDFLAGS=
+LIBS=
+
+
+#-------------------------------------------------------------------------------#
+#  Use the compiler and compiler options from R for initial tests               #
 #-------------------------------------------------------------------------------#
 
 : ${R_HOME=`R RHOME`}
@@ -13,47 +32,63 @@ AS_IF([test -z "${R_HOME}"],
   AC_MSG_ERROR([could not determine R_HOME])
 )
 
-# Get compilers and flags used when building R:
+AC_MSG_NOTICE([Find compilers and flags from R:])
+
+AC_MSG_CHECKING([R_CC])
 R_CC=`"${R_HOME}/bin/R" CMD config CC`
+AC_MSG_RESULT([${R_CC}])
+CC="${R_CC}"
+
+AC_MSG_CHECKING([R_CFLAGS])
 R_CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
+AC_MSG_RESULT([${R_CFLAGS}])
+CFLAGS="${R_CFLAGS}"
+
+AC_MSG_CHECKING([R_CPPFLAGS])
 R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
-R_LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
+AC_MSG_RESULT([${R_CPPFLAGS}])
+CPPFLAGS="${R_CPPFLAGS}"
 
-# Inherit CC and CFLAGS from environment if defined:
-AS_IF([test -z "$CC"],
-  [CC="${R_CC}"]
-)
-AS_IF([test -z "$CFLAGS"],
-  [CFLAGS="${R_CFLAGS}"]
-)
+# No need for R_LDFLAGS; no R_LIBS defined
 
-# Prepend preprocessor and linker flags from environment to those from R:
-CPPFLAGS="$CPPFLAGS ${R_CPPFLAGS}"
-LDFLAGS="$LDFLAGS ${R_LDFLAGS}"
 
 
 #-------------------------------------------------------------------------------#
-#  Find possible dependencies of NetCDF on Windows,                             #
-#  or try nc-config on other platforms                                          #
+#  Get package compilers and flags from nc-config or environment variables      #
 #-------------------------------------------------------------------------------#
 
-AC_CHECK_DECLS([_WIN32], [
+AC_ARG_WITH([nc-config],
+  AS_HELP_STRING([--without-nc-config],
+    [use environment variables instead of nc-config to get compiler and linker options]),
+  [],
+  [with_nc_config=yes])
 
-  AC_CHECK_LIB(m, atan)
+AS_IF([test "x$with_nc_config" != xno],
+  [AC_CHECK_PROG(have_nc_config, nc-config, yes, no, [], [])])
 
-  AC_CHECK_LIB(ws2_32, getnameinfo)
-  AC_CHECK_LIB(wsock32, sethostname)
-  AC_CHECK_LIB(wldap32, ldap_init)
-  AC_CHECK_LIB(crypt32, CryptDecodeMessage)
-  AC_CHECK_LIB(gdi32, GdiConvertBitmap)
-  AC_CHECK_LIB(advapi32, RegOpenKeyExA)
 
-  AC_CHECK_LIB(pthread, pthread_mutex_init)
+AS_IF([test "x$have_nc_config" = xyes],
+  [
+    AC_MSG_NOTICE([Find package compilers and flags from nc-config:])
 
-  AC_CHECK_LIB(lzma, lzma_lzma_decoder_init)
-  AC_CHECK_LIB(z, deflate)
-  AC_CHECK_LIB(zstd, ZSTD_decompress)
-  AC_CHECK_LIB(sz, SZ_BufftoBuffDecompress)
+    AC_MSG_CHECKING([PKG_CC])
+    PKG_CC=`nc-config --cc`
+    AS_IF([test -z "${PKG_CC}"],
+      [PKG_CC="${R_CC}"]
+    )
+    AC_MSG_RESULT([${PKG_CC}])
+
+    AC_MSG_CHECKING([PKG_CFLAGS])
+    PKG_CFLAGS=`nc-config --cflags`
+    AC_MSG_RESULT([${PKG_CFLAGS}])
+
+    AC_MSG_CHECKING([PKG_CPPFLAGS])
+    PKG_CPPFLAGS=
+    AC_MSG_RESULT([${PKG_CPPFLAGS}])
+
+    AC_MSG_CHECKING([PKG_LDFLAGS])
+    PKG_LDFLAGS=
+    AC_MSG_RESULT([${PKG_LDFLAGS}])
 
   AC_CHECK_LIB(bcrypt, BCryptDecrypt)
   AC_CHECK_LIB(gpg-error, gpg_strerror)
@@ -62,54 +97,108 @@ AC_CHECK_DECLS([_WIN32], [
   AC_CHECK_LIB(ssl, SSL_CTX_new)
   AC_CHECK_LIB(ssh2, libssh2_init)
 
-  AC_CHECK_LIB(iconv, libiconv_open)
-  AC_CHECK_LIB(charset, locale_charset)
-  AC_CHECK_LIB(unistring, u8_to_u16)
-  AC_CHECK_LIB(idn2, idn2_to_ascii_8z)
+    AC_MSG_CHECKING([PKG_LIBS])
+    PKG_LIBS=`nc-config --libs`
+    AC_MSG_RESULT([${PKG_LIBS}])
+   
+  ], [
+    AC_MSG_NOTICE([Find package compilers and flags from environment variables:])
 
-  AC_CHECK_LIB(hdf5, H5Fopen)
-  AC_CHECK_LIB(hdf5_hl, H5TBmake_table)
+    AC_MSG_CHECKING([PKG_CC])
+    PKG_CC="${ENV_CC}"
+    AS_IF([test -z "${PKG_CC}"],
+      [PKG_CC="${R_CC}"])
+    AC_MSG_RESULT([${PKG_CC}])
 
-  AC_CHECK_LIB(portablexdr, xdr_int)
+    AC_MSG_CHECKING([PKG_CFLAGS])
+    PKG_CFLAGS="${ENV_CFLAGS}"
+    AC_MSG_RESULT([${PKG_CFLAGS}])
 
-  AC_CHECK_LIB(xml2, xmlReadMemory)
+    AC_MSG_CHECKING([PKG_CPPFLAGS])
+    PKG_CPPFLAGS="${ENV_CPPFLAGS}"
+    AC_MSG_RESULT([${PKG_CPPFLAGS}])
 
-  AC_CHECK_LIB(curl, curl_easy_init)
+    AC_MSG_CHECKING([PKG_LDFLAGS])
+    PKG_LDFLAGS="${ENV_LDFLAGS}"
+    AC_MSG_RESULT([${PKG_LDFLAGS}])
 
-  AC_CHECK_LIB(jpeg, jpeg_start_compress)
+    AC_MSG_CHECKING([PKG_LIBS])
+    PKG_LIBS="${ENV_LIBS}"
+    AC_MSG_RESULT([${PKG_LIBS}])
 
-  AC_CHECK_LIB(df, Hopen)
-  AC_CHECK_LIB(mfhdf, SDstart)
+  ]
+)
 
-], [
 
-  AC_ARG_WITH([nc-config],
-    AS_HELP_STRING([--without-nc-config],
-      [do not use nc-config to get netcdf configuration]),
-    [],
-    [with_nc_config=yes])
+AC_MSG_NOTICE([Combine flags from package and R for configure tests:])
 
-  AS_IF([test "x$with_nc_config" != xno],
-    [AC_CHECK_PROG(have_nc_config, nc-config, yes, no, [], [])])
+AC_MSG_CHECKING([CC])
+CC="${PKG_CC}"
+AC_MSG_RESULT([$CC])
 
-  AS_IF([test "x$have_nc_config" == xyes],
-    [
-      # Set compiler in CC (may be an MPI wrapper):
-      AC_MSG_CHECKING(netcdf C compiler)
-      NETCDF_CC=`nc-config --cc`
-      AC_MSG_RESULT($NETCDF_CC)
-      CC="$NETCDF_CC"
-      # Prepend linker flags to LDFLAGS:
-      AC_MSG_CHECKING(netcdf linker flags)
-      NETCDF_LIBS=`nc-config --libs`
-      AC_MSG_RESULT($NETCDF_LIBS)
-      LDFLAGS="$NETCDF_LIBS $LDFLAGS"
-      # Prepend preprocessor and compiler flags to CPPFLAGS:
-      AC_MSG_CHECKING(netcdf preprocessor and compiler flags)
-      NETCDF_CFLAGS=`nc-config --cflags`
-      AC_MSG_RESULT($NETCDF_CFLAGS)
-      CPPFLAGS="$NETCDF_CFLAGS $CPPFLAGS"
-    ])
+AC_MSG_CHECKING([CFLAGS])
+CFLAGS="${PKG_CFLAGS} ${R_CFLAGS}"
+AC_MSG_RESULT([$CFLAGS])
+
+AC_MSG_CHECKING([CPPFLAGS])
+CPPFLAGS="${PKG_CPPFLAGS} ${R_CPPFLAGS}"
+AC_MSG_RESULT([$CPPFLAGS])
+
+AC_MSG_CHECKING([LIBS])
+LIBS="${PKG_LIBS}" # No R_LIBS defined
+AC_MSG_RESULT([$LIBS])
+
+AC_MSG_CHECKING([LDFLAGS])
+LDFLAGS="${PKG_LDFLAGS}" # No need for R_LDFLAGS
+AC_MSG_RESULT([$LDFLAGS])
+
+
+#-------------------------------------------------------------------------------#
+#  Find extra libraries that may be needed on Windows                           #
+#-------------------------------------------------------------------------------#
+# (nc-config seems not to capture some of these static libraries on Windows)
+
+AS_IF([test "$platform" = Windows], [
+
+  AC_MSG_NOTICE([Find extra libraries that may be needed on Windows:])
+
+  # Start with empty LIBS, storing original LIBS to prepend later:
+  PRELIBS="$LIBS"
+  LIBS=
+
+  AC_SEARCH_LIBS(atan, m)
+
+  AC_SEARCH_LIBS(getnameinfo, ws2_32)
+  AC_SEARCH_LIBS(sethostname, wsock32)
+  AC_SEARCH_LIBS(ldap_init, wldap32)
+  AC_SEARCH_LIBS(CryptDecodeMessage, crypt32)
+  AC_SEARCH_LIBS(GdiConvertBitmap, gdi32)
+  AC_SEARCH_LIBS(RegOpenKeyExA, advapi32)
+
+  AC_SEARCH_LIBS(pthread_mutex_init, pthread)
+
+  AC_SEARCH_LIBS(lzma_lzma_decoder_init, lzma)
+  AC_SEARCH_LIBS(ZSTD_decompress, zstd)
+  AC_SEARCH_LIBS(SZ_BufftoBuffDecompress, sz)
+
+  AC_SEARCH_LIBS(BCryptDecrypt, bcrypt)
+  AC_SEARCH_LIBS(gpg_strerror, gpg-error)
+  AC_SEARCH_LIBS(gcry_md_open, gcrypt)
+  AC_SEARCH_LIBS(EVP_CIPHER_CTX_new, crypto)
+  AC_SEARCH_LIBS(SSL_CTX_new, ssl)
+  AC_SEARCH_LIBS(libssh2_init, ssh2)
+
+  AC_SEARCH_LIBS(libiconv_open, iconv)
+  AC_SEARCH_LIBS(locale_charset, charset)
+  AC_SEARCH_LIBS(u8_to_u16, unistring)
+  AC_SEARCH_LIBS(idn2_to_ascii_8z, idn2)
+
+  AC_SEARCH_LIBS(xdr_int, portablexdr)
+
+  AC_SEARCH_LIBS(jpeg_start_compress, jpeg)
+
+  # Prepend original LIBS:
+  LIBS="$PRELIBS $LIBS"
 
 ])
 
@@ -262,11 +351,35 @@ AC_SUBST(mpitest_cmd)
 
 
 #-------------------------------------------------------------------------------#
+#  Final configuration variables                                                #
+#-------------------------------------------------------------------------------#
+
+# LIBS is modified during configure, so update PKG_LIBS accordingly.
+# Note that LIBS should not include R libraries.
+PKG_LIBS="$LIBS" 
+
+# Display PKG variables:
+AC_MSG_NOTICE([Final package variables for make:
+PKG_CC=${PKG_CC}
+PKG_CFLAGS=${PKG_CFLAGS}
+PKG_CPPFLAGS=${PKG_CPPFLAGS}
+PKG_LDFLAGS=${PKG_LDFLAGS}
+PKG_LIBS=${PKG_LIBS}])
+
+AC_SUBST(PKG_CC)
+AC_SUBST(PKG_CFLAGS)
+AC_SUBST(PKG_CPPFLAGS)
+AC_SUBST(PKG_LDFLAGS)
+AC_SUBST(PKG_LIBS)
+# We also need DEFS, which is substituted automatically
+
+#-------------------------------------------------------------------------------#
 #  Do substitution                               	                 	#
 #-------------------------------------------------------------------------------#
 
 AC_CONFIG_FILES([src/Makefile.common R/config.R])
 AC_OUTPUT
+
 
 #-------------------------------------------------------------------------------#
 #  Done                                                                         #
