@@ -7,11 +7,13 @@
 # - is the most common and reliable method to build software with MPI.
 # Updates to the Makefile may be required if the R build system changes.
 
-R_SHLIB_MK = $(R_HOME)/share/make/shlib.mk
+# Default for non-Windows:
+WINDOWS = FALSE
 
 all:
-	$(MAKE) -f "$(R_HOME)/etc/$(R_ARCH)/Makeconf" \
-          -f Makefile.common \
-          -f "$(R_SHLIB_MK)" \
-          RNetCDF_all
+	WINDOWS="$(WINDOWS)" \
+        MAKE="$(MAKE)" \
+        R_HOME="$(R_HOME)" \
+        R_ARCH="$(R_ARCH)" \
+        $(SHELL) ../tools/make-recursive.sh
 
