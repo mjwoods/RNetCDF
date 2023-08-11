@@ -51,6 +51,16 @@ CPPFLAGS="${R_CPPFLAGS}"
 
 # No need for R_LDFLAGS; no R_LIBS defined
 
+#-------------------------------------------------------------------------------#
+#  Identify OS                                                                  #
+#-------------------------------------------------------------------------------#
+
+AC_CHECK_DECLS([_WIN32],
+  [platform=Windows],
+  [AC_CHECK_DECLS([__APPLE__],
+     [platform=macOS],
+     [platform=Unix-alike])])
+AC_MSG_NOTICE([Operating system is $platform])
 
 
 #-------------------------------------------------------------------------------#
@@ -65,6 +75,12 @@ AC_ARG_WITH([nc-config],
 
 AS_IF([test "x$with_nc_config" != xno],
   [AC_CHECK_PROG(have_nc_config, nc-config, yes, no, [], [])])
+
+AC_ARG_WITH([nc-config-static],
+  AS_HELP_STRING([--with-nc-config-static],
+    [use static libraries from nc-config (default on Windows & macOS)]),
+  [],
+  [with_nc_config_static=unset])
 
 
 AS_IF([test "x$have_nc_config" = xyes],
@@ -90,15 +106,21 @@ AS_IF([test "x$have_nc_config" = xyes],
     PKG_LDFLAGS=
     AC_MSG_RESULT([${PKG_LDFLAGS}])
 
-  AC_CHECK_LIB(bcrypt, BCryptDecrypt)
-  AC_CHECK_LIB(gpg-error, gpg_strerror)
-  AC_CHECK_LIB(gcrypt, gcry_md_open)
-  AC_CHECK_LIB(crypto, EVP_CIPHER_CTX_new)
-  AC_CHECK_LIB(ssl, SSL_CTX_new)
-  AC_CHECK_LIB(ssh2, libssh2_init)
+    AS_IF([test "${with_nc_config_static}" = unset],
+      [AS_IF([test "$platform" = Windows -o "$platform" = macOS],
+         [with_nc_config_static=yes],
+         [with_nc_config_static=no])
+      ]
+    )
 
-    AC_MSG_CHECKING([PKG_LIBS])
-    PKG_LIBS=`nc-config --libs`
+    AS_IF([test "x$with_nc_config_static" = xyes],
+      [nc_config_static_flag="--static"
+       nc_config_static_label=" (static)"],
+      [nc_config_static_flag=""
+       nc_config_static_label=""]
+    )
+    AC_MSG_CHECKING([PKG_LIBS${nc_config_static_label}])
+    PKG_LIBS=`nc-config ${nc_config_static_flag} --libs`
     AC_MSG_RESULT([${PKG_LIBS}])
    
   ], [
