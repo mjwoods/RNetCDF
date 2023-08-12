@@ -155,8 +155,8 @@ AC_ARG_WITH([nc-config-static],
 
 AS_IF([test "x${with_nc_config_static}" = xunset],
   [AS_IF([test "x$platform" = xWindows || test "x$platform" = xmacOS],
-     [with_nc_config_static=no],
-     [with_nc_config_static=yes])
+     [with_nc_config_static=yes],
+     [with_nc_config_static=no])
   ]
 )
 
