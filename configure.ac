@@ -6,66 +6,128 @@ AC_INIT([RNetCDF],[2.7-1])
 
 
 #-------------------------------------------------------------------------------#
-#  Store original environment variables for later use                           #
+#  Show compiler/linker variables from environment                              #
 #-------------------------------------------------------------------------------#
 
-AC_MSG_NOTICE([Store original environment variables for later use:])
+AC_MSG_NOTICE([Show compiler/linker variables from environment:])
 
-AC_MSG_CHECKING([ENV_CC])
-ENV_CC="$CC"
-AC_MSG_RESULT([${ENV_CC}])
+AC_MSG_CHECKING([CFLAGS])
+AC_MSG_RESULT([${CFLAGS-(unset)}])
 
-AC_MSG_CHECKING([ENV_CFLAGS])
-ENV_CFLAGS="$CFLAGS"
-AC_MSG_RESULT([${ENV_CFLAGS}])
+AC_MSG_CHECKING([CPPFLAGS])
+AC_MSG_RESULT([${CPPFLAGS-(unset)}])
 
-AC_MSG_CHECKING([ENV_CPPFLAGS])
-ENV_CPPFLAGS="$CPPFLAGS"
-AC_MSG_RESULT([${ENV_CPPFLAGS}])
+AC_MSG_CHECKING([LDFLAGS])
+AC_MSG_RESULT([${LDFLAGS-(unset)}])
 
-AC_MSG_CHECKING([ENV_LDFLAGS])
-ENV_LDFLAGS="$LDFLAGS"
-AC_MSG_RESULT([${ENV_LDFLAGS}])
-
-AC_MSG_CHECKING([ENV_LIBS])
-ENV_LIBS="$LIBS"
-AC_MSG_RESULT([${ENV_LIBS}])
-
-# Clear variables to ensure they are redefined later:
-CC=
-CFLAGS=
-CPPFLAGS=
-LDFLAGS=
-LIBS=
+AC_MSG_CHECKING([LIBS])
+AC_MSG_RESULT([${LIBS-(unset)}])
 
 
 #-------------------------------------------------------------------------------#
-#  Use the compiler and compiler options from R for initial tests               #
+#  Show compiler/linker variables from R                                        #
 #-------------------------------------------------------------------------------#
+
+AC_MSG_NOTICE([Show compiler/linker variables from R:])
 
 : ${R_HOME=`R RHOME`}
 AS_IF([test -z "${R_HOME}"],
   AC_MSG_ERROR([could not determine R_HOME])
 )
 
-AC_MSG_NOTICE([Find compilers and flags from R:])
-
-AC_MSG_CHECKING([R_CC])
+AC_MSG_CHECKING([CC])
 R_CC=`"${R_HOME}/bin/R" CMD config CC`
 AC_MSG_RESULT([${R_CC}])
-CC="${R_CC}"
 
-AC_MSG_CHECKING([R_CFLAGS])
+AC_MSG_CHECKING([CFLAGS])
 R_CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 AC_MSG_RESULT([${R_CFLAGS}])
-CFLAGS="${R_CFLAGS}"
 
-AC_MSG_CHECKING([R_CPPFLAGS])
+AC_MSG_CHECKING([CPPFLAGS])
 R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 AC_MSG_RESULT([${R_CPPFLAGS}])
-CPPFLAGS="${R_CPPFLAGS}"
 
-# No need for R_LDFLAGS; no R_LIBS defined
+AC_MSG_CHECKING([LDFLAGS])
+R_LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
+AC_MSG_RESULT([${R_LDFLAGS}])
+
+# No LIBS from R
+
+
+#-------------------------------------------------------------------------------#
+#  Find first working compiler from nc-config (optional) then R                 #
+#-------------------------------------------------------------------------------#
+
+AC_MSG_NOTICE([Find first working compiler from nc-config (optional) then R:])
+
+AC_ARG_WITH([nc-config],
+  AS_HELP_STRING([--with-nc-config],
+    [get compiler options from nc-config (default)]),
+  [],
+  [with_nc_config=yes])
+
+AS_IF([test "x${with_nc_config}" = xyes],
+  [AC_CHECK_PROG(have_nc_config, nc-config, yes, no, [], [])],
+  [have_nc_config=no])
+
+# Check compiler from nc-config, if enabled:
+CC=
+AC_LANG(C)
+AS_IF([test "x${have_nc_config}" = xyes], [
+  AC_MSG_CHECKING([nc-config compiler])
+  PKG_CC=`nc-config --cc`
+  AC_MSG_RESULT([${PKG_CC}])
+
+  # Append any compiler flags from R_CC to PKG_CC,
+  # assuming that PKG_CC is an MPI wrapper for R_CC.
+  # The compiler pathname could include spaces,
+  # so assume first flag begins with "-".
+  AC_MSG_CHECKING([append flags from R compiler to nc-config compiler])
+  set -- ${R_CC}
+  for word; do
+    case "$word" in
+      (-*) PKG_CC="${PKG_CC} $@"; break ;;
+      (*) shift ;;
+    esac
+  done
+  AC_MSG_RESULT([${PKG_CC}])
+
+  # Check that nc-config compiler works:
+  CC="${PKG_CC}"
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])], [], [CC=])
+])
+
+# Check compiler from R, if no working compiler found so far:
+AS_IF([test -z "$CC"], [
+  # Check that R compiler works:
+  CC="${R_CC}"
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])], [], [CC=])
+])
+
+AC_MSG_CHECKING([CC])
+AS_IF([test -z "$CC"],
+  [AC_MSG_ERROR([no working compiler found])])
+AC_MSG_RESULT([$CC])
+
+
+#-------------------------------------------------------------------------------#
+#  Concatenate compiler/linker variables from R then environment                #
+#-------------------------------------------------------------------------------#
+
+AC_MSG_NOTICE([Concatenate compiler/linker variables from R then environment:])
+
+AC_MSG_CHECKING([CFLAGS])
+CFLAGS="${R_FLAGS} $CFLAGS"
+AC_MSG_RESULT([$CFLAGS])
+
+AC_MSG_CHECKING([CPPFLAGS])
+CPPFLAGS="${R_CPPFLAGS} $CPPFLAGS"
+AC_MSG_RESULT([$CPPFLAGS])
+
+AC_MSG_CHECKING([LDFLAGS])
+LDFLAGS="${R_LDFLAGS} $LDFLAGS"
+AC_MSG_RESULT([$LDFLAGS])
+
 
 #-------------------------------------------------------------------------------#
 #  Identify OS                                                                  #
@@ -80,17 +142,8 @@ AC_MSG_NOTICE([Operating system is $platform])
 
 
 #-------------------------------------------------------------------------------#
-#  Get package compilers and flags from nc-config or environment variables      #
+#  Prepend compiler/linker variables from nc-config (if specified)              #
 #-------------------------------------------------------------------------------#
-
-AC_ARG_WITH([nc-config],
-  AS_HELP_STRING([--without-nc-config],
-    [use environment variables instead of nc-config to get compiler and linker options]),
-  [],
-  [with_nc_config=yes])
-
-AS_IF([test "x$with_nc_config" != xno],
-  [AC_CHECK_PROG(have_nc_config, nc-config, yes, no, [], [])])
 
 AC_ARG_WITH([nc-config-static],
   AS_HELP_STRING([--with-nc-config-static],
@@ -98,97 +151,43 @@ AC_ARG_WITH([nc-config-static],
   [],
   [with_nc_config_static=unset])
 
+AS_IF([test "x${with_nc_config_static}" = xunset],
+  [AS_IF([test "x$platform" = xWindows || test "x$platform" = xmacOS],
+     [with_nc_config_static=no],
+     [with_nc_config_static=yes])
+  ]
+)
 
-AS_IF([test "x$have_nc_config" = xyes],
+AS_IF([test "x${have_nc_config}" = xyes],
   [
-    AC_MSG_NOTICE([Find package compilers and flags from nc-config:])
-
-    AC_MSG_CHECKING([PKG_CC])
-    PKG_CC=`nc-config --cc`
-    AS_IF([test -z "${PKG_CC}"],
-      [PKG_CC="${R_CC}"]
-    )
-    AC_MSG_RESULT([${PKG_CC}])
+    AC_MSG_NOTICE([Find compiler/linker variables from nc-config:])
 
     AC_MSG_CHECKING([PKG_CFLAGS])
     PKG_CFLAGS=`nc-config --cflags`
     AC_MSG_RESULT([${PKG_CFLAGS}])
 
-    AC_MSG_CHECKING([PKG_CPPFLAGS])
-    PKG_CPPFLAGS=
-    AC_MSG_RESULT([${PKG_CPPFLAGS}])
-
-    AC_MSG_CHECKING([PKG_LDFLAGS])
-    PKG_LDFLAGS=
-    AC_MSG_RESULT([${PKG_LDFLAGS}])
-
-    AS_IF([test "${with_nc_config_static}" = unset],
-      [AS_IF([test "$platform" = Windows -o "$platform" = macOS],
-         [with_nc_config_static=yes],
-         [with_nc_config_static=no])
-      ]
-    )
-
-    AS_IF([test "x$with_nc_config_static" = xyes],
+    AS_IF([test "x${with_nc_config_static}" = xyes],
       [nc_config_static_flag="--static"
        nc_config_static_label=" (static)"],
       [nc_config_static_flag=""
        nc_config_static_label=""]
     )
-    AC_MSG_CHECKING([PKG_LIBS${nc_config_static_label}])
+    AC_MSG_CHECKING([LIBS${nc_config_static_label}])
     PKG_LIBS=`nc-config ${nc_config_static_flag} --libs`
     AC_MSG_RESULT([${PKG_LIBS}])
+
+    AC_MSG_NOTICE([Prepend compiler/linker variables with variables from nc-config:])
+
+    AC_MSG_CHECKING([CFLAGS])
+    CFLAGS="${PKG_CFLAGS} $CFLAGS"
+    AC_MSG_RESULT([$CFLAGS])
+
+    AC_MSG_CHECKING([LIBS])
+    LIBS="${PKG_LIBS} $LIBS"
+    AC_MSG_RESULT([$LIBS])
    
-  ], [
-    AC_MSG_NOTICE([Find package compilers and flags from environment variables:])
-
-    AC_MSG_CHECKING([PKG_CC])
-    PKG_CC="${ENV_CC}"
-    AS_IF([test -z "${PKG_CC}"],
-      [PKG_CC="${R_CC}"])
-    AC_MSG_RESULT([${PKG_CC}])
-
-    AC_MSG_CHECKING([PKG_CFLAGS])
-    PKG_CFLAGS="${ENV_CFLAGS}"
-    AC_MSG_RESULT([${PKG_CFLAGS}])
-
-    AC_MSG_CHECKING([PKG_CPPFLAGS])
-    PKG_CPPFLAGS="${ENV_CPPFLAGS}"
-    AC_MSG_RESULT([${PKG_CPPFLAGS}])
-
-    AC_MSG_CHECKING([PKG_LDFLAGS])
-    PKG_LDFLAGS="${ENV_LDFLAGS}"
-    AC_MSG_RESULT([${PKG_LDFLAGS}])
-
-    AC_MSG_CHECKING([PKG_LIBS])
-    PKG_LIBS="${ENV_LIBS}"
-    AC_MSG_RESULT([${PKG_LIBS}])
-
   ]
 )
-
-
-AC_MSG_NOTICE([Combine flags from package and R for configure tests:])
-
-AC_MSG_CHECKING([CC])
-CC="${PKG_CC}"
-AC_MSG_RESULT([$CC])
-
-AC_MSG_CHECKING([CFLAGS])
-CFLAGS="${PKG_CFLAGS} ${R_CFLAGS}"
-AC_MSG_RESULT([$CFLAGS])
-
-AC_MSG_CHECKING([CPPFLAGS])
-CPPFLAGS="${PKG_CPPFLAGS} ${R_CPPFLAGS}"
-AC_MSG_RESULT([$CPPFLAGS])
-
-AC_MSG_CHECKING([LIBS])
-LIBS="${PKG_LIBS}" # No R_LIBS defined
-AC_MSG_RESULT([$LIBS])
-
-AC_MSG_CHECKING([LDFLAGS])
-LDFLAGS="${PKG_LDFLAGS}" # No need for R_LDFLAGS
-AC_MSG_RESULT([$LDFLAGS])
 
 
 #-------------------------------------------------------------------------------#
@@ -196,7 +195,7 @@ AC_MSG_RESULT([$LDFLAGS])
 #-------------------------------------------------------------------------------#
 # (nc-config seems not to capture some of these static libraries on Windows)
 
-AS_IF([test "$platform" = Windows], [
+AS_IF([test "x$platform" = xWindows], [
 
   AC_MSG_NOTICE([Find extra libraries that may be needed on Windows:])
 
@@ -301,7 +300,7 @@ AC_CHECK_HEADERS([mpi.h], [], [has_mpi=FALSE])
 AC_CHECK_FUNCS([MPI_Init], [], [has_mpi=FALSE])
 
 AS_IF([test "$has_mpi" != TRUE],
-  [AC_MSG_WARN([MPI not available. To enable MPI, try setting CC=mpicc in ~/.R/Makevars(.win)])])
+  [AC_MSG_WARN([MPI not available. If needed, check that nc-config returns compiler with MPI support.])])
 
 # Parallel I/O support in NetCDF:
 AS_IF([test "$has_mpi" = TRUE],
@@ -392,24 +391,16 @@ AC_SUBST(mpitest_cmd)
 #  Final configuration variables                                                #
 #-------------------------------------------------------------------------------#
 
-# LIBS is modified during configure, so update PKG_LIBS accordingly.
-# Note that LIBS should not include R libraries.
-PKG_LIBS="$LIBS" 
+AC_MSG_NOTICE([Final compiler and linker variables for make:
+CC=$CC
+CFLAGS=$CFLAGS
+CPPFLAGS=$CPPFLAGS
+LDFLAGS=$LDFLAGS
+LIBS=$LIBS])
 
-# Display PKG variables:
-AC_MSG_NOTICE([Final package variables for make:
-PKG_CC=${PKG_CC}
-PKG_CFLAGS=${PKG_CFLAGS}
-PKG_CPPFLAGS=${PKG_CPPFLAGS}
-PKG_LDFLAGS=${PKG_LDFLAGS}
-PKG_LIBS=${PKG_LIBS}])
+# The above are substituted automatically in output files.
+# DEFS is also substituted, but it cannot be displayed in configure.
 
-AC_SUBST(PKG_CC)
-AC_SUBST(PKG_CFLAGS)
-AC_SUBST(PKG_CPPFLAGS)
-AC_SUBST(PKG_LDFLAGS)
-AC_SUBST(PKG_LIBS)
-# We also need DEFS, which is substituted automatically
 
 #-------------------------------------------------------------------------------#
 #  Do substitution                               	                 	#
