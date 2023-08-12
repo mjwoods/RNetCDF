@@ -3756,6 +3756,11 @@ then :
 
 else $as_nop
   CC=
+     { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "nc-config compiler test failed
+See \`config.log' for more details" "$LINENO" 5; }
+
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
@@ -3782,7 +3787,7 @@ if ac_fn_c_try_compile "$LINENO"
 then :
 
 else $as_nop
-  CC=
+  as_fn_error $? "R compiler test failed" "$LINENO" 5
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 
@@ -3790,10 +3795,6 @@ fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CC" >&5
 printf %s "checking CC... " >&6; }
-if test -z "$CC"
-then :
-  as_fn_error $? "no working compiler found" "$LINENO" 5
-fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CC" >&5
 printf "%s\n" "$CC" >&6; }
 
@@ -3807,7 +3808,7 @@ printf "%s\n" "$as_me: Concatenate compiler/linker variables from R then environ
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
 printf %s "checking CFLAGS... " >&6; }
-CFLAGS="${R_FLAGS} $CFLAGS"
+CFLAGS="${R_CFLAGS} $CFLAGS"
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CFLAGS" >&5
 printf "%s\n" "$CFLAGS" >&6; }
 
@@ -3988,9 +3989,9 @@ if test "x${with_nc_config_static}" = xunset
 then :
   if test "x$platform" = xWindows || test "x$platform" = xmacOS
 then :
-  with_nc_config_static=no
-else $as_nop
   with_nc_config_static=yes
+else $as_nop
+  with_nc_config_static=no
 fi
 
 
@@ -5424,8 +5425,12 @@ then :
 fi
 
 
-  # Prepend original LIBS:
+  # Append to previous LIBS:
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking append extra libraries to previous LIBS" >&5
+printf %s "checking append extra libraries to previous LIBS... " >&6; }
   LIBS="$PRELIBS $LIBS"
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LIBS" >&5
+printf "%s\n" "$LIBS" >&6; }
 
 
 fi
