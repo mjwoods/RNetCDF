@@ -647,17 +647,11 @@ ac_includes_default="\
 ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-PKG_LIBS
-PKG_LDFLAGS
-PKG_CPPFLAGS
-PKG_CFLAGS
-PKG_CC
 mpitest_cmd
 has_parallel
 has_udunits
 has_diskless
 has_data64
-have_nc_config
 OBJEXT
 EXEEXT
 ac_ct_CC
@@ -665,6 +659,7 @@ CPPFLAGS
 LDFLAGS
 CFLAGS
 CC
+have_nc_config
 target_alias
 host_alias
 build_alias
@@ -1336,8 +1331,7 @@ if test -n "$ac_init_help"; then
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --without-nc-config     use environment variables instead of nc-config to
-                          get compiler and linker options
+  --with-nc-config        get compiler options from nc-config (default)
   --with-nc-config-static use static libraries from nc-config (default on
                           Windows & macOS)
   --with-mpitest-cmd      MPI command to run small parallel tests after
@@ -2581,26 +2575,39 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 #-------------------------------------------------------------------------------#
-#  Store original environment variables for later use                           #
+#  Show compiler/linker variables from environment                              #
 #-------------------------------------------------------------------------------#
 
-ENV_CC="$CC"
-ENV_CFLAGS="$CFLAGS"
-ENV_CPPFLAGS="$CPPFLAGS"
-ENV_LDFLAGS="$LDFLAGS"
-ENV_LIBS="$LIBS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Show compiler/linker variables from environment:" >&5
+printf "%s\n" "$as_me: Show compiler/linker variables from environment:" >&6;}
 
-# Clear variables to ensure they are redefined later:
-CC=
-CFLAGS=
-CPPFLAGS=
-LDFLAGS=
-LIBS=
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
+printf %s "checking CFLAGS... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${CFLAGS-(unset)}" >&5
+printf "%s\n" "${CFLAGS-(unset)}" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
+printf %s "checking CPPFLAGS... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${CPPFLAGS-(unset)}" >&5
+printf "%s\n" "${CPPFLAGS-(unset)}" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
+printf %s "checking LDFLAGS... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${LDFLAGS-(unset)}" >&5
+printf "%s\n" "${LDFLAGS-(unset)}" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS" >&5
+printf %s "checking LIBS... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${LIBS-(unset)}" >&5
+printf "%s\n" "${LIBS-(unset)}" >&6; }
 
 
 #-------------------------------------------------------------------------------#
-#  Use the compiler and compiler options from R for initial tests               #
+#  Show compiler/linker variables from R                                        #
 #-------------------------------------------------------------------------------#
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Show compiler/linker variables from R:" >&5
+printf "%s\n" "$as_me: Show compiler/linker variables from R:" >&6;}
 
 : ${R_HOME=`R RHOME`}
 if test -z "${R_HOME}"
@@ -2609,35 +2616,106 @@ then :
 
 fi
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find compilers and flags from R:" >&5
-printf "%s\n" "$as_me: Find compilers and flags from R:" >&6;}
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking R_CC" >&5
-printf %s "checking R_CC... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CC" >&5
+printf %s "checking CC... " >&6; }
 R_CC=`"${R_HOME}/bin/R" CMD config CC`
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${R_CC}" >&5
 printf "%s\n" "${R_CC}" >&6; }
-CC="${R_CC}"
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking R_CFLAGS" >&5
-printf %s "checking R_CFLAGS... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
+printf %s "checking CFLAGS... " >&6; }
 R_CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${R_CFLAGS}" >&5
 printf "%s\n" "${R_CFLAGS}" >&6; }
-CFLAGS="${R_CFLAGS}"
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking R_CPPFLAGS" >&5
-printf %s "checking R_CPPFLAGS... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
+printf %s "checking CPPFLAGS... " >&6; }
 R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${R_CPPFLAGS}" >&5
 printf "%s\n" "${R_CPPFLAGS}" >&6; }
-CPPFLAGS="${R_CPPFLAGS}"
 
-# No need for R_LDFLAGS; no R_LIBS defined
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
+printf %s "checking LDFLAGS... " >&6; }
+R_LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${R_LDFLAGS}" >&5
+printf "%s\n" "${R_LDFLAGS}" >&6; }
+
+# No LIBS from R
+
 
 #-------------------------------------------------------------------------------#
-#  Identify OS                                                                  #
+#  Find first working compiler from nc-config (optional) then R                 #
 #-------------------------------------------------------------------------------#
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find first working compiler from nc-config (optional) then R:" >&5
+printf "%s\n" "$as_me: Find first working compiler from nc-config (optional) then R:" >&6;}
+
+
+# Check whether --with-nc-config was given.
+if test ${with_nc_config+y}
+then :
+  withval=$with_nc_config;
+else $as_nop
+  with_nc_config=yes
+fi
+
+
+if test "x${with_nc_config}" = xyes
+then :
+  # Extract the first word of "nc-config", so it can be a program name with args.
+set dummy nc-config; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_prog_have_nc_config+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  if test -n "$have_nc_config"; then
+  ac_cv_prog_have_nc_config="$have_nc_config" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_prog_have_nc_config="yes"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_have_nc_config" && ac_cv_prog_have_nc_config="no"
+fi
+fi
+have_nc_config=$ac_cv_prog_have_nc_config
+if test -n "$have_nc_config"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $have_nc_config" >&5
+printf "%s\n" "$have_nc_config" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+else $as_nop
+  have_nc_config=no
+fi
+
+# Check compiler from nc-config, if enabled:
+CC=
+ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
@@ -3635,6 +3713,121 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+if test "x${have_nc_config}" = xyes
+then :
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config compiler" >&5
+printf %s "checking nc-config compiler... " >&6; }
+  PKG_CC=`nc-config --cc`
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CC}" >&5
+printf "%s\n" "${PKG_CC}" >&6; }
+
+  # Append any compiler flags from R_CC to PKG_CC,
+  # assuming that PKG_CC is an MPI wrapper for R_CC.
+  # The compiler pathname could include spaces,
+  # so assume first flag begins with "-".
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking append flags from R compiler to nc-config compiler" >&5
+printf %s "checking append flags from R compiler to nc-config compiler... " >&6; }
+  set -- ${R_CC}
+  for word; do
+    case "$word" in
+      (-*) PKG_CC="${PKG_CC} $@"; break ;;
+      (*) shift ;;
+    esac
+  done
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CC}" >&5
+printf "%s\n" "${PKG_CC}" >&6; }
+
+  # Check that nc-config compiler works:
+  CC="${PKG_CC}"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+
+else $as_nop
+  CC=
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+fi
+
+# Check compiler from R, if no working compiler found so far:
+if test -z "$CC"
+then :
+
+  # Check that R compiler works:
+  CC="${R_CC}"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+
+else $as_nop
+  CC=
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CC" >&5
+printf %s "checking CC... " >&6; }
+if test -z "$CC"
+then :
+  as_fn_error $? "no working compiler found" "$LINENO" 5
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CC" >&5
+printf "%s\n" "$CC" >&6; }
+
+
+#-------------------------------------------------------------------------------#
+#  Concatenate compiler/linker variables from R then environment                #
+#-------------------------------------------------------------------------------#
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Concatenate compiler/linker variables from R then environment:" >&5
+printf "%s\n" "$as_me: Concatenate compiler/linker variables from R then environment:" >&6;}
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
+printf %s "checking CFLAGS... " >&6; }
+CFLAGS="${R_FLAGS} $CFLAGS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CFLAGS" >&5
+printf "%s\n" "$CFLAGS" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
+printf %s "checking CPPFLAGS... " >&6; }
+CPPFLAGS="${R_CPPFLAGS} $CPPFLAGS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CPPFLAGS" >&5
+printf "%s\n" "$CPPFLAGS" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
+printf %s "checking LDFLAGS... " >&6; }
+LDFLAGS="${R_LDFLAGS} $LDFLAGS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LDFLAGS" >&5
+printf "%s\n" "$LDFLAGS" >&6; }
+
+
+#-------------------------------------------------------------------------------#
+#  Identify OS                                                                  #
+#-------------------------------------------------------------------------------#
+
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CC options needed to detect all undeclared functions" >&5
 printf %s "checking for $CC options needed to detect all undeclared functions... " >&6; }
 if test ${ac_cv_c_undeclared_builtin_options+y}
@@ -3778,65 +3971,8 @@ printf "%s\n" "$as_me: Operating system is $platform" >&6;}
 
 
 #-------------------------------------------------------------------------------#
-#  Get package compilers and flags from nc-config or environment variables      #
+#  Prepend compiler/linker variables from nc-config (if specified)              #
 #-------------------------------------------------------------------------------#
-
-
-# Check whether --with-nc-config was given.
-if test ${with_nc_config+y}
-then :
-  withval=$with_nc_config;
-else $as_nop
-  with_nc_config=yes
-fi
-
-
-if test "x$with_nc_config" != xno
-then :
-  # Extract the first word of "nc-config", so it can be a program name with args.
-set dummy nc-config; ac_word=$2
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-printf %s "checking for $ac_word... " >&6; }
-if test ${ac_cv_prog_have_nc_config+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  if test -n "$have_nc_config"; then
-  ac_cv_prog_have_nc_config="$have_nc_config" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  case $as_dir in #(((
-    '') as_dir=./ ;;
-    */) ;;
-    *) as_dir=$as_dir/ ;;
-  esac
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
-    ac_cv_prog_have_nc_config="yes"
-    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  test -z "$ac_cv_prog_have_nc_config" && ac_cv_prog_have_nc_config="no"
-fi
-fi
-have_nc_config=$ac_cv_prog_have_nc_config
-if test -n "$have_nc_config"; then
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $have_nc_config" >&5
-printf "%s\n" "$have_nc_config" >&6; }
-else
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-fi
-
-
-fi
 
 
 # Check whether --with-nc-config-static was given.
@@ -3848,23 +3984,23 @@ else $as_nop
 fi
 
 
-
-if test "x$have_nc_config" = xyes
+if test "x${with_nc_config_static}" = xunset
 then :
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find package compilers and flags from nc-config:" >&5
-printf "%s\n" "$as_me: Find package compilers and flags from nc-config:" >&6;}
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CC" >&5
-printf %s "checking PKG_CC... " >&6; }
-    PKG_CC=`nc-config --cc`
-    if test -z "${PKG_CC}"
+  if test "x$platform" = xWindows || test "x$platform" = xmacOS
 then :
-  PKG_CC="${R_CC}"
+  with_nc_config_static=no
+else $as_nop
+  with_nc_config_static=yes
+fi
+
 
 fi
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CC}" >&5
-printf "%s\n" "${PKG_CC}" >&6; }
+
+if test "x${have_nc_config}" = xyes
+then :
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find compiler/linker variables from nc-config:" >&5
+printf "%s\n" "$as_me: Find compiler/linker variables from nc-config:" >&6;}
 
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CFLAGS" >&5
 printf %s "checking PKG_CFLAGS... " >&6; }
@@ -3872,31 +4008,7 @@ printf %s "checking PKG_CFLAGS... " >&6; }
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CFLAGS}" >&5
 printf "%s\n" "${PKG_CFLAGS}" >&6; }
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CPPFLAGS" >&5
-printf %s "checking PKG_CPPFLAGS... " >&6; }
-    PKG_CPPFLAGS=
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CPPFLAGS}" >&5
-printf "%s\n" "${PKG_CPPFLAGS}" >&6; }
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_LDFLAGS" >&5
-printf %s "checking PKG_LDFLAGS... " >&6; }
-    PKG_LDFLAGS=
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_LDFLAGS}" >&5
-printf "%s\n" "${PKG_LDFLAGS}" >&6; }
-
-    if test "${with_nc_config_static}" = unset
-then :
-  if test "$platform" = Windows -o "$platform" = macOS
-then :
-  with_nc_config_static=yes
-else $as_nop
-  with_nc_config_static=no
-fi
-
-
-fi
-
-    if test "x$with_nc_config_static" = xyes
+    if test "x${with_nc_config_static}" = xyes
 then :
   nc_config_static_flag="--static"
        nc_config_static_label=" (static)"
@@ -3905,89 +4017,30 @@ else $as_nop
        nc_config_static_label=""
 
 fi
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_LIBS${nc_config_static_label}" >&5
-printf %s "checking PKG_LIBS${nc_config_static_label}... " >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS${nc_config_static_label}" >&5
+printf %s "checking LIBS${nc_config_static_label}... " >&6; }
     PKG_LIBS=`nc-config ${nc_config_static_flag} --libs`
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_LIBS}" >&5
 printf "%s\n" "${PKG_LIBS}" >&6; }
 
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Prepend compiler/linker variables with variables from nc-config:" >&5
+printf "%s\n" "$as_me: Prepend compiler/linker variables with variables from nc-config:" >&6;}
 
-else $as_nop
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find package compilers and flags from environment variables:" >&5
-printf "%s\n" "$as_me: Find package compilers and flags from environment variables:" >&6;}
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CC" >&5
-printf %s "checking PKG_CC... " >&6; }
-    PKG_CC="${ENV_CC}"
-    if test -z "${PKG_CC}"
-then :
-  PKG_CC="${R_CC}"
-fi
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CC}" >&5
-printf "%s\n" "${PKG_CC}" >&6; }
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CFLAGS" >&5
-printf %s "checking PKG_CFLAGS... " >&6; }
-    PKG_CFLAGS="${ENV_CFLAGS}"
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CFLAGS}" >&5
-printf "%s\n" "${PKG_CFLAGS}" >&6; }
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CPPFLAGS" >&5
-printf %s "checking PKG_CPPFLAGS... " >&6; }
-    PKG_CPPFLAGS="${ENV_CPPFLAGS}"
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CPPFLAGS}" >&5
-printf "%s\n" "${PKG_CPPFLAGS}" >&6; }
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_LDFLAGS" >&5
-printf %s "checking PKG_LDFLAGS... " >&6; }
-    PKG_LDFLAGS="${ENV_LDFLAGS}"
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_LDFLAGS}" >&5
-printf "%s\n" "${PKG_LDFLAGS}" >&6; }
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_LIBS" >&5
-printf %s "checking PKG_LIBS... " >&6; }
-    PKG_LIBS="${ENV_LIBS}"
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_LIBS}" >&5
-printf "%s\n" "${PKG_LIBS}" >&6; }
-
-
-
-fi
-
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Combine flags from package and R for configure tests:" >&5
-printf "%s\n" "$as_me: Combine flags from package and R for configure tests:" >&6;}
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CC" >&5
-printf %s "checking CC... " >&6; }
-CC="${PKG_CC}"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CC" >&5
-printf "%s\n" "$CC" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
 printf %s "checking CFLAGS... " >&6; }
-CFLAGS="${PKG_CFLAGS} ${R_CFLAGS}"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CFLAGS" >&5
+    CFLAGS="${PKG_CFLAGS} $CFLAGS"
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CFLAGS" >&5
 printf "%s\n" "$CFLAGS" >&6; }
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
-printf %s "checking CPPFLAGS... " >&6; }
-CPPFLAGS="${PKG_CPPFLAGS} ${R_CPPFLAGS}"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CPPFLAGS" >&5
-printf "%s\n" "$CPPFLAGS" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS" >&5
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS" >&5
 printf %s "checking LIBS... " >&6; }
-LIBS="${PKG_LIBS}" # No R_LIBS defined
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LIBS" >&5
+    LIBS="${PKG_LIBS} $LIBS"
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LIBS" >&5
 printf "%s\n" "$LIBS" >&6; }
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
-printf %s "checking LDFLAGS... " >&6; }
-LDFLAGS="${PKG_LDFLAGS}" # No need for R_LDFLAGS
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LDFLAGS" >&5
-printf "%s\n" "$LDFLAGS" >&6; }
+
+
+fi
 
 
 #-------------------------------------------------------------------------------#
@@ -3995,7 +4048,7 @@ printf "%s\n" "$LDFLAGS" >&6; }
 #-------------------------------------------------------------------------------#
 # (nc-config seems not to capture some of these static libraries on Windows)
 
-if test "$platform" = Windows
+if test "x$platform" = xWindows
 then :
 
 
@@ -5718,8 +5771,8 @@ done
 
 if test "$has_mpi" != TRUE
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not available. To enable MPI, try setting CC=mpicc in ~/.R/Makevars(.win)" >&5
-printf "%s\n" "$as_me: WARNING: MPI not available. To enable MPI, try setting CC=mpicc in ~/.R/Makevars(.win)" >&2;}
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not available. If needed, check that nc-config returns compiler with MPI support." >&5
+printf "%s\n" "$as_me: WARNING: MPI not available. If needed, check that nc-config returns compiler with MPI support." >&2;}
 fi
 
 # Parallel I/O support in NetCDF:
@@ -6039,30 +6092,22 @@ fi
 #  Final configuration variables                                                #
 #-------------------------------------------------------------------------------#
 
-# LIBS is modified during configure, so update PKG_LIBS accordingly.
-# Note that LIBS should not include R libraries.
-PKG_LIBS="$LIBS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Final compiler and linker variables for make:
+CC=$CC
+CFLAGS=$CFLAGS
+CPPFLAGS=$CPPFLAGS
+LDFLAGS=$LDFLAGS
+LIBS=$LIBS" >&5
+printf "%s\n" "$as_me: Final compiler and linker variables for make:
+CC=$CC
+CFLAGS=$CFLAGS
+CPPFLAGS=$CPPFLAGS
+LDFLAGS=$LDFLAGS
+LIBS=$LIBS" >&6;}
 
-# Display PKG variables:
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Final package variables for make:
-PKG_CC=${PKG_CC}
-PKG_CFLAGS=${PKG_CFLAGS}
-PKG_CPPFLAGS=${PKG_CPPFLAGS}
-PKG_LDFLAGS=${PKG_LDFLAGS}
-PKG_LIBS=${PKG_LIBS}" >&5
-printf "%s\n" "$as_me: Final package variables for make:
-PKG_CC=${PKG_CC}
-PKG_CFLAGS=${PKG_CFLAGS}
-PKG_CPPFLAGS=${PKG_CPPFLAGS}
-PKG_LDFLAGS=${PKG_LDFLAGS}
-PKG_LIBS=${PKG_LIBS}" >&6;}
+# The above are substituted automatically in output files.
+# DEFS is also substituted, but it cannot be displayed in configure.
 
-
-
-
-
-
-# We also need DEFS, which is substituted automatically
 
 #-------------------------------------------------------------------------------#
 #  Do substitution                               	                 	#
