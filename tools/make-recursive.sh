@@ -47,5 +47,6 @@ else
 fi
 
 # Run make:
+echo $MAKE $MAKEARGS
 $MAKE $MAKEARGS
 
