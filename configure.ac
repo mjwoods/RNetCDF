@@ -93,20 +93,27 @@ AS_IF([test "x${have_nc_config}" = xyes], [
   AC_MSG_RESULT([${PKG_CC}])
 
   # Check that nc-config compiler works:
+  AC_MSG_CHECKING([nc-config compiler test])
   CC="${PKG_CC}"
-  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])], [],
-    [CC=
-     AC_MSG_FAILURE([nc-config compiler test failed])
-    ])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
+    [cctest=pass],
+    [CC= ; cctest=fail])
+  AC_MSG_RESULT([$cctest])
 ])
 
 # Check compiler from R, if no working compiler found so far:
 AS_IF([test -z "$CC"], [
   # Check that R compiler works:
+  AC_MSG_CHECKING([R compiler test])
   CC="${R_CC}"
-  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])], [],
-    [AC_MSG_ERROR([R compiler test failed])])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
+    [cctest=pass],
+    [CC= ; cctest=fail])
+  AC_MSG_RESULT([$cctest])
 ])
+
+AS_IF([test -z "$CC"],
+  [AC_MSG_ERROR([no working compiler found])])
 
 AC_MSG_CHECKING([CC])
 AC_MSG_RESULT([$CC])
@@ -304,7 +311,7 @@ AC_CHECK_HEADERS([mpi.h], [], [has_mpi=FALSE])
 AC_CHECK_FUNCS([MPI_Init], [], [has_mpi=FALSE])
 
 AS_IF([test "$has_mpi" != TRUE],
-  [AC_MSG_WARN([MPI not available. If needed, check that nc-config returns compiler with MPI support.])])
+  [AC_MSG_WARN([MPI not available. If needed, try building netcdf with MPI compiler.])])
 
 # Parallel I/O support in NetCDF:
 AS_IF([test "$has_mpi" = TRUE],

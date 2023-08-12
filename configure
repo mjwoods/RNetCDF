@@ -3739,6 +3739,8 @@ printf %s "checking append flags from R compiler to nc-config compiler... " >&6;
 printf "%s\n" "${PKG_CC}" >&6; }
 
   # Check that nc-config compiler works:
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config compiler test" >&5
+printf %s "checking nc-config compiler test... " >&6; }
   CC="${PKG_CC}"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -3753,16 +3755,13 @@ main (void)
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"
 then :
-
+  cctest=pass
 else $as_nop
-  CC=
-     { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-printf "%s\n" "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "nc-config compiler test failed
-See \`config.log' for more details" "$LINENO" 5; }
-
+  CC= ; cctest=fail
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $cctest" >&5
+printf "%s\n" "$cctest" >&6; }
 
 fi
 
@@ -3771,6 +3770,8 @@ if test -z "$CC"
 then :
 
   # Check that R compiler works:
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking R compiler test" >&5
+printf %s "checking R compiler test... " >&6; }
   CC="${R_CC}"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -3785,12 +3786,19 @@ main (void)
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"
 then :
-
+  cctest=pass
 else $as_nop
-  as_fn_error $? "R compiler test failed" "$LINENO" 5
+  CC= ; cctest=fail
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $cctest" >&5
+printf "%s\n" "$cctest" >&6; }
 
+fi
+
+if test -z "$CC"
+then :
+  as_fn_error $? "no working compiler found" "$LINENO" 5
 fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CC" >&5
@@ -5776,8 +5784,8 @@ done
 
 if test "$has_mpi" != TRUE
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not available. If needed, check that nc-config returns compiler with MPI support." >&5
-printf "%s\n" "$as_me: WARNING: MPI not available. If needed, check that nc-config returns compiler with MPI support." >&2;}
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not available. If needed, try building netcdf with MPI compiler." >&5
+printf "%s\n" "$as_me: WARNING: MPI not available. If needed, try building netcdf with MPI compiler." >&2;}
 fi
 
 # Parallel I/O support in NetCDF:
