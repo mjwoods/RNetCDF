@@ -94,19 +94,21 @@ AS_IF([test "x${have_nc_config}" = xyes], [
 
   # Check that nc-config compiler works:
   CC="${PKG_CC}"
-  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])], [], [CC=])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])], [],
+    [CC=
+     AC_MSG_FAILURE([nc-config compiler test failed])
+    ])
 ])
 
 # Check compiler from R, if no working compiler found so far:
 AS_IF([test -z "$CC"], [
   # Check that R compiler works:
   CC="${R_CC}"
-  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])], [], [CC=])
+  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])], [],
+    [AC_MSG_ERROR([R compiler test failed])])
 ])
 
 AC_MSG_CHECKING([CC])
-AS_IF([test -z "$CC"],
-  [AC_MSG_ERROR([no working compiler found])])
 AC_MSG_RESULT([$CC])
 
 
@@ -117,7 +119,7 @@ AC_MSG_RESULT([$CC])
 AC_MSG_NOTICE([Concatenate compiler/linker variables from R then environment:])
 
 AC_MSG_CHECKING([CFLAGS])
-CFLAGS="${R_FLAGS} $CFLAGS"
+CFLAGS="${R_CFLAGS} $CFLAGS"
 AC_MSG_RESULT([$CFLAGS])
 
 AC_MSG_CHECKING([CPPFLAGS])
@@ -234,8 +236,10 @@ AS_IF([test "x$platform" = xWindows], [
 
   AC_SEARCH_LIBS(jpeg_start_compress, jpeg)
 
-  # Prepend original LIBS:
+  # Append to previous LIBS:
+  AC_MSG_CHECKING([append extra libraries to previous LIBS])
   LIBS="$PRELIBS $LIBS"
+  AC_MSG_RESULT([$LIBS])
 
 ])
 
