@@ -8,10 +8,10 @@ SHLIB = RNetCDF$(SHLIB_EXT)
 OBJECTS = attribute.o common.o convert.o dataset.o dimension.o group.o \
   init.o type.o udunits.o variable.o
 
-CC = @PKG_CC@
-PKG_CFLAGS = @PKG_CFLAGS@
-PKG_CPPFLAGS = @DEFS@ @PKG_CPPFLAGS@
-PKG_LIBS = @PKG_LDFLAGS@ @PKG_LIBS@
+CC = @CC@
+PKG_CFLAGS = @CFLAGS@
+PKG_CPPFLAGS = @DEFS@ @CPPFLAGS@
+PKG_LIBS = @LDFLAGS@ @LIBS@
 
 RNetCDF_all: $(SHLIB) symbols.rds
 
