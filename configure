@@ -2575,38 +2575,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 #-------------------------------------------------------------------------------#
-#  Show and save compiler/linker variables from environment                     #
-#-------------------------------------------------------------------------------#
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Show compiler/linker variables from environment:" >&5
-printf "%s\n" "$as_me: Show compiler/linker variables from environment:" >&6;}
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
-printf %s "checking CFLAGS... " >&6; }
-ENV_CFLAGS="$CFLAGS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${CFLAGS-(unset)}" >&5
-printf "%s\n" "${CFLAGS-(unset)}" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
-printf %s "checking CPPFLAGS... " >&6; }
-ENV_CPPFLAGS="$CPPFLAGS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${CPPFLAGS-(unset)}" >&5
-printf "%s\n" "${CPPFLAGS-(unset)}" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
-printf %s "checking LDFLAGS... " >&6; }
-ENV_LDFLAGS="$LDFLAGS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${LDFLAGS-(unset)}" >&5
-printf "%s\n" "${LDFLAGS-(unset)}" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS" >&5
-printf %s "checking LIBS... " >&6; }
-ENV_LIBS="$LIBS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${LIBS-(unset)}" >&5
-printf "%s\n" "${LIBS-(unset)}" >&6; }
-
-
-#-------------------------------------------------------------------------------#
 #  Get compiler/linker variables from R                                         #
 #-------------------------------------------------------------------------------#
 
@@ -2648,13 +2616,39 @@ printf "%s\n" "${R_LDFLAGS}" >&6; }
 
 
 #-------------------------------------------------------------------------------#
-#  Identify OS using R compiler/linker variables                                #
+#  Append R compiler/linker variables to environment                            #
 #-------------------------------------------------------------------------------#
 
-CC="${R_CC}"
-CFLAGS="${R_CFLAGS}"
-CPPFLAGS="${R_CPPFLAGS}"
-LDFLAGS="${R_LDFLAGS}"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Append R compiler/linker variables to environment:" >&5
+printf "%s\n" "$as_me: Append R compiler/linker variables to environment:" >&6;}
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
+printf %s "checking CFLAGS... " >&6; }
+CFLAGS="$CFLAGS ${R_CFLAGS}"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CFLAGS" >&5
+printf "%s\n" "$CFLAGS" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
+printf %s "checking CPPFLAGS... " >&6; }
+CPPFLAGS="$CPPFLAGS ${R_CPPFLAGS}"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CPPFLAGS" >&5
+printf "%s\n" "$CPPFLAGS" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
+printf %s "checking LDFLAGS... " >&6; }
+LDFLAGS="$LDFLAGS ${R_LDFLAGS}"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LDFLAGS" >&5
+printf "%s\n" "$LDFLAGS" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS" >&5
+printf %s "checking LIBS... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LIBS" >&5
+printf "%s\n" "$LIBS" >&6; }
+
+
+#-------------------------------------------------------------------------------#
+#  Identify OS                                                                  #
+#-------------------------------------------------------------------------------#
 
 
 
@@ -3795,16 +3789,6 @@ printf "%s\n" "$as_me: Operating system is $platform" >&6;}
 
 
 #-------------------------------------------------------------------------------#
-#  Restore original compiler/linker variables                                   #
-#-------------------------------------------------------------------------------#
-
-CC="${ENV_CC}"
-CFLAGS="${ENV_CFLAGS}"
-CPPFLAGS="${ENV_CPPFLAGS}"
-LDFLAGS="${ENV_LDFLAGS}"
-
-
-#-------------------------------------------------------------------------------#
 #  Prepend compiler/linker variables from nc-config (if specified)              #
 #-------------------------------------------------------------------------------#
 
@@ -3901,8 +3885,8 @@ fi
 if test "x${have_nc_config}" = xyes
 then :
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find compiler/linker variables from nc-config:" >&5
-printf "%s\n" "$as_me: Find compiler/linker variables from nc-config:" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Prepend compiler/linker variables from nc-config:" >&5
+printf "%s\n" "$as_me: Prepend compiler/linker variables from nc-config:" >&6;}
 
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CC" >&5
 printf %s "checking PKG_CC... " >&6; }
@@ -3910,11 +3894,12 @@ printf %s "checking PKG_CC... " >&6; }
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CC}" >&5
 printf "%s\n" "${PKG_CC}" >&6; }
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CFLAGS" >&5
-printf %s "checking PKG_CFLAGS... " >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
+printf %s "checking CFLAGS... " >&6; }
     PKG_CFLAGS=`nc-config --cflags`
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CFLAGS}" >&5
-printf "%s\n" "${PKG_CFLAGS}" >&6; }
+    CFLAGS="${PKG_CFLAGS} $CFLAGS"
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CFLAGS" >&5
+printf "%s\n" "$CFLAGS" >&6; }
 
     if test "x${with_nc_config_static}" = xyes
 then :
@@ -3925,23 +3910,9 @@ else $as_nop
        nc_config_static_label=""
 
 fi
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_LIBS ${nc_config_static_label}" >&5
-printf %s "checking PKG_LIBS ${nc_config_static_label}... " >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS ${nc_config_static_label}" >&5
+printf %s "checking LIBS ${nc_config_static_label}... " >&6; }
     PKG_LIBS=`nc-config ${nc_config_static_flag} --libs`
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_LIBS}" >&5
-printf "%s\n" "${PKG_LIBS}" >&6; }
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Prepend compiler/linker variables with variables from nc-config:" >&5
-printf "%s\n" "$as_me: Prepend compiler/linker variables with variables from nc-config:" >&6;}
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
-printf %s "checking CFLAGS... " >&6; }
-    CFLAGS="${PKG_CFLAGS} $CFLAGS"
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CFLAGS" >&5
-printf "%s\n" "$CFLAGS" >&6; }
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS" >&5
-printf %s "checking LIBS... " >&6; }
     LIBS="${PKG_LIBS} $LIBS"
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LIBS" >&5
 printf "%s\n" "$LIBS" >&6; }
@@ -3957,36 +3928,6 @@ printf "%s\n" "$as_me: Skipping nc-config" >&6;}
 
 
 fi
-
-
-#-------------------------------------------------------------------------------#
-#  Prepend compiler/linker variables from R                                     #
-#-------------------------------------------------------------------------------#
-# When building the shared library for a package,
-# R always prepends its own directories to the library search path,
-# so we honour this when testing for package features,
-# otherwise failures may occur when linking or using the package.
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Prepend compiler/linker variables from R:" >&5
-printf "%s\n" "$as_me: Prepend compiler/linker variables from R:" >&6;}
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
-printf %s "checking CFLAGS... " >&6; }
-CFLAGS="${R_CFLAGS} $CFLAGS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CFLAGS" >&5
-printf "%s\n" "$CFLAGS" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
-printf %s "checking CPPFLAGS... " >&6; }
-CPPFLAGS="${R_CPPFLAGS} $CPPFLAGS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CPPFLAGS" >&5
-printf "%s\n" "$CPPFLAGS" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
-printf %s "checking LDFLAGS... " >&6; }
-LDFLAGS="${R_LDFLAGS} $LDFLAGS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LDFLAGS" >&5
-printf "%s\n" "$LDFLAGS" >&6; }
 
 
 #-------------------------------------------------------------------------------#

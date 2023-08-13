@@ -6,29 +6,6 @@ AC_INIT([RNetCDF],[2.7-1])
 
 
 #-------------------------------------------------------------------------------#
-#  Show and save compiler/linker variables from environment                     #
-#-------------------------------------------------------------------------------#
-
-AC_MSG_NOTICE([Show compiler/linker variables from environment:])
-
-AC_MSG_CHECKING([CFLAGS])
-ENV_CFLAGS="$CFLAGS"
-AC_MSG_RESULT([${CFLAGS-(unset)}])
-
-AC_MSG_CHECKING([CPPFLAGS])
-ENV_CPPFLAGS="$CPPFLAGS"
-AC_MSG_RESULT([${CPPFLAGS-(unset)}])
-
-AC_MSG_CHECKING([LDFLAGS])
-ENV_LDFLAGS="$LDFLAGS"
-AC_MSG_RESULT([${LDFLAGS-(unset)}])
-
-AC_MSG_CHECKING([LIBS])
-ENV_LIBS="$LIBS"
-AC_MSG_RESULT([${LIBS-(unset)}])
-
-
-#-------------------------------------------------------------------------------#
 #  Get compiler/linker variables from R                                         #
 #-------------------------------------------------------------------------------#
 
@@ -59,13 +36,30 @@ AC_MSG_RESULT([${R_LDFLAGS}])
 
 
 #-------------------------------------------------------------------------------#
-#  Identify OS using R compiler/linker variables                                #
+#  Append R compiler/linker variables to environment                            #
 #-------------------------------------------------------------------------------#
 
-CC="${R_CC}"
-CFLAGS="${R_CFLAGS}"
-CPPFLAGS="${R_CPPFLAGS}"
-LDFLAGS="${R_LDFLAGS}"
+AC_MSG_NOTICE([Append R compiler/linker variables to environment:])
+
+AC_MSG_CHECKING([CFLAGS])
+CFLAGS="$CFLAGS ${R_CFLAGS}"
+AC_MSG_RESULT([$CFLAGS])
+
+AC_MSG_CHECKING([CPPFLAGS])
+CPPFLAGS="$CPPFLAGS ${R_CPPFLAGS}"
+AC_MSG_RESULT([$CPPFLAGS])
+
+AC_MSG_CHECKING([LDFLAGS])
+LDFLAGS="$LDFLAGS ${R_LDFLAGS}"
+AC_MSG_RESULT([$LDFLAGS])
+
+AC_MSG_CHECKING([LIBS])
+AC_MSG_RESULT([$LIBS])
+
+
+#-------------------------------------------------------------------------------#
+#  Identify OS                                                                  #
+#-------------------------------------------------------------------------------#
 
 AC_CHECK_DECLS([_WIN32],
   [platform=Windows],
@@ -73,16 +67,6 @@ AC_CHECK_DECLS([_WIN32],
      [platform=macOS],
      [platform=Unix-alike])])
 AC_MSG_NOTICE([Operating system is $platform])
-
-
-#-------------------------------------------------------------------------------#
-#  Restore original compiler/linker variables                                   #
-#-------------------------------------------------------------------------------#
-
-CC="${ENV_CC}"
-CFLAGS="${ENV_CFLAGS}"
-CPPFLAGS="${ENV_CPPFLAGS}"
-LDFLAGS="${ENV_LDFLAGS}"
 
 
 #-------------------------------------------------------------------------------#
@@ -120,15 +104,16 @@ AS_IF([test "x${with_nc_config_static}" = xunset],
 
 AS_IF([test "x${have_nc_config}" = xyes],
   [
-    AC_MSG_NOTICE([Find compiler/linker variables from nc-config:])
+    AC_MSG_NOTICE([Prepend compiler/linker variables from nc-config:])
 
     AC_MSG_CHECKING([PKG_CC])
     PKG_CC=`nc-config --cc`
     AC_MSG_RESULT([${PKG_CC}])
 
-    AC_MSG_CHECKING([PKG_CFLAGS])
+    AC_MSG_CHECKING([CFLAGS])
     PKG_CFLAGS=`nc-config --cflags`
-    AC_MSG_RESULT([${PKG_CFLAGS}])
+    CFLAGS="${PKG_CFLAGS} $CFLAGS"
+    AC_MSG_RESULT([$CFLAGS])
 
     AS_IF([test "x${with_nc_config_static}" = xyes],
       [nc_config_static_flag="--static"
@@ -136,20 +121,11 @@ AS_IF([test "x${have_nc_config}" = xyes],
       [nc_config_static_flag=""
        nc_config_static_label=""]
     )
-    AC_MSG_CHECKING([PKG_LIBS ${nc_config_static_label}])
+    AC_MSG_CHECKING([LIBS ${nc_config_static_label}])
     PKG_LIBS=`nc-config ${nc_config_static_flag} --libs`
-    AC_MSG_RESULT([${PKG_LIBS}])
-
-    AC_MSG_NOTICE([Prepend compiler/linker variables with variables from nc-config:])
-
-    AC_MSG_CHECKING([CFLAGS])
-    CFLAGS="${PKG_CFLAGS} $CFLAGS"
-    AC_MSG_RESULT([$CFLAGS])
-
-    AC_MSG_CHECKING([LIBS])
     LIBS="${PKG_LIBS} $LIBS"
     AC_MSG_RESULT([$LIBS])
-   
+
   ], [
     AC_MSG_NOTICE([Skipping nc-config])
     PKG_CC=
@@ -157,29 +133,6 @@ AS_IF([test "x${have_nc_config}" = xyes],
     PKG_LIBS=
   ]
 )
-
-
-#-------------------------------------------------------------------------------#
-#  Prepend compiler/linker variables from R                                     #
-#-------------------------------------------------------------------------------#
-# When building the shared library for a package,
-# R always prepends its own directories to the library search path,
-# so we honour this when testing for package features,
-# otherwise failures may occur when linking or using the package.
-
-AC_MSG_NOTICE([Prepend compiler/linker variables from R:])
-
-AC_MSG_CHECKING([CFLAGS])
-CFLAGS="${R_CFLAGS} $CFLAGS"
-AC_MSG_RESULT([$CFLAGS])
-
-AC_MSG_CHECKING([CPPFLAGS])
-CPPFLAGS="${R_CPPFLAGS} $CPPFLAGS"
-AC_MSG_RESULT([$CPPFLAGS])
-
-AC_MSG_CHECKING([LDFLAGS])
-LDFLAGS="${R_LDFLAGS} $LDFLAGS"
-AC_MSG_RESULT([$LDFLAGS])
 
 
 #-------------------------------------------------------------------------------#
