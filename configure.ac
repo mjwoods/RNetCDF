@@ -6,48 +6,52 @@ AC_INIT([RNetCDF],[2.7-1])
 
 
 #-------------------------------------------------------------------------------#
-#  Show compiler/linker variables from environment                              #
+#  Show and save compiler/linker variables from environment                     #
 #-------------------------------------------------------------------------------#
 
 AC_MSG_NOTICE([Show compiler/linker variables from environment:])
 
 AC_MSG_CHECKING([CFLAGS])
+ENV_CFLAGS="$CFLAGS"
 AC_MSG_RESULT([${CFLAGS-(unset)}])
 
 AC_MSG_CHECKING([CPPFLAGS])
+ENV_CPPFLAGS="$CPPFLAGS"
 AC_MSG_RESULT([${CPPFLAGS-(unset)}])
 
 AC_MSG_CHECKING([LDFLAGS])
+ENV_LDFLAGS="$LDFLAGS"
 AC_MSG_RESULT([${LDFLAGS-(unset)}])
 
 AC_MSG_CHECKING([LIBS])
+ENV_LIBS="$LIBS"
 AC_MSG_RESULT([${LIBS-(unset)}])
 
 
 #-------------------------------------------------------------------------------#
-#  Show compiler/linker variables from R                                        #
+#  Get compiler/linker variables from R                                         #
 #-------------------------------------------------------------------------------#
 
-AC_MSG_NOTICE([Show compiler/linker variables from R:])
+AC_MSG_NOTICE([Find compiler/linker variables from R:])
 
 : ${R_HOME=`R RHOME`}
 AS_IF([test -z "${R_HOME}"],
   AC_MSG_ERROR([could not determine R_HOME])
 )
 
-AC_MSG_CHECKING([CC])
+AC_MSG_CHECKING([R_CC])
 R_CC=`"${R_HOME}/bin/R" CMD config CC`
 AC_MSG_RESULT([${R_CC}])
 
-AC_MSG_CHECKING([CFLAGS])
+AC_MSG_CHECKING([R_CFLAGS])
 R_CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 AC_MSG_RESULT([${R_CFLAGS}])
 
-AC_MSG_CHECKING([CPPFLAGS])
+AC_MSG_CHECKING([R_CPPFLAGS])
 R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 AC_MSG_RESULT([${R_CPPFLAGS}])
 
-AC_MSG_CHECKING([LDFLAGS])
+AC_MSG_CHECKING([R_LDFLAGS])
 R_LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
 AC_MSG_RESULT([${R_LDFLAGS}])
 
@@ -55,92 +59,13 @@ AC_MSG_RESULT([${R_LDFLAGS}])
 
 
 #-------------------------------------------------------------------------------#
-#  Find first working compiler from nc-config (optional) then R                 #
+#  Identify OS using R compiler/linker variables                                #
 #-------------------------------------------------------------------------------#
 
-AC_MSG_NOTICE([Find first working compiler from nc-config (optional) then R:])
-
-AC_ARG_WITH([nc-config],
-  AS_HELP_STRING([--with-nc-config],
-    [get compiler options from nc-config (default)]),
-  [],
-  [with_nc_config=yes])
-
-AS_IF([test "x${with_nc_config}" = xyes],
-  [AC_CHECK_PROG(have_nc_config, nc-config, yes, no, [], [])],
-  [have_nc_config=no])
-
-# Check compiler from nc-config, if enabled:
-CC=
-AC_LANG(C)
-AS_IF([test "x${have_nc_config}" = xyes], [
-  AC_MSG_CHECKING([nc-config compiler])
-  PKG_CC=`nc-config --cc`
-  AC_MSG_RESULT([${PKG_CC}])
-
-  # Append any compiler flags from R_CC to PKG_CC,
-  # assuming that PKG_CC is an MPI wrapper for R_CC.
-  # The compiler pathname could include spaces,
-  # so assume first flag begins with "-".
-  AC_MSG_CHECKING([append flags from R compiler to nc-config compiler])
-  set -- ${R_CC}
-  for word; do
-    case "$word" in
-      (-*) PKG_CC="${PKG_CC} $@"; break ;;
-      (*) shift ;;
-    esac
-  done
-  AC_MSG_RESULT([${PKG_CC}])
-
-  # Check that nc-config compiler works:
-  AC_MSG_CHECKING([nc-config compiler test])
-  CC="${PKG_CC}"
-  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
-    [cctest=pass],
-    [CC= ; cctest=fail])
-  AC_MSG_RESULT([$cctest])
-])
-
-# Check compiler from R, if no working compiler found so far:
-AS_IF([test -z "$CC"], [
-  # Check that R compiler works:
-  AC_MSG_CHECKING([R compiler test])
-  CC="${R_CC}"
-  AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
-    [cctest=pass],
-    [CC= ; cctest=fail])
-  AC_MSG_RESULT([$cctest])
-])
-
-AS_IF([test -z "$CC"],
-  [AC_MSG_ERROR([no working compiler found])])
-
-AC_MSG_CHECKING([CC])
-AC_MSG_RESULT([$CC])
-
-
-#-------------------------------------------------------------------------------#
-#  Concatenate compiler/linker variables from R then environment                #
-#-------------------------------------------------------------------------------#
-
-AC_MSG_NOTICE([Concatenate compiler/linker variables from R then environment:])
-
-AC_MSG_CHECKING([CFLAGS])
-CFLAGS="${R_CFLAGS} $CFLAGS"
-AC_MSG_RESULT([$CFLAGS])
-
-AC_MSG_CHECKING([CPPFLAGS])
-CPPFLAGS="${R_CPPFLAGS} $CPPFLAGS"
-AC_MSG_RESULT([$CPPFLAGS])
-
-AC_MSG_CHECKING([LDFLAGS])
-LDFLAGS="${R_LDFLAGS} $LDFLAGS"
-AC_MSG_RESULT([$LDFLAGS])
-
-
-#-------------------------------------------------------------------------------#
-#  Identify OS                                                                  #
-#-------------------------------------------------------------------------------#
+CC="${R_CC}"
+CFLAGS="${R_CFLAGS}"
+CPPFLAGS="${R_CPPFLAGS}"
+LDFLAGS="${R_LDFLAGS}"
 
 AC_CHECK_DECLS([_WIN32],
   [platform=Windows],
@@ -151,8 +76,34 @@ AC_MSG_NOTICE([Operating system is $platform])
 
 
 #-------------------------------------------------------------------------------#
+#  Restore original compiler/linker variables                                   #
+#-------------------------------------------------------------------------------#
+
+CC="${ENV_CC}"
+CFLAGS="${ENV_CFLAGS}"
+CPPFLAGS="${ENV_CPPFLAGS}"
+LDFLAGS="${ENV_LDFLAGS}"
+
+
+#-------------------------------------------------------------------------------#
 #  Prepend compiler/linker variables from nc-config (if specified)              #
 #-------------------------------------------------------------------------------#
+
+AC_ARG_WITH([nc-config],
+  AS_HELP_STRING([--with-nc-config],
+    [get compiler options from nc-config (default)]),
+  [],
+  [with_nc_config=yes])
+
+# nc-config is currently broken on Windows, so disable it:
+AS_IF([test "x$platform" = xWindows],
+  [with_nc_config=no
+   AC_MSG_NOTICE([Disabling nc-config on Windows])
+  ])
+
+AS_IF([test "x${with_nc_config}" = xyes],
+  [AC_CHECK_PROG(have_nc_config, nc-config, yes, no, [], [])],
+  [have_nc_config=no])
 
 AC_ARG_WITH([nc-config-static],
   AS_HELP_STRING([--with-nc-config-static],
@@ -171,6 +122,10 @@ AS_IF([test "x${have_nc_config}" = xyes],
   [
     AC_MSG_NOTICE([Find compiler/linker variables from nc-config:])
 
+    AC_MSG_CHECKING([PKG_CC])
+    PKG_CC=`nc-config --cc`
+    AC_MSG_RESULT([${PKG_CC}])
+
     AC_MSG_CHECKING([PKG_CFLAGS])
     PKG_CFLAGS=`nc-config --cflags`
     AC_MSG_RESULT([${PKG_CFLAGS}])
@@ -181,7 +136,7 @@ AS_IF([test "x${have_nc_config}" = xyes],
       [nc_config_static_flag=""
        nc_config_static_label=""]
     )
-    AC_MSG_CHECKING([LIBS${nc_config_static_label}])
+    AC_MSG_CHECKING([PKG_LIBS ${nc_config_static_label}])
     PKG_LIBS=`nc-config ${nc_config_static_flag} --libs`
     AC_MSG_RESULT([${PKG_LIBS}])
 
@@ -195,22 +150,75 @@ AS_IF([test "x${have_nc_config}" = xyes],
     LIBS="${PKG_LIBS} $LIBS"
     AC_MSG_RESULT([$LIBS])
    
+  ], [
+    AC_MSG_NOTICE([Skipping nc-config])
+    PKG_CC=
+    PKG_CFLAGS=
+    PKG_LIBS=
   ]
 )
 
 
 #-------------------------------------------------------------------------------#
-#  Find extra libraries that may be needed on Windows                           #
+#  Prepend compiler/linker variables from R                                     #
 #-------------------------------------------------------------------------------#
-# (nc-config seems not to capture some of these static libraries on Windows)
+# When building the shared library for a package,
+# R always prepends its own directories to the library search path,
+# so we honour this when testing for package features,
+# otherwise failures may occur when linking or using the package.
+
+AC_MSG_NOTICE([Prepend compiler/linker variables from R:])
+
+AC_MSG_CHECKING([CFLAGS])
+CFLAGS="${R_CFLAGS} $CFLAGS"
+AC_MSG_RESULT([$CFLAGS])
+
+AC_MSG_CHECKING([CPPFLAGS])
+CPPFLAGS="${R_CPPFLAGS} $CPPFLAGS"
+AC_MSG_RESULT([$CPPFLAGS])
+
+AC_MSG_CHECKING([LDFLAGS])
+LDFLAGS="${R_LDFLAGS} $LDFLAGS"
+AC_MSG_RESULT([$LDFLAGS])
+
+
+#-------------------------------------------------------------------------------#
+#  Find first working compiler from nc-config (optional), environment, then R   #
+#-------------------------------------------------------------------------------#
+
+AC_MSG_NOTICE([Find first working compiler from nc-config (if enabled), environment, then R:])
+
+CC=
+for mycc in "${PKG_CC}" "$CC" "${R_CC}"; do
+  AS_IF([test -n "$mycc"], [
+    AC_MSG_CHECKING([compilation with $mycc])
+    CC="$mycc"
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
+      [AC_MSG_RESULT([pass])
+       break],
+      [AC_MSG_RESULT([fail])
+       CC=])
+   ])
+done
+
+AS_IF([test -z "$CC"],
+  [AC_MSG_ERROR([no working compiler found])])
+
+AC_MSG_CHECKING([CC])
+AC_MSG_RESULT([$CC])
+
+
+#-------------------------------------------------------------------------------#
+#  Set libraries to link on Windows                                             #
+#-------------------------------------------------------------------------------#
+# As of Rtools43, nc-config does not link all required libraries,
+# and it also tries to link libraries that are not installed.
+# If nc-config is fixed, this section could be removed,
+# and nc-config could be re-enabled above.
 
 AS_IF([test "x$platform" = xWindows], [
 
-  AC_MSG_NOTICE([Find extra libraries that may be needed on Windows:])
-
-  # Start with empty LIBS, storing original LIBS to prepend later:
-  PRELIBS="$LIBS"
-  LIBS=
+  AC_MSG_NOTICE([Find libraries that may be needed on Windows:])
 
   AC_SEARCH_LIBS(atan, m)
 
@@ -224,6 +232,7 @@ AS_IF([test "x$platform" = xWindows], [
   AC_SEARCH_LIBS(pthread_mutex_init, pthread)
 
   AC_SEARCH_LIBS(lzma_lzma_decoder_init, lzma)
+  AC_SEARCH_LIBS(deflate, z)
   AC_SEARCH_LIBS(ZSTD_decompress, zstd)
   AC_SEARCH_LIBS(SZ_BufftoBuffDecompress, sz)
 
@@ -239,14 +248,19 @@ AS_IF([test "x$platform" = xWindows], [
   AC_SEARCH_LIBS(u8_to_u16, unistring)
   AC_SEARCH_LIBS(idn2_to_ascii_8z, idn2)
 
+  AC_SEARCH_LIBS(H5Fopen, hdf5)
+  AC_SEARCH_LIBS(H5TBmake_table, hdf5_hl)
+
   AC_SEARCH_LIBS(xdr_int, portablexdr)
+
+  AC_SEARCH_LIBS(xmlReadMemory, xml2)
+
+  AC_SEARCH_LIBS(curl_easy_init, curl)
 
   AC_SEARCH_LIBS(jpeg_start_compress, jpeg)
 
-  # Append to previous LIBS:
-  AC_MSG_CHECKING([append extra libraries to previous LIBS])
-  LIBS="$PRELIBS $LIBS"
-  AC_MSG_RESULT([$LIBS])
+  AC_SEARCH_LIBS(Hopen, df)
+  AC_SEARCH_LIBS(SDstart, mfhdf)
 
 ])
 
@@ -254,6 +268,8 @@ AS_IF([test "x$platform" = xWindows], [
 #-------------------------------------------------------------------------------#
 #  Find sizes of selected data types                                            #
 #-------------------------------------------------------------------------------#
+
+AC_MSG_NOTICE([Find sizes of selected data types:])
 
 AC_CHECK_SIZEOF([int])
 AC_CHECK_SIZEOF([long long])
@@ -263,6 +279,8 @@ AC_CHECK_SIZEOF([size_t])
 #-------------------------------------------------------------------------------#
 #  Check NetCDF features                                                        #
 #-------------------------------------------------------------------------------#
+
+AC_MSG_NOTICE([Check NetCDF features:])
 
 # Check that netcdf header files can be compiled:
 AC_CHECK_HEADERS(netcdf.h, [],
@@ -295,6 +313,8 @@ AC_CHECK_DECLS([NC_64BIT_DATA, NC_FORMAT_64BIT_DATA, NC_DISKLESS, NC_PERSIST],
 #  Check for parallel netcdf features                                           #
 #-------------------------------------------------------------------------------#
 
+AC_MSG_NOTICE([Check for parallel NetCDF features:])
+
 AC_ARG_WITH([mpitest-cmd],
   [AS_HELP_STRING(
     [--with-mpitest-cmd],
@@ -311,7 +331,7 @@ AC_CHECK_HEADERS([mpi.h], [], [has_mpi=FALSE])
 AC_CHECK_FUNCS([MPI_Init], [], [has_mpi=FALSE])
 
 AS_IF([test "$has_mpi" != TRUE],
-  [AC_MSG_WARN([MPI not available. If needed, try building netcdf with MPI compiler.])])
+  [AC_MSG_WARN([MPI not available. If needed, ensure that nc-config (or CC) specifies an MPI compiler.])])
 
 # Parallel I/O support in NetCDF:
 AS_IF([test "$has_mpi" = TRUE],
@@ -347,6 +367,8 @@ AS_IF([test "$has_mpi" = TRUE],
 #-------------------------------------------------------------------------------#
 #  Find UDUNITS2 library and header files                                       #
 #-------------------------------------------------------------------------------#
+
+AC_MSG_NOTICE([Check for udunits2 features:])
 
 # The udunits2 library depends on expat, which may need to be linked explicitly:
 AC_SEARCH_LIBS(XML_ErrorString, expat)

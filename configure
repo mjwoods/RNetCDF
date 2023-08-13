@@ -652,6 +652,7 @@ has_parallel
 has_udunits
 has_diskless
 has_data64
+have_nc_config
 OBJEXT
 EXEEXT
 ac_ct_CC
@@ -659,7 +660,6 @@ CPPFLAGS
 LDFLAGS
 CFLAGS
 CC
-have_nc_config
 target_alias
 host_alias
 build_alias
@@ -2575,7 +2575,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 #-------------------------------------------------------------------------------#
-#  Show compiler/linker variables from environment                              #
+#  Show and save compiler/linker variables from environment                     #
 #-------------------------------------------------------------------------------#
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Show compiler/linker variables from environment:" >&5
@@ -2583,31 +2583,35 @@ printf "%s\n" "$as_me: Show compiler/linker variables from environment:" >&6;}
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
 printf %s "checking CFLAGS... " >&6; }
+ENV_CFLAGS="$CFLAGS"
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${CFLAGS-(unset)}" >&5
 printf "%s\n" "${CFLAGS-(unset)}" >&6; }
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
 printf %s "checking CPPFLAGS... " >&6; }
+ENV_CPPFLAGS="$CPPFLAGS"
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${CPPFLAGS-(unset)}" >&5
 printf "%s\n" "${CPPFLAGS-(unset)}" >&6; }
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
 printf %s "checking LDFLAGS... " >&6; }
+ENV_LDFLAGS="$LDFLAGS"
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${LDFLAGS-(unset)}" >&5
 printf "%s\n" "${LDFLAGS-(unset)}" >&6; }
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS" >&5
 printf %s "checking LIBS... " >&6; }
+ENV_LIBS="$LIBS"
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${LIBS-(unset)}" >&5
 printf "%s\n" "${LIBS-(unset)}" >&6; }
 
 
 #-------------------------------------------------------------------------------#
-#  Show compiler/linker variables from R                                        #
+#  Get compiler/linker variables from R                                         #
 #-------------------------------------------------------------------------------#
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Show compiler/linker variables from R:" >&5
-printf "%s\n" "$as_me: Show compiler/linker variables from R:" >&6;}
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find compiler/linker variables from R:" >&5
+printf "%s\n" "$as_me: Find compiler/linker variables from R:" >&6;}
 
 : ${R_HOME=`R RHOME`}
 if test -z "${R_HOME}"
@@ -2616,26 +2620,26 @@ then :
 
 fi
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CC" >&5
-printf %s "checking CC... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking R_CC" >&5
+printf %s "checking R_CC... " >&6; }
 R_CC=`"${R_HOME}/bin/R" CMD config CC`
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${R_CC}" >&5
 printf "%s\n" "${R_CC}" >&6; }
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
-printf %s "checking CFLAGS... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking R_CFLAGS" >&5
+printf %s "checking R_CFLAGS... " >&6; }
 R_CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${R_CFLAGS}" >&5
 printf "%s\n" "${R_CFLAGS}" >&6; }
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
-printf %s "checking CPPFLAGS... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking R_CPPFLAGS" >&5
+printf %s "checking R_CPPFLAGS... " >&6; }
 R_CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${R_CPPFLAGS}" >&5
 printf "%s\n" "${R_CPPFLAGS}" >&6; }
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
-printf %s "checking LDFLAGS... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking R_LDFLAGS" >&5
+printf %s "checking R_LDFLAGS... " >&6; }
 R_LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${R_LDFLAGS}" >&5
 printf "%s\n" "${R_LDFLAGS}" >&6; }
@@ -2644,78 +2648,13 @@ printf "%s\n" "${R_LDFLAGS}" >&6; }
 
 
 #-------------------------------------------------------------------------------#
-#  Find first working compiler from nc-config (optional) then R                 #
+#  Identify OS using R compiler/linker variables                                #
 #-------------------------------------------------------------------------------#
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find first working compiler from nc-config (optional) then R:" >&5
-printf "%s\n" "$as_me: Find first working compiler from nc-config (optional) then R:" >&6;}
-
-
-# Check whether --with-nc-config was given.
-if test ${with_nc_config+y}
-then :
-  withval=$with_nc_config;
-else $as_nop
-  with_nc_config=yes
-fi
-
-
-if test "x${with_nc_config}" = xyes
-then :
-  # Extract the first word of "nc-config", so it can be a program name with args.
-set dummy nc-config; ac_word=$2
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-printf %s "checking for $ac_word... " >&6; }
-if test ${ac_cv_prog_have_nc_config+y}
-then :
-  printf %s "(cached) " >&6
-else $as_nop
-  if test -n "$have_nc_config"; then
-  ac_cv_prog_have_nc_config="$have_nc_config" # Let the user override the test.
-else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  case $as_dir in #(((
-    '') as_dir=./ ;;
-    */) ;;
-    *) as_dir=$as_dir/ ;;
-  esac
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
-    ac_cv_prog_have_nc_config="yes"
-    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  test -z "$ac_cv_prog_have_nc_config" && ac_cv_prog_have_nc_config="no"
-fi
-fi
-have_nc_config=$ac_cv_prog_have_nc_config
-if test -n "$have_nc_config"; then
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $have_nc_config" >&5
-printf "%s\n" "$have_nc_config" >&6; }
-else
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; }
-fi
-
-
-else $as_nop
-  have_nc_config=no
-fi
-
-# Check compiler from nc-config, if enabled:
-CC=
-ac_ext=c
-ac_cpp='$CPP $CPPFLAGS'
-ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_c_compiler_gnu
+CC="${R_CC}"
+CFLAGS="${R_CFLAGS}"
+CPPFLAGS="${R_CPPFLAGS}"
+LDFLAGS="${R_LDFLAGS}"
 
 
 
@@ -3713,130 +3652,6 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
-if test "x${have_nc_config}" = xyes
-then :
-
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config compiler" >&5
-printf %s "checking nc-config compiler... " >&6; }
-  PKG_CC=`nc-config --cc`
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CC}" >&5
-printf "%s\n" "${PKG_CC}" >&6; }
-
-  # Append any compiler flags from R_CC to PKG_CC,
-  # assuming that PKG_CC is an MPI wrapper for R_CC.
-  # The compiler pathname could include spaces,
-  # so assume first flag begins with "-".
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking append flags from R compiler to nc-config compiler" >&5
-printf %s "checking append flags from R compiler to nc-config compiler... " >&6; }
-  set -- ${R_CC}
-  for word; do
-    case "$word" in
-      (-*) PKG_CC="${PKG_CC} $@"; break ;;
-      (*) shift ;;
-    esac
-  done
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CC}" >&5
-printf "%s\n" "${PKG_CC}" >&6; }
-
-  # Check that nc-config compiler works:
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config compiler test" >&5
-printf %s "checking nc-config compiler test... " >&6; }
-  CC="${PKG_CC}"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main (void)
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-  cctest=pass
-else $as_nop
-  CC= ; cctest=fail
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $cctest" >&5
-printf "%s\n" "$cctest" >&6; }
-
-fi
-
-# Check compiler from R, if no working compiler found so far:
-if test -z "$CC"
-then :
-
-  # Check that R compiler works:
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking R compiler test" >&5
-printf %s "checking R compiler test... " >&6; }
-  CC="${R_CC}"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main (void)
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"
-then :
-  cctest=pass
-else $as_nop
-  CC= ; cctest=fail
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $cctest" >&5
-printf "%s\n" "$cctest" >&6; }
-
-fi
-
-if test -z "$CC"
-then :
-  as_fn_error $? "no working compiler found" "$LINENO" 5
-fi
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CC" >&5
-printf %s "checking CC... " >&6; }
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CC" >&5
-printf "%s\n" "$CC" >&6; }
-
-
-#-------------------------------------------------------------------------------#
-#  Concatenate compiler/linker variables from R then environment                #
-#-------------------------------------------------------------------------------#
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Concatenate compiler/linker variables from R then environment:" >&5
-printf "%s\n" "$as_me: Concatenate compiler/linker variables from R then environment:" >&6;}
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
-printf %s "checking CFLAGS... " >&6; }
-CFLAGS="${R_CFLAGS} $CFLAGS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CFLAGS" >&5
-printf "%s\n" "$CFLAGS" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
-printf %s "checking CPPFLAGS... " >&6; }
-CPPFLAGS="${R_CPPFLAGS} $CPPFLAGS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CPPFLAGS" >&5
-printf "%s\n" "$CPPFLAGS" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
-printf %s "checking LDFLAGS... " >&6; }
-LDFLAGS="${R_LDFLAGS} $LDFLAGS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LDFLAGS" >&5
-printf "%s\n" "$LDFLAGS" >&6; }
-
-
-#-------------------------------------------------------------------------------#
-#  Identify OS                                                                  #
-#-------------------------------------------------------------------------------#
-
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CC options needed to detect all undeclared functions" >&5
 printf %s "checking for $CC options needed to detect all undeclared functions... " >&6; }
 if test ${ac_cv_c_undeclared_builtin_options+y}
@@ -3980,8 +3795,86 @@ printf "%s\n" "$as_me: Operating system is $platform" >&6;}
 
 
 #-------------------------------------------------------------------------------#
+#  Restore original compiler/linker variables                                   #
+#-------------------------------------------------------------------------------#
+
+CC="${ENV_CC}"
+CFLAGS="${ENV_CFLAGS}"
+CPPFLAGS="${ENV_CPPFLAGS}"
+LDFLAGS="${ENV_LDFLAGS}"
+
+
+#-------------------------------------------------------------------------------#
 #  Prepend compiler/linker variables from nc-config (if specified)              #
 #-------------------------------------------------------------------------------#
+
+
+# Check whether --with-nc-config was given.
+if test ${with_nc_config+y}
+then :
+  withval=$with_nc_config;
+else $as_nop
+  with_nc_config=yes
+fi
+
+
+# nc-config is currently broken on Windows, so disable it:
+if test "x$platform" = xWindows
+then :
+  with_nc_config=no
+   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Disabling nc-config on Windows" >&5
+printf "%s\n" "$as_me: Disabling nc-config on Windows" >&6;}
+
+fi
+
+if test "x${with_nc_config}" = xyes
+then :
+  # Extract the first word of "nc-config", so it can be a program name with args.
+set dummy nc-config; ac_word=$2
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+printf %s "checking for $ac_word... " >&6; }
+if test ${ac_cv_prog_have_nc_config+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  if test -n "$have_nc_config"; then
+  ac_cv_prog_have_nc_config="$have_nc_config" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  case $as_dir in #(((
+    '') as_dir=./ ;;
+    */) ;;
+    *) as_dir=$as_dir/ ;;
+  esac
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir$ac_word$ac_exec_ext"; then
+    ac_cv_prog_have_nc_config="yes"
+    printf "%s\n" "$as_me:${as_lineno-$LINENO}: found $as_dir$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_have_nc_config" && ac_cv_prog_have_nc_config="no"
+fi
+fi
+have_nc_config=$ac_cv_prog_have_nc_config
+if test -n "$have_nc_config"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $have_nc_config" >&5
+printf "%s\n" "$have_nc_config" >&6; }
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+fi
+
+
+else $as_nop
+  have_nc_config=no
+fi
 
 
 # Check whether --with-nc-config-static was given.
@@ -4011,6 +3904,12 @@ then :
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find compiler/linker variables from nc-config:" >&5
 printf "%s\n" "$as_me: Find compiler/linker variables from nc-config:" >&6;}
 
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CC" >&5
+printf %s "checking PKG_CC... " >&6; }
+    PKG_CC=`nc-config --cc`
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CC}" >&5
+printf "%s\n" "${PKG_CC}" >&6; }
+
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CFLAGS" >&5
 printf %s "checking PKG_CFLAGS... " >&6; }
     PKG_CFLAGS=`nc-config --cflags`
@@ -4026,8 +3925,8 @@ else $as_nop
        nc_config_static_label=""
 
 fi
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS${nc_config_static_label}" >&5
-printf %s "checking LIBS${nc_config_static_label}... " >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_LIBS ${nc_config_static_label}" >&5
+printf %s "checking PKG_LIBS ${nc_config_static_label}... " >&6; }
     PKG_LIBS=`nc-config ${nc_config_static_flag} --libs`
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_LIBS}" >&5
 printf "%s\n" "${PKG_LIBS}" >&6; }
@@ -4048,25 +3947,114 @@ printf %s "checking LIBS... " >&6; }
 printf "%s\n" "$LIBS" >&6; }
 
 
+else $as_nop
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Skipping nc-config" >&5
+printf "%s\n" "$as_me: Skipping nc-config" >&6;}
+    PKG_CC=
+    PKG_CFLAGS=
+    PKG_LIBS=
+
 
 fi
 
 
 #-------------------------------------------------------------------------------#
-#  Find extra libraries that may be needed on Windows                           #
+#  Prepend compiler/linker variables from R                                     #
 #-------------------------------------------------------------------------------#
-# (nc-config seems not to capture some of these static libraries on Windows)
+# When building the shared library for a package,
+# R always prepends its own directories to the library search path,
+# so we honour this when testing for package features,
+# otherwise failures may occur when linking or using the package.
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Prepend compiler/linker variables from R:" >&5
+printf "%s\n" "$as_me: Prepend compiler/linker variables from R:" >&6;}
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
+printf %s "checking CFLAGS... " >&6; }
+CFLAGS="${R_CFLAGS} $CFLAGS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CFLAGS" >&5
+printf "%s\n" "$CFLAGS" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
+printf %s "checking CPPFLAGS... " >&6; }
+CPPFLAGS="${R_CPPFLAGS} $CPPFLAGS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CPPFLAGS" >&5
+printf "%s\n" "$CPPFLAGS" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
+printf %s "checking LDFLAGS... " >&6; }
+LDFLAGS="${R_LDFLAGS} $LDFLAGS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LDFLAGS" >&5
+printf "%s\n" "$LDFLAGS" >&6; }
+
+
+#-------------------------------------------------------------------------------#
+#  Find first working compiler from nc-config (optional), environment, then R   #
+#-------------------------------------------------------------------------------#
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find first working compiler from nc-config (if enabled), environment, then R:" >&5
+printf "%s\n" "$as_me: Find first working compiler from nc-config (if enabled), environment, then R:" >&6;}
+
+CC=
+for mycc in "${PKG_CC}" "$CC" "${R_CC}"; do
+  if test -n "$mycc"
+then :
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking compilation with $mycc" >&5
+printf %s "checking compilation with $mycc... " >&6; }
+    CC="$mycc"
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: pass" >&5
+printf "%s\n" "pass" >&6; }
+       break
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: fail" >&5
+printf "%s\n" "fail" >&6; }
+       CC=
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+
+fi
+done
+
+if test -z "$CC"
+then :
+  as_fn_error $? "no working compiler found" "$LINENO" 5
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CC" >&5
+printf %s "checking CC... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CC" >&5
+printf "%s\n" "$CC" >&6; }
+
+
+#-------------------------------------------------------------------------------#
+#  Set libraries to link on Windows                                             #
+#-------------------------------------------------------------------------------#
+# As of Rtools43, nc-config does not link all required libraries,
+# and it also tries to link libraries that are not installed.
+# If nc-config is fixed, this section could be removed,
+# and nc-config could be re-enabled above.
 
 if test "x$platform" = xWindows
 then :
 
 
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find extra libraries that may be needed on Windows:" >&5
-printf "%s\n" "$as_me: Find extra libraries that may be needed on Windows:" >&6;}
-
-  # Start with empty LIBS, storing original LIBS to prepend later:
-  PRELIBS="$LIBS"
-  LIBS=
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find libraries that may be needed on Windows:" >&5
+printf "%s\n" "$as_me: Find libraries that may be needed on Windows:" >&6;}
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing atan" >&5
 printf %s "checking for library containing atan... " >&6; }
@@ -4596,6 +4584,65 @@ fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_lzma_lzma_decoder_init" >&5
 printf "%s\n" "$ac_cv_search_lzma_lzma_decoder_init" >&6; }
 ac_res=$ac_cv_search_lzma_lzma_decoder_init
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing deflate" >&5
+printf %s "checking for library containing deflate... " >&6; }
+if test ${ac_cv_search_deflate+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char deflate ();
+int
+main (void)
+{
+return deflate ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' z
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_deflate=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_deflate+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_deflate+y}
+then :
+
+else $as_nop
+  ac_cv_search_deflate=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_deflate" >&5
+printf "%s\n" "$ac_cv_search_deflate" >&6; }
+ac_res=$ac_cv_search_deflate
 if test "$ac_res" != no
 then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
@@ -5313,6 +5360,125 @@ then :
 fi
 
 
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing H5Fopen" >&5
+printf %s "checking for library containing H5Fopen... " >&6; }
+if test ${ac_cv_search_H5Fopen+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char H5Fopen ();
+int
+main (void)
+{
+return H5Fopen ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' hdf5
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_H5Fopen=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_H5Fopen+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_H5Fopen+y}
+then :
+
+else $as_nop
+  ac_cv_search_H5Fopen=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_H5Fopen" >&5
+printf "%s\n" "$ac_cv_search_H5Fopen" >&6; }
+ac_res=$ac_cv_search_H5Fopen
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing H5TBmake_table" >&5
+printf %s "checking for library containing H5TBmake_table... " >&6; }
+if test ${ac_cv_search_H5TBmake_table+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char H5TBmake_table ();
+int
+main (void)
+{
+return H5TBmake_table ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' hdf5_hl
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_H5TBmake_table=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_H5TBmake_table+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_H5TBmake_table+y}
+then :
+
+else $as_nop
+  ac_cv_search_H5TBmake_table=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_H5TBmake_table" >&5
+printf "%s\n" "$ac_cv_search_H5TBmake_table" >&6; }
+ac_res=$ac_cv_search_H5TBmake_table
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing xdr_int" >&5
 printf %s "checking for library containing xdr_int... " >&6; }
 if test ${ac_cv_search_xdr_int+y}
@@ -5366,6 +5532,126 @@ fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_xdr_int" >&5
 printf "%s\n" "$ac_cv_search_xdr_int" >&6; }
 ac_res=$ac_cv_search_xdr_int
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing xmlReadMemory" >&5
+printf %s "checking for library containing xmlReadMemory... " >&6; }
+if test ${ac_cv_search_xmlReadMemory+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char xmlReadMemory ();
+int
+main (void)
+{
+return xmlReadMemory ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' xml2
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_xmlReadMemory=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_xmlReadMemory+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_xmlReadMemory+y}
+then :
+
+else $as_nop
+  ac_cv_search_xmlReadMemory=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_xmlReadMemory" >&5
+printf "%s\n" "$ac_cv_search_xmlReadMemory" >&6; }
+ac_res=$ac_cv_search_xmlReadMemory
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing curl_easy_init" >&5
+printf %s "checking for library containing curl_easy_init... " >&6; }
+if test ${ac_cv_search_curl_easy_init+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char curl_easy_init ();
+int
+main (void)
+{
+return curl_easy_init ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' curl
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_curl_easy_init=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_curl_easy_init+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_curl_easy_init+y}
+then :
+
+else $as_nop
+  ac_cv_search_curl_easy_init=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_curl_easy_init" >&5
+printf "%s\n" "$ac_cv_search_curl_easy_init" >&6; }
+ac_res=$ac_cv_search_curl_easy_init
 if test "$ac_res" != no
 then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
@@ -5433,12 +5719,124 @@ then :
 fi
 
 
-  # Append to previous LIBS:
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking append extra libraries to previous LIBS" >&5
-printf %s "checking append extra libraries to previous LIBS... " >&6; }
-  LIBS="$PRELIBS $LIBS"
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LIBS" >&5
-printf "%s\n" "$LIBS" >&6; }
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing Hopen" >&5
+printf %s "checking for library containing Hopen... " >&6; }
+if test ${ac_cv_search_Hopen+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char Hopen ();
+int
+main (void)
+{
+return Hopen ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' df
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_Hopen=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_Hopen+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_Hopen+y}
+then :
+
+else $as_nop
+  ac_cv_search_Hopen=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_Hopen" >&5
+printf "%s\n" "$ac_cv_search_Hopen" >&6; }
+ac_res=$ac_cv_search_Hopen
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing SDstart" >&5
+printf %s "checking for library containing SDstart... " >&6; }
+if test ${ac_cv_search_SDstart+y}
+then :
+  printf %s "(cached) " >&6
+else $as_nop
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+char SDstart ();
+int
+main (void)
+{
+return SDstart ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' mfhdf
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_SDstart=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_SDstart+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_SDstart+y}
+then :
+
+else $as_nop
+  ac_cv_search_SDstart=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_SDstart" >&5
+printf "%s\n" "$ac_cv_search_SDstart" >&6; }
+ac_res=$ac_cv_search_SDstart
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
 
 
 fi
@@ -5447,6 +5845,9 @@ fi
 #-------------------------------------------------------------------------------#
 #  Find sizes of selected data types                                            #
 #-------------------------------------------------------------------------------#
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find sizes of selected data types:" >&5
+printf "%s\n" "$as_me: Find sizes of selected data types:" >&6;}
 
 # The cast to long int works around a bug in the HP C Compiler
 # version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
@@ -5552,6 +5953,9 @@ printf "%s\n" "#define SIZEOF_SIZE_T $ac_cv_sizeof_size_t" >>confdefs.h
 #-------------------------------------------------------------------------------#
 #  Check NetCDF features                                                        #
 #-------------------------------------------------------------------------------#
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Check NetCDF features:" >&5
+printf "%s\n" "$as_me: Check NetCDF features:" >&6;}
 
 # Check that netcdf header files can be compiled:
        for ac_header in netcdf.h
@@ -5742,6 +6146,9 @@ printf "%s\n" "#define HAVE_DECL_NC_PERSIST $ac_have_decl" >>confdefs.h
 #  Check for parallel netcdf features                                           #
 #-------------------------------------------------------------------------------#
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Check for parallel NetCDF features:" >&5
+printf "%s\n" "$as_me: Check for parallel NetCDF features:" >&6;}
+
 
 # Check whether --with-mpitest-cmd was given.
 if test ${with_mpitest_cmd+y}
@@ -5784,8 +6191,8 @@ done
 
 if test "$has_mpi" != TRUE
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not available. If needed, try building netcdf with MPI compiler." >&5
-printf "%s\n" "$as_me: WARNING: MPI not available. If needed, try building netcdf with MPI compiler." >&2;}
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not available. If needed, ensure that nc-config (or CC) specifies an MPI compiler." >&5
+printf "%s\n" "$as_me: WARNING: MPI not available. If needed, ensure that nc-config (or CC) specifies an MPI compiler." >&2;}
 fi
 
 # Parallel I/O support in NetCDF:
@@ -5901,6 +6308,9 @@ fi
 #-------------------------------------------------------------------------------#
 #  Find UDUNITS2 library and header files                                       #
 #-------------------------------------------------------------------------------#
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Check for udunits2 features:" >&5
+printf "%s\n" "$as_me: Check for udunits2 features:" >&6;}
 
 # The udunits2 library depends on expat, which may need to be linked explicitly:
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing XML_ErrorString" >&5
