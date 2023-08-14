@@ -6132,8 +6132,8 @@ done
 
 if test "$has_mpi" != TRUE
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not available. If needed, try a compiler with MPI support, e.g. mpicc" >&5
-printf "%s\n" "$as_me: WARNING: MPI not available. If needed, try a compiler with MPI support, e.g. mpicc" >&2;}
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not available. If needed, try an MPI compiler as explained in file INSTALL." >&5
+printf "%s\n" "$as_me: WARNING: MPI not available. If needed, try an MPI compiler as explained in file INSTALL." >&2;}
 fi
 
 # Parallel I/O support in NetCDF:

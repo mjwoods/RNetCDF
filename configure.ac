@@ -284,7 +284,7 @@ AC_CHECK_HEADERS([mpi.h], [], [has_mpi=FALSE])
 AC_CHECK_FUNCS([MPI_Init], [], [has_mpi=FALSE])
 
 AS_IF([test "$has_mpi" != TRUE],
-  [AC_MSG_WARN([MPI not available. If needed, try a compiler with MPI support, e.g. mpicc])])
+  [AC_MSG_WARN([MPI not available. If needed, try an MPI compiler as explained in file INSTALL.])])
 
 # Parallel I/O support in NetCDF:
 AS_IF([test "$has_mpi" = TRUE],
