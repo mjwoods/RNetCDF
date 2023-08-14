@@ -18,7 +18,7 @@ R CMD INSTALL Options
 =====================
 
 Libraries and include files are usually detected automatically by nc-config, 
-which is part of most netcdf4 installations. If this causes problems, you can 
+which is part of most NetCDF4 installations. If this causes problems, you can 
 disable nc-config using --without-nc-config.
 
 The configure script can accept variables to define extra paths or libraries:
@@ -48,7 +48,7 @@ Note that libraries may be specified in LIBS in a few different ways. The most
 common way is '-l<libname>' as shown above, and the compiler will typically 
 search for a library called lib<libname>.so and then lib<libname>.a. But you 
 can also specify the full pathname of a library if necessary, perhaps to force 
-the use of a particular netcdf or udunits library on systems with multiple 
+the use of a particular NetCDF or udunits library on systems with multiple 
 versions available.
 
 When the NetCDF library is built with parallel I/O support using an MPI 
