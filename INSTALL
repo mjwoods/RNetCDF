@@ -56,13 +56,34 @@ can also specify the full pathname of a library if necessary, perhaps to force
 the use of a particular NetCDF or udunits library on systems with multiple 
 versions available.
 
-When the NetCDF library is built with parallel I/O support using an MPI 
-compiler driver (e.g. mpicc), the same compiler will be tried when installing 
-RNetCDF with nc-config enabled. This will enable parallel reading and writing 
-of netcdf files from multiple R processes started with MPI. Simple examples are 
-given in the demos directory of this package. Note that the NetCDF library has 
-separate options to enable support for parallel I/O on netcdf4 and classic 
-formats.
+MPI Support
+===========
+
+Message Passing Interface (MPI) is a standardised method for programs to 
+communicate between multiple processes within a machine or across machines. The 
+NetCDF library has optional support for MPI, which allows multiple processes to 
+read and write a single NetCDF dataset. This ensures that NetCDF metadata is 
+consistent across processes, while allowing parallel processing of huge 
+datasets.
+
+Simple examples using RNetCDF with MPI are given in the demos directory of 
+RNetCDF.
+
+Most MPI installations provide a compiler driver (e.g. mpicc) that simplifies 
+the building of MPI software. This involves setting paths to headers and 
+libraries, as well as linking libraries, in ways that may depend on compiler 
+flags.
+
+When the NetCDF library is built using an MPI compiler driver (e.g. mpicc), the 
+same compiler will be tried when installing RNetCDF, if --with-nc-config is 
+enabled.
+
+Note that the NetCDF library supports several distinct file formats, and 
+parallel I/O support is implemented separately for netcdf4 (hdf5) format and 
+earlier formats. It is possible to build the NetCDF library with parallel I/O 
+support for some, all, or none of the file formats. Installation of RNetCDF 
+should succeed regardless, but RNetCDF will return errors when attempting to 
+use parallel I/O on unsupported file formats.
 
 
 R CMD INSTALL Example
