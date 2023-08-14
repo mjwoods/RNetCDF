@@ -1,4 +1,4 @@
-This file describes the command line arguments which can be passed during
+This file describes the command line arguments which can be passed during 
 installation of the RNetCDF package and gives some further hints.
 
 
@@ -9,15 +9,17 @@ NetCDF library version 4.1.3 or greater.
 
 UDUNITS library version 2.0.4 or greater (optional, for calendar functions).
 
-On platforms that support both 32- and 64-bit executables, ensure that the above libraries and the R executable are compatible. Mixing 32-bit and 64-bit software will generally not work.
+On platforms that support both 32- and 64-bit executables, ensure that the 
+above libraries and the R executable are compatible. Mixing 32-bit and 64-bit 
+software will generally not work.
 
 
 R CMD INSTALL Options
 =====================
 
-Libraries and include files are usually detected automatically by nc-config,
-which is part of most netcdf4 installations. If this causes problems,
-you can disable nc-config using --without-nc-config.
+Libraries and include files are usually detected automatically by nc-config, 
+which is part of most netcdf4 installations. If this causes problems, you can 
+disable nc-config using --without-nc-config.
 
 The configure script can accept variables to define extra paths or libraries:
 
@@ -26,36 +28,36 @@ LDFLAGS='-L<libdir> [-L<libdir> ...]'   # extra directories for libraries
 LIBS='-l<libname> [-l<libname> ...]'    # extra libraries to link
 CC='mpicc -arch arm64'                  # C compiler with options
 
-Definitions for the above variables may be appended to the configure
-command line or passed through the environment.
+Definitions for the above variables may be appended to the configure command 
+line or passed through the environment.
 
-The final set of directories, libraries, and compilers is obtained by
-joining variables from nc-config (if enabled), the above variables, and
-settings used when building R, in that order. A compiler is chosen
-by testing compilers in order until a working compiler is found.
-The directories and libraries are searched in left-to-right order
-for required header files, libraries, or functions.
+The final set of directories, libraries, and compilers is obtained by joining 
+variables from nc-config (if enabled), the above variables, and settings used 
+when building R, in that order. A compiler is chosen by testing compilers in 
+order until a working compiler is found. The directories and libraries are 
+searched in left-to-right order for required header files, libraries, or 
+functions.
 
-Some R installations prepend the R library directory when linking the
-RNetCDF shared library, which may cause problems in rare cases when
-unwanted versions of other libraries are installed in the same
-directory. A possible solution involves passing the full pathname
-of the desired library through the LIBS variable, as explained below.
+Some R installations prepend the R library directory when linking the RNetCDF 
+shared library, which may cause problems in rare cases when unwanted versions 
+of other libraries are installed in the same directory. A possible solution 
+involves passing the full pathname of the desired library through the LIBS 
+variable, as explained below.
 
-Note that libraries may be specified in LIBS in a few different ways.
-The most common way is '-l<libname>' as shown above, and the compiler will
-typically search for a library called lib<libname>.so and then lib<libname>.a.
-But you can also specify the full pathname of a library if necessary,
-perhaps to force the use of a particular netcdf or udunits library
-on systems with multiple versions available.
+Note that libraries may be specified in LIBS in a few different ways. The most 
+common way is '-l<libname>' as shown above, and the compiler will typically 
+search for a library called lib<libname>.so and then lib<libname>.a. But you 
+can also specify the full pathname of a library if necessary, perhaps to force 
+the use of a particular netcdf or udunits library on systems with multiple 
+versions available.
 
-When the NetCDF library is built with parallel I/O support using an MPI
-compiler driver (e.g. mpicc), the same compiler will be tried when
-installing RNetCDF with nc-config enabled. This will enable parallel
-writing to netcdf files from multiple R processes started with MPI.
-Simple examples are given in the demos directory of this package.
-Note that the NetCDF library has separate options to enable support for
-parallel I/O on netcdf4 and classic formats.
+When the NetCDF library is built with parallel I/O support using an MPI 
+compiler driver (e.g. mpicc), the same compiler will be tried when installing 
+RNetCDF with nc-config enabled. This will enable parallel reading and writing 
+of netcdf files from multiple R processes started with MPI. Simple examples are 
+given in the demos directory of this package. Note that the NetCDF library has 
+separate options to enable support for parallel I/O on netcdf4 and classic 
+formats.
 
 
 R CMD INSTALL Example
@@ -68,23 +70,23 @@ R CMD INSTALL --configure-args="CPPFLAGS=-I/sw/include \
 LD_LIBRARY_PATH
 ===============
 
-If a runtime error occurs indicating that shared libraries cannot be found,
-you may need to set or modify the library search path to include directories
-where NetCDF, HDF5 and/or UDUNITS libraries are stored.
-This is sometimes necessary for custom installations of the libraries.
+If a runtime error occurs indicating that shared libraries cannot be found, you 
+may need to set or modify the library search path to include directories where 
+NetCDF, HDF5 and/or UDUNITS libraries are stored. This is sometimes necessary 
+for custom installations of the libraries.
 
-The library search path is typically influenced by the environment variable
+The library search path is typically influenced by the environment variable 
 LD_LIBRARY_PATH (or DYLD_LIBRARY_PATH for Mac OSX). For example:
 
 export LD_LIBRARY_PATH=/sw/lib:$LD_LIBRARY_PATH
 
-On some systems, it is possible to build R packages so that dependencies
-are found automatically at runtime. For example, some linkers provide an
-option such as '-rpath', which embeds the library search path when creating
-an executable or shared library. It may also be possible to avoid runtime
-dependencies by building your R package against static libraries (*.a),
-but this will only work if the functions in the libraries were compiled as
-position independent code (e.g. using the -fPIC option of gcc).
+On some systems, it is possible to build R packages so that dependencies are 
+found automatically at runtime. For example, some linkers provide an option 
+such as '-rpath', which embeds the library search path when creating an 
+executable or shared library. It may also be possible to avoid runtime 
+dependencies by building your R package against static libraries (*.a), but 
+this will only work if the functions in the libraries were compiled as position 
+independent code (e.g. using the -fPIC option of gcc).
 
 
 R CMD check Example
@@ -97,8 +99,8 @@ R CMD check --install-args="--configure-args='CPPFLAGS=-I/sw/include \
 Time units
 ==========
 
-Common udunits databases are distributed with RNetCDF, and these are used
-by default when RNetCDF is loaded by R. However, a different units database
-may be used by specifying the appropriate file in environment variable
+Common udunits databases are distributed with RNetCDF, and these are used by 
+default when RNetCDF is loaded by R. However, a different units database may be 
+used by specifying the appropriate file in environment variable 
 UDUNITS2_XML_PATH.
 
