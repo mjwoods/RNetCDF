@@ -647,7 +647,7 @@ ac_includes_default="\
 ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-mpitest_cmd
+mpiexec
 has_parallel
 has_udunits
 has_diskless
@@ -704,7 +704,7 @@ ac_user_opts='
 enable_option_checking
 with_nc_config
 with_nc_config_static
-with_mpitest_cmd
+with_mpiexec
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1334,8 +1334,8 @@ Optional Packages:
   --with-nc-config        get compiler options from nc-config (default)
   --with-nc-config-static use static libraries from nc-config (default on
                           Windows & macOS)
-  --with-mpitest-cmd      MPI command to run small parallel tests after
-                          installation - e.g. 'mpiexec -np 2'
+  --with-mpiexec          MPI command to run small parallel tests after
+                          installation (none by default)
 
 Some influential environment variables:
   CC          C compiler command
@@ -6091,12 +6091,12 @@ printf "%s\n" "#define HAVE_DECL_NC_PERSIST $ac_have_decl" >>confdefs.h
 printf "%s\n" "$as_me: Check for parallel NetCDF features:" >&6;}
 
 
-# Check whether --with-mpitest-cmd was given.
-if test ${with_mpitest_cmd+y}
+# Check whether --with-mpiexec was given.
+if test ${with_mpiexec+y}
 then :
-  withval=$with_mpitest_cmd; mpitest_cmd="$withval"
+  withval=$with_mpiexec; mpiexec="$withval"
 else $as_nop
-  mpitest_cmd=""
+  mpiexec=""
 fi
 
 

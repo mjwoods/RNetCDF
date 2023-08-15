@@ -268,13 +268,13 @@ AC_CHECK_DECLS([NC_64BIT_DATA, NC_FORMAT_64BIT_DATA, NC_DISKLESS, NC_PERSIST],
 
 AC_MSG_NOTICE([Check for parallel NetCDF features:])
 
-AC_ARG_WITH([mpitest-cmd],
+AC_ARG_WITH([mpiexec],
   [AS_HELP_STRING(
-    [--with-mpitest-cmd],
-    [MPI command to run small parallel tests after installation - e.g. 'mpiexec -np 2']
+    [--with-mpiexec],
+    [MPI command to run small parallel tests after installation (none by default)]
   )],
-  [mpitest_cmd="$withval"],
-  [mpitest_cmd=""])
+  [mpiexec="$withval"],
+  [mpiexec=""])
 
 
 # MPI support:
@@ -370,7 +370,7 @@ AC_SUBST(has_udunits)
 
 AC_SUBST(has_parallel)
 
-AC_SUBST(mpitest_cmd)
+AC_SUBST(mpiexec)
 
 
 #-------------------------------------------------------------------------------#
