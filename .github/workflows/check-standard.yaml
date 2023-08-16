@@ -58,7 +58,7 @@ jobs:
         if: runner.os != 'macOS'
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          extra-packages: any::rcmdcheck, pbdMPI, Rmpi
           needs: check
 
       - name: Check RNetCDF package (macOS)
@@ -74,5 +74,6 @@ jobs:
         uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
+	  args: 'c("--no-manual", "--as-cran", "--install-args=--configure-args=--with-mpiexec=mpiexec")'
         env:
           _R_CHECK_FORCE_SUGGESTS_: true
