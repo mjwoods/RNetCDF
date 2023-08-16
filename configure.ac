@@ -6,6 +6,33 @@ AC_INIT([RNetCDF],[2.7-1])
 
 
 #-------------------------------------------------------------------------------#
+#  Get compiler/linker variables from environment                               #
+#-------------------------------------------------------------------------------#
+
+AC_MSG_NOTICE([Find compiler/linker variables from environment:])
+
+AC_MSG_CHECKING([CC])
+ENV_CC="$CC"
+AC_MSG_RESULT([${ENV_CC}])
+
+AC_MSG_CHECKING([CFLAGS])
+ENV_CFLAGS="$CFLAGS"
+AC_MSG_RESULT([${ENV_CFLAGS}])
+
+AC_MSG_CHECKING([CPPFLAGS])
+ENV_CPPFLAGS="$CPPFLAGS"
+AC_MSG_RESULT([${ENV_CPPFLAGS}])
+
+AC_MSG_CHECKING([LDFLAGS])
+ENV_LDFLAGS="$LDFLAGS"
+AC_MSG_RESULT([${ENV_LDFLAGS}])
+
+AC_MSG_CHECKING([LDFLAGS])
+ENV_LIBS="$LIBS"
+AC_MSG_RESULT([${ENV_LIBS}])
+
+
+#-------------------------------------------------------------------------------#
 #  Get compiler/linker variables from R                                         #
 #-------------------------------------------------------------------------------#
 
@@ -42,19 +69,22 @@ AC_MSG_RESULT([${R_LDFLAGS}])
 AC_MSG_NOTICE([Append R compiler/linker variables to environment:])
 
 AC_MSG_CHECKING([CFLAGS])
-CFLAGS="$CFLAGS ${R_CFLAGS}"
+CFLAGS="${ENV_CFLAGS} ${R_CFLAGS}"
 AC_MSG_RESULT([$CFLAGS])
 
 AC_MSG_CHECKING([CPPFLAGS])
-CPPFLAGS="$CPPFLAGS ${R_CPPFLAGS}"
+CPPFLAGS="${ENV_CPPFLAGS} ${R_CPPFLAGS}"
 AC_MSG_RESULT([$CPPFLAGS])
 
 AC_MSG_CHECKING([LDFLAGS])
-LDFLAGS="$LDFLAGS ${R_LDFLAGS}"
+LDFLAGS="${ENV_LDFLAGS} ${R_LDFLAGS}"
 AC_MSG_RESULT([$LDFLAGS])
 
 AC_MSG_CHECKING([LIBS])
 AC_MSG_RESULT([$LIBS])
+
+# Use compiler from R for initial tests:
+CC="${R_CC}"
 
 
 #-------------------------------------------------------------------------------#
@@ -142,7 +172,7 @@ AS_IF([test "x${have_nc_config}" = xyes],
 AC_MSG_NOTICE([Find first working compiler from nc-config (if enabled), environment, then R:])
 
 CC=
-for mycc in "${PKG_CC}" "$CC" "${R_CC}"; do
+for mycc in "${PKG_CC}" "${ENV_CC}" "${R_CC}"; do
   AS_IF([test -n "$mycc"], [
     AC_MSG_CHECKING([compilation with $mycc])
     CC="$mycc"

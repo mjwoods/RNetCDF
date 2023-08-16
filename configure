@@ -2575,6 +2575,44 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 #-------------------------------------------------------------------------------#
+#  Get compiler/linker variables from environment                               #
+#-------------------------------------------------------------------------------#
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find compiler/linker variables from environment:" >&5
+printf "%s\n" "$as_me: Find compiler/linker variables from environment:" >&6;}
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CC" >&5
+printf %s "checking CC... " >&6; }
+ENV_CC="$CC"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ENV_CC}" >&5
+printf "%s\n" "${ENV_CC}" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
+printf %s "checking CFLAGS... " >&6; }
+ENV_CFLAGS="$CFLAGS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ENV_CFLAGS}" >&5
+printf "%s\n" "${ENV_CFLAGS}" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
+printf %s "checking CPPFLAGS... " >&6; }
+ENV_CPPFLAGS="$CPPFLAGS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ENV_CPPFLAGS}" >&5
+printf "%s\n" "${ENV_CPPFLAGS}" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
+printf %s "checking LDFLAGS... " >&6; }
+ENV_LDFLAGS="$LDFLAGS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ENV_LDFLAGS}" >&5
+printf "%s\n" "${ENV_LDFLAGS}" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
+printf %s "checking LDFLAGS... " >&6; }
+ENV_LIBS="$LIBS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ENV_LIBS}" >&5
+printf "%s\n" "${ENV_LIBS}" >&6; }
+
+
+#-------------------------------------------------------------------------------#
 #  Get compiler/linker variables from R                                         #
 #-------------------------------------------------------------------------------#
 
@@ -2624,19 +2662,19 @@ printf "%s\n" "$as_me: Append R compiler/linker variables to environment:" >&6;}
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
 printf %s "checking CFLAGS... " >&6; }
-CFLAGS="$CFLAGS ${R_CFLAGS}"
+CFLAGS="${ENV_CFLAGS} ${R_CFLAGS}"
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CFLAGS" >&5
 printf "%s\n" "$CFLAGS" >&6; }
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
 printf %s "checking CPPFLAGS... " >&6; }
-CPPFLAGS="$CPPFLAGS ${R_CPPFLAGS}"
+CPPFLAGS="${ENV_CPPFLAGS} ${R_CPPFLAGS}"
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CPPFLAGS" >&5
 printf "%s\n" "$CPPFLAGS" >&6; }
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
 printf %s "checking LDFLAGS... " >&6; }
-LDFLAGS="$LDFLAGS ${R_LDFLAGS}"
+LDFLAGS="${ENV_LDFLAGS} ${R_LDFLAGS}"
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LDFLAGS" >&5
 printf "%s\n" "$LDFLAGS" >&6; }
 
@@ -2644,6 +2682,9 @@ printf "%s\n" "$LDFLAGS" >&6; }
 printf %s "checking LIBS... " >&6; }
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LIBS" >&5
 printf "%s\n" "$LIBS" >&6; }
+
+# Use compiler from R for initial tests:
+CC="${R_CC}"
 
 
 #-------------------------------------------------------------------------------#
@@ -3938,7 +3979,7 @@ fi
 printf "%s\n" "$as_me: Find first working compiler from nc-config (if enabled), environment, then R:" >&6;}
 
 CC=
-for mycc in "${PKG_CC}" "$CC" "${R_CC}"; do
+for mycc in "${PKG_CC}" "${ENV_CC}" "${R_CC}"; do
   if test -n "$mycc"
 then :
 
