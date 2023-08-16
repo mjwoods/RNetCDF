@@ -1378,7 +1378,63 @@ if (!cfg$udunits) {
 
 }
 
+#-------------------------------------------------------------------------------#
+#  Parallel I/O demos
+#-------------------------------------------------------------------------------#
+
+mpiexec <- cfg$mpiexec
+
+if (mpiexec != "") {
+
+  # List of MPI packages to test:
+  mpipkgs <- c("Rmpi", "pbdMPI")
+
+  # Try to find demo script directory:
+  demodirs <- c("demo",
+                file.path("..", "demo"),
+                file.path("..", "RNetCDF", "demo"))
+  demodir <- demodirs[dir.exists(demodirs)]
+  stopifnot(length(demodir) > 0)
+
+  # Check if any of the packages are loaded:
+  for (mpipkg in mpipkgs) {
+    if (isNamespaceLoaded(mpipkg)) {
+      warning("Package ", mpipkg, " is loaded, so mpiexec may fail")
+    }
+  }
+
+  for (mpipkg in c("Rmpi", "pbdMPI")) {
+    # We cannot use requireNamespace to check for installed MPI packages,
+    # because they may initialise the MPI library via .onLoad,
+    # which causes failure when we try to mpiexec another R script.
+    if (length(find.package(mpipkg, quiet=TRUE) > 0)) {
+      cat("Testing parallel I/O with package", mpipkg, "...\n")
+      demoscripts <- list.files(
+             demodir,
+             pattern=paste0(mpipkg, ".*\\.R"),
+             full.names=TRUE)
+      stopifnot(length(demoscripts) >= 1)
+      for (demoscript in demoscripts) {
+	ncfile <- tempfile("RNetCDF-MPI-test", fileext=".nc")
+	cat("Running script", demoscript, "with MPI ...\n")
+	x <- system2(mpiexec,
+	  args=c('-n', '2', 'Rscript', '--vanilla', demoscript, ncfile))
+	unlink(ncfile)
+	tally <- testfun(x, 0, tally)
+      }
+    } else {
+      message("Package ", mpipkg, " not available for parallel I/O tests\n")
+    }
+  }
+
+} else {
+  cat("Skipping parallel I/O tests as mpiexec is not defined\n")
+}
+
+#-------------------------------------------------------------------------------#
 # Check that package can be unloaded:
+#-------------------------------------------------------------------------------#
+
 cat("Unload RNetCDF ...\n")
 detach("package:RNetCDF",unload=TRUE)
 
