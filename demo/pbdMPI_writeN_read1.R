@@ -1,4 +1,4 @@
-### SHELL> mpiexec -np 2 Rscript --vanilla [...].R
+### SHELL> mpiexec -np 2 Rscript --vanilla [...].R filename.nc
 
 library(pbdMPI, quiet = TRUE)
 library(RNetCDF, quiet = TRUE)
@@ -16,7 +16,10 @@ data_global <- matrix(seq(1,nc*nr), nrow=nr, ncol=nc)
 data_local <- data_global[,rank*nc_loc+c(1:nc_loc)]
 
 ### Parallel write
-filename <- "writeN_read1.nc"
+args <- commandArgs(TRUE)
+stopifnot(length(args) == 1)
+filename <- args[1]
+
 info.create()
 ncid <- create.nc(filename, format="netcdf4", mpi_comm=comm.c2f(), mpi_info=info.c2f())
 rdim <- dim.def.nc(ncid, "rows", nr)
