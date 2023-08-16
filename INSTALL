@@ -68,7 +68,9 @@ consistent across processes, while allowing parallel processing of huge
 datasets.
 
 Simple examples using RNetCDF with MPI are given in the demos directory of 
-RNetCDF.
+RNetCDF. These examples will be run as tests in R CMD check if NetCDF parallel
+I/O support is detected, packages Rmpi or pbdMPI are installed, and option
+--with-mpiexec is specified.
 
 Most MPI installations provide a compiler driver (e.g. mpicc) that simplifies 
 the building of MPI software. This involves setting paths to headers and 
