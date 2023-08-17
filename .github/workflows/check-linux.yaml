@@ -55,7 +55,7 @@ jobs:
           check-dir: '"check"'
           args: |
             'c("--no-manual", "--as-cran",
-               "--install-args=\"--configure-args=--with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi\"")'
+               "--install-args=--configure-args=\"--without-nc-config --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi LIBS=-lnetcdf_mpi\"")'
 
       - name: Upload check directory
         uses: actions/upload-artifact@v3
