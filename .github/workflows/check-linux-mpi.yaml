@@ -54,6 +54,7 @@ jobs:
 
       - name: Upload check directory
         uses: actions/upload-artifact@v3
+        if: success() || failure()
         with:
           name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_mpi_check
           path: check/
