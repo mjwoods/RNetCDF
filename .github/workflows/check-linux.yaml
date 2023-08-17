@@ -52,7 +52,7 @@ jobs:
         uses: r-lib/actions/check-r-package@v2
         with:
           check-dir: '"check"'
-          args: 'c("--no-manual", "--as-cran", "--install-args=--configure-args=\"--without-nc-config --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi CFLAGS=`pkg-config --cflags netcdf-mpi` LIBS=`pkg-config --libs netcdf-mpi`\"")'
+          args: 'c("--no-manual", "--as-cran", "--install-args=--configure-args=\"--without-nc-config --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi CPPFLAGS=-I/usr/lib/x86_64-linux-gnu/netcdf/mpi/include LDFLAGS=-L/usr/lib/x86_64-linux-gnu/netcdf/mpi\"")'
 
       - name: Upload check directory
         uses: actions/upload-artifact@v3
