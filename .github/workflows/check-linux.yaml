@@ -58,7 +58,6 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config.os }}-r_${{ matrix.config.r }}-check
-          path: check/**
-          if-no-files-found: ignore
+          path: check/
           retention-days: 5
 
