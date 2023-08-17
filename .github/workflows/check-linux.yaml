@@ -39,13 +39,12 @@ jobs:
 
       - name: Install system dependencies
         run: |
-            sudo apt-get install -y libnetcdf-mpi-dev openmpi-bin
-
+            sudo apt-get install -y libnetcdf-mpi-dev libopenmpi-dev openmpi-bin
 
       - name: Install R dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck, any::pbdMPI, any::Rmpi
+          extra-packages: any::rcmdcheck, any::pbdMPI
           needs: check
 
       - name: Check RNetCDF package
@@ -53,7 +52,7 @@ jobs:
         uses: r-lib/actions/check-r-package@v2
         with:
           check-dir: '"check"'
-          args: 'c("--no-manual", "--as-cran", "--install-args=--configure-args=\"--without-nc-config --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi LIBS=-lnetcdf_mpi\"")'
+          args: 'c("--no-manual", "--as-cran", "--install-args=--configure-args=\"--without-nc-config --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi CFLAGS=`pkg-config --cflags netcdf-mpi` LIBS=`pkg-config --libs netcdf-mpi`\"")'
 
       - name: Upload check directory
         uses: actions/upload-artifact@v3
