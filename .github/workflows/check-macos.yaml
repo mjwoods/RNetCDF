@@ -12,7 +12,7 @@ jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
 
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}
 
     strategy:
       fail-fast: false
@@ -56,8 +56,7 @@ jobs:
       - name: Upload check directory
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.config.os }}-r${{ matrix.config.r }}-check
-          path: check/**
-          if-no-files-found: ignore
+          name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_check
+          path: check/
           retention-days: 5
 
