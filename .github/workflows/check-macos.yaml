@@ -46,9 +46,18 @@ jobs:
           needs: check
 
       - name: Check RNetCDF package
+        id: rcmdcheck
         uses: r-lib/actions/check-r-package@v2
         with:
-          upload-snapshots: true
+          check-dir: '"check"'
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
+
+      - name: Upload check directory
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.config.os }}-r${{ matrix.config.r }}-check
+          path: check/**
+          if-no-files-found: ignore
+          retention-days: 5
 
