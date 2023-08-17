@@ -53,10 +53,10 @@ jobs:
           _R_CHECK_FORCE_SUGGESTS_: false
 
       - name: Upload check directory
+        if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_check
-          path: check/**
-          if-no-files-found: ignore
+          path: check/
           retention-days: 5
 

@@ -50,6 +50,7 @@ jobs:
           check-dir: '"check"'
 
       - name: Upload check directory
+        if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_check

@@ -53,8 +53,8 @@ jobs:
           args: 'c("--no-manual", "--as-cran", "--install-args=--configure-args=\"--without-nc-config --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi CPPFLAGS=-I/usr/lib/x86_64-linux-gnu/netcdf/mpi/include LDFLAGS=-L/usr/lib/x86_64-linux-gnu/netcdf/mpi\"")'
 
       - name: Upload check directory
-        uses: actions/upload-artifact@v3
         if: success() || failure()
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_mpi_check
           path: check/
