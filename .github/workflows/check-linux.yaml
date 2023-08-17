@@ -6,10 +6,10 @@ on:
   pull_request:
     branches: [main, master]
 
-name: R-CMD-check
+name: check-linux
 
 jobs:
-  R-CMD-check:
+  check-linux:
     runs-on: ${{ matrix.config.os }}
 
     name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}
