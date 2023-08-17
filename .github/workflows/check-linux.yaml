@@ -39,7 +39,7 @@ jobs:
 
       - name: Install system dependencies
         run: |
-            apt install libnetcdf-mpi-dev openmpi-bin
+            sudo apt-get install -y libnetcdf-mpi-dev openmpi-bin
 
 
       - name: Install R dependencies
