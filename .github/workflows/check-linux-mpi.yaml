@@ -42,7 +42,7 @@ jobs:
       - name: Install R dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck, pbdMPI
+          extra-packages: any::rcmdcheck, any::pbdMPI, any::Rmpi
           needs: check
 
       - name: Check RNetCDF package
