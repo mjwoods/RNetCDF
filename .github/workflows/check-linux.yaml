@@ -42,12 +42,18 @@ jobs:
         with:
           extra-packages: any::rcmdcheck, any::pbdMPI, any::Rmpi
           needs: check
+          run: |
+            apt install libnetcdf-mpi-dev openmpi-bin
 
       - name: Check RNetCDF package
         id: rcmdcheck
         uses: r-lib/actions/check-r-package@v2
         with:
           check-dir: '"check"'
+          args: |
+            'c("--no-manual", "--as-cran", \
+               "--install-args=''--configure-args=--with-mpiexec=mpiexec.openmpi \
+                  CC=mpicc.openmpi''")'
 
       - name: Upload check directory
         uses: actions/upload-artifact@v3
