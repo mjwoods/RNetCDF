@@ -18,8 +18,6 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: macos-latest,   r: 'release'}
-          - {os: windows-latest, r: 'release'}
           - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
           - {os: ubuntu-latest,   r: 'release'}
           - {os: ubuntu-latest,   r: 'oldrel-1'}
@@ -29,9 +27,6 @@ jobs:
       R_KEEP_PKG_SOURCE: yes
 
     steps:
-      - name: Configure git
-        run: git config --global core.autocrlf false
-
       - uses: actions/checkout@v3
 
       - uses: r-lib/actions/setup-pandoc@v2
@@ -42,37 +37,14 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - name: Install brew packages (macOS)
-        if: runner.os == 'macOS'
-        run : |
-          brew install automake netcdf udunits
-
-      - name: Install R dependencies (macOS)
-        if: runner.os == 'macOS'
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::rcmdcheck, pbdMPI=?ignore, Rmpi=?ignore
-          needs: check
-
-      - name: Install R dependencies (not macOS)
-        if: runner.os != 'macOS'
+      - name: Install R dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck, any::pbdMPI, any::Rmpi
           needs: check
 
-      - name: Check RNetCDF package (macOS)
-        if: runner.os == 'macOS'
+      - name: Check RNetCDF package
         uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
-        env:
-          _R_CHECK_FORCE_SUGGESTS_: false
 
-      - name: Check RNetCDF package (not macOS)
-        if: runner.os != 'macOS'
-        uses: r-lib/actions/check-r-package@v2
-        with:
-          upload-snapshots: true
-        env:
-          _R_CHECK_FORCE_SUGGESTS_: true
