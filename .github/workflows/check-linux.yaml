@@ -53,9 +53,7 @@ jobs:
         uses: r-lib/actions/check-r-package@v2
         with:
           check-dir: '"check"'
-          args: |
-            'c("--no-manual", "--as-cran",
-               "--install-args=--configure-args=\"--without-nc-config --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi LIBS=-lnetcdf_mpi\"")'
+          args: 'c("--no-manual", "--as-cran", "--install-args=--configure-args=\"--without-nc-config --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi LIBS=-lnetcdf_mpi\"")'
 
       - name: Upload check directory
         uses: actions/upload-artifact@v3
