@@ -42,8 +42,12 @@ jobs:
       - name: Install R dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck, any::pbdMPI, any::Rmpi
+          extra-packages: any::rcmdcheck, pbdMPI=?ignore, Rmpi=?ignore
           needs: check
+
+      - name: Install Rmpi
+        run: |
+          Rscript -e 'install.packages("Rmpi", type="source", configure.args="--with-mpi=/usr/lib/x86_64-linux-gnu/openmpi --with-Rmpi-type=OPENMPI"'
 
       - name: Check RNetCDF package
         id: rcmdcheck
