@@ -52,8 +52,6 @@ jobs:
 
       - name: Check RNetCDF package
         uses: r-lib/actions/check-r-package@v2
-        env:
-          R_LIBS_USER: /home/runner/work/_temp/Library
         with:
           args: 'c("--no-manual", "--as-cran", "--install-args=--configure-args=\"--without-nc-config --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi CPPFLAGS=-I/usr/lib/x86_64-linux-gnu/netcdf/mpi/include LDFLAGS=-L/usr/lib/x86_64-linux-gnu/netcdf/mpi\"")'
           upload-results: true
