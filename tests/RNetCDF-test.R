@@ -1404,14 +1404,6 @@ if (mpiexec != "") {
   }
 
 ##DEBUG
-.libPaths(c("/home/runner/work/_temp/Library", .libPaths()))
-
-for (mpipkg in mpipkgs) {
-  if (!requireNamespace(mpipkg)) {
-    message("Package ", mpipkg, " is NOT found by requireNamespace")
-  }
-}
-
 cat(".libPaths()=\n")
 print(.libPaths())
 
