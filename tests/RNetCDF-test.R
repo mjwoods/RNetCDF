@@ -1417,6 +1417,8 @@ for (path in .libPaths()) {
   cat("All packages on ", path, ":\n")
   print(list.files(path))
 }
+
+print(Sys.getenv())
 ##/DEBUG
 
 
