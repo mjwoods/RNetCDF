@@ -51,13 +51,10 @@ jobs:
           needs: check
 
       - name: Check RNetCDF package
-        id: rcmdcheck
         uses: r-lib/actions/check-r-package@v2
         with:
-          check-dir: '"check"'
           args: 'c("--no-manual", "--as-cran", "--install-args=--configure-args=\"--without-nc-config --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi CPPFLAGS=-I/usr/lib/x86_64-linux-gnu/netcdf/mpi/include LDFLAGS=-L/usr/lib/x86_64-linux-gnu/netcdf/mpi\"")'
           upload-results: true
-          retention-days: 5
 
 #      - name: Upload check directory
 #        if: success() || failure()
