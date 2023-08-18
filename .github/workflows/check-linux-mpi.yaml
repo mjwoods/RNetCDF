@@ -49,6 +49,7 @@ jobs:
         with:
           extra-packages: any::rcmdcheck
           needs: check
+          cache: false
 
       - name: Check RNetCDF package
         uses: r-lib/actions/check-r-package@v2
