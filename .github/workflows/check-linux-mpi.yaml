@@ -48,6 +48,7 @@ jobs:
       - name: Install Rmpi
         run: |
           Rscript -e 'install.packages("Rmpi", type="source", configure.args="--with-mpi=/usr/lib/x86_64-linux-gnu/openmpi --with-Rmpi-type=OPENMPI")'
+          Rscript -e 'for (path in .libPaths()) {cat("All packages on ", path, ":\n"); print(list.files(path)); }'
 
       - name: Check RNetCDF package
         id: rcmdcheck

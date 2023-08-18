@@ -1403,6 +1403,23 @@ if (mpiexec != "") {
     }
   }
 
+##DEBUG
+for (mpipkg in mpipkgs) {
+  if (!requireNamespace(mpipkg)) {
+    message("Package ", mpipkg, " is NOT found by requireNamespace")
+  }
+}
+
+cat(".libPaths()=\n")
+print(.libPaths())
+
+for (path in .libPaths()) {
+  cat("All packages on ", path, ":\n")
+  print(list.files(path))
+}
+##/DEBUG
+
+
   for (mpipkg in c("Rmpi", "pbdMPI")) {
     # We cannot use requireNamespace to check for installed MPI packages,
     # because they may initialise the MPI library via .onLoad,
