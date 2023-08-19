@@ -51,17 +51,39 @@ jobs:
           needs: check
           cache: false
 
-      - name: Check RNetCDF package
-        uses: r-lib/actions/check-r-package@v2
-        with:
-          args: 'c("--no-manual", "--as-cran", "--install-args=--configure-args=\"--without-nc-config --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi CPPFLAGS=-I/usr/lib/x86_64-linux-gnu/netcdf/mpi/include LDFLAGS=-L/usr/lib/x86_64-linux-gnu/netcdf/mpi\"")'
-          upload-results: true
+# r-lib/actions/check-r-package@v2 seems unable to find MPI packages
+# installed by setup-r-dependencies@v2.
+# For now, we use a simple test script below.
+       - name: Check RNetCDF with MPI packages
+         run: |
+           R CMD build .
+           Rscript -e "library(Rmpi); library(pbdMPI);"
+           R CMD check --no-manual \
+             --install-args=--configure-args="--without-nc-config \
+               --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi \
+               CPPFLAGS=-I/usr/lib/x86_64-linux-gnu/netcdf/mpi/include \
+               LDFLAGS=-L/usr/lib/x86_64-linux-gnu/netcdf/mpi" \
+             RNetCDF_*.*-*.tar.gz
+         shell: bash
 
-#      - name: Upload check directory
-#        if: success() || failure()
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_mpi_check
-#          path: check/
-#          retention-days: 5
+      - name: Upload check directory
+        if: success() || failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_mpi_check
+          path: RNetCDF.Rcheck/
+          retention-days: 5
+
+      - name: Show RNetCDF install output
+        run: |
+          echo ::group::Show RNetCDF install output
+          cat RNetCDF.Rcheck/00install.out
+          echo ::endgroup::
+        shell: bash
+
+      - name: Show RNetCDF test output
+        run: |
+          echo ::group:: Show RNetCDF test output
+          cat RNetCDF.Rcheck/tests/RNetCDF-test.Rout*
+          echo ::endgroup::
 
