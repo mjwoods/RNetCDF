@@ -81,15 +81,11 @@ jobs:
 
       - name: Show RNetCDF install output
         run: |
-          echo ::group::Show RNetCDF install output
           cat RNetCDF.Rcheck/00install.out
-          echo ::endgroup::
         shell: bash
 
       - name: Show RNetCDF test output
         run: |
-          echo ::group:: Show RNetCDF test output
           cat RNetCDF.Rcheck/tests/RNetCDF-test.Rout*
-          echo ::endgroup::
         shell: bash
 
