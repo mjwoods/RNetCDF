@@ -1385,8 +1385,10 @@ if (!cfg$udunits) {
 #-------------------------------------------------------------------------------#
 
 mpiexec <- cfg$mpiexec
+parallel <- cfg$parallel
 
 if (mpiexec != "") {
+# mpiexec is specified, so assume that parallel I/O is meant to be enabled.
 
   # List of MPI packages to test:
   mpipkgs <- c("Rmpi", "pbdMPI")
@@ -1429,8 +1431,37 @@ if (mpiexec != "") {
     }
   }
 
-} else {
+} else if (parallel) {
+# Parallel I/O may be enabled, but we cannot test without mpiexec being specified.
+
   cat("Skipping parallel I/O tests as mpiexec is not defined\n")
+
+} else {
+# Assume that parallel I/O is meant to be disabled,
+# because parallel is FALSE and mpiexec is not specified.
+
+  cat("Testing that create.nc fails with mpi_comm ... ")
+  ncfile <- tempfile("RNetCDF-MPI-test", fileext=".nc")
+  x <- try(create.nc(ncfile, format="netcdf4", mpi_comm=1), silent=TRUE)
+  unlink(ncfile)
+  if (inherits(x, "try-error") &&
+      conditionMessage(attr(x, "condition")) == "MPI not supported") {
+    tally <- testfun(TRUE, TRUE, tally)
+  } else {
+    tally <- testfun(FALSE, TRUE, tally)
+  }
+
+  cat("Testing that open.nc fails with mpi_comm ... ")
+  create.nc(ncfile, format="netcdf4")
+  x <- try(open.nc(ncfile, mpi_comm=1), silent=TRUE)
+  unlink(ncfile)
+  if (inherits(x, "try-error") &&
+      conditionMessage(attr(x, "condition")) == "MPI not supported") {
+    tally <- testfun(TRUE, TRUE, tally)
+  } else {
+    tally <- testfun(FALSE, TRUE, tally)
+  }
+
 }
 
 #-------------------------------------------------------------------------------#
