@@ -57,14 +57,18 @@ jobs:
 # For now, we use a simple test script below.
       - name: Check RNetCDF with MPI packages
         run: |
+          echo ::group::Build RNetCDF
           R CMD build .
+          echo ::endgroup::
+          echo ::group::Check RNetCDF
           Rscript -e "library(Rmpi); library(pbdMPI);"
           R CMD check --no-manual \
-            --install-args=--configure-args="--without-nc-config \
+            --install-args="--configure-args='--without-nc-config \
               --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi \
               CPPFLAGS=-I/usr/lib/x86_64-linux-gnu/netcdf/mpi/include \
-              LDFLAGS=-L/usr/lib/x86_64-linux-gnu/netcdf/mpi" \
+              LDFLAGS=-L/usr/lib/x86_64-linux-gnu/netcdf/mpi'" \
             RNetCDF_*.*-*.tar.gz
+          echo ::endgroup::
         shell: bash
 
       - name: Upload check directory
