@@ -6,19 +6,23 @@ on:
   pull_request:
     branches: [main, master]
 
-name: check-windows
+name: R-CMD-check
 
 jobs:
-  check-windows:
+  R-CMD-check:
     runs-on: ${{ matrix.config.os }}
 
-    name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
     strategy:
       fail-fast: false
       matrix:
         config:
+          - {os: macos-latest,   r: 'release'}
           - {os: windows-latest, r: 'release'}
+          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
+          - {os: ubuntu-latest,   r: 'release'}
+          - {os: ubuntu-latest,   r: 'oldrel-1'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -38,25 +42,37 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - name: Install R dependencies
+      - name: Install brew packages (macOS)
+        if: runner.os == 'macOS'
+        run : |
+          brew install automake netcdf udunits
+
+      - name: Install R dependencies (macOS)
+        if: runner.os == 'macOS'
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck, pbdMPI=?ignore, Rmpi=?ignore
+          extra-packages: any::rcmdcheck, pbdMPI=?ignore
           needs: check
 
-      - name: Check RNetCDF package
-        id: rcmdcheck
+      - name: Install R dependencies (not macOS)
+        if: runner.os != 'macOS'
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
+      - name: Check RNetCDF package (macOS)
+        if: runner.os == 'macOS'
         uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
 
-      - name: Upload check directory
-        if: success() || failure()
-        uses: actions/upload-artifact@v3
+      - name: Check RNetCDF package (not macOS)
+        if: runner.os != 'macOS'
+        uses: r-lib/actions/check-r-package@v2
         with:
-          name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_check
-          path: check/
-          retention-days: 5
-
+          upload-snapshots: true
+        env:
+          _R_CHECK_FORCE_SUGGESTS_: true
