@@ -1403,19 +1403,6 @@ if (mpiexec != "") {
     }
   }
 
-##DEBUG
-cat(".libPaths()=\n")
-print(.libPaths())
-
-for (path in .libPaths()) {
-  cat("All packages on ", path, ":\n")
-  print(list.files(path))
-}
-
-print(Sys.getenv())
-##/DEBUG
-
-
   for (mpipkg in c("Rmpi", "pbdMPI")) {
     # We cannot use requireNamespace to check for installed MPI packages,
     # because they may initialise the MPI library via .onLoad,
