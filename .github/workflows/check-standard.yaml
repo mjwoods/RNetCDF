@@ -65,7 +65,7 @@ jobs:
         if: runner.os == 'macOS'
         uses: r-lib/actions/check-r-package@v2
         with:
-          upload-snapshots: true
+          upload-results: true
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
 
@@ -73,6 +73,6 @@ jobs:
         if: runner.os != 'macOS'
         uses: r-lib/actions/check-r-package@v2
         with:
-          upload-snapshots: true
+          upload-results: true
         env:
           _R_CHECK_FORCE_SUGGESTS_: true
