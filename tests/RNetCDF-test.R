@@ -1440,8 +1440,9 @@ if (mpiexec != "") {
 # Assume that parallel I/O is meant to be disabled,
 # because parallel is FALSE and mpiexec is not specified.
 
-  cat("Testing that create.nc fails with mpi_comm ... ")
   ncfile <- tempfile("RNetCDF-MPI-test", fileext=".nc")
+
+  cat("Testing that create.nc fails with mpi_comm ... ")
   x <- try(create.nc(ncfile, format="netcdf4", mpi_comm=1), silent=TRUE)
   unlink(ncfile)
   if (inherits(x, "try-error") &&
@@ -1452,8 +1453,18 @@ if (mpiexec != "") {
   }
 
   cat("Testing that open.nc fails with mpi_comm ... ")
-  create.nc(ncfile, format="netcdf4")
   x <- try(open.nc(ncfile, mpi_comm=1), silent=TRUE)
+  if (inherits(x, "try-error") &&
+      conditionMessage(attr(x, "condition")) == "MPI not supported") {
+    tally <- testfun(TRUE, TRUE, tally)
+  } else {
+    tally <- testfun(FALSE, TRUE, tally)
+  }
+
+  cat("Testing that var.par.nc fails ... ")
+  ncid <- create.nc(ncfile, format="netcdf4")
+  x <- try(var.par.nc(ncid, "dummy", "NC_COLLECTIVE"), silent=TRUE)
+  close.nc(ncid)
   unlink(ncfile)
   if (inherits(x, "try-error") &&
       conditionMessage(attr(x, "condition")) == "MPI not supported") {
