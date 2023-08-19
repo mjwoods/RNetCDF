@@ -49,22 +49,23 @@ jobs:
         with:
           extra-packages: any::rcmdcheck
           needs: check
-          cache: false
+          cache: true
+          cache-version: 2
 
 # r-lib/actions/check-r-package@v2 seems unable to find MPI packages
 # installed by setup-r-dependencies@v2.
 # For now, we use a simple test script below.
-       - name: Check RNetCDF with MPI packages
-         run: |
-           R CMD build .
-           Rscript -e "library(Rmpi); library(pbdMPI);"
-           R CMD check --no-manual \
-             --install-args=--configure-args="--without-nc-config \
-               --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi \
-               CPPFLAGS=-I/usr/lib/x86_64-linux-gnu/netcdf/mpi/include \
-               LDFLAGS=-L/usr/lib/x86_64-linux-gnu/netcdf/mpi" \
-             RNetCDF_*.*-*.tar.gz
-         shell: bash
+      - name: Check RNetCDF with MPI packages
+        run: |
+          R CMD build .
+          Rscript -e "library(Rmpi); library(pbdMPI);"
+          R CMD check --no-manual \
+            --install-args=--configure-args="--without-nc-config \
+              --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi \
+              CPPFLAGS=-I/usr/lib/x86_64-linux-gnu/netcdf/mpi/include \
+              LDFLAGS=-L/usr/lib/x86_64-linux-gnu/netcdf/mpi" \
+            RNetCDF_*.*-*.tar.gz
+        shell: bash
 
       - name: Upload check directory
         if: success() || failure()
@@ -86,4 +87,5 @@ jobs:
           echo ::group:: Show RNetCDF test output
           cat RNetCDF.Rcheck/tests/RNetCDF-test.Rout*
           echo ::endgroup::
+        shell: bash
 
