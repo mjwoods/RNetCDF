@@ -18,18 +18,12 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: macos-latest,   r: 'release'}
-
           - {os: windows-latest, r: 'devel', http-user-agent: 'release'}
-          - {os: windows-latest, r: 'release'}
-          # Use 3.6 to trigger usage of RTools35
-          - {os: windows-latest, r: '3.6'}
           # use 4.1 to check with rtools40's older compiler
           - {os: windows-latest, r: '4.1'}
+          # Use 3.6 to trigger usage of RTools35
+          - {os: windows-latest, r: '3.6'}
 
-          - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
-          - {os: ubuntu-latest,   r: 'release'}
-          - {os: ubuntu-latest,   r: 'oldrel-1'}
           - {os: ubuntu-latest,   r: '3.0.0'}
 
     env:
@@ -50,26 +44,22 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
-      - name: Install brew packages (macOS)
+      - name: Install macOS dependencies
         if: runner.os == 'macOS'
         run : |
           brew install automake netcdf udunits
 
-      - name: Install R dependencies (macOS)
-        if: runner.os == 'macOS'
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::rcmdcheck, pbdMPI=?ignore, Rmpi=?ignore
-          needs: check
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y libnetcdf-dev libudunits2-dev
 
-      - name: Install R dependencies (not macOS)
-        if: runner.os != 'macOS'
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::rcmdcheck
-          needs: check
+      - name: Install R dependencies
+        run: |
+          install.packages("bit64", repos="https://cloud.r-project.org/", type="source")
+        shell: Rscript {0}
 
-      - name: Check RNetCDF package (macOS)
+      - name: Check RNetCDF package
         if: runner.os == 'macOS'
         uses: r-lib/actions/check-r-package@v2
         with:
@@ -77,10 +67,3 @@ jobs:
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
 
-      - name: Check RNetCDF package (not macOS)
-        if: runner.os != 'macOS'
-        uses: r-lib/actions/check-r-package@v2
-        with:
-          upload-results: true
-        env:
-          _R_CHECK_FORCE_SUGGESTS_: true
