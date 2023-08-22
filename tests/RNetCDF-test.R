@@ -39,7 +39,7 @@ assertWarning <- function(expr) {
   withCallingHandlers(expr,
     warning=function(w) {
       warn <<- TRUE
-      tryInvokeRestart("muffleWarning")
+      invokeRestart("muffleWarning")
     }
   )
   if (!warn) {
@@ -1243,6 +1243,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 
     cat("Read empty enum ...")
     x <- snacks_empty
+    y <- NULL
     assertWarning(y <- var.get.nc(nc, "snacks_empty"))
     tally <- testfun(x,y,tally)
 
