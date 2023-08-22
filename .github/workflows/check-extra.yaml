@@ -56,7 +56,9 @@ jobs:
 
       - name: Install R dependencies
         run: |
-          install.packages("bit64", repos="https://cloud.r-project.org/", type="source")
+          install.packages(c("https://cloud.r-project.org/src/contrib/Archive/bit/bit_4.0.4.tar.gz",
+                             "https://cloud.r-project.org/src/contrib/Archive/bit64/bit64_4.0.4.tar.gz"),
+                           repos=NULL, type="source")
         shell: Rscript {0}
 
       - name: Check RNetCDF package
