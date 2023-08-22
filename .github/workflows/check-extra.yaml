@@ -24,7 +24,7 @@ jobs:
           # Use 3.6 to trigger usage of RTools35
           - {os: windows-latest, r: '3.6'}
 
-          - {os: ubuntu-latest,   r: '3.0.1'}
+          - {os: ubuntu-latest,   r: '3.0.0'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -71,7 +71,7 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_mpi_check
+          name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_check
           path: RNetCDF.Rcheck/
           retention-days: 5
 
