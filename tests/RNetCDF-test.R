@@ -918,7 +918,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
         tally <- testfun(is.double(y),TRUE,tally)
       }
 
-      if (!nabit64fail) {
+      if (has_bit64 && !nabit64fail) {
         varname <- paste(numtype,"pack64",namode,sep="_")
         cat("Read", varname, "...")
         y <- var.get.nc(nc, varname, unpack=TRUE, na.mode=namode)
