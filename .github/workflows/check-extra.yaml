@@ -59,6 +59,9 @@ jobs:
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
         run: |
+          echo ::group::Environment variables
+          env
+          echo ::endgroup::
           echo ::group::Build RNetCDF
           R CMD build .
           echo ::endgroup::
