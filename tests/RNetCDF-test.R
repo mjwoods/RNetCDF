@@ -32,6 +32,21 @@
 # Fail on warnings:
 options(warn=2)
 
+# tools::assertWarning is not defined in old R versions,
+# so define a local function with similar behaviour:
+assertWarning <- function(expr) {
+  warn <- FALSE
+  withCallingHandlers(expr,
+    warning=function(w) {
+      warn <<- TRUE
+      tryInvokeRestart("muffleWarning")
+    }
+  )
+  if (!warn) {
+    stop("Expected warning from expression, but none occurred")
+  }
+}
+
 #===============================================================================#
 #  Load library
 #===============================================================================#
@@ -1228,7 +1243,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 
     cat("Read empty enum ...")
     x <- snacks_empty
-    tools::assertWarning(y <- var.get.nc(nc, "snacks_empty"))
+    assertWarning(y <- var.get.nc(nc, "snacks_empty"))
     tally <- testfun(x,y,tally)
 
     cat("Read compound ...")
