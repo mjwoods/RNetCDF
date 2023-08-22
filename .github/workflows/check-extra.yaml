@@ -61,9 +61,11 @@ jobs:
         run: |
           echo ::group::Environment variables
           env
+          echo 'which make:'
+          which make
           echo ::endgroup::
           echo ::group::RTOOLS40 directory contents
-          if [ -d "c:/rtools40"]; then
+          if test -d "c:/rtools40"; then
             find "c:/rtools40"
           fi
           echo ::endgroup::
