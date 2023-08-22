@@ -24,7 +24,7 @@ jobs:
           # Use 3.6 to trigger usage of RTools35
           - {os: windows-latest, r: '3.6'}
 
-          - {os: ubuntu-latest,   r: '3.0.0'}
+          - {os: ubuntu-latest,   r: '3.0.1'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -56,13 +56,10 @@ jobs:
 
       - name: Install R dependencies
         run: |
-          install.packages(c("https://cloud.r-project.org/src/contrib/Archive/bit/bit_4.0.4.tar.gz",
-                             "https://cloud.r-project.org/src/contrib/Archive/bit64/bit64_4.0.4.tar.gz"),
-                           repos=NULL, type="source")
+          install.packages(c("bit", "bit64"), repos="https://cloud.r-project.org", type="source")
         shell: Rscript {0}
 
       - name: Check RNetCDF package
-        if: runner.os == 'macOS'
         uses: r-lib/actions/check-r-package@v2
         with:
           upload-results: true
