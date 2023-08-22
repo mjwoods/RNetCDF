@@ -54,12 +54,7 @@ jobs:
         run: |
           sudo apt-get install -y libnetcdf-dev libudunits2-dev
 
-      - name: Install R dependencies
-        run: |
-          install.packages(c("bit", "bit64"), repos="https://cloud.r-project.org", type="source")
-        shell: Rscript {0}
-
-# Avoid depending on advanced R packages by using a simple test script:
+# Avoid R package dependencies by using a simple test script:
       - name: Check RNetCDF
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
