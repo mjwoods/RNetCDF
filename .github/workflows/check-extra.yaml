@@ -62,6 +62,11 @@ jobs:
           echo ::group::Environment variables
           env
           echo ::endgroup::
+          echo ::group::RTOOLS40 directory contents
+          if [ -d "c:/rtools40"]; then
+            find "c:/rtools40"
+          fi
+          echo ::endgroup::
           echo ::group::Build RNetCDF
           R CMD build .
           echo ::endgroup::
