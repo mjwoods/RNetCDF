@@ -59,10 +59,24 @@ jobs:
           install.packages(c("bit", "bit64"), repos="https://cloud.r-project.org", type="source")
         shell: Rscript {0}
 
-      - name: Check RNetCDF package
-        uses: r-lib/actions/check-r-package@v2
-        with:
-          upload-results: true
+# Avoid depending on advanced R packages by using a simple test script:
+      - name: Check RNetCDF
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
+        run: |
+          echo ::group::Build RNetCDF
+          R CMD build .
+          echo ::endgroup::
+          echo ::group::Check RNetCDF
+          R CMD check --no-manual RNetCDF_*.*-*.tar.gz
+          echo ::endgroup::
+        shell: sh
+
+      - name: Upload check directory
+        if: success() || failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_mpi_check
+          path: RNetCDF.Rcheck/
+          retention-days: 5
 
