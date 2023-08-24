@@ -55,8 +55,9 @@ jobs:
           sudo apt-get install -y libnetcdf-dev libudunits2-dev
 
       - name: Install Windows RTools40 dependencies
-        if: runner.os == 'Windows' && ${{ matrix.config.r }} == '4.1'
+        if: runner.os == 'Windows' && matrix.config.r == '4.1'
         run: |
+          pacman -Sy
           pacman -S mingw-w64-{i686,x86_64}-{netcdf,udunits}
         shell: sh
 
