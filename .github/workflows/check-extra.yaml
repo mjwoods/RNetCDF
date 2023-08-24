@@ -60,8 +60,7 @@ jobs:
         shell: sh
 
 # Avoid R package dependencies by using a simple test script:
-      - name: Check RNetCDF
-        if: runner.os != 'Windows' || matrix.config.r != '4.1'
+      - name: Check RNetCDF (default architecture)
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
         run: |
@@ -73,7 +72,7 @@ jobs:
           echo ::endgroup::
         shell: sh
 
-      - name: Check RNetCDF on multiarch Windows
+      - name: Check RNetCDF (i386)
         if: runner.os == 'Windows' || matrix.config.r == '4.1'
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
@@ -82,7 +81,7 @@ jobs:
           R CMD build .
           echo ::endgroup::
           echo ::group::Check RNetCDF
-          R CMD check --no-manual --extra-arch=i386 RNetCDF_*.*-*.tar.gz
+          R CMD --arch=i386 check --no-manual RNetCDF_*.*-*.tar.gz
           echo ::endgroup::
         shell: sh
 
