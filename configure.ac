@@ -238,6 +238,7 @@ AS_IF([test "x$platform" = xWindows], [
 
   AC_SEARCH_LIBS(xmlReadMemory, xml2)
 
+  AC_SEARCH_LIBS(nghttp2_submit_request, nghttp2)
   AC_SEARCH_LIBS(curl_easy_init, curl)
 
   AC_SEARCH_LIBS(jpeg_start_compress, jpeg)
