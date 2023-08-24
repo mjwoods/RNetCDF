@@ -58,7 +58,7 @@ jobs:
         if: runner.os == 'Windows' && matrix.config.r == '4.1'
         run: |
           pacman -Sy
-          pacman -S mingw-w64-{i686,x86_64}-{netcdf,udunits}
+          pacman -S --noconfirm mingw-w64-{i686,x86_64}-{netcdf,udunits}
         shell: sh
 
 # Avoid R package dependencies by using a simple test script:
