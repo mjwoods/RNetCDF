@@ -68,7 +68,7 @@ jobs:
           R CMD build .
           echo ::endgroup::
           echo ::group::Check RNetCDF
-          R CMD check --no-manual RNetCDF_*.*-*.tar.gz
+          R CMD check --no-manual --install-args=--merge-multiarch --multiarch RNetCDF_*.*-*.tar.gz
           echo ::endgroup::
         shell: sh
 
