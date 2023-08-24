@@ -54,21 +54,17 @@ jobs:
         run: |
           sudo apt-get install -y libnetcdf-dev libudunits2-dev
 
+      - name: Install Windows RTools40 dependencies
+        if: runner.os == 'Windows' && ${{ matrix.config.r }} == '4.1'
+        run: |
+          pacman -S mingw-w64-{i686,x86_64}-{netcdf,udunits}
+        shell: sh
+
 # Avoid R package dependencies by using a simple test script:
       - name: Check RNetCDF
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
         run: |
-          echo ::group::Environment variables
-          env
-          echo 'which make:'
-          which make
-          echo ::endgroup::
-          echo ::group::RTOOLS40 directory contents
-          if test -d "c:/rtools40"; then
-            find "c:/rtools40"
-          fi
-          echo ::endgroup::
           echo ::group::Build RNetCDF
           R CMD build .
           echo ::endgroup::
