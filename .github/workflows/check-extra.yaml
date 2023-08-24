@@ -81,7 +81,7 @@ jobs:
           R CMD build .
           echo ::endgroup::
           echo ::group::Check RNetCDF
-          R CMD --arch=i386 check --no-manual RNetCDF_*.*-*.tar.gz
+          R --arch=i386 CMD check --no-manual RNetCDF_*.*-*.tar.gz
           echo ::endgroup::
         shell: sh
 
