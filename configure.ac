@@ -203,14 +203,9 @@ AS_IF([test "x$platform" = xWindows], [
 
   AC_MSG_NOTICE([Find libraries that may be needed on Windows:])
 
-  AC_SEARCH_LIBS(atan, m)
+  LIBS="-ladvapi32 -lgdi32 -lcrypt32 -lwldap32 -lwsock32 -lws2_32 $LIBS"
 
-  AC_SEARCH_LIBS(getnameinfo, ws2_32)
-  AC_SEARCH_LIBS(sethostname, wsock32)
-  AC_SEARCH_LIBS(ldap_init, wldap32)
-  AC_SEARCH_LIBS(CryptDecodeMessage, crypt32)
-  AC_SEARCH_LIBS(GdiConvertBitmap, gdi32)
-  AC_SEARCH_LIBS(RegOpenKeyExA, advapi32)
+  AC_SEARCH_LIBS(atan, m)
 
   AC_SEARCH_LIBS(pthread_mutex_init, pthread)
 
