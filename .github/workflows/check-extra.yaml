@@ -12,17 +12,19 @@ jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
 
-    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }}-${{ matrix.config.arch }})
 
     strategy:
       fail-fast: false
       matrix:
         config:
-          - {os: windows-latest, r: 'devel', http-user-agent: 'release'}
-          # use 4.1 to check with rtools40's older compiler
-          - {os: windows-latest, r: '4.1'}
+          - {os: windows-latest, r: 'devel', arch: 'base', http-user-agent: 'release'}
 
-          - {os: ubuntu-latest,   r: '3.0.0'}
+          # use 4.1 to check with rtools40's older compiler
+          - {os: windows-latest, r: '4.1', arch: '64'}
+          - {os: windows-latest, r: '4.1', arch: '32'}
+
+          - {os: ubuntu-latest, r: '3.0.0', arch: 'base'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -56,11 +58,16 @@ jobs:
         if: runner.os == 'Windows' && matrix.config.r == '4.1'
         run: |
           pacman -Sy
-          pacman -S --noconfirm mingw-w64-{i686,x86_64}-{netcdf,udunits}
+          if test "${{ matrix.config.arch }}" = 32 ; then
+            arch=i686
+          else
+            arch=x86_64
+          fi
+          pacman -S --noconfirm mingw-w64-${arch}-{netcdf,udunits}
         shell: sh
 
 # Avoid R package dependencies by using a simple test script:
-      - name: Check RNetCDF (default architecture)
+      - name: Check RNetCDF
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
         run: |
@@ -68,20 +75,11 @@ jobs:
           R CMD build .
           echo ::endgroup::
           echo ::group::Check RNetCDF
-          R CMD check --no-manual RNetCDF_*.*-*.tar.gz
-          echo ::endgroup::
-        shell: sh
-
-      - name: Check RNetCDF (i386)
-        if: runner.os == 'Windows' || matrix.config.r == '4.1'
-        env:
-          _R_CHECK_FORCE_SUGGESTS_: false
-        run: |
-          echo ::group::Build RNetCDF
-          R CMD build .
-          echo ::endgroup::
-          echo ::group::Check RNetCDF
-          R --arch i386 CMD check --no-manual RNetCDF_*.*-*.tar.gz
+          if test "${{ matrix.config.arch }}" != "base" ; then
+            R --arch "${{ matrix.config.arch }}" CMD check --no-manual RNetCDF_*.*-*.tar.gz
+          else
+            R CMD check --no-manual RNetCDF_*.*-*.tar.gz
+          fi
           echo ::endgroup::
         shell: sh
 
@@ -89,7 +87,7 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_check
+          name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}-${{ matrix.config.arch }}_check
           path: RNetCDF.Rcheck/
           retention-days: 5
 
