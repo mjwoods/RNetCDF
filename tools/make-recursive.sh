@@ -17,12 +17,10 @@
 set -- -f "${R_HOME}/etc/${R_ARCH}/Makeconf"
 
 # Second makefile is site Makevars (if present):
-for file in "${R_MAKEVARS_SITE}" "${R_HOME}/etc/${R_ARCH}/Makevars.site"; do
-  if test -f "$file"; then
-    set -- "$@" -f "$file"
-    break
-  fi
-done
+makevars_site=`${R_HOME}/bin/Rscript -e 'cat(tools::makevars_site())'`
+if test -n "${makevars_site}"; then
+  set -- "$@" -f "${makevars_site}"
+fi
 
 # Third makefile is (win)shlib.mk from R_HOME, as used by Makevars:
 if test "$WINDOWS" = TRUE; then
@@ -32,21 +30,10 @@ else
 fi
 set -- "$@" -f "${R_HOME}/share/make/$file"
 
-# Fourth makefile is user Makevars for platform (if present):
-if test "$WINDOWS" = TRUE; then
-  for file in "${R_MAKEVARS_USER}" ~/.R/Makevars.ucrt ~/.R/Makevars.win64 ~/.R/Makevars.win; do
-    if test -f "$file"; then
-      set -- "$@" -f "$file"
-      break
-    fi
-  done
-else
-  for file in "${R_MAKEVARS_USER}" ~/.R/Makevars; do
-    if test -f "$file"; then
-      set -- "$@" -f "$file"
-      break
-    fi
-  done
+# Fourth makefile is user Makevars (if present):
+makevars_user=`${R_HOME}/bin/Rscript -e 'cat(tools::makevars_user())'`
+if test -n "${makevars_user}"; then
+  set -- "$@" -f "${makevars_user}"
 fi
 
 # Last makefile is package Makefile.common:
