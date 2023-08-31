@@ -57,7 +57,7 @@ jobs:
           tar -xf hdf5.tar.gz
           cd hdf5-${{ matrix.config.hdf5 }}
           if test ! -f configure ; then autoreconf -if ; fi
-          ./configure --prefix="${GITHUB_WORKSPACE}/opt"
+          ./configure --prefix="${GITHUB_WORKSPACE}/opt" --disable-fortran --disable-cxx
           make
           make install
           echo ::endgroup::
@@ -67,7 +67,7 @@ jobs:
           tar -xf netcdf.tar.gz
           cd netcdf-c*-${{ matrix.config.ncdf }}
           if test ! -f configure ; then autoreconf -if ; fi
-          ./configure --prefix="${GITHUB_WORKSPACE}/opt"
+          ./configure --prefix="${GITHUB_WORKSPACE}/opt" --disable-fortran --disable-cxx --enable-netcdf4
           make
           make install
           echo ::endgroup::
