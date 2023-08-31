@@ -1,0 +1,39 @@
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+name: test-rchk
+
+jobs:
+  rchk:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    container:
+      image: rhub/ubuntu-rchk
+      options: --user=root
+    steps:
+    - uses: actions/checkout@v3
+    - uses: r-lib/actions/run-rchk@v2
+      with:
+        setup-only: true
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get install -y libnetcdf-dev libudunits2-dev
+
+    - name: Install R dependencies
+      run: |
+        install.packages(c("bit", "bit64"), repos="https://cloud.r-project.org", type="source")
+      shell: Rscript {0}
+
+    - uses: r-lib/actions/run-rchk@v2
+      env:
+        _R_CHECK_FORCE_SUGGESTS_: false
+      with:
+        run-only: true
+
