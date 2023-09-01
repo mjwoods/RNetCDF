@@ -23,6 +23,7 @@ jobs:
         setup-only: true
     - name: Install RNetCDF
       run: |
+        sudo apt-get install -y libnetcdf-dev libudunits2-dev
         R CMD build .
         R CMD INSTALL RNetCDF_*.tar.gz
     - uses: r-lib/actions/run-rchk@v2
