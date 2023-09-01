@@ -41,6 +41,10 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
+      - name: Install build dependencies
+        run: |
+          sudo apt-get install -y texinfo
+
       - name: Restore system dependencies
         id: cache-deps
         uses: actions/cache@v3
