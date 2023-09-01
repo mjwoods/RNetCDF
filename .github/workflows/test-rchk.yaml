@@ -19,4 +19,13 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - uses: r-lib/actions/run-rchk@v2
+      with:
+        setup-only: true
+    - name: Install RNetCDF
+      run: |
+        R CMD build .
+        R CMD INSTALL RNetCDF_*.tar.gz
+    - uses: r-lib/actions/run-rchk@v2
+      with:
+        run-only: true
 
