@@ -100,6 +100,7 @@ jobs:
         with:
           extra-packages: any::rcmdcheck
           needs: check
+          working-directory: git
 
       - name: Check RNetCDF
         uses: r-lib/actions/check-r-package@v2
