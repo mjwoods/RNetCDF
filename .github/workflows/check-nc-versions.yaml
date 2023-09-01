@@ -72,6 +72,10 @@ jobs:
           cd netcdf-c*-${{ matrix.config.ncdf }}
           if test ! -f configure ; then autoreconf -if ; fi
           ./configure --prefix="${GITHUB_WORKSPACE}/opt" --disable-fortran --disable-cxx --enable-netcdf4
+          if test "${{ matrix.config.ncdf }}" = "4.1.3"; then
+            # Avoid failure when building documentation:
+            echo "all:\n\ninstall:\n\n" > man4/Makefile
+          fi
           make
           make install
           echo ::endgroup::
