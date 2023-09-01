@@ -93,6 +93,12 @@ jobs:
           make install
           echo ::endgroup::
 
+      - name: Install R dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+
       - name: Check RNetCDF
         uses: r-lib/actions/check-r-package@v2
         with:
