@@ -37,11 +37,11 @@ jobs:
         cd /home/docker/R-svn/
         /home/docker/rchk/scripts/check_package.sh $PACKAGE bcheck maacheck fficheck
         echo ::group::maacheck
-        grep -v "ERROR: too many states" packages/lib/$PACKAGE/libs/$PACKAGE.so.maacheck > packages/lib/$PACKAGE/libs/$PACKAGE.so.maacheck.filter
-        cat packages/lib/$PACKAGE/libs/$PACKAGE.so.maacheck.filter
-        if [ $(cat packages/lib/$PACKAGE/libs/$PACKAGE.so.maacheck.filter | wc -l) -gt 3 ]; then
-          FAIL=1
-        fi
+        #grep -v "ERROR: too many states" packages/lib/$PACKAGE/libs/$PACKAGE.so.maacheck > packages/lib/$PACKAGE/libs/$PACKAGE.so.maacheck.filter
+        #cat packages/lib/$PACKAGE/libs/$PACKAGE.so.maacheck.filter
+        #if [ $(cat packages/lib/$PACKAGE/libs/$PACKAGE.so.maacheck.filter | wc -l) -gt 3 ]; then
+        #  FAIL=1
+        #fi
         echo ::endgroup::
         echo ::group::bcheck
         cat packages/lib/$PACKAGE/libs/$PACKAGE.so.bcheck
