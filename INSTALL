@@ -27,22 +27,20 @@ platform, with shared libraries typically used in Unix-alikes and static
 libraries on Windows and macOS.
 
 The configure script can accept variables to define extra directories and
-libraries, or an extra C compiler command:
+libraries:
 
 CPPFLAGS='-I<incdir> [-I<incdir> ...]'  # extra directories of header files
 LDFLAGS='-L<libdir> [-L<libdir> ...]'   # extra directories for libraries
 LIBS='-l<libname> [-l<libname> ...]'    # extra libraries to link
-CC='mpicc -arch arm64'                  # extra C compiler command
 
 Definitions for the above variables may be appended to the configure command 
 line or passed through the environment.
 
-The final set of directories, libraries, and compilers is obtained by joining 
-variables from nc-config (if enabled), the above variables, and settings used 
-when building R, in that order. A compiler is chosen by testing compilers in 
-order until a working compiler is found. The directories and libraries are 
-searched in left-to-right order for required header files, libraries, or 
-functions.
+The final set of directories and libraries is obtained by joining variables 
+from nc-config (if enabled), the above variables, and settings used when 
+building R, in that order. The directories are searched in left-to-right order 
+for required header files or libraries. The libraries are searched in 
+left-to-right order for functions.
 
 Some R installations prepend the R library directory when linking the RNetCDF 
 shared library, which may cause problems in rare cases when unwanted versions 
@@ -63,7 +61,7 @@ MPI Support
 Message Passing Interface (MPI) is a standardised method for programs to 
 communicate between multiple processes within a machine or across machines. The 
 NetCDF library has optional support for MPI, which allows multiple processes to 
-read and write a single NetCDF dataset. This ensures that NetCDF metadata is 
+read and write a shared NetCDF dataset. This ensures that NetCDF metadata is 
 consistent across processes, while allowing parallel processing of huge 
 datasets.
 
@@ -75,11 +73,10 @@ I/O support is detected, packages Rmpi or pbdMPI are installed, and option
 Most MPI installations provide a compiler driver (e.g. mpicc) that simplifies 
 the building of MPI software. This involves setting paths to headers and 
 libraries, as well as linking libraries, in ways that may depend on compiler 
-flags.
-
-When the NetCDF library is built using an MPI compiler driver (e.g. mpicc), the 
-same compiler will be tried when installing RNetCDF, if --with-nc-config is 
-enabled.
+flags. The configure script has an option --with-mpicc=..., which allows the 
+MPI compiler command to be specified. The MPI compiler command should be the 
+same as that used when building the NetCDF library, which can often be found by 
+running the command 'nc-config --cc'.
 
 Note that the NetCDF library supports several distinct file formats, and 
 parallel I/O support is implemented separately for netcdf4 (hdf5) format and 
@@ -93,7 +90,8 @@ R CMD INSTALL Example
 =====================
 
 R CMD INSTALL --configure-args="CPPFLAGS=-I/sw/include \
-    LDFLAGS=-L/sw/lib LIBS=-lhdf5" RNetCDF_2.7-1.tar.gz
+    LDFLAGS=-L/sw/lib LIBS=-lhdf5 --with-mpicc=mpicc --with-mpiexec=mpiexec" \
+    RNetCDF_2.7-1.tar.gz
 
 
 LD_LIBRARY_PATH
