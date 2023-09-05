@@ -59,7 +59,7 @@ jobs:
           Rscript -e "library(Rmpi); library(pbdMPI);"
           R CMD check --no-manual \
             --install-args="--configure-args='--without-nc-config \
-              --with-mpiexec=mpiexec.openmpi CC=mpicc.openmpi \
+              --with-mpiexec=mpiexec.openmpi --with-mpicc=mpicc.openmpi \
               CPPFLAGS=-I/usr/lib/x86_64-linux-gnu/netcdf/mpi/include \
               LDFLAGS=-L/usr/lib/x86_64-linux-gnu/netcdf/mpi'" \
             RNetCDF_*.*-*.tar.gz
