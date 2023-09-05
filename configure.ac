@@ -4,16 +4,40 @@
 
 AC_INIT([RNetCDF],[2.7-1])
 
+: ${R_HOME=`R RHOME`}
+AS_IF([test -z "${R_HOME}"],
+  AC_MSG_ERROR([could not determine R_HOME])
+)
+
+
+#-------------------------------------------------------------------------------#
+#  Select compiler from R unless --with-mpicc has non-empty value               #
+#-------------------------------------------------------------------------------#
+
+AC_MSG_NOTICE([Selecting C compiler:])
+
+AC_MSG_CHECKING([C compiler from --with-mpicc])
+
+AC_ARG_WITH([mpicc],
+  AS_HELP_STRING([--with-mpicc],
+    [command for C compiler from MPI, otherwise C compiler from R is used]),
+  [CC="$withval"],
+  [CC=""])
+
+AC_MSG_RESULT([$CC])
+
+AS_IF([test -z "$CC"],
+  [AC_MSG_CHECKING([C compiler from R])
+   R_CC=`"${R_HOME}/bin/R" CMD config CC`
+   CC="${R_CC}"
+   AC_MSG_RESULT([$CC])])
+
 
 #-------------------------------------------------------------------------------#
 #  Get compiler/linker variables from environment                               #
 #-------------------------------------------------------------------------------#
 
 AC_MSG_NOTICE([Find compiler/linker variables from environment:])
-
-AC_MSG_CHECKING([CC])
-ENV_CC="$CC"
-AC_MSG_RESULT([${ENV_CC}])
 
 AC_MSG_CHECKING([CFLAGS])
 ENV_CFLAGS="$CFLAGS"
@@ -37,15 +61,6 @@ AC_MSG_RESULT([${ENV_LIBS}])
 #-------------------------------------------------------------------------------#
 
 AC_MSG_NOTICE([Find compiler/linker variables from R:])
-
-: ${R_HOME=`R RHOME`}
-AS_IF([test -z "${R_HOME}"],
-  AC_MSG_ERROR([could not determine R_HOME])
-)
-
-AC_MSG_CHECKING([R_CC])
-R_CC=`"${R_HOME}/bin/R" CMD config CC`
-AC_MSG_RESULT([${R_CC}])
 
 AC_MSG_CHECKING([R_CFLAGS])
 R_CFLAGS=`"${R_HOME}/bin/R" CMD config CFLAGS`
@@ -82,9 +97,6 @@ AC_MSG_RESULT([$LDFLAGS])
 
 AC_MSG_CHECKING([LIBS])
 AC_MSG_RESULT([$LIBS])
-
-# Use compiler from R for initial tests:
-CC="${R_CC}"
 
 
 #-------------------------------------------------------------------------------#
@@ -134,11 +146,18 @@ AS_IF([test "x${with_nc_config_static}" = xunset],
 
 AS_IF([test "x${have_nc_config}" = xyes],
   [
-    AC_MSG_NOTICE([Prepend compiler/linker variables from nc-config:])
+    AC_MSG_NOTICE([Check compiler from nc-config:])
 
     AC_MSG_CHECKING([PKG_CC])
     PKG_CC=`nc-config --cc`
     AC_MSG_RESULT([${PKG_CC}])
+
+    AC_MSG_CHECKING([PKG_CC matches selected C compiler])
+    AS_IF([test "$CC" != "${PKG_CC}"],
+          [AC_MSG_RESULT([no ... specify --with-mpicc if needed])],
+          [AC_MSG_RESULT([yes])])
+
+    AC_MSG_NOTICE([Prepend compiler/linker variables from nc-config:])
 
     AC_MSG_CHECKING([CFLAGS])
     PKG_CFLAGS=`nc-config --cflags`
@@ -163,32 +182,6 @@ AS_IF([test "x${have_nc_config}" = xyes],
     PKG_LIBS=
   ]
 )
-
-
-#-------------------------------------------------------------------------------#
-#  Find first working compiler from nc-config (optional), environment, then R   #
-#-------------------------------------------------------------------------------#
-
-AC_MSG_NOTICE([Find first working compiler from nc-config (if enabled), environment, then R:])
-
-CC=
-for mycc in "${PKG_CC}" "${ENV_CC}" "${R_CC}"; do
-  AS_IF([test -n "$mycc"], [
-    AC_MSG_CHECKING([compilation with $mycc])
-    CC="$mycc"
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([], [])],
-      [AC_MSG_RESULT([pass])
-       break],
-      [AC_MSG_RESULT([fail])
-       CC=])
-   ])
-done
-
-AS_IF([test -z "$CC"],
-  [AC_MSG_ERROR([no working compiler found])])
-
-AC_MSG_CHECKING([CC])
-AC_MSG_RESULT([$CC])
 
 
 #-------------------------------------------------------------------------------#
@@ -297,7 +290,7 @@ AC_MSG_NOTICE([Check for parallel NetCDF features:])
 AC_ARG_WITH([mpiexec],
   [AS_HELP_STRING(
     [--with-mpiexec],
-    [MPI command to run small parallel tests after installation (none by default)]
+    [command to run small parallel MPI tests after installation (none by default)]
   )],
   [mpiexec="$withval"],
   [mpiexec=""])
@@ -310,7 +303,7 @@ AC_CHECK_HEADERS([mpi.h], [], [has_mpi=FALSE])
 AC_CHECK_FUNCS([MPI_Init], [], [has_mpi=FALSE])
 
 AS_IF([test "$has_mpi" != TRUE],
-  [AC_MSG_WARN([MPI not available. If needed, try an MPI compiler as explained in file INSTALL.])])
+  [AC_MSG_WARN([MPI not available. Specify --with-mpicc if needed.])])
 
 # Parallel I/O support in NetCDF:
 AS_IF([test "$has_mpi" = TRUE],
