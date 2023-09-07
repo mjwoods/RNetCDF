@@ -17,7 +17,7 @@
 set -- -f "${R_HOME}/etc/${R_ARCH}/Makeconf"
 
 # Second makefile is site Makevars (if present):
-makevars_site=`${R_HOME}/bin/Rscript -e 'cat(tools::makevars_site())'`
+makevars_site=`"${R_HOME}/bin/Rscript" -e 'cat(tools::makevars_site())'`
 if test -n "${makevars_site}"; then
   set -- "$@" -f "${makevars_site}"
 fi
@@ -31,7 +31,7 @@ fi
 set -- "$@" -f "${R_HOME}/share/make/$file"
 
 # Fourth makefile is user Makevars (if present):
-makevars_user=`${R_HOME}/bin/Rscript -e 'cat(tools::makevars_user())'`
+makevars_user=`"${R_HOME}/bin/Rscript" -e 'cat(tools::makevars_user())'`
 if test -n "${makevars_user}"; then
   set -- "$@" -f "${makevars_user}"
 fi
@@ -51,6 +51,6 @@ set -- "$@" OBJECTS="$OBJECTS" SHLIB="RNetCDF\$(SHLIB_EXT)"
 set -- "$@" RNetCDF_all
 
 # Run make:
-echo $MAKE "$@"
-$MAKE "$@"
+echo "$MAKE" "$@"
+"$MAKE" "$@"
 
