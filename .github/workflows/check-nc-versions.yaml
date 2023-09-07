@@ -1,0 +1,112 @@
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+name: check-nc-versions
+
+jobs:
+  check-nc-versions:
+    runs-on: ${{ matrix.config.os }}
+
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {os: ubuntu-latest, r: 'release', ncdf: '4.1.3', hdf5: 'hdf5-1_8_23', udunits: '2.0.4'}
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+      CPPFLAGS: -I${{ github.workspace }}/opt/include
+      LDFLAGS: -L${{ github.workspace }}/opt/lib
+      LD_LIBRARY_PATH: ${{ github.workspace }}/opt/lib
+
+    steps:
+      - name: Configure git
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v3
+        with:
+          path: git
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.config.r }}
+          http-user-agent: ${{ matrix.config.http-user-agent }}
+          use-public-rspm: true
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get install -y texinfo
+
+      - name: Restore system dependencies
+        id: cache-deps
+        uses: actions/cache@v3
+        with:
+          path: opt
+          key: ${{ runner.os }}_ncdf-${{ matrix.config.ncdf }}_hdf5-${{ matrix.config.hdf5 }}_udunits-${{ matrix.config.udunits }}
+
+      - name: Build system dependencies
+        if: steps.cache-deps.outputs.cache-hit != 'true'
+        run: |
+          echo ::group::Install hdf5
+          cd "${GITHUB_WORKSPACE}"
+          curl -L -o hdf5.tar.gz https://github.com/HDFGroup/hdf5/archive/refs/tags/${{ matrix.config.hdf5 }}.tar.gz
+          tar -xf hdf5.tar.gz
+          cd hdf5-${{ matrix.config.hdf5 }}
+          if test ! -f configure ; then autoreconf -if ; fi
+          ./configure --prefix="${GITHUB_WORKSPACE}/opt" --disable-fortran --disable-cxx
+          make
+          make install
+          echo ::endgroup::
+          echo ::group::Install netcdf
+          cd "${GITHUB_WORKSPACE}"
+          curl -L -o netcdf.tar.gz https://github.com/Unidata/netcdf-c/archive/refs/tags/netcdf-${{ matrix.config.ncdf }}.tar.gz
+          tar -xf netcdf.tar.gz
+          cd netcdf-c*-${{ matrix.config.ncdf }}
+          if test ! -f configure ; then autoreconf -if ; fi
+          ./configure --prefix="${GITHUB_WORKSPACE}/opt" --disable-fortran --disable-cxx --enable-netcdf4
+          if test "${{ matrix.config.ncdf }}" = "4.1.3"; then
+            # Avoid failure when building documentation:
+            echo "all:" > man4/Makefile
+            echo "" >> man4/Makefile
+            echo "install:" >> man4/Makefile
+            echo "" >> man4/Makefile
+          fi
+          make
+          make install
+          echo ::endgroup::
+          echo ::group::Install udunits2
+          cd "${GITHUB_WORKSPACE}"
+          curl -L -o udunits.tar.gz https://downloads.unidata.ucar.edu/udunits/${{ matrix.config.udunits }}/udunits-${{ matrix.config.udunits }}.tar.gz
+          tar -xf udunits.tar.gz
+          cd udunits-${{ matrix.config.udunits }}
+          if test ! -f configure ; then autoreconf -if ; fi
+          ./configure --prefix="${GITHUB_WORKSPACE}/opt"
+          make
+          make install
+          echo ::endgroup::
+
+      - name: Install R dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck
+          needs: check
+          working-directory: git
+
+      - name: Check RNetCDF
+        uses: r-lib/actions/check-r-package@v2
+        with:
+          working-directory: git
+          upload-results: true
+        env:
+          _R_CHECK_FORCE_SUGGESTS_: true
+

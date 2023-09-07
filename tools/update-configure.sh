@@ -12,7 +12,3 @@ cd "$thisdir/.."
 autoconf configure.ac > configure
 rm -rf autom4te.cache
 
-# Update configure.win for Windows:
-autoconf tools/configure.win.ac > configure.win
-rm -rf autom4te.cache
-

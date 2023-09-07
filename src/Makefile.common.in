@@ -1,0 +1,11 @@
+## Override CC defined by R to enable use of MPI compiler wrapper.
+
+# This file is included after all other makefiles by tools/make-recursive.sh
+
+CC = @CC@
+PKG_CFLAGS = @CFLAGS@
+PKG_CPPFLAGS = @DEFS@ @CPPFLAGS@
+PKG_LIBS = @LDFLAGS@ @LIBS@
+
+RNetCDF_all: $(SHLIB) symbols.rds
+

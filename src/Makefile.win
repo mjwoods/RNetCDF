@@ -1,0 +1,5 @@
+## Makefile for RNetCDF on Windows.
+
+include Makefile
+
+WINDOWS = TRUE

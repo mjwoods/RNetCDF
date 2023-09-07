@@ -29,6 +29,23 @@
 #
 #===============================================================================#
 
+# Fail on warnings:
+options(warn=2)
+
+# tools::assertWarning is not defined in old R versions,
+# so define a local function with similar behaviour:
+assertWarning <- function(expr) {
+  warn <- FALSE
+  withCallingHandlers(expr,
+    warning=function(w) {
+      warn <<- TRUE
+      invokeRestart("muffleWarning")
+    }
+  )
+  if (!warn) {
+    stop("Expected warning from expression, but none occurred")
+  }
+}
 
 #===============================================================================#
 #  Load library
@@ -88,7 +105,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
                      fileext=".nc")
   cat("Test", format, "file format in", ncfile, "...\n")
 
-  if (format == "data64" && !cfg["data64"]) {
+  if (format == "data64" && !cfg$data64) {
     message("NetCDF library does not support file format data64")
     nc <- try(create.nc(ncfile, format=format), silent=TRUE)
     tally <- testfun(inherits(nc, "try-error"), TRUE, tally)
@@ -916,7 +933,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
         tally <- testfun(is.double(y),TRUE,tally)
       }
 
-      if (!nabit64fail) {
+      if (has_bit64 && !nabit64fail) {
         varname <- paste(numtype,"pack64",namode,sep="_")
         cat("Read", varname, "...")
         y <- var.get.nc(nc, varname, unpack=TRUE, na.mode=namode)
@@ -1226,7 +1243,8 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 
     cat("Read empty enum ...")
     x <- snacks_empty
-    tools::assertWarning(y <- var.get.nc(nc, "snacks_empty"))
+    y <- NULL
+    assertWarning(y <- var.get.nc(nc, "snacks_empty"))
     tally <- testfun(x,y,tally)
 
     cat("Read compound ...")
@@ -1307,7 +1325,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
 # Try diskless files:
 ncfile <- tempfile("RNetCDF-test-diskless", fileext=".nc")
 cat("Test diskless creation of ", ncfile, "...\n")
-if (cfg["diskless"]) {
+if (cfg$diskless) {
   nc <- create.nc(ncfile, diskless=TRUE)
   tally <- testfun(file.exists(ncfile), FALSE, tally)
   close.nc(nc)
@@ -1324,7 +1342,7 @@ unlink(ncfile)
 #-------------------------------------------------------------------------------#
 
 # Test if udunits support is available:
-if (!cfg["udunits"]) {
+if (!cfg$udunits) {
 
   message("UDUNITS calendar conversions not supported by this build of RNetCDF")
   x <- try(utcal.nc("seconds since 1970-01-01", 0), silent=TRUE)
@@ -1378,7 +1396,105 @@ if (!cfg["udunits"]) {
 
 }
 
+#-------------------------------------------------------------------------------#
+#  Parallel I/O demos
+#-------------------------------------------------------------------------------#
+
+mpiexec <- cfg$mpiexec
+parallel <- cfg$parallel
+
+if (mpiexec != "") {
+# mpiexec is specified, so assume that parallel I/O is meant to be enabled.
+
+  # List of MPI packages to test:
+  mpipkgs <- c("Rmpi", "pbdMPI")
+
+  # Try to find demo script directory:
+  demodirs <- c("demo",
+                file.path("..", "demo"),
+                file.path("..", "RNetCDF", "demo"))
+  demodir <- demodirs[dir.exists(demodirs)]
+  stopifnot(length(demodir) > 0)
+
+  # Check if any of the packages are loaded:
+  for (mpipkg in mpipkgs) {
+    if (isNamespaceLoaded(mpipkg)) {
+      warning("Package ", mpipkg, " is loaded, so mpiexec may fail")
+    }
+  }
+
+  for (mpipkg in c("Rmpi", "pbdMPI")) {
+    # We cannot use requireNamespace to check for installed MPI packages,
+    # because they may initialise the MPI library via .onLoad,
+    # which causes failure when we try to mpiexec another R script.
+    if (length(find.package(mpipkg, quiet=TRUE) > 0)) {
+      cat("Testing parallel I/O with package", mpipkg, "...\n")
+      demoscripts <- list.files(
+             demodir,
+             pattern=paste0(mpipkg, ".*\\.R"),
+             full.names=TRUE)
+      stopifnot(length(demoscripts) >= 1)
+      for (demoscript in demoscripts) {
+	ncfile <- tempfile("RNetCDF-MPI-test", fileext=".nc")
+	cat("Running script", demoscript, "with MPI ...\n")
+	x <- system2(mpiexec,
+	  args=c('-n', '2', 'Rscript', '--vanilla', demoscript, ncfile))
+	unlink(ncfile)
+	tally <- testfun(x, 0, tally)
+      }
+    } else {
+      message("Package ", mpipkg, " not available for parallel I/O tests\n")
+    }
+  }
+
+} else if (parallel) {
+# Parallel I/O may be enabled, but we cannot test without mpiexec being specified.
+
+  cat("Skipping parallel I/O tests as mpiexec is not defined\n")
+
+} else {
+# Assume that parallel I/O is meant to be disabled,
+# because parallel is FALSE and mpiexec is not specified.
+
+  ncfile <- tempfile("RNetCDF-MPI-test", fileext=".nc")
+
+  cat("Testing that create.nc fails with mpi_comm ... ")
+  x <- try(create.nc(ncfile, format="netcdf4", mpi_comm=1), silent=TRUE)
+  unlink(ncfile)
+  if (inherits(x, "try-error") &&
+      conditionMessage(attr(x, "condition")) == "MPI not supported") {
+    tally <- testfun(TRUE, TRUE, tally)
+  } else {
+    tally <- testfun(FALSE, TRUE, tally)
+  }
+
+  cat("Testing that open.nc fails with mpi_comm ... ")
+  x <- try(open.nc(ncfile, mpi_comm=1), silent=TRUE)
+  if (inherits(x, "try-error") &&
+      conditionMessage(attr(x, "condition")) == "MPI not supported") {
+    tally <- testfun(TRUE, TRUE, tally)
+  } else {
+    tally <- testfun(FALSE, TRUE, tally)
+  }
+
+  cat("Testing that var.par.nc fails ... ")
+  ncid <- create.nc(ncfile, format="netcdf4")
+  x <- try(var.par.nc(ncid, "dummy", "NC_COLLECTIVE"), silent=TRUE)
+  close.nc(ncid)
+  unlink(ncfile)
+  if (inherits(x, "try-error") &&
+      conditionMessage(attr(x, "condition")) == "MPI not supported") {
+    tally <- testfun(TRUE, TRUE, tally)
+  } else {
+    tally <- testfun(FALSE, TRUE, tally)
+  }
+
+}
+
+#-------------------------------------------------------------------------------#
 # Check that package can be unloaded:
+#-------------------------------------------------------------------------------#
+
 cat("Unload RNetCDF ...\n")
 detach("package:RNetCDF",unload=TRUE)
 
