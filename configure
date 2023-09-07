@@ -2643,8 +2643,8 @@ ENV_LDFLAGS="$LDFLAGS"
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ENV_LDFLAGS}" >&5
 printf "%s\n" "${ENV_LDFLAGS}" >&6; }
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
-printf %s "checking LDFLAGS... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS" >&5
+printf %s "checking LIBS... " >&6; }
 ENV_LIBS="$LIBS"
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ENV_LIBS}" >&5
 printf "%s\n" "${ENV_LIBS}" >&6; }
