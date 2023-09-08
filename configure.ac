@@ -145,12 +145,15 @@ AS_IF([test "x${have_nc_config}" = xyes],
     NC_CFLAGS=`nc-config --cflags`
     AC_MSG_RESULT([${NC_CFLAGS}])
 
+    nc_config_static_flag=""
     AS_IF([test "x${with_nc_config_static}" = xyes],
-      [nc_config_static_flag="--static"
-       nc_config_static_label=" (static)"],
-      [nc_config_static_flag=""
-       nc_config_static_label=""]
-    )
+      [AC_MSG_CHECKING([nc-config allows --static option])
+       AS_IF([nc-config --libs --static >/dev/null 2>&1],
+         [nc_config_static_flag="--static"
+          AC_MSG_RESULT([--static])],
+         [AC_MSG_RESULT([(not available)])])
+      ])
+
     AC_MSG_CHECKING([nc-config --libs ${nc_config_static_flag}])
     NC_LIBS=`nc-config --libs ${nc_config_static_flag}`
     AC_MSG_RESULT([${NC_LIBS}])
