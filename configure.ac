@@ -148,20 +148,20 @@ AS_IF([test "x${have_nc_config}" = xyes],
   [
     AC_MSG_NOTICE([Check compiler from nc-config:])
 
-    AC_MSG_CHECKING([PKG_CC])
-    PKG_CC=`nc-config --cc`
-    AC_MSG_RESULT([${PKG_CC}])
+    AC_MSG_CHECKING([NC_CC])
+    NC_CC=`nc-config --cc`
+    AC_MSG_RESULT([${NC_CC}])
 
-    AC_MSG_CHECKING([PKG_CC matches selected C compiler])
-    AS_IF([test "$CC" != "${PKG_CC}"],
+    AC_MSG_CHECKING([NC_CC matches selected C compiler])
+    AS_IF([test "$CC" != "${NC_CC}"],
           [AC_MSG_RESULT([no ... specify --with-mpicc if needed])],
           [AC_MSG_RESULT([yes])])
 
     AC_MSG_NOTICE([Prepend compiler/linker variables from nc-config:])
 
     AC_MSG_CHECKING([CFLAGS])
-    PKG_CFLAGS=`nc-config --cflags`
-    CFLAGS="${PKG_CFLAGS} $CFLAGS"
+    NC_CFLAGS=`nc-config --cflags`
+    CFLAGS="${NC_CFLAGS} $CFLAGS"
     AC_MSG_RESULT([$CFLAGS])
 
     AS_IF([test "x${with_nc_config_static}" = xyes],
@@ -171,15 +171,15 @@ AS_IF([test "x${have_nc_config}" = xyes],
        nc_config_static_label=""]
     )
     AC_MSG_CHECKING([LIBS ${nc_config_static_label}])
-    PKG_LIBS=`nc-config ${nc_config_static_flag} --libs`
-    LIBS="${PKG_LIBS} $LIBS"
+    NC_LIBS=`nc-config ${nc_config_static_flag} --libs`
+    LIBS="${NC_LIBS} $LIBS"
     AC_MSG_RESULT([$LIBS])
 
   ], [
     AC_MSG_NOTICE([Skipping nc-config])
-    PKG_CC=
-    PKG_CFLAGS=
-    PKG_LIBS=
+    NC_CC=
+    NC_CFLAGS=
+    NC_LIBS=
   ]
 )
 
