@@ -647,6 +647,9 @@ ac_includes_default="\
 ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+PKG_LDFLAGS
+PKG_CPPFLAGS
+PKG_CFLAGS
 mpiexec
 has_parallel
 has_udunits
@@ -2585,11 +2588,42 @@ fi
 
 
 #-------------------------------------------------------------------------------#
+#  Get compiler/linker variables from environment                               #
+#-------------------------------------------------------------------------------#
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find compiler/linker variables from environment:" >&5
+printf "%s\n" "$as_me: Find compiler/linker variables from environment:" >&6;}
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
+printf %s "checking CFLAGS... " >&6; }
+PKG_CFLAGS="$CFLAGS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CFLAGS}" >&5
+printf "%s\n" "${PKG_CFLAGS}" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
+printf %s "checking CPPFLAGS... " >&6; }
+PKG_CPPFLAGS="$CPPFLAGS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CPPFLAGS}" >&5
+printf "%s\n" "${PKG_CPPFLAGS}" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
+printf %s "checking LDFLAGS... " >&6; }
+PKG_LDFLAGS="$LDFLAGS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_LDFLAGS}" >&5
+printf "%s\n" "${PKG_LDFLAGS}" >&6; }
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS" >&5
+printf %s "checking LIBS... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LIBS" >&5
+printf "%s\n" "$LIBS" >&6; }
+
+
+#-------------------------------------------------------------------------------#
 #  Select compiler from R unless --with-mpicc has non-empty value               #
 #-------------------------------------------------------------------------------#
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Selecting C compiler:" >&5
-printf "%s\n" "$as_me: Selecting C compiler:" >&6;}
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Select C compiler:" >&5
+printf "%s\n" "$as_me: Select C compiler:" >&6;}
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking C compiler from --with-mpicc" >&5
 printf %s "checking C compiler from --with-mpicc... " >&6; }
@@ -2616,38 +2650,6 @@ printf %s "checking C compiler from R... " >&6; }
    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CC" >&5
 printf "%s\n" "$CC" >&6; }
 fi
-
-
-#-------------------------------------------------------------------------------#
-#  Get compiler/linker variables from environment                               #
-#-------------------------------------------------------------------------------#
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find compiler/linker variables from environment:" >&5
-printf "%s\n" "$as_me: Find compiler/linker variables from environment:" >&6;}
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
-printf %s "checking CFLAGS... " >&6; }
-ENV_CFLAGS="$CFLAGS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ENV_CFLAGS}" >&5
-printf "%s\n" "${ENV_CFLAGS}" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
-printf %s "checking CPPFLAGS... " >&6; }
-ENV_CPPFLAGS="$CPPFLAGS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ENV_CPPFLAGS}" >&5
-printf "%s\n" "${ENV_CPPFLAGS}" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
-printf %s "checking LDFLAGS... " >&6; }
-ENV_LDFLAGS="$LDFLAGS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ENV_LDFLAGS}" >&5
-printf "%s\n" "${ENV_LDFLAGS}" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS" >&5
-printf %s "checking LIBS... " >&6; }
-ENV_LIBS="$LIBS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ENV_LIBS}" >&5
-printf "%s\n" "${ENV_LIBS}" >&6; }
 
 
 #-------------------------------------------------------------------------------#
@@ -2679,39 +2681,14 @@ printf "%s\n" "${R_LDFLAGS}" >&6; }
 
 
 #-------------------------------------------------------------------------------#
-#  Append R compiler/linker variables to environment                            #
-#-------------------------------------------------------------------------------#
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: Append R compiler/linker variables to environment:" >&5
-printf "%s\n" "$as_me: Append R compiler/linker variables to environment:" >&6;}
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
-printf %s "checking CFLAGS... " >&6; }
-CFLAGS="${ENV_CFLAGS} ${R_CFLAGS}"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CFLAGS" >&5
-printf "%s\n" "$CFLAGS" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
-printf %s "checking CPPFLAGS... " >&6; }
-CPPFLAGS="${ENV_CPPFLAGS} ${R_CPPFLAGS}"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CPPFLAGS" >&5
-printf "%s\n" "$CPPFLAGS" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
-printf %s "checking LDFLAGS... " >&6; }
-LDFLAGS="${ENV_LDFLAGS} ${R_LDFLAGS}"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LDFLAGS" >&5
-printf "%s\n" "$LDFLAGS" >&6; }
-
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS" >&5
-printf %s "checking LIBS... " >&6; }
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LIBS" >&5
-printf "%s\n" "$LIBS" >&6; }
-
-
-#-------------------------------------------------------------------------------#
 #  Identify OS                                                                  #
 #-------------------------------------------------------------------------------#
+
+# Initial compiler test with CC found earlier and compiler flags from R.
+# Original variable contents were copied to PKG_ variables earlier.
+CFLAGS="${R_CFLAGS}"
+CPPFLAGS="${R_CPPFLAGS}"
+LDFLAGS="${R_LDFLAGS}"
 
 
 
@@ -3948,18 +3925,18 @@ fi
 if test "x${have_nc_config}" = xyes
 then :
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Check compiler from nc-config:" >&5
-printf "%s\n" "$as_me: Check compiler from nc-config:" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Check compiler/linker variables from nc-config:" >&5
+printf "%s\n" "$as_me: Check compiler/linker variables from nc-config:" >&6;}
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CC" >&5
-printf %s "checking PKG_CC... " >&6; }
-    PKG_CC=`nc-config --cc`
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CC}" >&5
-printf "%s\n" "${PKG_CC}" >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking NC_CC" >&5
+printf %s "checking NC_CC... " >&6; }
+    NC_CC=`nc-config --cc`
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${NC_CC}" >&5
+printf "%s\n" "${NC_CC}" >&6; }
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking PKG_CC matches selected C compiler" >&5
-printf %s "checking PKG_CC matches selected C compiler... " >&6; }
-    if test "$CC" != "${PKG_CC}"
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking NC_CC matches selected C compiler" >&5
+printf %s "checking NC_CC matches selected C compiler... " >&6; }
+    if test "$CC" != "${NC_CC}"
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no ... specify --with-mpicc if needed" >&5
 printf "%s\n" "no ... specify --with-mpicc if needed" >&6; }
@@ -3968,15 +3945,11 @@ else $as_nop
 printf "%s\n" "yes" >&6; }
 fi
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Prepend compiler/linker variables from nc-config:" >&5
-printf "%s\n" "$as_me: Prepend compiler/linker variables from nc-config:" >&6;}
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
-printf %s "checking CFLAGS... " >&6; }
-    PKG_CFLAGS=`nc-config --cflags`
-    CFLAGS="${PKG_CFLAGS} $CFLAGS"
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CFLAGS" >&5
-printf "%s\n" "$CFLAGS" >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config --cflags" >&5
+printf %s "checking nc-config --cflags... " >&6; }
+    NC_CFLAGS=`nc-config --cflags`
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${NC_CFLAGS}" >&5
+printf "%s\n" "${NC_CFLAGS}" >&6; }
 
     if test "x${with_nc_config_static}" = xyes
 then :
@@ -3987,24 +3960,35 @@ else $as_nop
        nc_config_static_label=""
 
 fi
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS ${nc_config_static_label}" >&5
-printf %s "checking LIBS ${nc_config_static_label}... " >&6; }
-    PKG_LIBS=`nc-config ${nc_config_static_flag} --libs`
-    LIBS="${PKG_LIBS} $LIBS"
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LIBS" >&5
-printf "%s\n" "$LIBS" >&6; }
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config --libs ${nc_config_static_flag}" >&5
+printf %s "checking nc-config --libs ${nc_config_static_flag}... " >&6; }
+    NC_LIBS=`nc-config --libs ${nc_config_static_flag}`
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${NC_LIBS}" >&5
+printf "%s\n" "${NC_LIBS}" >&6; }
+
+    # Prepend to PKG variables:
+    PKG_CFLAGS="${NC_CFLAGS} ${PKG_CFLAGS}"
+    LIBS="${NC_LIBS} $LIBS"
 
 
 else $as_nop
 
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Skipping nc-config" >&5
 printf "%s\n" "$as_me: Skipping nc-config" >&6;}
-    PKG_CC=
-    PKG_CFLAGS=
-    PKG_LIBS=
 
 
 fi
+
+
+#-------------------------------------------------------------------------------#
+#  Append R compiler/linker variables to PKG variables for feature tests        #
+#-------------------------------------------------------------------------------#
+
+# CC is unchanged
+CFLAGS="${PKG_CFLAGS} ${R_CFLAGS}"
+CPPFLAGS="${PKG_CPPFLAGS} ${R_CPPFLAGS}"
+LDFLAGS="${PKG_LDFLAGS} ${R_LDFLAGS}"
+# No LIBS from R
 
 
 #-------------------------------------------------------------------------------#
@@ -6189,19 +6173,22 @@ fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Final compiler and linker variables for make:
 CC=$CC
-CFLAGS=$CFLAGS
-CPPFLAGS=$CPPFLAGS
-LDFLAGS=$LDFLAGS
-LIBS=$LIBS" >&5
+PKG_CFLAGS=${PKG_CFLAGS}
+PKG_CPPFLAGS=${PKG_CPPFLAGS}
+PKG_LDFLAGS=${PKG_LDFLAGS}
+LIBS=${LIBS}" >&5
 printf "%s\n" "$as_me: Final compiler and linker variables for make:
 CC=$CC
-CFLAGS=$CFLAGS
-CPPFLAGS=$CPPFLAGS
-LDFLAGS=$LDFLAGS
-LIBS=$LIBS" >&6;}
+PKG_CFLAGS=${PKG_CFLAGS}
+PKG_CPPFLAGS=${PKG_CPPFLAGS}
+PKG_LDFLAGS=${PKG_LDFLAGS}
+LIBS=${LIBS}" >&6;}
 
-# The above are substituted automatically in output files.
-# DEFS is also substituted, but it cannot be displayed in configure.
+
+
+
+
+# CC and LIBS are substituted automatically.
 
 
 #-------------------------------------------------------------------------------#
