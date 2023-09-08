@@ -411,7 +411,7 @@ LIBS=$LIBS])
 #  Do substitution                               	                 	#
 #-------------------------------------------------------------------------------#
 
-AC_CONFIG_FILES([src/Makefile.common R/config.R])
+AC_CONFIG_FILES([src/Makefile.cfg R/config.R])
 AC_OUTPUT
 
 
