@@ -98,17 +98,18 @@ AC_MSG_NOTICE([Operating system is $platform])
 #  Prepend compiler/linker variables from nc-config (if specified)              #
 #-------------------------------------------------------------------------------#
 
+# Enable nc-config by default,
+# except on Windows which currently needs special handling (see later):
 AC_ARG_WITH([nc-config],
   AS_HELP_STRING([--with-nc-config],
-    [get compiler options from nc-config (default)]),
+    [get compiler options from nc-config (default except on Windows)]),
   [],
-  [with_nc_config=yes])
+  [with_nc_config=unset])
 
-# nc-config is currently broken on Windows, so disable it:
-AS_IF([test "x$platform" = xWindows],
-  [with_nc_config=no
-   AC_MSG_NOTICE([Disabling nc-config on Windows])
-  ])
+AS_IF([test "x${with_nc_config}" = xunset],
+  [AS_IF([test "x$platform" = xWindows],
+     [with_nc_config=no],
+     [with_nc_config=yes])])
 
 AS_IF([test "x${with_nc_config}" = xyes],
   [AC_CHECK_PROG(have_nc_config, nc-config, yes, no, [], [])],
