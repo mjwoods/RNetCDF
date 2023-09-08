@@ -647,6 +647,7 @@ ac_includes_default="\
 ac_header_c_list=
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+SOURCES
 mpiexec
 has_parallel
 has_udunits
@@ -6208,7 +6209,10 @@ LIBS=$LIBS" >&6;}
 #  Do substitution                               	                 	#
 #-------------------------------------------------------------------------------#
 
-ac_config_files="$ac_config_files src/Makefile.common R/config.R"
+SOURCES=`cd src; echo *.c`
+
+
+ac_config_files="$ac_config_files src/Makefile.cfg R/config.R"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6910,7 +6914,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
-    "src/Makefile.common") CONFIG_FILES="$CONFIG_FILES src/Makefile.common" ;;
+    "src/Makefile.cfg") CONFIG_FILES="$CONFIG_FILES src/Makefile.cfg" ;;
     "R/config.R") CONFIG_FILES="$CONFIG_FILES R/config.R" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
@@ -7361,6 +7365,14 @@ if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
 printf "%s\n" "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
+
+# Create src/Makefile[.win] by concatenating src/Makefile.cfg and [win]shlib.mk:
+if test "x$platform" = xWindows
+then :
+  cat src/Makefile.cfg "${R_HOME}/share/make/winshlib.mk" > src/Makefile.win
+else $as_nop
+  cat src/Makefile.cfg "${R_HOME}/share/make/shlib.mk" > src/Makefile
+fi
 
 
 #-------------------------------------------------------------------------------#
