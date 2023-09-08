@@ -411,6 +411,9 @@ LIBS=$LIBS])
 #  Do substitution                               	                 	#
 #-------------------------------------------------------------------------------#
 
+SOURCES=`cd src; echo *.c`
+AC_SUBST(SOURCES)
+
 AC_CONFIG_FILES([src/Makefile.cfg R/config.R])
 AC_OUTPUT
 
