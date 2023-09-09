@@ -3963,11 +3963,11 @@ printf %s "checking nc-config allows --static option... " >&6; }
        if nc-config --libs --static >/dev/null 2>&1
 then :
   nc_config_static_flag="--static"
-          { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: --static" >&5
-printf "%s\n" "--static" >&6; }
+          { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
 else $as_nop
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: (not available)" >&5
-printf "%s\n" "(not available)" >&6; }
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
 fi
 
 fi

@@ -150,8 +150,8 @@ AS_IF([test "x${have_nc_config}" = xyes],
       [AC_MSG_CHECKING([nc-config allows --static option])
        AS_IF([nc-config --libs --static >/dev/null 2>&1],
          [nc_config_static_flag="--static"
-          AC_MSG_RESULT([--static])],
-         [AC_MSG_RESULT([(not available)])])
+          AC_MSG_RESULT([yes])],
+         [AC_MSG_RESULT([no])])
       ])
 
     AC_MSG_CHECKING([nc-config --libs ${nc_config_static_flag}])
