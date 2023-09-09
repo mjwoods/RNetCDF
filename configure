@@ -1337,7 +1337,8 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-mpicc            command for C compiler from MPI, otherwise C
                           compiler from R is used
-  --with-nc-config        get compiler options from nc-config (default)
+  --with-nc-config        get compiler options from nc-config (default except
+                          on Windows)
   --with-nc-config-static use static libraries from nc-config (default on
                           Windows & macOS)
   --with-mpiexec          command to run small parallel MPI tests after
@@ -3832,23 +3833,26 @@ printf "%s\n" "$as_me: Operating system is $platform" >&6;}
 #  Prepend compiler/linker variables from nc-config (if specified)              #
 #-------------------------------------------------------------------------------#
 
+# Enable nc-config by default,
+# except on Windows which currently needs special handling (see later):
 
 # Check whether --with-nc-config was given.
 if test ${with_nc_config+y}
 then :
   withval=$with_nc_config;
 else $as_nop
-  with_nc_config=yes
+  with_nc_config=unset
 fi
 
 
-# nc-config is currently broken on Windows, so disable it:
-if test "x$platform" = xWindows
+if test "x${with_nc_config}" = xunset
+then :
+  if test "x$platform" = xWindows
 then :
   with_nc_config=no
-   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Disabling nc-config on Windows" >&5
-printf "%s\n" "$as_me: Disabling nc-config on Windows" >&6;}
-
+else $as_nop
+  with_nc_config=yes
+fi
 fi
 
 if test "x${with_nc_config}" = xyes
@@ -3951,15 +3955,23 @@ printf %s "checking nc-config --cflags... " >&6; }
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${NC_CFLAGS}" >&5
 printf "%s\n" "${NC_CFLAGS}" >&6; }
 
+    nc_config_static_flag=""
     if test "x${with_nc_config_static}" = xyes
 then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config allows --static option" >&5
+printf %s "checking nc-config allows --static option... " >&6; }
+       if nc-config --libs --static >/dev/null 2>&1
+then :
   nc_config_static_flag="--static"
-       nc_config_static_label=" (static)"
+          { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: --static" >&5
+printf "%s\n" "--static" >&6; }
 else $as_nop
-  nc_config_static_flag=""
-       nc_config_static_label=""
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: (not available)" >&5
+printf "%s\n" "(not available)" >&6; }
+fi
 
 fi
+
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config --libs ${nc_config_static_flag}" >&5
 printf %s "checking nc-config --libs ${nc_config_static_flag}... " >&6; }
     NC_LIBS=`nc-config --libs ${nc_config_static_flag}`
