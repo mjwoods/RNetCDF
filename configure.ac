@@ -415,10 +415,11 @@ AC_SUBST(SOURCES)
 AC_CONFIG_FILES([src/Makefile.cfg R/config.R])
 AC_OUTPUT
 
-# Create src/Makefile[.win] by concatenating src/Makefile.cfg and [win]shlib.mk:
+# Create src/Makefile by concatenating src/Makefile.cfg and [win]shlib.mk:
 AS_IF([test "x$platform" = xWindows],
-  [cat src/Makefile.cfg "${R_HOME}/share/make/winshlib.mk" > src/Makefile.win],
-  [cat src/Makefile.cfg "${R_HOME}/share/make/shlib.mk" > src/Makefile])
+  [mkshlib=winshlib.mk],
+  [mkshlib=shlib.mk])
+cat src/Makefile.cfg "${R_HOME}/share/make/${mkshlib}" > src/Makefile
 
 
 #-------------------------------------------------------------------------------#

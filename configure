@@ -7365,13 +7365,14 @@ printf "%s\n" "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2
 fi
 
 
-# Create src/Makefile[.win] by concatenating src/Makefile.cfg and [win]shlib.mk:
+# Create src/Makefile by concatenating src/Makefile.cfg and [win]shlib.mk:
 if test "x$platform" = xWindows
 then :
-  cat src/Makefile.cfg "${R_HOME}/share/make/winshlib.mk" > src/Makefile.win
+  mkshlib=winshlib.mk
 else $as_nop
-  cat src/Makefile.cfg "${R_HOME}/share/make/shlib.mk" > src/Makefile
+  mkshlib=shlib.mk
 fi
+cat src/Makefile.cfg "${R_HOME}/share/make/${mkshlib}" > src/Makefile
 
 
 #-------------------------------------------------------------------------------#

@@ -1,0 +1,3 @@
+# Include Makefile created by configure:
+include Makefile
+
