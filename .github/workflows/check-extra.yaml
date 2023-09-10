@@ -18,11 +18,13 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: windows-latest, r: 'devel', arch: 'base', http-user-agent: 'release'}
+          - {os: windows-latest, r: 'devel', arch: 'base', http-user-agent: 'release', rtools: ''}
 
-          # use 4.1 to check with rtools40's older compiler
-          - {os: windows-latest, r: '4.1', arch: '64'}
-          - {os: windows-latest, r: '4.1', arch: '32'}
+          # R-4.0.0 uses Rtools40 (based on msys2).
+          - {os: windows-latest, r: '4.0.0', arch: '64', rtools: '40'}
+          - {os: windows-latest, r: '4.0.0', arch: '32', rtools: '40'}
+          # R>=4.2 uses Rtools42 or later (based on MXE, 64-bit only).
+          - {os: windows-latest, r: '4.2.0', arch: 'base', rtools: '42'}
 
           - {os: ubuntu-latest, r: '3.0.0', arch: 'base'}
 
@@ -41,6 +43,7 @@ jobs:
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ matrix.config.r }}
+          rtools-version: ${{ matrix.config.rtools }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
 
@@ -55,7 +58,7 @@ jobs:
           sudo apt-get install -y libnetcdf-dev libudunits2-dev
 
       - name: Install Windows RTools40 dependencies
-        if: runner.os == 'Windows' && matrix.config.r == '4.1'
+        if: runner.os == 'Windows' && matrix.config.rtools == '40'
         run: |
           pacman -Sy
           if test "${{ matrix.config.arch }}" = 32 ; then
