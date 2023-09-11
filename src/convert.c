@@ -268,7 +268,8 @@ R_nc_char_strsxp (R_nc_buf *io)
     /* Find string length to first null character, not exceeding thislen */
     thislen = R_nc_strnlen (thisstr, '\0', thislen);
     /* Convert row to R string, ensuring null termination */
-    SET_STRING_ELT (io->rxp, ii, mkCharLen (thisstr, thislen));
+    SET_STRING_ELT (io->rxp, ii, PROTECT(mkCharLen (thisstr, thislen)));
+    UNPROTECT(1);
   }
 }
 
@@ -368,7 +369,8 @@ R_nc_str_strsxp (R_nc_buf *io)
     } else {
       /* Truncate excessively long strings while reading into R */
       nchar = R_nc_strnlen (cstr[ii], '\0', RNC_CHARSXP_MAXLEN);
-      SET_STRING_ELT (io->rxp, ii, mkCharLen (cstr[ii], nchar));
+      SET_STRING_ELT (io->rxp, ii, PROTECT(mkCharLen (cstr[ii], nchar)));
+      UNPROTECT(1);
     }
   }
   /* Free pointers to strings created by netcdf */
@@ -6756,11 +6758,11 @@ R_nc_enum_factor (R_nc_buf *io)
   imemmax = nmem; // netcdf member index is int
   for (imem=0; imem<imemmax; imem++) {
     R_nc_check (nc_inq_enum_member (ncid, xtype, imem, memname, memval));
-    SET_STRING_ELT (levels, imem, mkChar (memname));
+    SET_STRING_ELT (levels, imem, PROTECT(mkChar (memname)));
     symbol = PROTECT (R_nc_char_symbol (memval, size, work));
     index = PROTECT (ScalarInteger (imem+1));
     defineVar (symbol, index, env);
-    UNPROTECT(2);
+    UNPROTECT(3);
   }
 
   /* If fill value is defined, convert matching enum values to NA by storing
@@ -6997,7 +6999,8 @@ R_nc_compound_vecsxp (R_nc_buf *io)
     R_nc_check (nc_inq_type (ncid, typefld, NULL, &fldsize));
 
     /* Set the field name in the R list */
-    SET_STRING_ELT (namelist, ifld, mkChar (namefld));
+    SET_STRING_ELT (namelist, ifld, PROTECT(mkChar (namefld)));
+    UNPROTECT(1);
 
     /* Append field dimensions to the variable dimensions */
     ndim = io->ndim;

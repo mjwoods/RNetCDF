@@ -366,9 +366,10 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
         resultnames = PROTECT(allocVector (STRSXP, 7));
         setAttrib (result, R_NamesSymbol, resultnames);
         UNPROTECT(1);
-        SET_STRING_ELT (resultnames, 4, mkChar ("offset"));
-        SET_STRING_ELT (resultnames, 5, mkChar ("subtype"));
-        SET_STRING_ELT (resultnames, 6, mkChar ("dimsizes"));
+        SET_STRING_ELT (resultnames, 4, PROTECT(mkChar ("offset")));
+        SET_STRING_ELT (resultnames, 5, PROTECT(mkChar ("subtype")));
+        SET_STRING_ELT (resultnames, 6, PROTECT(mkChar ("dimsizes")));
+        UNPROTECT(3);
 
 	/* Read named vectors of offsets, typenames, list of array dimensions */
 	offsets = PROTECT(allocVector (REALSXP, nfields));
@@ -389,10 +390,11 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
 	for (ii=0; ii < imax; ii++) {
 	  R_nc_check (nc_inq_compound_field (ncid, xtype, ii, fieldname,
 		      &offset, &subtype, &ndims, NULL));
-	  SET_STRING_ELT (fieldnames, ii, mkChar (fieldname));
+	  SET_STRING_ELT (fieldnames, ii, PROTECT(mkChar (fieldname)));
 	  REAL (offsets)[ii] = offset;
 	  R_nc_check (R_nc_type2str (ncid, subtype, subname));
-	  SET_STRING_ELT (subnames, ii, mkChar (subname));
+	  SET_STRING_ELT (subnames, ii, PROTECT(mkChar (subname)));
+          UNPROTECT(2);
 	  if (ndims > 0) {
 	    dimsize = PROTECT(allocVector (INTSXP, ndims));
 	    R_nc_check (nc_inq_compound_fielddim_sizes (
@@ -420,8 +422,8 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
 
 	resultnames = PROTECT(allocVector (STRSXP, 6));
         setAttrib (result, R_NamesSymbol, resultnames);
-        UNPROTECT(1);
-	SET_STRING_ELT (resultnames, 5, mkChar ("value"));
+	SET_STRING_ELT (resultnames, 5, PROTECT(mkChar ("value")));
+        UNPROTECT(2);
 
 	/* Read named vector of member values */
 	fieldnames = PROTECT(allocVector (STRSXP, nfields));
@@ -433,7 +435,8 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
 	imax = nfields; // netcdf member index is int
 	for (ii=0; ii < imax; ii++, cval+=size) {
 	  R_nc_check (nc_inq_enum_member (ncid, xtype, ii, fieldname, cval));
-	  SET_STRING_ELT (fieldnames, ii, mkChar (fieldname));
+	  SET_STRING_ELT (fieldnames, ii, PROTECT(mkChar (fieldname)));
+          UNPROTECT(1);
 	}
 	R_nc_c2r (&io);
 	SET_VECTOR_ELT (result, 5, values);
@@ -471,8 +474,8 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
 
       resultnames = PROTECT(allocVector (STRSXP, 5));
       setAttrib (result, R_NamesSymbol, resultnames);
-      UNPROTECT(1);
-      SET_STRING_ELT (resultnames, 4, mkChar ("basetype"));
+      SET_STRING_ELT (resultnames, 4, PROTECT(mkChar ("basetype")));
+      UNPROTECT(4);
 
       break;
     default:
@@ -495,11 +498,11 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
   SET_VECTOR_ELT (result, 1, PROTECT(mkString (typename)));
   SET_VECTOR_ELT (result, 3, PROTECT(ScalarReal (size)));
 
-  SET_STRING_ELT (resultnames, 0, mkChar ("id"));
-  SET_STRING_ELT (resultnames, 1, mkChar ("name"));
-  SET_STRING_ELT (resultnames, 2, mkChar ("class"));
-  SET_STRING_ELT (resultnames, 3, mkChar ("size"));
+  SET_STRING_ELT (resultnames, 0, PROTECT(mkChar ("id")));
+  SET_STRING_ELT (resultnames, 1, PROTECT(mkChar ("name")));
+  SET_STRING_ELT (resultnames, 2, PROTECT(mkChar ("class")));
+  SET_STRING_ELT (resultnames, 3, PROTECT(mkChar ("size")));
 
-  UNPROTECT(4);
+  UNPROTECT(8);
   return result;
 }
