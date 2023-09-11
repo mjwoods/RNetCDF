@@ -409,7 +409,8 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
         UNPROTECT(1);
       }
 
-      SET_VECTOR_ELT (result, 2, mkString ("compound"));
+      SET_VECTOR_ELT (result, 2, PROTECT(mkString ("compound")));
+      UNPROTECT(1);
       break;
     case NC_ENUM:
       R_nc_check (R_nc_type2str (ncid, basetype, basename));
@@ -446,26 +447,27 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
         UNPROTECT(1);
       }
 
-      SET_VECTOR_ELT (result, 2, mkString ("enum"));
-      SET_VECTOR_ELT (result, 4, mkString (basename));
-      SET_STRING_ELT (resultnames, 4, mkChar ("basetype"));
+      SET_VECTOR_ELT (result, 2, PROTECT(mkString ("enum")));
+      SET_VECTOR_ELT (result, 4, PROTECT(mkString (basename)));
+      SET_STRING_ELT (resultnames, 4, PROTECT(mkChar ("basetype")));
+      UNPROTECT(3);
       break;
     case NC_OPAQUE:
 
       result = PROTECT(allocVector (VECSXP, 4));
-      SET_VECTOR_ELT (result, 2, mkString ("opaque"));
+      SET_VECTOR_ELT (result, 2, PROTECT(mkString ("opaque")));
 
       resultnames = PROTECT(allocVector (STRSXP, 4));
       setAttrib (result, R_NamesSymbol, resultnames);
-      UNPROTECT(1);
+      UNPROTECT(2);
 
       break;
     case NC_VLEN:
       R_nc_check (R_nc_type2str (ncid, basetype, basename));
 
       result = PROTECT(allocVector (VECSXP, 5));
-      SET_VECTOR_ELT (result, 2, mkString ("vlen"));
-      SET_VECTOR_ELT (result, 4, mkString (basename));
+      SET_VECTOR_ELT (result, 2, PROTECT(mkString ("vlen")));
+      SET_VECTOR_ELT (result, 4, PROTECT(mkString (basename)));
 
       resultnames = PROTECT(allocVector (STRSXP, 5));
       setAttrib (result, R_NamesSymbol, resultnames);
@@ -481,23 +483,23 @@ R_nc_inq_type (SEXP nc, SEXP type, SEXP fields)
   /*-- Built-in types ---------------------------------------------------------*/
 
       result = PROTECT(allocVector (VECSXP, 4));
-      SET_VECTOR_ELT (result, 2, mkString ("builtin"));
+      SET_VECTOR_ELT (result, 2, PROTECT(mkString ("builtin")));
 
       resultnames = PROTECT(allocVector (STRSXP, 4));
       setAttrib (result, R_NamesSymbol, resultnames);
-      UNPROTECT(1);
+      UNPROTECT(2);
   }
 
   /*-- Common components of output list ----------------------------------------------*/
-  SET_VECTOR_ELT (result, 0, ScalarInteger (xtype));
-  SET_VECTOR_ELT (result, 1, mkString (typename));
-  SET_VECTOR_ELT (result, 3, ScalarReal (size));
+  SET_VECTOR_ELT (result, 0, PROTECT(ScalarInteger (xtype)));
+  SET_VECTOR_ELT (result, 1, PROTECT(mkString (typename)));
+  SET_VECTOR_ELT (result, 3, PROTECT(ScalarReal (size)));
 
   SET_STRING_ELT (resultnames, 0, mkChar ("id"));
   SET_STRING_ELT (resultnames, 1, mkChar ("name"));
   SET_STRING_ELT (resultnames, 2, mkChar ("class"));
   SET_STRING_ELT (resultnames, 3, mkChar ("size"));
 
-  UNPROTECT(1);
+  UNPROTECT(4);
   return result;
 }

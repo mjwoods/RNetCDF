@@ -234,14 +234,14 @@ R_nc_inq_file (SEXP nc)
 
   /*-- Returning the list -----------------------------------------------------*/
   result = PROTECT(allocVector (VECSXP, 6)); 
-  SET_VECTOR_ELT (result, 0, ScalarInteger (ndims));
-  SET_VECTOR_ELT (result, 1, ScalarInteger (nvars));
-  SET_VECTOR_ELT (result, 2, ScalarInteger (ngatts));
-  SET_VECTOR_ELT (result, 3, ScalarInteger (unlimdimid));
-  SET_VECTOR_ELT (result, 4, mkString (R_nc_format2str (format)));
-  SET_VECTOR_ELT (result, 5, mkString (libvers));
+  SET_VECTOR_ELT (result, 0, PROTECT(ScalarInteger (ndims)));
+  SET_VECTOR_ELT (result, 1, PROTECT(ScalarInteger (nvars)));
+  SET_VECTOR_ELT (result, 2, PROTECT(ScalarInteger (ngatts)));
+  SET_VECTOR_ELT (result, 3, PROTECT(ScalarInteger (unlimdimid)));
+  SET_VECTOR_ELT (result, 4, PROTECT(mkString (R_nc_format2str (format))));
+  SET_VECTOR_ELT (result, 5, PROTECT(mkString (libvers)));
 
-  UNPROTECT(1);
+  UNPROTECT(7);
   return result;
 }
 

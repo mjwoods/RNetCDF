@@ -179,13 +179,13 @@ R_nc_inq_dim (SEXP nc, SEXP dim)
 
   /*-- Returning the list -----------------------------------------------------*/
   result = PROTECT(allocVector (VECSXP, 4));
-  SET_VECTOR_ELT (result, 0, ScalarInteger (dimid));
-  SET_VECTOR_ELT (result, 1, mkString (dimname));
+  SET_VECTOR_ELT (result, 0, PROTECT(ScalarInteger (dimid)));
+  SET_VECTOR_ELT (result, 1, PROTECT(mkString (dimname)));
   /* Dimension length may be larger than integer, so return as double */
-  SET_VECTOR_ELT (result, 2, ScalarReal (dimlen));
-  SET_VECTOR_ELT (result, 3, ScalarLogical (isunlim));
+  SET_VECTOR_ELT (result, 2, PROTECT(ScalarReal (dimlen)));
+  SET_VECTOR_ELT (result, 3, PROTECT(ScalarLogical (isunlim)));
 
-  UNPROTECT(1);
+  UNPROTECT(5);
   return result;
 }
 
