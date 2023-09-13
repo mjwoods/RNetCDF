@@ -6435,7 +6435,7 @@ R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
   /* Convert list items to vlen elements */
   vbuf = (nc_vlen_t *) R_alloc (cnt, sizeof(nc_vlen_t));
   for (ii=0; ii<cnt; ii++) {
-    item = VECTOR_ELT(rv, ii);
+    item = PROTECT(VECTOR_ELT(rv, ii));
     if (basetype == NC_CHAR && TYPEOF (item) == STRSXP) {
       if (xlength (item) > 0) {
         len = strlen (CHAR (STRING_ELT (item, 0)));
@@ -6454,6 +6454,7 @@ R_nc_vecsxp_vlen (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *xdim
     } else {
       vbuf[ii].p = NULL;
     }
+    UNPROTECT(1);
   }
   return vbuf;
 }
@@ -6899,8 +6900,10 @@ R_nc_vecsxp_compound (SEXP rv, int ncid, nc_type xtype, int ndim, const size_t *
       fillfld = NULL;
       fillfldlen = 0;
     }
-    buffld = R_nc_r2c (VECTOR_ELT (rv, ilist), ncid, typefld, ndimfld+1, dimsizefld,
+    buffld = R_nc_r2c (PROTECT(VECTOR_ELT (rv, ilist)),
+                       ncid, typefld, ndimfld+1, dimsizefld,
                        fillfldlen, fillfld, NULL, NULL);
+    UNPROTECT(1);
 
     /* Copy elements from the field array into the compound array */
     for (ielem=0; ielem<cnt; ielem++) {
