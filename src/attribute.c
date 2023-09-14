@@ -220,13 +220,13 @@ R_nc_inq_att (SEXP nc, SEXP var, SEXP att)
 
   /*-- Returning the list -----------------------------------------------------*/
   result = PROTECT(allocVector (VECSXP, 4));
-  SET_VECTOR_ELT (result, 0, ScalarInteger (attid));
-  SET_VECTOR_ELT (result, 1, mkString (attname));
-  SET_VECTOR_ELT (result, 2, mkString (atttype));
+  SET_VECTOR_ELT (result, 0, PROTECT(ScalarInteger (attid)));
+  SET_VECTOR_ELT (result, 1, PROTECT(mkString (attname)));
+  SET_VECTOR_ELT (result, 2, PROTECT(mkString (atttype)));
   /* cnt may not fit in integer, so return as double */
-  SET_VECTOR_ELT (result, 3, ScalarReal (cnt));
+  SET_VECTOR_ELT (result, 3, PROTECT(ScalarReal (cnt)));
 
-  UNPROTECT(1);
+  UNPROTECT(5);
   return result;
 }
 

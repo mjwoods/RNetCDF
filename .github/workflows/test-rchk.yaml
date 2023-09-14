@@ -1,0 +1,68 @@
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+name: test-rchk
+
+jobs:
+  rchk:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+    container:
+      image: rhub/ubuntu-rchk
+      options: --user=root
+    steps:
+    - uses: actions/checkout@v3
+    - uses: r-lib/actions/run-rchk@v2
+      with:
+        setup-only: true
+    - name: Install RNetCDF
+      run: |
+        sudo apt-get install -y libnetcdf-dev libudunits2-dev
+        R CMD build .
+        R CMD INSTALL RNetCDF_*.tar.gz
+    - name: Run rchk
+      run: |
+        # Script based on r-lib/actions/run-rchk/run.sh@v2,
+        # modified to ignore errors with "too many states",
+        # which are due to limitations of rchk and/or available memory
+        # (see https://github.com/kalibera/rchk#checking-the-first-package-interactive-use).
+        # Also examine results of fficheck.
+        PACKAGE=RNetCDF
+        cd /home/docker/R-svn/
+        /home/docker/rchk/scripts/check_package.sh $PACKAGE bcheck maacheck fficheck
+        echo ::group::maacheck
+        cat packages/lib/$PACKAGE/libs/$PACKAGE.so.maacheck
+        if [ $(cat packages/lib/$PACKAGE/libs/$PACKAGE.so.maacheck | wc -l) -gt 3 ]; then
+          FAIL=1
+          echo "maacheck failed."
+        fi
+        echo ::endgroup::
+        echo ::group::bcheck
+        grep -v "ERROR: too many states" packages/lib/$PACKAGE/libs/$PACKAGE.so.bcheck > packages/lib/$PACKAGE/libs/$PACKAGE.so.bcheck.filter || true
+        cat packages/lib/$PACKAGE/libs/$PACKAGE.so.bcheck.filter
+        if [ $(cat packages/lib/$PACKAGE/libs/$PACKAGE.so.bcheck.filter | wc -l) -gt 3 ]; then
+          FAIL=1
+          echo "bcheck failed."
+        fi
+        echo ::endgroup::
+        echo ::group::fficheck
+        cat packages/lib/$PACKAGE/libs/$PACKAGE.so.fficheck
+        if grep -q ERROR packages/lib/$PACKAGE/libs/$PACKAGE.so.fficheck; then
+          FAIL=1
+          echo "fficheck failed."
+        fi
+        echo ::endgroup::
+        if [ "$FAIL" = 1 ]; then
+          echo "rchk tests failed."
+          exit 1
+        else
+          echo "rchk tests succeed."
+        fi
+      shell: bash
+
