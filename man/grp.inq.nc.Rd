@@ -35,24 +35,51 @@
 \author{Pavel Michna, Milton Woods}
 
 \examples{
-##  Create a new NetCDF dataset and define two dimensions
+# Create a new NetCDF dataset:
 file1 <- tempfile("grp.inq_", fileext=".nc")
-nc <- create.nc(file1)
+nc <- create.nc(file1, format="netcdf4")
 
-dim.def.nc(nc, "station", 5)
-dim.def.nc(nc, "time", unlim=TRUE)
+# Define groups in root group.
+# (Any names can be used; hierarchical numbers are used here for clarity)
+grp11 <- grp.def.nc(nc, "group1.1")
+grp12 <- grp.def.nc(nc, "group1.2")
 
-##  Create two variables, one as coordinate variable
-var.def.nc(nc, "time", "NC_INT", "time")
-var.def.nc(nc, "temperature", "NC_DOUBLE", c(0,1))
+# Define group nested in group1.1:
+grp111 <- grp.def.nc(grp11, "group1.1.1")
 
-##  Put some attributes
-att.put.nc(nc, "NC_GLOBAL", "title", "NC_CHAR", "Data from Foo")
-att.put.nc(nc, "NC_GLOBAL", "history", "NC_CHAR", paste("Created on", date()))
+# Put some attributes in each group.
+# (We could also define dimensions, types, and variables).
+att.put.nc(nc, "NC_GLOBAL", "title", "NC_CHAR", "Group 1 (root)")
+att.put.nc(grp11, "NC_GLOBAL", "title", "NC_CHAR", "Group 1.1")
+att.put.nc(grp12, "NC_GLOBAL", "title", "NC_CHAR", "Group 1.2")
+att.put.nc(grp111, "NC_GLOBAL", "title", "NC_CHAR", "Group 1.1.1")
 
-##  Inquire about the root group
-grp.inq.nc(nc)
+## Examine contents of a group directly using its hierarchical name ...
 
+mygrp <- grp.inq.nc(nc, "/group1.1/group1.1.1")
+att.get.nc(mygrp$self, "NC_GLOBAL", "title")
+
+## Recursively examine contents of nested groups ...
+# (See also print.nc for a visual overview)
+
+get_global_atts <- function(ncid) {
+  inq <- grp.inq.nc(ncid)
+  atts <- character(inq$ngatts)
+  for (ii in seq_len(inq$ngatts)) {
+    atts[ii] <- att.get.nc(ncid, "NC_GLOBAL", ii-1)
+  }
+  ngrps <- length(inq$grps)
+  grps <- vector("list", ngrps + 1)
+  grps[[1]] <- atts
+  for (ii in seq_len(ngrps)) {
+    grps[[ii + 1]] <- get_global_atts(inq$grps[[ii]])
+  }
+  return(grps)
+}
+
+get_global_atts(nc)
+
+## Tidy up:
 close.nc(nc)
 unlink(file1)
 }
