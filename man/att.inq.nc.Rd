@@ -24,7 +24,10 @@
   \item{length}{Length of this attribute.}
 }
 
-\details{This function returns information about a NetCDF attribute. Information about an attribute include its ID, its name, its type, and its length. In general, attributes are accessed by name rather than by their ID number because the attribute number is more volatile than the name, since it can change when other attributes of the same variable are deleted.}
+\details{This function returns information about a NetCDF attribute. Information about an attribute include its ID, its name, its type, and its length. In general, attributes are accessed by name rather than by their ID number because the attribute number is more volatile than the name, since it can change when other attributes of the same variable are deleted.
+
+Valid attribute ID numbers range from 0 to the number of attributes minus 1. The number of attributes of a file, group, or variable can be found using the relevant inquiry function (\code{\link[RNetCDF]{file.inq.nc}}, \code{\link[RNetCDF]{grp.inq.nc}}, or \code{\link[RNetCDF]{var.inq.nc}}).
+}
 
 \references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 
