@@ -15,7 +15,9 @@
   \item{newname}{The new name to be assigned to the specified attribute.}
 }
 
-\details{This function changes the name of an existing attribute in a NetCDF dataset open for writing. An attribute cannot be renamed to have the same name as another attribute of the same variable.}
+\details{This function changes the name of an existing attribute in a NetCDF dataset open for writing. An attribute cannot be renamed to have the same name as another attribute of the same variable.
+
+Valid attribute ID numbers range from 0 to the number of attributes minus 1. The number of attributes of a file, group, or variable can be found using the relevant inquiry function (\code{\link[RNetCDF]{file.inq.nc}}, \code{\link[RNetCDF]{grp.inq.nc}}, or \code{\link[RNetCDF]{var.inq.nc}}).}
 
 \references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 

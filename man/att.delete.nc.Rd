@@ -11,10 +11,13 @@
 \arguments{
   \item{ncfile}{Object of class \code{NetCDF} which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
   \item{variable}{ID or name of the attribute's variable, or \code{"NC_GLOBAL"} for a global attribute.}
-  \item{attribute}{The name of the attribute to be deleted.}
+  \item{attribute}{The name or ID of the attribute to be deleted.}
 }
 
-\details{This function deletes a NetCDF attribute from a NetCDF dataset open for writing.}
+\details{This function deletes a NetCDF attribute from a NetCDF dataset open for writing.
+
+Valid attribute ID numbers range from 0 to the number of attributes minus 1. The number of attributes of a file, group, or variable can be found using the relevant inquiry function (\code{\link[RNetCDF]{file.inq.nc}}, \code{\link[RNetCDF]{grp.inq.nc}}, or \code{\link[RNetCDF]{var.inq.nc}}).
+}
 
 \references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 

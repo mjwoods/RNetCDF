@@ -16,7 +16,10 @@
   \item{variable.out}{ID or name of the variable in the output NetCDF dataset to which the attribute will be copied, or \code{"NC_GLOBAL"} to copy to a global attribute.}
 }
 
-\details{This function copies an attribute from one open NetCDF dataset to another. It can also be used to copy an attribute from one variable to another within the same NetCDF dataset.}
+\details{This function copies an attribute from one open NetCDF dataset to another. It can also be used to copy an attribute from one variable to another within the same NetCDF dataset.
+
+Valid attribute ID numbers range from 0 to the number of attributes minus 1. The number of attributes of a file, group, or variable can be found using the relevant inquiry function (\code{\link[RNetCDF]{file.inq.nc}}, \code{\link[RNetCDF]{grp.inq.nc}}, or \code{\link[RNetCDF]{var.inq.nc}}).
+}
 
 \references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
 
