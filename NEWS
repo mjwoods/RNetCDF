@@ -1,8 +1,17 @@
-Version 2.7-1, 2023-02-01
-  * Support packing and unpacking of vlen
-
-Version 2.7-0, 2023-01-31
+Version 2.7-1, 2023-10-02
   * Fix crash when calling nc_free_vlen on vlen with zero-length
+  * Support packing and unpacking of vlen
+  * Support fill value conversions in non-numeric data types:
+    NC_CHAR, NC_STRING, enum, compound, and vlen
+  * Improve support for NetCDF parallel I/O in configure script:
+    - Specify MPI compiler via argument --with-mpicc
+    - Enable MPI tests in R CMD check via argument --with-mpiexec
+    - Give warnings if MPI and/or NetCDF parallel I/O not detected
+  * Add configure option --with-nc-config-static to allow selection of
+    static libraries from nc-config
+  * Build Windows package with NetCDF library from RTools4x
+    - Adapt to newer RTools by using configure script on Windows
+  * Add examples using hierarchical groups to help for grp.inq.nc
 
 Version 2.6-2, 2023-01-16
   * Fix compiler warnings reported by R-devel
