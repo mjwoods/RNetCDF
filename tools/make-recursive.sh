@@ -22,13 +22,13 @@ if test -n "${makevars_site}"; then
   set -- "$@" -f "${makevars_site}"
 fi
 
-# Third makefile is (win)shlib.mk from R_HOME, as used by Makevars:
+# Third makefile is (win)shlib.mk from R_SHARE_DIR, as used by Makevars:
 if test "$WINDOWS" = TRUE; then
   file=winshlib.mk
 else
   file=shlib.mk
 fi
-set -- "$@" -f "${R_HOME}/share/make/$file"
+set -- "$@" -f "${R_SHARE_DIR}/make/$file"
 
 # Fourth makefile is user Makevars (if present):
 makevars_user=`"${R_HOME}/bin/Rscript" -e 'cat(tools::makevars_user())'`
