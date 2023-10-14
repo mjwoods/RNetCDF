@@ -1,0 +1,63 @@
+# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
+# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+name: ubuntu-native
+
+jobs:
+  ubuntu-native:
+    runs-on: ${{ matrix.config.os }}
+
+    name: ${{ matrix.config.os }} (${{ matrix.config.r }})
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {os: ubuntu-latest,   r: 'native'}
+
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+
+    steps:
+      - name: Configure git
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v3
+
+      - name: Install R from Ubuntu
+        run: |
+            sudo DEBIAN_FRONTEND=noninteractive apt-get update -y -qq
+            sudo apt-get install -y r-base-dev libnetcdf-dev libudunits2-dev
+
+      - name: Check RNetCDF package
+        env:
+          _R_CHECK_FORCE_SUGGESTS_: false
+        run: |
+          echo ::group::Build RNetCDF
+          R CMD build .
+          echo ::endgroup::
+          echo ::group::Check RNetCDF
+          R CMD check --no-manual RNetCDF_*.*-*.tar.gz
+          echo ::endgroup::
+        shell: bash
+
+      - name: Upload check directory
+        if: success() || failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_check
+          path: RNetCDF.Rcheck/
+          retention-days: 5
+
+      - name: Show RNetCDF install output
+        if: success() || failure()
+        run: |
+          cat RNetCDF.Rcheck/00install.out
+        shell: bash
+

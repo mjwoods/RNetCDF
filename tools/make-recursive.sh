@@ -13,25 +13,31 @@
 
 # Store make arguments in positional parameters to handle spaces properly.
 
-# First makefile is Makeconf from R_HOME:
-set -- -f "${R_HOME}/etc/${R_ARCH}/Makeconf"
+# Find relevant sub-directories of R.
+# We assume that R executables are stored in ${R_HOME}/bin.
+R_bin="${R_HOME}/bin"
+R_etc=`"${R_bin}/Rscript" -e "cat(R.home('etc'))"`
+R_share=`"${R_bin}/Rscript" -e "cat(R.home('share'))"`
+
+# First makefile is Makeconf from R:
+set -- -f "${R_etc}/${R_ARCH}/Makeconf"
 
 # Second makefile is site Makevars (if present):
-makevars_site=`"${R_HOME}/bin/Rscript" -e 'cat(tools::makevars_site())'`
+makevars_site=`"${R_bin}/Rscript" -e 'cat(tools::makevars_site())'`
 if test -n "${makevars_site}"; then
   set -- "$@" -f "${makevars_site}"
 fi
 
-# Third makefile is (win)shlib.mk from R_SHARE_DIR, as used by Makevars:
+# Third makefile is (win)shlib.mk from R, as used by Makevars:
 if test "$WINDOWS" = TRUE; then
   file=winshlib.mk
 else
   file=shlib.mk
 fi
-set -- "$@" -f "${R_SHARE_DIR}/make/$file"
+set -- "$@" -f "${R_share}/make/$file"
 
 # Fourth makefile is user Makevars (if present):
-makevars_user=`"${R_HOME}/bin/Rscript" -e 'cat(tools::makevars_user())'`
+makevars_user=`"${R_bin}/Rscript" -e 'cat(tools::makevars_user())'`
 if test -n "${makevars_user}"; then
   set -- "$@" -f "${makevars_user}"
 fi
