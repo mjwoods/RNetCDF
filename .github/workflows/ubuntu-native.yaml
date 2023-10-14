@@ -32,7 +32,7 @@ jobs:
 
       - name: Install R from Ubuntu
         run: |
-            sudo apt-get install -y r-base-dev
+            sudo apt-get install -y r-base-dev libnetcdf-dev libudunits2-dev
 
       - name: Check RNetCDF package
         env:
