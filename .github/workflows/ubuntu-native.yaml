@@ -55,6 +55,7 @@ jobs:
           retention-days: 5
 
       - name: Show RNetCDF install output
+        if: success() || failure()
         run: |
           cat RNetCDF.Rcheck/00install.out
         shell: bash
