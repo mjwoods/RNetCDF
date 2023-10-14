@@ -32,6 +32,7 @@ jobs:
 
       - name: Install R from Ubuntu
         run: |
+            sudo DEBIAN_FRONTEND=noninteractive apt-get update -y -qq
             sudo apt-get install -y r-base-dev libnetcdf-dev libudunits2-dev
 
       - name: Check RNetCDF package
