@@ -60,8 +60,3 @@ jobs:
           cat RNetCDF.Rcheck/00install.out
         shell: bash
 
-      - name: Show RNetCDF test output
-        run: |
-          cat RNetCDF.Rcheck/tests/RNetCDF-test.Rout*
-        shell: bash
-
