@@ -35,8 +35,32 @@ jobs:
             sudo apt-get install -y r-base-dev
 
       - name: Check RNetCDF package
-        uses: r-lib/actions/check-r-package@v2
-        with:
-          upload-results: true
         env:
           _R_CHECK_FORCE_SUGGESTS_: false
+        run: |
+          echo ::group::Build RNetCDF
+          R CMD build .
+          echo ::endgroup::
+          echo ::group::Check RNetCDF
+          R CMD check --no-manual RNetCDF_*.*-*.tar.gz
+          echo ::endgroup::
+        shell: bash
+
+      - name: Upload check directory
+        if: success() || failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_check
+          path: RNetCDF.Rcheck/
+          retention-days: 5
+
+      - name: Show RNetCDF install output
+        run: |
+          cat RNetCDF.Rcheck/00install.out
+        shell: bash
+
+      - name: Show RNetCDF test output
+        run: |
+          cat RNetCDF.Rcheck/tests/RNetCDF-test.Rout*
+        shell: bash
+
