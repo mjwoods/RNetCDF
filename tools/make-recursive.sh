@@ -16,8 +16,8 @@
 # Find relevant sub-directories of R.
 # We assume that R executables are stored in ${R_HOME}/bin.
 R_bin="${R_HOME}/bin"
-R_etc=`"${R_bin}/Rscript" -e 'cat(R.home("etc"))'`
-R_share=`"${R_bin}/Rscript" -e 'cat(R.home("share"))'`
+R_etc=`"${R_bin}/Rscript" -e "cat(R.home('etc'))"`
+R_share=`"${R_bin}/Rscript" -e "cat(R.home('share'))"`
 
 # First makefile is Makeconf from R:
 set -- -f "${R_etc}/${R_ARCH}/Makeconf"
