@@ -257,22 +257,19 @@ R_nc_char_strsxp (R_nc_buf *io)
   }
   rlen = (clen <= RNC_CHARSXP_MAXLEN) ? clen : RNC_CHARSXP_MAXLEN;
   cnt = xlength (io->rxp);
-  /* If C buffer has row length > 0, convert rows of C buffer to separate R strings,
-     otherwise return empty R strings as initialised by R_nc_allocArray */
-  if (clen > 0) {
-    for (ii=0, thisstr=io->cbuf; ii<cnt; ii++, thisstr+=clen) {
-      /* Find string length to first fill value, not exceeding row length */
-      if (hasfill) {
-	thislen = R_nc_strnlen (thisstr, fillval, rlen);
-      } else {
-	thislen = rlen;
-      }
-      /* Find string length to first null character, not exceeding thislen */
-      thislen = R_nc_strnlen (thisstr, '\0', thislen);
-      /* Convert row to R string, ensuring null termination */
-      SET_STRING_ELT (io->rxp, ii, PROTECT(mkCharLen (thisstr, thislen)));
-      UNPROTECT(1);
+  /* Convert rows of C buffer to separate R strings */
+  for (ii=0, thisstr=io->cbuf; ii<cnt; ii++, thisstr+=clen) {
+    /* Find string length to first fill value, not exceeding row length */
+    if (hasfill) {
+      thislen = R_nc_strnlen (thisstr, fillval, rlen);
+    } else {
+      thislen = rlen;
     }
+    /* Find string length to first null character, not exceeding thislen */
+    thislen = R_nc_strnlen (thisstr, '\0', thislen);
+    /* Convert row to R string, ensuring null termination */
+    SET_STRING_ELT (io->rxp, ii, PROTECT(mkCharLen (thisstr, thislen)));
+    UNPROTECT(1);
   }
 }
 
