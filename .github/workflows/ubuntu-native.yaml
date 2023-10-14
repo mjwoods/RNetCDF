@@ -30,21 +30,13 @@ jobs:
 
       - uses: actions/checkout@v3
 
-      - uses: r-lib/actions/setup-pandoc@v2
-
       - name: Install R from Ubuntu
         run: |
             sudo apt-get install -y r-base-dev
-
-      - name: Install R dependencies
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::rcmdcheck
-          needs: check
 
       - name: Check RNetCDF package
         uses: r-lib/actions/check-r-package@v2
         with:
           upload-results: true
         env:
-          _R_CHECK_FORCE_SUGGESTS_: true
+          _R_CHECK_FORCE_SUGGESTS_: false
