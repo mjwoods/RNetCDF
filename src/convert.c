@@ -922,6 +922,8 @@ R_nc_r2c_dbl_schar (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
+      } else if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
       } else if (((double) SCHAR_MIN <= in[ii]) && (in[ii] <= (double) SCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
@@ -930,7 +932,9 @@ R_nc_r2c_dbl_schar (SEXP rv, int ndim, const size_t *xdim,
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
-      if (((double) SCHAR_MIN <= in[ii]) && (in[ii] <= (double) SCHAR_MAX)) {
+      if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
+      } else if (((double) SCHAR_MIN <= in[ii]) && (in[ii] <= (double) SCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
         error (nc_strerror (NC_ERANGE));
@@ -964,6 +968,8 @@ R_nc_r2c_dbl_uchar (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
+      } else if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
       } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) UCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
@@ -972,7 +978,9 @@ R_nc_r2c_dbl_uchar (SEXP rv, int ndim, const size_t *xdim,
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
-      if (((double) 0 <= in[ii]) && (in[ii] <= (double) UCHAR_MAX)) {
+      if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
+      } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) UCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
         error (nc_strerror (NC_ERANGE));
@@ -1006,6 +1014,8 @@ R_nc_r2c_dbl_short (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
+      } else if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
       } else if (((double) SHRT_MIN <= in[ii]) && (in[ii] <= (double) SHRT_MAX)) {
         out[ii] = in[ii];
       } else {
@@ -1014,7 +1024,9 @@ R_nc_r2c_dbl_short (SEXP rv, int ndim, const size_t *xdim,
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
-      if (((double) SHRT_MIN <= in[ii]) && (in[ii] <= (double) SHRT_MAX)) {
+      if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
+      } else if (((double) SHRT_MIN <= in[ii]) && (in[ii] <= (double) SHRT_MAX)) {
         out[ii] = in[ii];
       } else {
         error (nc_strerror (NC_ERANGE));
@@ -1048,6 +1060,8 @@ R_nc_r2c_dbl_ushort (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
+      } else if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
       } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) USHRT_MAX)) {
         out[ii] = in[ii];
       } else {
@@ -1056,7 +1070,9 @@ R_nc_r2c_dbl_ushort (SEXP rv, int ndim, const size_t *xdim,
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
-      if (((double) 0 <= in[ii]) && (in[ii] <= (double) USHRT_MAX)) {
+      if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
+      } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) USHRT_MAX)) {
         out[ii] = in[ii];
       } else {
         error (nc_strerror (NC_ERANGE));
@@ -1090,6 +1106,8 @@ R_nc_r2c_dbl_int (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
+      } else if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
       } else if (((double) INT_MIN <= in[ii]) && (in[ii] <= (double) INT_MAX)) {
         out[ii] = in[ii];
       } else {
@@ -1098,7 +1116,9 @@ R_nc_r2c_dbl_int (SEXP rv, int ndim, const size_t *xdim,
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
-      if (((double) INT_MIN <= in[ii]) && (in[ii] <= (double) INT_MAX)) {
+      if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
+      } else if (((double) INT_MIN <= in[ii]) && (in[ii] <= (double) INT_MAX)) {
         out[ii] = in[ii];
       } else {
         error (nc_strerror (NC_ERANGE));
@@ -1132,6 +1152,8 @@ R_nc_r2c_dbl_uint (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
+      } else if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
       } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) UINT_MAX)) {
         out[ii] = in[ii];
       } else {
@@ -1140,7 +1162,9 @@ R_nc_r2c_dbl_uint (SEXP rv, int ndim, const size_t *xdim,
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
-      if (((double) 0 <= in[ii]) && (in[ii] <= (double) UINT_MAX)) {
+      if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
+      } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) UINT_MAX)) {
         out[ii] = in[ii];
       } else {
         error (nc_strerror (NC_ERANGE));
@@ -1174,6 +1198,8 @@ R_nc_r2c_dbl_ll (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
+      } else if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
       } else if (((double) LLONG_MIN_DBL <= in[ii]) && (in[ii] <= (double) LLONG_MAX_DBL)) {
         out[ii] = in[ii];
       } else {
@@ -1182,7 +1208,9 @@ R_nc_r2c_dbl_ll (SEXP rv, int ndim, const size_t *xdim,
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
-      if (((double) LLONG_MIN_DBL <= in[ii]) && (in[ii] <= (double) LLONG_MAX_DBL)) {
+      if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
+      } else if (((double) LLONG_MIN_DBL <= in[ii]) && (in[ii] <= (double) LLONG_MAX_DBL)) {
         out[ii] = in[ii];
       } else {
         error (nc_strerror (NC_ERANGE));
@@ -1216,6 +1244,8 @@ R_nc_r2c_dbl_ull (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
+      } else if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
       } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) ULLONG_MAX_DBL)) {
         out[ii] = in[ii];
       } else {
@@ -1224,7 +1254,9 @@ R_nc_r2c_dbl_ull (SEXP rv, int ndim, const size_t *xdim,
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
-      if (((double) 0 <= in[ii]) && (in[ii] <= (double) ULLONG_MAX_DBL)) {
+      if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
+      } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) ULLONG_MAX_DBL)) {
         out[ii] = in[ii];
       } else {
         error (nc_strerror (NC_ERANGE));
@@ -1258,7 +1290,9 @@ R_nc_r2c_dbl_float (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
-      } else if ((!R_FINITE(in[ii])) || (((double) -FLT_MAX <= in[ii]) && (in[ii] <= (double) FLT_MAX))) {
+      } else if (!R_FINITE(in[ii])) {
+        out[ii] = in[ii];
+      } else if (((double) -FLT_MAX <= in[ii]) && (in[ii] <= (double) FLT_MAX)) {
         out[ii] = in[ii];
       } else {
         error (nc_strerror (NC_ERANGE));
@@ -1266,7 +1300,9 @@ R_nc_r2c_dbl_float (SEXP rv, int ndim, const size_t *xdim,
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
-      if ((!R_FINITE(in[ii])) || (((double) -FLT_MAX <= in[ii]) && (in[ii] <= (double) FLT_MAX))) {
+      if (!R_FINITE(in[ii])) {
+        out[ii] = in[ii];
+      } else if (((double) -FLT_MAX <= in[ii]) && (in[ii] <= (double) FLT_MAX)) {
         out[ii] = in[ii];
       } else {
         error (nc_strerror (NC_ERANGE));
@@ -1344,6 +1380,8 @@ R_nc_r2c_dbl_size (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
+      } else if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
       } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) SIZE_MAX_DBL)) {
         out[ii] = in[ii];
       } else {
@@ -1352,7 +1390,9 @@ R_nc_r2c_dbl_size (SEXP rv, int ndim, const size_t *xdim,
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
-      if (((double) 0 <= in[ii]) && (in[ii] <= (double) SIZE_MAX_DBL)) {
+      if (!R_FINITE(in[ii])) {
+        error (nc_strerror (NC_ERANGE));
+      } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) SIZE_MAX_DBL)) {
         out[ii] = in[ii];
       } else {
         error (nc_strerror (NC_ERANGE));
