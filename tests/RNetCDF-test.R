@@ -333,7 +333,19 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
       }
       tally <- testfun(TRUE, TRUE, tally)
 
-      varcnt <- varcnt+6
+      varname <- paste(numtype,"inf",namode,sep="_")
+      var.def.nc(nc, varname, numtype, c("station"))
+      tally <- testfun(TRUE, TRUE, tally)
+
+      varname <- paste(numtype,"packinf",namode,sep="_")
+      var.def.nc(nc, varname, numtype, c("station"))
+      att.put.nc(nc, varname, "scale_factor", numtype, 0)
+
+      varname <- paste(numtype,"intpackinf",namode,sep="_")
+      var.def.nc(nc, varname, numtype, c("station"))
+      att.put.nc(nc, varname, "scale_factor", numtype, 0)
+
+      varcnt <- varcnt+9
 
       if (numtype == "NC_DOUBLE") {
         varname <- paste(numtype,"fillna",namode,sep="_")
@@ -402,7 +414,11 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
         }
         tally <- testfun(TRUE, TRUE, tally)
    
-        varcnt <- varcnt+3
+        varname <- paste(numtype,"packinf64",namode,sep="_")
+        var.def.nc(nc, varname, numtype, c("station"))
+        att.put.nc(nc, varname, "scale_factor", numtype, 0)
+
+        varcnt <- varcnt+4
       }
 
     }
@@ -471,6 +487,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   mybigfill     <- mysmallfill*1e100
   mypack        <- mysmallfill*10+5
   myinffill     <- c(-Inf,.Machine$double.xmin,NA,NaN,Inf)
+  myinf         <- c(1,2,-Inf,4,5)
  
   if (has_bit64) { 
     mysmall64 <- as.integer64(mysmall)
@@ -668,10 +685,23 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
       }
 
       # Should succeed except in the following cases:
+      inffail <- !(numtype %in% c("NC_FLOAT","NC_DOUBLE"))
       nafail <- (namode==3 && !(numtype %in% c("NC_FLOAT","NC_DOUBLE")))
       naintfail <- (namode==3 && !(numtype %in% c("NC_INT","NC_INT64","NC_FLOAT","NC_DOUBLE")))
       nabit64fail <- (namode==3 && !(numtype %in% c("NC_INT64","NC_UINT64","NC_FLOAT","NC_DOUBLE")))
       napack64fail <- (namode==3 && !(numtype %in% c("NC_INT64","NC_FLOAT","NC_DOUBLE")))
+
+      cat("Writing Inf values ...")
+      y <- try(var.put.nc(nc, paste(numtype,"inf",namode,sep="_"), myinf, na.mode=namode), silent=TRUE)
+      tally <- testfun(inherits(y, "try-error"), inffail, tally)
+
+      cat("Writing doubles with non-finite packing ...")
+      y <- try(var.put.nc(nc, paste(numtype,"packinf",namode,sep="_"), mypack, pack=TRUE, na.mode=namode), silent=TRUE)
+      tally <- testfun(inherits(y, "try-error"), inffail, tally)
+
+      cat("Writing integers with non-finite packing ...")
+      y <- try(var.put.nc(nc, paste(numtype,"intpackinf",namode,sep="_"), as.integer(mypack), pack=TRUE, na.mode=namode), silent=TRUE)
+      tally <- testfun(inherits(y, "try-error"), inffail, tally)
 
       cat("Writing data with missing values ...")
       y <- try(var.put.nc(nc, paste(numtype,"fill",namode,sep="_"), mysmallfill, na.mode=namode), silent=TRUE)
@@ -704,6 +734,9 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
         tally <- testfun(inherits(y, "try-error"), napack64fail, tally)
       }
 
+      cat("Writing integer64 with non-finite packing ...")
+      y <- try(var.put.nc(nc, paste(numtype,"packinf64",namode,sep="_"), mypack64, pack=TRUE, na.mode=namode), silent=TRUE)
+      tally <- testfun(inherits(y, "try-error"), inffail, tally)
     }
   }
 
