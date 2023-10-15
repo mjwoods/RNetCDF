@@ -1947,7 +1947,9 @@ R_nc_r2c_pack_int_schar (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -1958,7 +1960,9 @@ R_nc_r2c_pack_int_schar (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2003,7 +2007,9 @@ R_nc_r2c_pack_int_uchar (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2014,7 +2020,9 @@ R_nc_r2c_pack_int_uchar (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2059,7 +2067,9 @@ R_nc_r2c_pack_int_short (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2070,7 +2080,9 @@ R_nc_r2c_pack_int_short (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2115,7 +2127,9 @@ R_nc_r2c_pack_int_ushort (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2126,7 +2140,9 @@ R_nc_r2c_pack_int_ushort (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2171,7 +2187,9 @@ R_nc_r2c_pack_int_int (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2182,7 +2200,9 @@ R_nc_r2c_pack_int_int (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2227,7 +2247,9 @@ R_nc_r2c_pack_int_uint (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2238,7 +2260,9 @@ R_nc_r2c_pack_int_uint (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2283,7 +2307,9 @@ R_nc_r2c_pack_int_ll (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) LLONG_MIN_DBL  <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) LLONG_MIN_DBL  <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2294,7 +2320,9 @@ R_nc_r2c_pack_int_ll (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) LLONG_MIN_DBL  <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) LLONG_MIN_DBL  <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2339,7 +2367,9 @@ R_nc_r2c_pack_int_ull (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2350,7 +2380,9 @@ R_nc_r2c_pack_int_ull (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2395,7 +2427,9 @@ R_nc_r2c_pack_int_float (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if ((!R_FINITE(dpack)) || (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX))) {
+        if (!R_FINITE(dpack)) {
+          out[ii] = dpack;
+        } else if (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2406,7 +2440,9 @@ R_nc_r2c_pack_int_float (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if ((!R_FINITE(dpack)) || (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX))) {
+        if (!R_FINITE(dpack)) {
+          out[ii] = dpack;
+        } else if (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2499,7 +2535,9 @@ R_nc_r2c_pack_dbl_schar (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2510,7 +2548,9 @@ R_nc_r2c_pack_dbl_schar (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2555,7 +2595,9 @@ R_nc_r2c_pack_dbl_uchar (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2566,7 +2608,9 @@ R_nc_r2c_pack_dbl_uchar (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2611,7 +2655,9 @@ R_nc_r2c_pack_dbl_short (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2622,7 +2668,9 @@ R_nc_r2c_pack_dbl_short (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2667,7 +2715,9 @@ R_nc_r2c_pack_dbl_ushort (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2678,7 +2728,9 @@ R_nc_r2c_pack_dbl_ushort (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2723,7 +2775,9 @@ R_nc_r2c_pack_dbl_int (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2734,7 +2788,9 @@ R_nc_r2c_pack_dbl_int (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2779,7 +2835,9 @@ R_nc_r2c_pack_dbl_uint (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2790,7 +2848,9 @@ R_nc_r2c_pack_dbl_uint (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2835,7 +2895,9 @@ R_nc_r2c_pack_dbl_ll (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2846,7 +2908,9 @@ R_nc_r2c_pack_dbl_ll (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2891,7 +2955,9 @@ R_nc_r2c_pack_dbl_ull (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2902,7 +2968,9 @@ R_nc_r2c_pack_dbl_ull (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2947,7 +3015,9 @@ R_nc_r2c_pack_dbl_float (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if ((!R_FINITE(dpack)) || (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX))) {
+        if (!R_FINITE(dpack)) {
+          out[ii] = dpack;
+        } else if (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -2958,7 +3028,9 @@ R_nc_r2c_pack_dbl_float (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if ((!R_FINITE(dpack)) || (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX))) {
+        if (!R_FINITE(dpack)) {
+          out[ii] = dpack;
+        } else if (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3057,7 +3129,9 @@ R_nc_r2c_pack_bit64_schar (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3068,7 +3142,9 @@ R_nc_r2c_pack_bit64_schar (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3113,7 +3189,9 @@ R_nc_r2c_pack_bit64_uchar (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3124,7 +3202,9 @@ R_nc_r2c_pack_bit64_uchar (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3169,7 +3249,9 @@ R_nc_r2c_pack_bit64_short (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3180,7 +3262,9 @@ R_nc_r2c_pack_bit64_short (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3225,7 +3309,9 @@ R_nc_r2c_pack_bit64_ushort (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3236,7 +3322,9 @@ R_nc_r2c_pack_bit64_ushort (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3281,7 +3369,9 @@ R_nc_r2c_pack_bit64_int (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3292,7 +3382,9 @@ R_nc_r2c_pack_bit64_int (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3337,7 +3429,9 @@ R_nc_r2c_pack_bit64_uint (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3348,7 +3442,9 @@ R_nc_r2c_pack_bit64_uint (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3393,7 +3489,9 @@ R_nc_r2c_pack_bit64_ll (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3404,7 +3502,9 @@ R_nc_r2c_pack_bit64_ll (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3449,7 +3549,9 @@ R_nc_r2c_pack_bit64_ull (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3460,7 +3562,9 @@ R_nc_r2c_pack_bit64_ull (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
+        if (!R_FINITE(dpack)) {
+          error (nc_strerror (NC_ERANGE));
+        } else if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3505,7 +3609,9 @@ R_nc_r2c_pack_bit64_float (SEXP rv, int ndim, const size_t *xdim,
         out[ii] = fillval;
       } else {
         dpack = round((in[ii] - offset) / factor);
-        if ((!R_FINITE(dpack)) || (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX))) {
+        if (!R_FINITE(dpack)) {
+          out[ii] = dpack;
+        } else if (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
@@ -3516,7 +3622,9 @@ R_nc_r2c_pack_bit64_float (SEXP rv, int ndim, const size_t *xdim,
     for (ii=0; ii<cnt; ii++) {
       {
         dpack = round((in[ii] - offset) / factor);
-        if ((!R_FINITE(dpack)) || (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX))) {
+        if (!R_FINITE(dpack)) {
+          out[ii] = dpack;
+        } else if (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX)) {
           out[ii] = dpack;
         } else {
           error (nc_strerror (NC_ERANGE));
