@@ -3688,16 +3688,21 @@ R_nc_r2c_pack_bit64_dbl (SEXP rv, int ndim, const size_t *xdim,
 /* Allocate memory for reading a netcdf variable slice
    and converting the results to an R variable.
    On input, the R_nc_buf structure contains dimensions of the buffer (ndim, *xdim).
-   On output, the R_nc_buf structure contains an allocated SEXP and a pointer to its data.
+   On output, the R_nc_buf structure contains an allocated SEXP and pointer to its data.
+     If io->cbuf is NULL, a separate C buffer is allocated for data before conversion,
+     which will be freed automatically on return to R.
+   The SEXP is returned and should be PROTECTed by the caller.
  */
 
 static SEXP
 R_nc_c2r_int_init (R_nc_buf *io)
 {
+  size_t xsize;
   io->rxp = PROTECT(R_nc_allocArray (INTSXP, io->ndim, io->xdim));
   io->rbuf = INTEGER (io->rxp);
   if (!io->cbuf) {
-    io->cbuf = io->rbuf;
+    R_nc_check (nc_inq_type(io->ncid, io->xtype, NULL, &xsize));
+    io->cbuf = R_alloc (R_nc_length (io->ndim, io->xdim), xsize);
   }
   UNPROTECT(1);
   return io->rxp;
@@ -3706,10 +3711,12 @@ R_nc_c2r_int_init (R_nc_buf *io)
 static SEXP
 R_nc_c2r_dbl_init (R_nc_buf *io)
 {
+  size_t xsize;
   io->rxp = PROTECT(R_nc_allocArray (REALSXP, io->ndim, io->xdim));
   io->rbuf = REAL (io->rxp);
   if (!io->cbuf) {
-    io->cbuf = io->rbuf;
+    R_nc_check (nc_inq_type(io->ncid, io->xtype, NULL, &xsize));
+    io->cbuf = R_alloc (R_nc_length (io->ndim, io->xdim), xsize);
   }
   UNPROTECT(1);
   return io->rxp;
@@ -3718,10 +3725,12 @@ R_nc_c2r_dbl_init (R_nc_buf *io)
 static SEXP
 R_nc_c2r_bit64_init (R_nc_buf *io)
 {
+  size_t xsize;
   io->rxp = PROTECT(R_nc_allocArray (REALSXP, io->ndim, io->xdim));
   io->rbuf = REAL (io->rxp);
   if (!io->cbuf) {
-    io->cbuf = io->rbuf;
+    R_nc_check (nc_inq_type(io->ncid, io->xtype, NULL, &xsize));
+    io->cbuf = R_alloc (R_nc_length (io->ndim, io->xdim), xsize);
   }
   UNPROTECT(1);
   return io->rxp;
@@ -3731,9 +3740,7 @@ R_nc_c2r_bit64_init (R_nc_buf *io)
 
 /* Convert numeric values from C to R format.
    Parameters and buffers for the conversion are passed via the R_nc_buf struct.
-   The same buffer may be used for input and output.
-   Output type may be larger (not smaller) than input,
-   so convert in reverse order to avoid overwriting input with output.
+   Non-overlapping buffers must be used for input and output.
    Fill values and values outside the valid range are set to missing,
    but NA or NaN values in floating point data are transferred to the output
    (because all comparisons with NA or NaN are false).
@@ -3743,11 +3750,11 @@ R_nc_c2r_bit64_init (R_nc_buf *io)
 static void
 R_nc_c2r_schar_int (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   signed char fillval=0, minval=0, maxval=0, *in;
   int *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (signed char *) io->cbuf;
   out = (int *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(signed char)) {
@@ -3768,7 +3775,7 @@ R_nc_c2r_schar_int (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3776,7 +3783,7 @@ R_nc_c2r_schar_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3786,7 +3793,7 @@ R_nc_c2r_schar_int (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3794,7 +3801,7 @@ R_nc_c2r_schar_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3806,7 +3813,7 @@ R_nc_c2r_schar_int (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3814,7 +3821,7 @@ R_nc_c2r_schar_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3824,7 +3831,7 @@ R_nc_c2r_schar_int (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3832,7 +3839,7 @@ R_nc_c2r_schar_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -3843,11 +3850,11 @@ R_nc_c2r_schar_int (R_nc_buf *io)
 static void
 R_nc_c2r_uchar_int (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   unsigned char fillval=0, minval=0, maxval=0, *in;
   int *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (unsigned char *) io->cbuf;
   out = (int *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(unsigned char)) {
@@ -3868,7 +3875,7 @@ R_nc_c2r_uchar_int (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3876,7 +3883,7 @@ R_nc_c2r_uchar_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3886,7 +3893,7 @@ R_nc_c2r_uchar_int (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3894,7 +3901,7 @@ R_nc_c2r_uchar_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3906,7 +3913,7 @@ R_nc_c2r_uchar_int (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3914,7 +3921,7 @@ R_nc_c2r_uchar_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3924,7 +3931,7 @@ R_nc_c2r_uchar_int (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3932,7 +3939,7 @@ R_nc_c2r_uchar_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -3943,11 +3950,11 @@ R_nc_c2r_uchar_int (R_nc_buf *io)
 static void
 R_nc_c2r_short_int (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   short fillval=0, minval=0, maxval=0, *in;
   int *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (short *) io->cbuf;
   out = (int *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(short)) {
@@ -3968,7 +3975,7 @@ R_nc_c2r_short_int (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3976,7 +3983,7 @@ R_nc_c2r_short_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3986,7 +3993,7 @@ R_nc_c2r_short_int (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -3994,7 +4001,7 @@ R_nc_c2r_short_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4006,7 +4013,7 @@ R_nc_c2r_short_int (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4014,7 +4021,7 @@ R_nc_c2r_short_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4024,7 +4031,7 @@ R_nc_c2r_short_int (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4032,7 +4039,7 @@ R_nc_c2r_short_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -4043,11 +4050,11 @@ R_nc_c2r_short_int (R_nc_buf *io)
 static void
 R_nc_c2r_ushort_int (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   unsigned short fillval=0, minval=0, maxval=0, *in;
   int *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (unsigned short *) io->cbuf;
   out = (int *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(unsigned short)) {
@@ -4068,7 +4075,7 @@ R_nc_c2r_ushort_int (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4076,7 +4083,7 @@ R_nc_c2r_ushort_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4086,7 +4093,7 @@ R_nc_c2r_ushort_int (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4094,7 +4101,7 @@ R_nc_c2r_ushort_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4106,7 +4113,7 @@ R_nc_c2r_ushort_int (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4114,7 +4121,7 @@ R_nc_c2r_ushort_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4124,7 +4131,7 @@ R_nc_c2r_ushort_int (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4132,7 +4139,7 @@ R_nc_c2r_ushort_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -4143,11 +4150,11 @@ R_nc_c2r_ushort_int (R_nc_buf *io)
 static void
 R_nc_c2r_int_int (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   int fillval=0, minval=0, maxval=0, *in;
   int *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (int *) io->cbuf;
   out = (int *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(int)) {
@@ -4168,7 +4175,7 @@ R_nc_c2r_int_int (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4176,7 +4183,7 @@ R_nc_c2r_int_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4186,7 +4193,7 @@ R_nc_c2r_int_int (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4194,7 +4201,7 @@ R_nc_c2r_int_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4206,7 +4213,7 @@ R_nc_c2r_int_int (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4214,7 +4221,7 @@ R_nc_c2r_int_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4224,7 +4231,7 @@ R_nc_c2r_int_int (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_INTEGER;
           } else {
@@ -4232,7 +4239,7 @@ R_nc_c2r_int_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -4244,11 +4251,11 @@ R_nc_c2r_int_int (R_nc_buf *io)
 static void
 R_nc_c2r_schar_dbl (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   signed char fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (signed char *) io->cbuf;
   out = (double *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(signed char)) {
@@ -4269,7 +4276,7 @@ R_nc_c2r_schar_dbl (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4277,7 +4284,7 @@ R_nc_c2r_schar_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -4287,7 +4294,7 @@ R_nc_c2r_schar_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4295,7 +4302,7 @@ R_nc_c2r_schar_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -4307,7 +4314,7 @@ R_nc_c2r_schar_dbl (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4315,7 +4322,7 @@ R_nc_c2r_schar_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -4325,7 +4332,7 @@ R_nc_c2r_schar_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4333,7 +4340,7 @@ R_nc_c2r_schar_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -4344,11 +4351,11 @@ R_nc_c2r_schar_dbl (R_nc_buf *io)
 static void
 R_nc_c2r_uchar_dbl (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   unsigned char fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (unsigned char *) io->cbuf;
   out = (double *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(unsigned char)) {
@@ -4369,7 +4376,7 @@ R_nc_c2r_uchar_dbl (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4377,7 +4384,7 @@ R_nc_c2r_uchar_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -4387,7 +4394,7 @@ R_nc_c2r_uchar_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4395,7 +4402,7 @@ R_nc_c2r_uchar_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -4407,7 +4414,7 @@ R_nc_c2r_uchar_dbl (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4415,7 +4422,7 @@ R_nc_c2r_uchar_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -4425,7 +4432,7 @@ R_nc_c2r_uchar_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4433,7 +4440,7 @@ R_nc_c2r_uchar_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -4444,11 +4451,11 @@ R_nc_c2r_uchar_dbl (R_nc_buf *io)
 static void
 R_nc_c2r_short_dbl (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   short fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (short *) io->cbuf;
   out = (double *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(short)) {
@@ -4469,7 +4476,7 @@ R_nc_c2r_short_dbl (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4477,7 +4484,7 @@ R_nc_c2r_short_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -4487,7 +4494,7 @@ R_nc_c2r_short_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4495,7 +4502,7 @@ R_nc_c2r_short_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -4507,7 +4514,7 @@ R_nc_c2r_short_dbl (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4515,7 +4522,7 @@ R_nc_c2r_short_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -4525,7 +4532,7 @@ R_nc_c2r_short_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4533,7 +4540,7 @@ R_nc_c2r_short_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -4544,11 +4551,11 @@ R_nc_c2r_short_dbl (R_nc_buf *io)
 static void
 R_nc_c2r_ushort_dbl (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   unsigned short fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (unsigned short *) io->cbuf;
   out = (double *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(unsigned short)) {
@@ -4569,7 +4576,7 @@ R_nc_c2r_ushort_dbl (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4577,7 +4584,7 @@ R_nc_c2r_ushort_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -4587,7 +4594,7 @@ R_nc_c2r_ushort_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4595,7 +4602,7 @@ R_nc_c2r_ushort_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -4607,7 +4614,7 @@ R_nc_c2r_ushort_dbl (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4615,7 +4622,7 @@ R_nc_c2r_ushort_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -4625,7 +4632,7 @@ R_nc_c2r_ushort_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4633,7 +4640,7 @@ R_nc_c2r_ushort_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -4644,11 +4651,11 @@ R_nc_c2r_ushort_dbl (R_nc_buf *io)
 static void
 R_nc_c2r_int_dbl (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   int fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (int *) io->cbuf;
   out = (double *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(int)) {
@@ -4669,7 +4676,7 @@ R_nc_c2r_int_dbl (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4677,7 +4684,7 @@ R_nc_c2r_int_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -4687,7 +4694,7 @@ R_nc_c2r_int_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4695,7 +4702,7 @@ R_nc_c2r_int_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -4707,7 +4714,7 @@ R_nc_c2r_int_dbl (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4715,7 +4722,7 @@ R_nc_c2r_int_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -4725,7 +4732,7 @@ R_nc_c2r_int_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4733,7 +4740,7 @@ R_nc_c2r_int_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -4744,11 +4751,11 @@ R_nc_c2r_int_dbl (R_nc_buf *io)
 static void
 R_nc_c2r_uint_dbl (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   unsigned int fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (unsigned int *) io->cbuf;
   out = (double *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(unsigned int)) {
@@ -4769,7 +4776,7 @@ R_nc_c2r_uint_dbl (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4777,7 +4784,7 @@ R_nc_c2r_uint_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -4787,7 +4794,7 @@ R_nc_c2r_uint_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4795,7 +4802,7 @@ R_nc_c2r_uint_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -4807,7 +4814,7 @@ R_nc_c2r_uint_dbl (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4815,7 +4822,7 @@ R_nc_c2r_uint_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -4825,7 +4832,7 @@ R_nc_c2r_uint_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4833,7 +4840,7 @@ R_nc_c2r_uint_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -4844,11 +4851,11 @@ R_nc_c2r_uint_dbl (R_nc_buf *io)
 static void
 R_nc_c2r_float_dbl (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   float fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (float *) io->cbuf;
   out = (double *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(float)) {
@@ -4869,7 +4876,7 @@ R_nc_c2r_float_dbl (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4877,7 +4884,7 @@ R_nc_c2r_float_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -4887,7 +4894,7 @@ R_nc_c2r_float_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4895,7 +4902,7 @@ R_nc_c2r_float_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -4907,7 +4914,7 @@ R_nc_c2r_float_dbl (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4915,7 +4922,7 @@ R_nc_c2r_float_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -4925,7 +4932,7 @@ R_nc_c2r_float_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4933,7 +4940,7 @@ R_nc_c2r_float_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -4944,11 +4951,11 @@ R_nc_c2r_float_dbl (R_nc_buf *io)
 static void
 R_nc_c2r_dbl_dbl (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   double fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (double *) io->cbuf;
   out = (double *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(double)) {
@@ -4969,7 +4976,7 @@ R_nc_c2r_dbl_dbl (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4977,7 +4984,7 @@ R_nc_c2r_dbl_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -4987,7 +4994,7 @@ R_nc_c2r_dbl_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -4995,7 +5002,7 @@ R_nc_c2r_dbl_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -5007,7 +5014,7 @@ R_nc_c2r_dbl_dbl (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5015,7 +5022,7 @@ R_nc_c2r_dbl_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -5025,7 +5032,7 @@ R_nc_c2r_dbl_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5033,7 +5040,7 @@ R_nc_c2r_dbl_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -5044,11 +5051,11 @@ R_nc_c2r_dbl_dbl (R_nc_buf *io)
 static void
 R_nc_c2r_int64_dbl (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   long long fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (long long *) io->cbuf;
   out = (double *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(long long)) {
@@ -5069,7 +5076,7 @@ R_nc_c2r_int64_dbl (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5077,7 +5084,7 @@ R_nc_c2r_int64_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -5087,7 +5094,7 @@ R_nc_c2r_int64_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5095,7 +5102,7 @@ R_nc_c2r_int64_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -5107,7 +5114,7 @@ R_nc_c2r_int64_dbl (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5115,7 +5122,7 @@ R_nc_c2r_int64_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -5125,7 +5132,7 @@ R_nc_c2r_int64_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5133,7 +5140,7 @@ R_nc_c2r_int64_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -5144,11 +5151,11 @@ R_nc_c2r_int64_dbl (R_nc_buf *io)
 static void
 R_nc_c2r_uint64_dbl (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   unsigned long long fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (unsigned long long *) io->cbuf;
   out = (double *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(unsigned long long)) {
@@ -5169,7 +5176,7 @@ R_nc_c2r_uint64_dbl (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5177,7 +5184,7 @@ R_nc_c2r_uint64_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -5187,7 +5194,7 @@ R_nc_c2r_uint64_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5195,7 +5202,7 @@ R_nc_c2r_uint64_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -5207,7 +5214,7 @@ R_nc_c2r_uint64_dbl (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5215,7 +5222,7 @@ R_nc_c2r_uint64_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -5225,7 +5232,7 @@ R_nc_c2r_uint64_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5233,7 +5240,7 @@ R_nc_c2r_uint64_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -5249,11 +5256,11 @@ R_nc_c2r_uint64_dbl (R_nc_buf *io)
 static void
 R_nc_c2r_int64_bit64 (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   long long fillval=0, minval=0, maxval=0, *in;
   long long *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (long long *) io->cbuf;
   out = (long long *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(long long)) {
@@ -5274,7 +5281,7 @@ R_nc_c2r_int64_bit64 (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_INTEGER64;
           } else {
@@ -5282,7 +5289,7 @@ R_nc_c2r_int64_bit64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_INTEGER64;
           } else {
@@ -5292,7 +5299,7 @@ R_nc_c2r_int64_bit64 (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_INTEGER64;
           } else {
@@ -5300,7 +5307,7 @@ R_nc_c2r_int64_bit64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_INTEGER64;
           } else {
@@ -5312,7 +5319,7 @@ R_nc_c2r_int64_bit64 (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_INTEGER64;
           } else {
@@ -5320,7 +5327,7 @@ R_nc_c2r_int64_bit64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_INTEGER64;
           } else {
@@ -5330,7 +5337,7 @@ R_nc_c2r_int64_bit64 (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_INTEGER64;
           } else {
@@ -5338,7 +5345,7 @@ R_nc_c2r_int64_bit64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -5349,11 +5356,11 @@ R_nc_c2r_int64_bit64 (R_nc_buf *io)
 static void
 R_nc_c2r_uint64_bit64 (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   unsigned long long fillval=0, minval=0, maxval=0, *in;
   long long *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (unsigned long long *) io->cbuf;
   out = (long long *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(unsigned long long)) {
@@ -5374,7 +5381,7 @@ R_nc_c2r_uint64_bit64 (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_INTEGER64;
           } else {
@@ -5382,7 +5389,7 @@ R_nc_c2r_uint64_bit64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_INTEGER64;
           } else {
@@ -5392,7 +5399,7 @@ R_nc_c2r_uint64_bit64 (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_INTEGER64;
           } else {
@@ -5400,7 +5407,7 @@ R_nc_c2r_uint64_bit64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_INTEGER64;
           } else {
@@ -5412,7 +5419,7 @@ R_nc_c2r_uint64_bit64 (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_INTEGER64;
           } else {
@@ -5420,7 +5427,7 @@ R_nc_c2r_uint64_bit64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_INTEGER64;
           } else {
@@ -5430,7 +5437,7 @@ R_nc_c2r_uint64_bit64 (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_INTEGER64;
           } else {
@@ -5438,7 +5445,7 @@ R_nc_c2r_uint64_bit64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii];
         }
       }
@@ -5450,9 +5457,7 @@ R_nc_c2r_uint64_bit64 (R_nc_buf *io)
 
 /* Convert numeric values from C to R format with unpacking.
    Parameters and buffers for the conversion are passed via the R_nc_buf struct.
-   Output type is assumed not to be smaller than input type,
-   so the same buffer may be used for input and output
-   by converting in reverse order.
+   Non-overlapping buffers must be used for input and output.
    Fill values and values outside the valid range are set to missing,
    but NA or NaN values in floating point data are transferred to the output
    (because all comparisons with NA or NaN are false).
@@ -5464,12 +5469,12 @@ R_nc_c2r_uint64_bit64 (R_nc_buf *io)
 static void
 R_nc_c2r_unpack_schar (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   double factor=1.0, offset=0.0;
   signed char fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (signed char *) io->cbuf;
   out = (double *) io->rbuf;
   if (io->scale) {
@@ -5496,7 +5501,7 @@ R_nc_c2r_unpack_schar (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5504,7 +5509,7 @@ R_nc_c2r_unpack_schar (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -5514,7 +5519,7 @@ R_nc_c2r_unpack_schar (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5522,7 +5527,7 @@ R_nc_c2r_unpack_schar (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -5534,7 +5539,7 @@ R_nc_c2r_unpack_schar (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5542,7 +5547,7 @@ R_nc_c2r_unpack_schar (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -5552,7 +5557,7 @@ R_nc_c2r_unpack_schar (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5560,7 +5565,7 @@ R_nc_c2r_unpack_schar (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii] * factor + offset;
         }
       }
@@ -5571,12 +5576,12 @@ R_nc_c2r_unpack_schar (R_nc_buf *io)
 static void
 R_nc_c2r_unpack_uchar (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   double factor=1.0, offset=0.0;
   unsigned char fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (unsigned char *) io->cbuf;
   out = (double *) io->rbuf;
   if (io->scale) {
@@ -5603,7 +5608,7 @@ R_nc_c2r_unpack_uchar (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5611,7 +5616,7 @@ R_nc_c2r_unpack_uchar (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -5621,7 +5626,7 @@ R_nc_c2r_unpack_uchar (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5629,7 +5634,7 @@ R_nc_c2r_unpack_uchar (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -5641,7 +5646,7 @@ R_nc_c2r_unpack_uchar (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5649,7 +5654,7 @@ R_nc_c2r_unpack_uchar (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -5659,7 +5664,7 @@ R_nc_c2r_unpack_uchar (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5667,7 +5672,7 @@ R_nc_c2r_unpack_uchar (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii] * factor + offset;
         }
       }
@@ -5678,12 +5683,12 @@ R_nc_c2r_unpack_uchar (R_nc_buf *io)
 static void
 R_nc_c2r_unpack_short (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   double factor=1.0, offset=0.0;
   short fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (short *) io->cbuf;
   out = (double *) io->rbuf;
   if (io->scale) {
@@ -5710,7 +5715,7 @@ R_nc_c2r_unpack_short (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5718,7 +5723,7 @@ R_nc_c2r_unpack_short (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -5728,7 +5733,7 @@ R_nc_c2r_unpack_short (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5736,7 +5741,7 @@ R_nc_c2r_unpack_short (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -5748,7 +5753,7 @@ R_nc_c2r_unpack_short (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5756,7 +5761,7 @@ R_nc_c2r_unpack_short (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -5766,7 +5771,7 @@ R_nc_c2r_unpack_short (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5774,7 +5779,7 @@ R_nc_c2r_unpack_short (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii] * factor + offset;
         }
       }
@@ -5785,12 +5790,12 @@ R_nc_c2r_unpack_short (R_nc_buf *io)
 static void
 R_nc_c2r_unpack_ushort (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   double factor=1.0, offset=0.0;
   unsigned short fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (unsigned short *) io->cbuf;
   out = (double *) io->rbuf;
   if (io->scale) {
@@ -5817,7 +5822,7 @@ R_nc_c2r_unpack_ushort (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5825,7 +5830,7 @@ R_nc_c2r_unpack_ushort (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -5835,7 +5840,7 @@ R_nc_c2r_unpack_ushort (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5843,7 +5848,7 @@ R_nc_c2r_unpack_ushort (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -5855,7 +5860,7 @@ R_nc_c2r_unpack_ushort (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5863,7 +5868,7 @@ R_nc_c2r_unpack_ushort (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -5873,7 +5878,7 @@ R_nc_c2r_unpack_ushort (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5881,7 +5886,7 @@ R_nc_c2r_unpack_ushort (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii] * factor + offset;
         }
       }
@@ -5892,12 +5897,12 @@ R_nc_c2r_unpack_ushort (R_nc_buf *io)
 static void
 R_nc_c2r_unpack_int (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   double factor=1.0, offset=0.0;
   int fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (int *) io->cbuf;
   out = (double *) io->rbuf;
   if (io->scale) {
@@ -5924,7 +5929,7 @@ R_nc_c2r_unpack_int (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5932,7 +5937,7 @@ R_nc_c2r_unpack_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -5942,7 +5947,7 @@ R_nc_c2r_unpack_int (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5950,7 +5955,7 @@ R_nc_c2r_unpack_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -5962,7 +5967,7 @@ R_nc_c2r_unpack_int (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5970,7 +5975,7 @@ R_nc_c2r_unpack_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -5980,7 +5985,7 @@ R_nc_c2r_unpack_int (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -5988,7 +5993,7 @@ R_nc_c2r_unpack_int (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii] * factor + offset;
         }
       }
@@ -5999,12 +6004,12 @@ R_nc_c2r_unpack_int (R_nc_buf *io)
 static void
 R_nc_c2r_unpack_uint (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   double factor=1.0, offset=0.0;
   unsigned int fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (unsigned int *) io->cbuf;
   out = (double *) io->rbuf;
   if (io->scale) {
@@ -6031,7 +6036,7 @@ R_nc_c2r_unpack_uint (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6039,7 +6044,7 @@ R_nc_c2r_unpack_uint (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -6049,7 +6054,7 @@ R_nc_c2r_unpack_uint (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6057,7 +6062,7 @@ R_nc_c2r_unpack_uint (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -6069,7 +6074,7 @@ R_nc_c2r_unpack_uint (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6077,7 +6082,7 @@ R_nc_c2r_unpack_uint (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -6087,7 +6092,7 @@ R_nc_c2r_unpack_uint (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6095,7 +6100,7 @@ R_nc_c2r_unpack_uint (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii] * factor + offset;
         }
       }
@@ -6106,12 +6111,12 @@ R_nc_c2r_unpack_uint (R_nc_buf *io)
 static void
 R_nc_c2r_unpack_float (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   double factor=1.0, offset=0.0;
   float fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (float *) io->cbuf;
   out = (double *) io->rbuf;
   if (io->scale) {
@@ -6138,7 +6143,7 @@ R_nc_c2r_unpack_float (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6146,7 +6151,7 @@ R_nc_c2r_unpack_float (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -6156,7 +6161,7 @@ R_nc_c2r_unpack_float (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6164,7 +6169,7 @@ R_nc_c2r_unpack_float (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -6176,7 +6181,7 @@ R_nc_c2r_unpack_float (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6184,7 +6189,7 @@ R_nc_c2r_unpack_float (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -6194,7 +6199,7 @@ R_nc_c2r_unpack_float (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6202,7 +6207,7 @@ R_nc_c2r_unpack_float (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii] * factor + offset;
         }
       }
@@ -6213,12 +6218,12 @@ R_nc_c2r_unpack_float (R_nc_buf *io)
 static void
 R_nc_c2r_unpack_dbl (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   double factor=1.0, offset=0.0;
   double fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (double *) io->cbuf;
   out = (double *) io->rbuf;
   if (io->scale) {
@@ -6245,7 +6250,7 @@ R_nc_c2r_unpack_dbl (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6253,7 +6258,7 @@ R_nc_c2r_unpack_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -6263,7 +6268,7 @@ R_nc_c2r_unpack_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6271,7 +6276,7 @@ R_nc_c2r_unpack_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -6283,7 +6288,7 @@ R_nc_c2r_unpack_dbl (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6291,7 +6296,7 @@ R_nc_c2r_unpack_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -6301,7 +6306,7 @@ R_nc_c2r_unpack_dbl (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6309,7 +6314,7 @@ R_nc_c2r_unpack_dbl (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii] * factor + offset;
         }
       }
@@ -6320,12 +6325,12 @@ R_nc_c2r_unpack_dbl (R_nc_buf *io)
 static void
 R_nc_c2r_unpack_int64 (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   double factor=1.0, offset=0.0;
   long long fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (long long *) io->cbuf;
   out = (double *) io->rbuf;
   if (io->scale) {
@@ -6352,7 +6357,7 @@ R_nc_c2r_unpack_int64 (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6360,7 +6365,7 @@ R_nc_c2r_unpack_int64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -6370,7 +6375,7 @@ R_nc_c2r_unpack_int64 (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6378,7 +6383,7 @@ R_nc_c2r_unpack_int64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -6390,7 +6395,7 @@ R_nc_c2r_unpack_int64 (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6398,7 +6403,7 @@ R_nc_c2r_unpack_int64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -6408,7 +6413,7 @@ R_nc_c2r_unpack_int64 (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6416,7 +6421,7 @@ R_nc_c2r_unpack_int64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii] * factor + offset;
         }
       }
@@ -6427,12 +6432,12 @@ R_nc_c2r_unpack_int64 (R_nc_buf *io)
 static void
 R_nc_c2r_unpack_uint64 (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   double factor=1.0, offset=0.0;
   unsigned long long fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (unsigned long long *) io->cbuf;
   out = (double *) io->rbuf;
   if (io->scale) {
@@ -6459,7 +6464,7 @@ R_nc_c2r_unpack_uint64 (R_nc_buf *io)
   if (hasfill) {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6467,7 +6472,7 @@ R_nc_c2r_unpack_uint64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -6477,7 +6482,7 @@ R_nc_c2r_unpack_uint64 (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6485,7 +6490,7 @@ R_nc_c2r_unpack_uint64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if (in[ii] == fillval) {
             out[ii] = NA_REAL;
           } else {
@@ -6497,7 +6502,7 @@ R_nc_c2r_unpack_uint64 (R_nc_buf *io)
   } else {
     if (hasmin) {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval) || (maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6505,7 +6510,7 @@ R_nc_c2r_unpack_uint64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((in[ii] < minval)) {
             out[ii] = NA_REAL;
           } else {
@@ -6515,7 +6520,7 @@ R_nc_c2r_unpack_uint64 (R_nc_buf *io)
       }
     } else {
       if (hasmax) {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           if ((maxval < in[ii])) {
             out[ii] = NA_REAL;
           } else {
@@ -6523,7 +6528,7 @@ R_nc_c2r_unpack_uint64 (R_nc_buf *io)
           }
         }
       } else {
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
           out[ii] = in[ii] * factor + offset;
         }
       }
