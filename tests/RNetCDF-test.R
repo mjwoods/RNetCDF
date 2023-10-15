@@ -732,11 +732,12 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
         cat("Writing bit64 data with missing values and packing ...")
         y <- try(var.put.nc(nc, paste(numtype,"pack64",namode,sep="_"), mypack64, pack=TRUE, na.mode=namode), silent=TRUE)
         tally <- testfun(inherits(y, "try-error"), napack64fail, tally)
+
+        cat("Writing integer64 with non-finite packing ...")
+        y <- try(var.put.nc(nc, paste(numtype,"packinf64",namode,sep="_"), mypack64, pack=TRUE, na.mode=namode), silent=TRUE)
+        tally <- testfun(inherits(y, "try-error"), inffail, tally)
       }
 
-      cat("Writing integer64 with non-finite packing ...")
-      y <- try(var.put.nc(nc, paste(numtype,"packinf64",namode,sep="_"), mypack64, pack=TRUE, na.mode=namode), silent=TRUE)
-      tally <- testfun(inherits(y, "try-error"), inffail, tally)
     }
   }
 
