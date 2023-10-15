@@ -58,12 +58,12 @@ R_nc_allocArray (SEXPTYPE type, int ndims, const size_t *ccount);
    Other functions should not access members directly. */
 typedef struct {
   SEXP rxp;
-  void *cbuf, *rbuf;
+  void *restrict cbuf, *restrict rbuf;
   nc_type xtype;
   int ncid, ndim, rawchar, fitnum;
-  size_t *xdim, fillsize;
-  void *fill, *min, *max;
-  double *scale, *add;
+  size_t *restrict xdim, fillsize;
+  void *restrict fill, *restrict min, *restrict max;
+  double *restrict scale, *restrict add;
   } R_nc_buf;
 
 
