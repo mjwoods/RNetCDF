@@ -456,9 +456,10 @@ dnl ELSE is blank on first use, then redefined to "} else".
 pushdef(`ELSE',`popdef(`ELSE')pushdef(`ELSE',`} else ')')dnl
 dnl Include range checks?
 pushdef(`WITH_RANGE',eval( ifelse(MINVAL,`',0,1) || ifelse(MAXVAL,`',0,1) ))dnl
-dnl Are non-finite input values within range?
-pushdef(`PASS_INF',eval( ifelse(ITYPE,`double',1,0) &&
-                         ( ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0) )))dnl
+dnl Is input a floating point type?
+pushdef(`IN_FLOAT',eval( ifelse(ITYPE,`float',1,0) || ifelse(ITYPE,`double',1,0) ))dnl
+dnl Is output a floating point type?
+pushdef(`OUT_FLOAT',eval( ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0) ))dnl
     for (ii=0; ii<cnt; ii++) {
 ifelse(`$1',1,`dnl
 dnl Convert missing values to fillval:
@@ -467,11 +468,20 @@ dnl Convert missing values to fillval:
 ')dnl
 ifelse(WITH_RANGE, 1,
 `dnl Include range checks:
+ifelse(IN_FLOAT,1,`dnl
+dnl Handle non-finite floating point values:
+      ELSE`'if (!R_FINITE(in[ii])) {
+ifelse(OUT_FLOAT,1,`dnl
+dnl Output type can represent non-finite values:
+        out[ii] = in[ii];
+',`dnl
+dnl Output type cannot represent non-finite values:
+        error (nc_strerror (NC_ERANGE));
+')dnl
+')dnl
       ELSE`'if (dnl
-ifelse(PASS_INF, 1, `(!R_FINITE(in[ii])) || (')dnl
 ifelse(MINVAL,`',,`((ITYPE) MINVAL <= in[ii])'ifelse(MAXVAL,`',,` && '))dnl
 ifelse(MAXVAL,`',,`(in[ii] <= (ITYPE) MAXVAL)')dnl
-ifelse(PASS_INF, 1, `)')dnl
 ) {
         out[ii] = in[ii];
       } else {
@@ -484,7 +494,7 @@ ifelse(PASS_INF, 1, `)')dnl
       }
 ')dnl
     }dnl
-popdef(`ELSE',`WITH_RANGE',`PASS_INF')dnl
+popdef(`ELSE',`WITH_RANGE',`IN_FLOAT',`OUT_FLOAT')dnl
 ')
 
 
