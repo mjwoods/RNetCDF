@@ -10,8 +10,8 @@
 
 \arguments{
   \item{ncfile}{Object of class \code{NetCDF} which points to the NetCDF dataset (as returned from \code{\link[RNetCDF]{open.nc}}).}
-  \item{variable}{Numeric ID or name of the variable for which to change the parallel access mode. Use "NC_GLOBAL" to change the parallel access mode for all variables in the dataset.}
-  \item{access}{Parallel access mode as one of the following strings: "\code{NC_COLLECTIVE}" or "\code{NC_INDEPENDENT}".}
+  \item{variable}{Numeric ID or name of the variable for which to change the parallel access mode. Use \code{"NC_GLOBAL"} to change the parallel access mode for all variables in the dataset.}
+  \item{access}{Parallel access mode as one of the following strings: \code{"NC_COLLECTIVE"} or \code{"NC_INDEPENDENT"}.}
 }
 
 \details{Parallel file access is either collective (all processors must participate) or independent (any processor may access the data without waiting for others). Data reads and writes (i.e. calls to \code{var.put.nc} and \code{var.get.nc}) are independent by default. Use this function to change the parallel access mode for a variable from independent to collective mode or vice versa.
