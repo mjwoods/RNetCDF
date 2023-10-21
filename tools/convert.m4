@@ -456,9 +456,10 @@ dnl ELSE is blank on first use, then redefined to "} else".
 pushdef(`ELSE',`popdef(`ELSE')pushdef(`ELSE',`} else ')')dnl
 dnl Include range checks?
 pushdef(`WITH_RANGE',eval( ifelse(MINVAL,`',0,1) || ifelse(MAXVAL,`',0,1) ))dnl
-dnl Are non-finite input values within range?
-pushdef(`PASS_INF',eval( ifelse(ITYPE,`double',1,0) &&
-                         ( ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0) )))dnl
+dnl Is input a floating point type?
+pushdef(`IN_FLOAT',eval( ifelse(ITYPE,`float',1,0) || ifelse(ITYPE,`double',1,0) ))dnl
+dnl Is output a floating point type?
+pushdef(`OUT_FLOAT',eval( ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0) ))dnl
     for (ii=0; ii<cnt; ii++) {
 ifelse(`$1',1,`dnl
 dnl Convert missing values to fillval:
@@ -467,11 +468,20 @@ dnl Convert missing values to fillval:
 ')dnl
 ifelse(WITH_RANGE, 1,
 `dnl Include range checks:
+ifelse(IN_FLOAT,1,`dnl
+dnl Handle non-finite floating point values:
+      ELSE`'if (!R_FINITE(in[ii])) {
+ifelse(OUT_FLOAT,1,`dnl
+dnl Output type can represent non-finite values:
+        out[ii] = in[ii];
+',`dnl
+dnl Output type cannot represent non-finite values:
+        error (nc_strerror (NC_ERANGE));
+')dnl
+')dnl
       ELSE`'if (dnl
-ifelse(PASS_INF, 1, `(!R_FINITE(in[ii])) || (')dnl
 ifelse(MINVAL,`',,`((ITYPE) MINVAL <= in[ii])'ifelse(MAXVAL,`',,` && '))dnl
 ifelse(MAXVAL,`',,`(in[ii] <= (ITYPE) MAXVAL)')dnl
-ifelse(PASS_INF, 1, `)')dnl
 ) {
         out[ii] = in[ii];
       } else {
@@ -484,7 +494,7 @@ ifelse(PASS_INF, 1, `)')dnl
       }
 ')dnl
     }dnl
-popdef(`ELSE',`WITH_RANGE',`PASS_INF')dnl
+popdef(`ELSE',`WITH_RANGE',`IN_FLOAT',`OUT_FLOAT')dnl
 ')
 
 
@@ -598,7 +608,7 @@ pushdef(`ELSE',`popdef(`ELSE')pushdef(`ELSE',`} else ')')dnl
 dnl Include range checks?
 pushdef(`WITH_RANGE',eval( ifelse(MINVAL,`',0,1) || ifelse(MAXVAL,`',0,1) ))dnl
 dnl Are non-finite input values within range?
-pushdef(`PASS_INF',eval( ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0) ))dnl
+pushdef(`OUT_FLOAT',eval( ifelse(OTYPE,`float',1,0) || ifelse(OTYPE,`double',1,0) ))dnl
     for (ii=0; ii<cnt; ii++) {
 ifelse(`$1',1,`dnl
 dnl Convert missing values to fillval:
@@ -609,11 +619,18 @@ dnl Convert missing values to fillval:
         dpack = round((in[ii] - offset) / factor);
 ifelse(WITH_RANGE, 1,
 `dnl Include range checks:
-        if (dnl
-ifelse(PASS_INF, 1, `(!R_FINITE(dpack)) || (')dnl
+dnl Handle non-finite floating point values:
+        if (!R_FINITE(dpack)) {
+ifelse(OUT_FLOAT,1,`dnl
+dnl Output type can represent non-finite values:
+          out[ii] = dpack;
+',`dnl
+dnl Output type cannot represent non-finite values:
+          error (nc_strerror (NC_ERANGE));
+')dnl
+        } else if (dnl
 ifelse(MINVAL,`',,`((double) MINVAL <= dpack)'ifelse(MAXVAL,`',,` && '))dnl
 ifelse(MAXVAL,`',,`(dpack <= (double) MAXVAL)')dnl
-ifelse(PASS_INF, 1, `)')dnl
 ) {
           out[ii] = dpack;
         } else {
@@ -625,7 +642,7 @@ ifelse(PASS_INF, 1, `)')dnl
 ')dnl
       }
     }dnl
-popdef(`ELSE',`WITH_RANGE',`PASS_INF')dnl
+popdef(`ELSE',`WITH_RANGE',`OUT_FLOAT')dnl
 ')
 
 /* Define functions similar to those for conversions without packing,
@@ -672,7 +689,10 @@ R_NC_R2C_NUM_PACK(R_nc_r2c_pack_bit64_dbl, long long, REAL, double,,)
 /* Allocate memory for reading a netcdf variable slice
    and converting the results to an R variable.
    On input, the R_nc_buf structure contains dimensions of the buffer (ndim, *xdim).
-   On output, the R_nc_buf structure contains an allocated SEXP and a pointer to its data.
+   On output, the R_nc_buf structure contains an allocated SEXP and pointer to its data.
+     If io->cbuf is NULL, a separate C buffer is allocated for data before conversion,
+     which will be freed automatically on return to R.
+   The SEXP is returned and should be PROTECTed by the caller.
  */
 dnl R_NC_C2R_NUM_INIT(FUN, SEXPTYPE, OFUN)
 define(`R_NC_C2R_NUM_INIT',`dnl
@@ -682,10 +702,12 @@ pushdef(`OFUN',`$3')dnl
 static SEXP
 FUN (R_nc_buf *io)
 {
+  size_t xsize;
   io->rxp = PROTECT(R_nc_allocArray (SEXPTYPE, io->ndim, io->xdim));
   io->rbuf = OFUN (io->rxp);
   if (!io->cbuf) {
-    io->cbuf = io->rbuf;
+    R_nc_check (nc_inq_type(io->ncid, io->xtype, NULL, &xsize));
+    io->cbuf = R_alloc (R_nc_length (io->ndim, io->xdim), xsize);
   }
   UNPROTECT(1);
   return io->rxp;
@@ -700,9 +722,7 @@ R_NC_C2R_NUM_INIT(R_nc_c2r_bit64_init, REALSXP, REAL)
 
 /* Convert numeric values from C to R format.
    Parameters and buffers for the conversion are passed via the R_nc_buf struct.
-   The same buffer may be used for input and output.
-   Output type may be larger (not smaller) than input,
-   so convert in reverse order to avoid overwriting input with output.
+   Non-overlapping buffers must be used for input and output.
    Fill values and values outside the valid range are set to missing,
    but NA or NaN values in floating point data are transferred to the output
    (because all comparisons with NA or NaN are false).
@@ -716,11 +736,11 @@ pushdef(`MISSVAL',`$4')dnl
 static void
 FUN (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   ITYPE fillval=0, minval=0, maxval=0, *in;
   OTYPE *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (ITYPE *) io->cbuf;
   out = (OTYPE *) io->rbuf;
   if ((io->fill || io->min || io->max ) && io->fillsize != sizeof(ITYPE)) {
@@ -773,7 +793,7 @@ popdef(`FUN',`ITYPE',`OTYPE',`MISSVAL')dnl
 
 dnl R_NC_C2R_NUM_LOOP(WITH_FILL,WITH_MIN,WITH_MAX) - called by R_NC_C2R_NUM
 define(`R_NC_C2R_NUM_LOOP',`dnl
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
 pushdef(`TESTSTR',`')dnl
 ifelse(`$1',1,`pushdef(`TESTSTR',`in[ii] == fillval')')dnl
 ifelse(`$2',1,`pushdef(`TESTSTR',
@@ -822,9 +842,7 @@ R_NC_C2R_NUM(R_nc_c2r_uint64_bit64, unsigned long long, long long, NA_INTEGER64)
 
 /* Convert numeric values from C to R format with unpacking.
    Parameters and buffers for the conversion are passed via the R_nc_buf struct.
-   Output type is assumed not to be smaller than input type,
-   so the same buffer may be used for input and output
-   by converting in reverse order.
+   Non-overlapping buffers must be used for input and output.
    Fill values and values outside the valid range are set to missing,
    but NA or NaN values in floating point data are transferred to the output
    (because all comparisons with NA or NaN are false).
@@ -836,12 +854,12 @@ pushdef(`ITYPE',`$2')dnl
 static void
 FUN (R_nc_buf *io)
 {
-  size_t ii;
+  size_t ii, cnt;
   double factor=1.0, offset=0.0;
   ITYPE fillval=0, minval=0, maxval=0, *in;
   double *out;
   int hasfill, hasmin, hasmax;
-  ii = xlength (io->rxp);
+  cnt = xlength (io->rxp);
   in = (ITYPE *) io->cbuf;
   out = (double *) io->rbuf;
   if (io->scale) {
@@ -900,7 +918,7 @@ popdef(`FUN',`ITYPE')dnl
 
 dnl R_NC_C2R_NUM_UNPACK_LOOP(WITH_FILL,WITH_MIN,WITH_MAX) - called by R_NC_C2R_NUM_UNPACK
 define(`R_NC_C2R_NUM_UNPACK_LOOP',`dnl
-        while (ii-- > 0) {
+        for (ii=0; ii<cnt; ii++) {
 pushdef(`TESTSTR',`')dnl
 ifelse(`$1',1,`pushdef(`TESTSTR',`in[ii] == fillval')')dnl
 ifelse(`$2',1,`pushdef(`TESTSTR',
