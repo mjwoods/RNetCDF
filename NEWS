@@ -1,3 +1,8 @@
+Version 2.8-1, 2023-10-21
+  * Fix builds on platforms where share directory is not under $R_HOME
+  * Fix UBSAN warning when converting empty NC_CHAR to R string
+  * Fix type conversions with oneAPI compiler
+
 Version 2.7-1, 2023-10-02
   * Fix crash when calling nc_free_vlen on vlen with zero-length
   * Support packing and unpacking of vlen
