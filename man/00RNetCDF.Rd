@@ -75,7 +75,7 @@ Datasets in NetCDF4 format support additional external types, including:
     \code{NC_STRING}     \tab variable length character strings. \cr
   }
 
-These types are called dquote{external}, because they correspond to the portable external representation for NetCDF data. When a program reads external NetCDF data into an internal variable, the data is converted, if necessary, into the specified internal type. Similarly, if you write internal data into a NetCDF variable, this may cause it to be converted to a different external type, if the external type for the NetCDF variable differs from the internal type.
+These types are called \dQuote{external}, because they correspond to the portable external representation for NetCDF data. When a program reads external NetCDF data into an internal variable, the data is converted, if necessary, into the specified internal type. Similarly, if you write internal data into a NetCDF variable, this may cause it to be converted to a different external type, if the external type for the NetCDF variable differs from the internal type.
 
 In addition to the external types, NetCDF4 supports user-defined types. See \code{\link{type.def.nc}} for more explanation.
 }
