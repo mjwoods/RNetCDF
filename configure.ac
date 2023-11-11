@@ -314,12 +314,12 @@ AS_IF([test "$has_mpi" = TRUE],
        #include <netcdf_par.h>
       ])
 
-    AC_CHECK_DECLS([MPI_INFO_NULL], [], [has_parallel=FALSE],
+    AC_CHECK_DECLS([MPI_INFO_NULL, MPI_Info_c2f], [], [has_parallel=FALSE],
       [#include <mpi.h>
       ])
 
     AC_CHECK_FUNCS(
-      [nc_create_par_fortran nc_open_par_fortran nc_var_par_access MPI_Info_c2f],
+      [nc_create_par_fortran nc_open_par_fortran nc_var_par_access],
       [], [has_parallel=FALSE])
 
     AS_IF([test "$has_parallel" = TRUE],
