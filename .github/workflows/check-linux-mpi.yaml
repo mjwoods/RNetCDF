@@ -93,12 +93,14 @@ jobs:
           }
           cat("::group::Rmpi\n")
           install.packages("Rmpi", type="source",
+            repos="https://cloud.r-project.org",
             configure.args=c(paste0("--with-Rmpi-type=", Rmpi_type),
                              paste0("--with-Rmpi-include=", mpi_include),
                              paste0("--with-Rmpi-libpath=", mpi_lib)))
           cat("::endgroup::\n")
           cat("::group::pbdMPI\n")
           install.packages("pbdMPI", type="source",
+            repos="https://cloud.r-project.org",
             configure.args=c(paste0("--with-mpi-type=", pbdMPI_type),
                              paste0("--with-mpi-include=", mpi_include),
                              paste0("--with-mpi-libpath=", mpi_lib)))
