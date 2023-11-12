@@ -65,7 +65,7 @@ jobs:
           make
           echo ::endgroup::
           echo ::group::make install
-          make install
+          sudo make install
           echo ::endgroup::
         shell: bash
 
