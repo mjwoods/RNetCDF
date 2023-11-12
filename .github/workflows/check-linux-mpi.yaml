@@ -27,11 +27,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        path: RNetCDF
+        with:
+          path: RNetCDF
 
       - uses: actions/checkout@v4
-        repository: Unidata/netcdf-c
-        path: netcdf-c
+        with:
+          repository: Unidata/netcdf-c
+          path: netcdf-c
 
       - uses: r-lib/actions/setup-pandoc@v2
 
