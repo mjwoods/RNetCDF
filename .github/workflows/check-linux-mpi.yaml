@@ -59,7 +59,11 @@ jobs:
           autoreconf -if
           echo ::endgroup::
           echo ::group::configure
-          ./configure CC="mpicc.${{ matrix.config.mpi }}"
+          inc_path="/usr/include/hdf5/${{ matrix.config.mpi }}"
+          lib_path="/usr/lib/x86_64-linux-gnu/hdf5/${{ matrix.config.mpi }}"
+          ./configure CC="mpicc.${{ matrix.config.mpi }}" \
+            CPPFLAGS="-I${inc_path}" \
+            LDFLAGS="-L${lib_path} -Wl,-rpath=${lib_path}"
           echo ::endgroup::
           echo ::group::make
           make
