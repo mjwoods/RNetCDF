@@ -119,7 +119,7 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   # Show library version:
   libvers <- file.inq.nc(nc)$libvers
   cat("Version of netcdf library ... ", libvers, "\n")
-  verstr <- sub('[^[:digit:]]*$', '', file.inq.nc(nc)$libvers)
+  verstr <- sub('([[:digit:]\\.]+).*', '\\1', libvers)
 
   nstation <- 5
   ntime <- 2
