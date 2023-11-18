@@ -12,56 +12,115 @@ jobs:
   check-linux-mpi:
     runs-on: ${{ matrix.config.os }}
 
-    name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_mpi
+    name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_${{ matrix.config.mpi }}
 
     strategy:
       fail-fast: false
       matrix:
         config:
-          - {os: ubuntu-latest,   r: 'release', http-user-agent: 'release'}
+          - {os: ubuntu-latest, r: 'release', mpi: 'openmpi'}
+          - {os: ubuntu-latest, r: 'release', mpi: 'mpich'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          path: RNetCDF
+
+      - uses: actions/checkout@v4
+        with:
+          repository: Unidata/netcdf-c
+          path: netcdf-c
 
       - uses: r-lib/actions/setup-pandoc@v2
 
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ matrix.config.r }}
-          http-user-agent: ${{ matrix.config.http-user-agent }}
+          http-user-agent: release
           use-public-rspm: true
 
       - name: Install system dependencies
         run: |
-            sudo apt-get install -y libnetcdf-mpi-dev libopenmpi-dev openmpi-bin
+          case "${{ matrix.config.mpi }}" in
+            openmpi) sudo apt-get install -y libhdf5-openmpi-dev openmpi-bin ;;
+            mpich) sudo apt-get install -y libhdf5-mpich-dev mpich ;;
+            *) echo "Unknown MPI variant"; exit 1 ;;
+          esac
+        shell: bash
 
-      - name: Install R dependencies
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::rcmdcheck
-          needs: check
-          cache: true
-          cache-version: 2
+      - name: Install netcdf with chosen MPI
+        working-directory: netcdf-c
+        run: |
+          echo ::group::autoreconf
+          autoreconf -if
+          echo ::endgroup::
+          echo ::group::configure
+          inc_path="/usr/include/hdf5/${{ matrix.config.mpi }}"
+          lib_path="/usr/lib/x86_64-linux-gnu/hdf5/${{ matrix.config.mpi }}"
+          ./configure CC="mpicc.${{ matrix.config.mpi }}" \
+            CPPFLAGS="-I${inc_path}" \
+            LDFLAGS="-L${lib_path} -Wl,-rpath=${lib_path}"
+          echo ::endgroup::
+          echo ::group::make
+          make
+          echo ::endgroup::
+          echo ::group::make install
+          sudo make install
+          echo ::endgroup::
+        shell: bash
 
-# r-lib/actions/check-r-package@v2 seems unable to find MPI packages
-# installed by setup-r-dependencies@v2.
-# For now, we use a simple test script below.
-      - name: Check RNetCDF with MPI packages
+      - name: Install R dependencies with chosen MPI
+        run: |
+          cat("::group::bit64\n")
+          install.packages("bit64")
+          cat("::endgroup::\n")
+          if ("${{ matrix.config.mpi }}" == "openmpi") {
+            Rmpi_type <- "OPENMPI"
+            pbdMPI_type <- "OPENMPI"
+            mpi_include <- "/usr/lib/x86_64-linux-gnu/openmpi/include"
+            mpi_lib <- "/usr/lib/x86_64-linux-gnu/openmpi/lib"
+          } else if ("${{ matrix.config.mpi }}" == "mpich") {
+            Rmpi_type <- "MPICH2"
+            pbdMPI_type <- "MPICH3"
+            mpi_include <- "/usr/include/x86_64-linux-gnu/mpich"
+            mpi_lib <- "/usr/lib/x86_64-linux-gnu"
+          } else {
+            stop("Unknown MPI variant")
+          }
+          cat("::group::Rmpi\n")
+          install.packages("parallel")
+          install.packages("Rmpi", type="source",
+            repos="https://cloud.r-project.org",
+            configure.args=c(paste0("--with-Rmpi-type=", Rmpi_type),
+                             paste0("--with-Rmpi-include=", mpi_include),
+                             paste0("--with-Rmpi-libpath=", mpi_lib)))
+          cat("::endgroup::\n")
+          cat("::group::pbdMPI\n")
+          install.packages(c("rlecuyer", "float"))
+          install.packages("pbdMPI", type="source",
+            repos="https://cloud.r-project.org",
+            configure.args=c(paste0("--with-mpi-type=", pbdMPI_type),
+                             paste0("--with-mpi-include=", mpi_include),
+                             paste0("--with-mpi-libpath=", mpi_lib)))
+          cat("::endgroup::\n")
+        shell: Rscript {0}
+
+      - name: Check RNetCDF with chosen MPI
         run: |
           echo ::group::Build RNetCDF
-          R CMD build .
+          R CMD build RNetCDF
           echo ::endgroup::
           echo ::group::Check RNetCDF
           Rscript -e "library(Rmpi); library(pbdMPI);"
+          mpicc="mpicc.${{ matrix.config.mpi }}"
+          mpiexec="mpiexec.${{ matrix.config.mpi }}"
           R CMD check --no-manual \
             --install-args="--configure-args='--without-nc-config \
-              --with-mpiexec=mpiexec.openmpi --with-mpicc=mpicc.openmpi \
-              CPPFLAGS=-I/usr/lib/x86_64-linux-gnu/netcdf/mpi/include \
-              LDFLAGS=-L/usr/lib/x86_64-linux-gnu/netcdf/mpi'" \
+              --with-mpiexec=$mpiexec --with-mpicc=$mpicc'" \
             RNetCDF_*.*-*.tar.gz
           echo ::endgroup::
         shell: bash
@@ -70,7 +129,7 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_mpi_check
+          name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_${{ matrix.config.mpi }}
           path: RNetCDF.Rcheck/
           retention-days: 5
 
