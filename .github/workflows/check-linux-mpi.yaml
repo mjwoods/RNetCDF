@@ -92,6 +92,7 @@ jobs:
             stop("Unknown MPI variant")
           }
           cat("::group::Rmpi\n")
+          install.packages("parallel")
           install.packages("Rmpi", type="source",
             repos="https://cloud.r-project.org",
             configure.args=c(paste0("--with-Rmpi-type=", Rmpi_type),
@@ -99,6 +100,7 @@ jobs:
                              paste0("--with-Rmpi-libpath=", mpi_lib)))
           cat("::endgroup::\n")
           cat("::group::pbdMPI\n")
+          install.packages(c("rlecuyer", "float"))
           install.packages("pbdMPI", type="source",
             repos="https://cloud.r-project.org",
             configure.args=c(paste0("--with-mpi-type=", pbdMPI_type),
