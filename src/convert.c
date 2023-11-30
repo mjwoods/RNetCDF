@@ -427,7 +427,7 @@ R_nc_r2c_int_schar (SEXP rv, int ndim, const size_t *xdim,
       } else if (((int) SCHAR_MIN <= in[ii]) && (in[ii] <= (int) SCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -435,7 +435,7 @@ R_nc_r2c_int_schar (SEXP rv, int ndim, const size_t *xdim,
       if (((int) SCHAR_MIN <= in[ii]) && (in[ii] <= (int) SCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -469,7 +469,7 @@ R_nc_r2c_int_uchar (SEXP rv, int ndim, const size_t *xdim,
       } else if (((int) 0 <= in[ii]) && (in[ii] <= (int) UCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -477,7 +477,7 @@ R_nc_r2c_int_uchar (SEXP rv, int ndim, const size_t *xdim,
       if (((int) 0 <= in[ii]) && (in[ii] <= (int) UCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -511,7 +511,7 @@ R_nc_r2c_int_short (SEXP rv, int ndim, const size_t *xdim,
       } else if (((int) SHRT_MIN <= in[ii]) && (in[ii] <= (int) SHRT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -519,7 +519,7 @@ R_nc_r2c_int_short (SEXP rv, int ndim, const size_t *xdim,
       if (((int) SHRT_MIN <= in[ii]) && (in[ii] <= (int) SHRT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -553,7 +553,7 @@ R_nc_r2c_int_ushort (SEXP rv, int ndim, const size_t *xdim,
       } else if (((int) 0 <= in[ii]) && (in[ii] <= (int) USHRT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -561,7 +561,7 @@ R_nc_r2c_int_ushort (SEXP rv, int ndim, const size_t *xdim,
       if (((int) 0 <= in[ii]) && (in[ii] <= (int) USHRT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -638,7 +638,7 @@ R_nc_r2c_int_uint (SEXP rv, int ndim, const size_t *xdim,
       } else if (((int) 0 <= in[ii])) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -646,7 +646,7 @@ R_nc_r2c_int_uint (SEXP rv, int ndim, const size_t *xdim,
       if (((int) 0 <= in[ii])) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -718,7 +718,7 @@ R_nc_r2c_int_ull (SEXP rv, int ndim, const size_t *xdim,
       } else if (((int) 0 <= in[ii])) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -726,7 +726,7 @@ R_nc_r2c_int_ull (SEXP rv, int ndim, const size_t *xdim,
       if (((int) 0 <= in[ii])) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -838,7 +838,7 @@ R_nc_r2c_int_size (SEXP rv, int ndim, const size_t *xdim,
       } else if (((int) 0 <= in[ii]) && (in[ii] <= (int) SIZE_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -846,7 +846,7 @@ R_nc_r2c_int_size (SEXP rv, int ndim, const size_t *xdim,
       if (((int) 0 <= in[ii]) && (in[ii] <= (int) SIZE_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -881,7 +881,7 @@ R_nc_r2c_int_size (SEXP rv, int ndim, const size_t *xdim,
       } else if (((int) 0 <= in[ii])) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -889,7 +889,7 @@ R_nc_r2c_int_size (SEXP rv, int ndim, const size_t *xdim,
       if (((int) 0 <= in[ii])) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -923,21 +923,21 @@ R_nc_r2c_dbl_schar (SEXP rv, int ndim, const size_t *xdim,
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
       } else if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) SCHAR_MIN <= in[ii]) && (in[ii] <= (double) SCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
       if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) SCHAR_MIN <= in[ii]) && (in[ii] <= (double) SCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -969,21 +969,21 @@ R_nc_r2c_dbl_uchar (SEXP rv, int ndim, const size_t *xdim,
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
       } else if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) UCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
       if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) UCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1015,21 +1015,21 @@ R_nc_r2c_dbl_short (SEXP rv, int ndim, const size_t *xdim,
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
       } else if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) SHRT_MIN <= in[ii]) && (in[ii] <= (double) SHRT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
       if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) SHRT_MIN <= in[ii]) && (in[ii] <= (double) SHRT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1061,21 +1061,21 @@ R_nc_r2c_dbl_ushort (SEXP rv, int ndim, const size_t *xdim,
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
       } else if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) USHRT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
       if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) USHRT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1107,21 +1107,21 @@ R_nc_r2c_dbl_int (SEXP rv, int ndim, const size_t *xdim,
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
       } else if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) INT_MIN <= in[ii]) && (in[ii] <= (double) INT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
       if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) INT_MIN <= in[ii]) && (in[ii] <= (double) INT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1153,21 +1153,21 @@ R_nc_r2c_dbl_uint (SEXP rv, int ndim, const size_t *xdim,
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
       } else if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) UINT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
       if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) UINT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1199,21 +1199,21 @@ R_nc_r2c_dbl_ll (SEXP rv, int ndim, const size_t *xdim,
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
       } else if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) LLONG_MIN_DBL <= in[ii]) && (in[ii] <= (double) LLONG_MAX_DBL)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
       if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) LLONG_MIN_DBL <= in[ii]) && (in[ii] <= (double) LLONG_MAX_DBL)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1245,21 +1245,21 @@ R_nc_r2c_dbl_ull (SEXP rv, int ndim, const size_t *xdim,
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
       } else if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) ULLONG_MAX_DBL)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
       if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) ULLONG_MAX_DBL)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1295,7 +1295,7 @@ R_nc_r2c_dbl_float (SEXP rv, int ndim, const size_t *xdim,
       } else if (((double) -FLT_MAX <= in[ii]) && (in[ii] <= (double) FLT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -1305,7 +1305,7 @@ R_nc_r2c_dbl_float (SEXP rv, int ndim, const size_t *xdim,
       } else if (((double) -FLT_MAX <= in[ii]) && (in[ii] <= (double) FLT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1381,21 +1381,21 @@ R_nc_r2c_dbl_size (SEXP rv, int ndim, const size_t *xdim,
       if ((ISNA(in[ii]))) {
         out[ii] = fillval;
       } else if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) SIZE_MAX_DBL)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
     for (ii=0; ii<cnt; ii++) {
       if (!R_FINITE(in[ii])) {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       } else if (((double) 0 <= in[ii]) && (in[ii] <= (double) SIZE_MAX_DBL)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1435,7 +1435,7 @@ R_nc_r2c_bit64_schar (SEXP rv, int ndim, const size_t *xdim,
       } else if (((long long) SCHAR_MIN <= in[ii]) && (in[ii] <= (long long) SCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -1443,7 +1443,7 @@ R_nc_r2c_bit64_schar (SEXP rv, int ndim, const size_t *xdim,
       if (((long long) SCHAR_MIN <= in[ii]) && (in[ii] <= (long long) SCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1477,7 +1477,7 @@ R_nc_r2c_bit64_uchar (SEXP rv, int ndim, const size_t *xdim,
       } else if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) UCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -1485,7 +1485,7 @@ R_nc_r2c_bit64_uchar (SEXP rv, int ndim, const size_t *xdim,
       if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) UCHAR_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1519,7 +1519,7 @@ R_nc_r2c_bit64_short (SEXP rv, int ndim, const size_t *xdim,
       } else if (((long long) SHRT_MIN <= in[ii]) && (in[ii] <= (long long) SHRT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -1527,7 +1527,7 @@ R_nc_r2c_bit64_short (SEXP rv, int ndim, const size_t *xdim,
       if (((long long) SHRT_MIN <= in[ii]) && (in[ii] <= (long long) SHRT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1561,7 +1561,7 @@ R_nc_r2c_bit64_ushort (SEXP rv, int ndim, const size_t *xdim,
       } else if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) USHRT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -1569,7 +1569,7 @@ R_nc_r2c_bit64_ushort (SEXP rv, int ndim, const size_t *xdim,
       if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) USHRT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1603,7 +1603,7 @@ R_nc_r2c_bit64_int (SEXP rv, int ndim, const size_t *xdim,
       } else if (((long long) INT_MIN <= in[ii]) && (in[ii] <= (long long) INT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -1611,7 +1611,7 @@ R_nc_r2c_bit64_int (SEXP rv, int ndim, const size_t *xdim,
       if (((long long) INT_MIN <= in[ii]) && (in[ii] <= (long long) INT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1645,7 +1645,7 @@ R_nc_r2c_bit64_uint (SEXP rv, int ndim, const size_t *xdim,
       } else if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) UINT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -1653,7 +1653,7 @@ R_nc_r2c_bit64_uint (SEXP rv, int ndim, const size_t *xdim,
       if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) UINT_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1845,7 +1845,7 @@ R_nc_r2c_bit64_size (SEXP rv, int ndim, const size_t *xdim,
       } else if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) SIZE_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   } else {
@@ -1853,7 +1853,7 @@ R_nc_r2c_bit64_size (SEXP rv, int ndim, const size_t *xdim,
       if (((long long) 0 <= in[ii]) && (in[ii] <= (long long) SIZE_MAX)) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
     }
   }
@@ -1948,11 +1948,11 @@ R_nc_r2c_pack_int_schar (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -1961,11 +1961,11 @@ R_nc_r2c_pack_int_schar (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2008,11 +2008,11 @@ R_nc_r2c_pack_int_uchar (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2021,11 +2021,11 @@ R_nc_r2c_pack_int_uchar (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2068,11 +2068,11 @@ R_nc_r2c_pack_int_short (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2081,11 +2081,11 @@ R_nc_r2c_pack_int_short (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2128,11 +2128,11 @@ R_nc_r2c_pack_int_ushort (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2141,11 +2141,11 @@ R_nc_r2c_pack_int_ushort (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2188,11 +2188,11 @@ R_nc_r2c_pack_int_int (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2201,11 +2201,11 @@ R_nc_r2c_pack_int_int (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2248,11 +2248,11 @@ R_nc_r2c_pack_int_uint (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2261,11 +2261,11 @@ R_nc_r2c_pack_int_uint (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2308,11 +2308,11 @@ R_nc_r2c_pack_int_ll (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) LLONG_MIN_DBL  <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2321,11 +2321,11 @@ R_nc_r2c_pack_int_ll (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) LLONG_MIN_DBL  <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2368,11 +2368,11 @@ R_nc_r2c_pack_int_ull (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2381,11 +2381,11 @@ R_nc_r2c_pack_int_ull (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2432,7 +2432,7 @@ R_nc_r2c_pack_int_float (SEXP rv, int ndim, const size_t *xdim,
         } else if (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2445,7 +2445,7 @@ R_nc_r2c_pack_int_float (SEXP rv, int ndim, const size_t *xdim,
         } else if (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2536,11 +2536,11 @@ R_nc_r2c_pack_dbl_schar (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2549,11 +2549,11 @@ R_nc_r2c_pack_dbl_schar (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2596,11 +2596,11 @@ R_nc_r2c_pack_dbl_uchar (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2609,11 +2609,11 @@ R_nc_r2c_pack_dbl_uchar (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2656,11 +2656,11 @@ R_nc_r2c_pack_dbl_short (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2669,11 +2669,11 @@ R_nc_r2c_pack_dbl_short (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2716,11 +2716,11 @@ R_nc_r2c_pack_dbl_ushort (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2729,11 +2729,11 @@ R_nc_r2c_pack_dbl_ushort (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2776,11 +2776,11 @@ R_nc_r2c_pack_dbl_int (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2789,11 +2789,11 @@ R_nc_r2c_pack_dbl_int (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2836,11 +2836,11 @@ R_nc_r2c_pack_dbl_uint (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2849,11 +2849,11 @@ R_nc_r2c_pack_dbl_uint (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2896,11 +2896,11 @@ R_nc_r2c_pack_dbl_ll (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2909,11 +2909,11 @@ R_nc_r2c_pack_dbl_ll (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2956,11 +2956,11 @@ R_nc_r2c_pack_dbl_ull (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -2969,11 +2969,11 @@ R_nc_r2c_pack_dbl_ull (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3020,7 +3020,7 @@ R_nc_r2c_pack_dbl_float (SEXP rv, int ndim, const size_t *xdim,
         } else if (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3033,7 +3033,7 @@ R_nc_r2c_pack_dbl_float (SEXP rv, int ndim, const size_t *xdim,
         } else if (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3130,11 +3130,11 @@ R_nc_r2c_pack_bit64_schar (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3143,11 +3143,11 @@ R_nc_r2c_pack_bit64_schar (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) SCHAR_MIN <= dpack) && (dpack <= (double) SCHAR_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3190,11 +3190,11 @@ R_nc_r2c_pack_bit64_uchar (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3203,11 +3203,11 @@ R_nc_r2c_pack_bit64_uchar (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) UCHAR_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3250,11 +3250,11 @@ R_nc_r2c_pack_bit64_short (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3263,11 +3263,11 @@ R_nc_r2c_pack_bit64_short (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) SHRT_MIN <= dpack) && (dpack <= (double) SHRT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3310,11 +3310,11 @@ R_nc_r2c_pack_bit64_ushort (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3323,11 +3323,11 @@ R_nc_r2c_pack_bit64_ushort (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) USHRT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3370,11 +3370,11 @@ R_nc_r2c_pack_bit64_int (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3383,11 +3383,11 @@ R_nc_r2c_pack_bit64_int (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) INT_MIN <= dpack) && (dpack <= (double) INT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3430,11 +3430,11 @@ R_nc_r2c_pack_bit64_uint (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3443,11 +3443,11 @@ R_nc_r2c_pack_bit64_uint (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) UINT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3490,11 +3490,11 @@ R_nc_r2c_pack_bit64_ll (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3503,11 +3503,11 @@ R_nc_r2c_pack_bit64_ll (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) LLONG_MIN_DBL <= dpack) && (dpack <= (double) LLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3550,11 +3550,11 @@ R_nc_r2c_pack_bit64_ull (SEXP rv, int ndim, const size_t *xdim,
       } else {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3563,11 +3563,11 @@ R_nc_r2c_pack_bit64_ull (SEXP rv, int ndim, const size_t *xdim,
       {
         dpack = round((in[ii] - offset) / factor);
         if (!R_FINITE(dpack)) {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         } else if (((double) 0 <= dpack) && (dpack <= (double) ULLONG_MAX_DBL)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3614,7 +3614,7 @@ R_nc_r2c_pack_bit64_float (SEXP rv, int ndim, const size_t *xdim,
         } else if (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
@@ -3627,7 +3627,7 @@ R_nc_r2c_pack_bit64_float (SEXP rv, int ndim, const size_t *xdim,
         } else if (((double) -FLT_MAX <= dpack) && (dpack <= (double) FLT_MAX)) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
       }
     }
