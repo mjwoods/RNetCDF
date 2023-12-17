@@ -44,7 +44,7 @@ int
 R_nc_check(int status)
 {
   if (status != NC_NOERR) {
-    error (nc_strerror (status));
+    error ("%s", nc_strerror (status));
   }
   return status;
 }

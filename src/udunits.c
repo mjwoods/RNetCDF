@@ -236,7 +236,7 @@ cleanup:
   }
 
   if (status != UT_SUCCESS) {
-    error (R_nc_uterror (status));
+    error ("%s", R_nc_uterror (status));
   }
 
   UNPROTECT(1);
@@ -261,7 +261,7 @@ R_nc_utinit (SEXP path)
   R_nc_units = ut_read_xml (pathp);
 
   if (!R_nc_units) {
-    error (R_nc_uterror (ut_get_status ()));
+    error ("%s", R_nc_uterror (ut_get_status ()));
   }
   return R_NilValue;
 }
@@ -369,7 +369,7 @@ cleanup:
   }
 
   if (status != UT_SUCCESS) {
-    error (R_nc_uterror (status));
+    error ("%s", R_nc_uterror (status));
   }
 
   UNPROTECT(1);

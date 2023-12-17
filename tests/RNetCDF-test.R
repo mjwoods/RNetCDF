@@ -1412,6 +1412,10 @@ if (!cfg$udunits) {
   y <- utcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(0:5), type="c")
   tally <- testfun(x,y,tally)
 
+  cat("utcal.nc - error for unknown units ...")
+  x <- try(utcal.nc("unknown", 1), silent=TRUE)
+  tally <- testfun(inherits(x, "try-error"), TRUE, tally)
+
   cat("utinvcal.nc - numeric values ...")
   x <- 6.416667
   y <- utinvcal.nc("hours since 1900-01-01 00:00:00 +01:00", c(1900,1,1,5,25,0))
@@ -1427,6 +1431,11 @@ if (!cfg$udunits) {
   y <- utinvcal.nc("hours since 1900-01-01 00:00:00 +01:00",
 	   ISOdatetime(1900,1,1,5,25,0,tz="UTC"))
   tally <- testfun(x,y,tally)
+
+  cat("utinvcal.nc - error for bad values ...")
+  x <- try(utinvcal.nc("hours since 1900-01-01 00:00:00 +01:00",
+                       "1900-01-01 24:61:61"), silent=TRUE)
+  tally <- testfun(inherits(x, "try-error"), TRUE, tally)
 
 }
 

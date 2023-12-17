@@ -476,7 +476,7 @@ dnl Output type can represent non-finite values:
         out[ii] = in[ii];
 ',`dnl
 dnl Output type cannot represent non-finite values:
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
 ')dnl
 ')dnl
       ELSE`'if (dnl
@@ -485,7 +485,7 @@ ifelse(MAXVAL,`',,`(in[ii] <= (ITYPE) MAXVAL)')dnl
 ) {
         out[ii] = in[ii];
       } else {
-        error (nc_strerror (NC_ERANGE));
+        error ("%s", nc_strerror (NC_ERANGE));
       }
 ',
 `dnl No range checks needed:
@@ -626,7 +626,7 @@ dnl Output type can represent non-finite values:
           out[ii] = dpack;
 ',`dnl
 dnl Output type cannot represent non-finite values:
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
 ')dnl
         } else if (dnl
 ifelse(MINVAL,`',,`((double) MINVAL <= dpack)'ifelse(MAXVAL,`',,` && '))dnl
@@ -634,7 +634,7 @@ ifelse(MAXVAL,`',,`(dpack <= (double) MAXVAL)')dnl
 ) {
           out[ii] = dpack;
         } else {
-          error (nc_strerror (NC_ERANGE));
+          error ("%s", nc_strerror (NC_ERANGE));
         }
 ',
 `dnl No range checks needed:

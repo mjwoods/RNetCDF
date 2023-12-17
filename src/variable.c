@@ -809,7 +809,7 @@ R_nc_inq_var (SEXP nc, SEXP var)
       UNPROTECT(2);
 #  endif
     } else {
-      error (nc_strerror (status));
+      error ("%s", nc_strerror (status));
     }
 #else
     SET_VECTOR_ELT (result, 14, R_NilValue);
