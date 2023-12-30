@@ -5,7 +5,7 @@ dnl Insert warning into generated C code:
  *
  *  Name:       convert.c
  *
- *  Version:    2.8-1
+ *  Version:    2.9-1
  *
  *  Purpose:    Type conversions for RNetCDF
  *

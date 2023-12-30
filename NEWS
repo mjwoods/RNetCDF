@@ -1,3 +1,7 @@
+Version 2.9-1, 2023-12-30
+  * Fix support for parallel I/O with MPICH (and related MPI variants)
+  * Fix error handlers to remove potentially insecure format strings
+
 Version 2.8-1, 2023-10-21
   * Fix builds on platforms where share directory is not under $R_HOME
   * Fix UBSAN warning when converting empty NC_CHAR to R string
