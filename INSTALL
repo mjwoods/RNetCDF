@@ -91,7 +91,7 @@ R CMD INSTALL Example
 
 R CMD INSTALL --configure-args="CPPFLAGS=-I/sw/include \
     LDFLAGS=-L/sw/lib LIBS=-lhdf5 --with-mpicc=mpicc --with-mpiexec=mpiexec" \
-    RNetCDF_2.8-1.tar.gz
+    RNetCDF_2.9-1.tar.gz
 
 
 LD_LIBRARY_PATH
@@ -120,7 +120,7 @@ R CMD check Example
 ===================
 
 R CMD check --install-args="--configure-args='CPPFLAGS=-I/sw/include \
-    LDFLAGS=-L/sw/lib'" RNetCDF_2.8-1.tar.gz
+    LDFLAGS=-L/sw/lib'" RNetCDF_2.9-1.tar.gz
 
 
 Time units
