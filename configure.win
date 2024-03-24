@@ -1,3 +1,8 @@
 #!/bin/sh
 
-. ./configure
+if [ X"`pkg-config --version 2>/dev/null`" != X ] ; then
+  ./configure LIBS="`pkg-config --libs netcdf`"
+else
+  ./configure
+fi
+  
