@@ -1,3 +1,6 @@
+Version 2.9-2, 2024-03-24
+  * Use pkg-config on Windows to fix linking with upcoming Rtools version
+
 Version 2.9-1, 2023-12-30
   * Fix support for parallel I/O with MPICH (and related MPI variants)
   * Fix error handlers to remove potentially insecure format strings

@@ -5,14 +5,14 @@ dnl Insert warning into generated C code:
  *
  *  Name:       convert.c
  *
- *  Version:    2.9-1
+ *  Version:    2.9-2
  *
  *  Purpose:    Type conversions for RNetCDF
  *
  *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
  *              Milton Woods (miltonjwoods@gmail.com)
  *
- *  Copyright (C) 2004-2023 Pavel Michna and Milton Woods.
+ *  Copyright (C) 2004-2024 Pavel Michna and Milton Woods.
  *
  *=============================================================================*
  *
