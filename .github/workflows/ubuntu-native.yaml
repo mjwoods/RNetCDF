@@ -28,7 +28,7 @@ jobs:
       - name: Configure git
         run: git config --global core.autocrlf false
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install R from Ubuntu
         run: |
@@ -49,7 +49,7 @@ jobs:
 
       - name: Upload check directory
         if: success() || failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_check
           path: RNetCDF.Rcheck/

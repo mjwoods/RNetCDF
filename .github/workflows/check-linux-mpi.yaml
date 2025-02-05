@@ -127,7 +127,7 @@ jobs:
 
       - name: Upload check directory
         if: success() || failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_${{ matrix.config.mpi }}
           path: RNetCDF.Rcheck/
