@@ -31,7 +31,7 @@ jobs:
       - name: Configure git
         run: git config --global core.autocrlf false
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: git
 
@@ -49,7 +49,7 @@ jobs:
 
       - name: Restore system dependencies
         id: cache-deps
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: opt
           key: ${{ runner.os }}_ncdf-${{ matrix.config.ncdf }}_hdf5-${{ matrix.config.hdf5 }}_udunits-${{ matrix.config.udunits }}
