@@ -158,9 +158,20 @@ AS_IF([test "x${have_nc_config}" = xyes],
     NC_LIBS=`nc-config --libs ${nc_config_static_flag}`
     AC_MSG_RESULT([${NC_LIBS}])
 
-    # Prepend to PKG variables:
+    # Prepend to PKG variables,
+    # saving original variables to roll back if tests fail below:
+    SAVE_CFLAGS="${PKG_CFLAGS}"
+    SAVE_LIBS="${LIBS}"
     PKG_CFLAGS="${NC_CFLAGS} ${PKG_CFLAGS}"
     LIBS="${NC_LIBS} $LIBS"
+
+    # Check that settings from nc-config work:
+    AC_CHECK_FUNC([nc_close],
+      [AC_MSG_NOTICE([Proceeding with settings from nc-config])],
+      [AC_MSG_WARN([Ignoring broken nc-config])
+       PKG_CFLAGS="${SAVE_CFLAGS}"
+       LIBS="${SAVE_LIBS}"
+      ])
 
   ], [
     AC_MSG_NOTICE([Skipping nc-config])
