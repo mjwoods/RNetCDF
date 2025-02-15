@@ -141,13 +141,13 @@ AS_IF([test "x${have_nc_config}" = xyes],
     # If not, try LIBS from nc-config --static --libs.
     # If that fails, continue without any settings from nc-config.
     AC_LANG([C])
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([],[nc_open("test.nc");])],
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([char nc_open (void);], [return nc_open ();])],
       [AC_MSG_NOTICE([Proceeding with settings from nc-config])],
       [AC_MSG_CHECKING([nc-config --static --libs])
        NC_LIBS=`nc-config --static --libs`
        AC_MSG_RESULT([${NC_LIBS}])
        LIBS="${NC_LIBS} ${SAVE_LIBS}"
-       AC_LINK_IFELSE([AC_LANG_PROGRAM([],[nc_open("test.nc");])],
+       AC_LINK_IFELSE([AC_LANG_PROGRAM([char nc_open (void);], [return nc_open ();])],
          [AC_MSG_NOTICE([Proceeding with settings from nc-config --static])],
          [AC_MSG_WARN([Ignoring broken nc-config])
           have_nc_config=no
@@ -166,7 +166,7 @@ AS_IF([test "x${have_nc_config}" = xyes],
 #  If netcdf is not linking, search for library dependencies                    #
 #-------------------------------------------------------------------------------#
 
-AC_LINK_IFELSE([AC_LANG_PROGRAM([],[nc_open("test.nc");])], [], [
+AC_LINK_IFELSE([AC_LANG_PROGRAM([char nc_open (void);], [return nc_open ();])], [], [
 
   AC_MSG_NOTICE([Find library dependencies for linking netcdf:])
 

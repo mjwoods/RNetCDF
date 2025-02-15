@@ -4009,11 +4009,11 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
+char nc_open (void);
 int
 main (void)
 {
-nc_open("test.nc");
+return nc_open ();
   ;
   return 0;
 }
@@ -4031,11 +4031,11 @@ printf "%s\n" "${NC_LIBS}" >&6; }
        LIBS="${NC_LIBS} ${SAVE_LIBS}"
        cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
+char nc_open (void);
 int
 main (void)
 {
-nc_open("test.nc");
+return nc_open ();
   ;
   return 0;
 }
@@ -4078,11 +4078,11 @@ fi
 
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-
+char nc_open (void);
 int
 main (void)
 {
-nc_open("test.nc");
+return nc_open ();
   ;
   return 0;
 }
