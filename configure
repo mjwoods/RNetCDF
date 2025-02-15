@@ -700,7 +700,6 @@ ac_user_opts='
 enable_option_checking
 with_mpicc
 with_nc_config
-with_nc_config_static
 with_mpiexec
 '
       ac_precious_vars='build_alias
@@ -1330,10 +1329,7 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-mpicc            command for C compiler from MPI, otherwise C
                           compiler from R is used
-  --with-nc-config        get compiler options from nc-config (default except
-                          on Windows)
-  --with-nc-config-static use static libraries from nc-config (default on
-                          Windows & macOS)
+  --with-nc-config        get compiler options from nc-config
   --with-mpiexec          command to run small parallel MPI tests after
                           installation (none by default)
 
@@ -1604,70 +1600,6 @@ fi
 
 } # ac_fn_c_try_link
 
-# ac_fn_c_check_func LINENO FUNC VAR
-# ----------------------------------
-# Tests whether FUNC exists, setting the cache variable VAR accordingly
-ac_fn_c_check_func ()
-{
-  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $2" >&5
-printf %s "checking for $2... " >&6; }
-if eval test \${$3+y}
-then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-/* Define $2 to an innocuous variant, in case <limits.h> declares $2.
-   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
-#define $2 innocuous_$2
-
-/* System header to define __stub macros and hopefully few prototypes,
-   which can conflict with char $2 (void); below.  */
-
-#include <limits.h>
-#undef $2
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $2 (void);
-/* The GNU C library defines this for functions which it implements
-    to always fail with ENOSYS.  Some functions are actually named
-    something starting with __ and the normal name is an alias.  */
-#if defined __stub_$2 || defined __stub___$2
-choke me
-#endif
-
-int
-main (void)
-{
-return $2 ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_link "$LINENO"
-then :
-  eval "$3=yes"
-else case e in #(
-  e) eval "$3=no" ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext ;;
-esac
-fi
-eval ac_res=\$$3
-	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
-printf "%s\n" "$ac_res" >&6; }
-  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
-
-} # ac_fn_c_check_func
-
 # ac_fn_c_try_run LINENO
 # ----------------------
 # Try to run conftest.$ac_ext, and return whether this succeeded. Assumes that
@@ -1906,6 +1838,70 @@ rm -f conftest.val
   as_fn_set_status $ac_retval
 
 } # ac_fn_c_compute_int
+
+# ac_fn_c_check_func LINENO FUNC VAR
+# ----------------------------------
+# Tests whether FUNC exists, setting the cache variable VAR accordingly
+ac_fn_c_check_func ()
+{
+  as_lineno=${as_lineno-"$1"} as_lineno_stack=as_lineno_stack=$as_lineno_stack
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $2" >&5
+printf %s "checking for $2... " >&6; }
+if eval test \${$3+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+/* Define $2 to an innocuous variant, in case <limits.h> declares $2.
+   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
+#define $2 innocuous_$2
+
+/* System header to define __stub macros and hopefully few prototypes,
+   which can conflict with char $2 (void); below.  */
+
+#include <limits.h>
+#undef $2
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char $2 (void);
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined __stub_$2 || defined __stub___$2
+choke me
+#endif
+
+int
+main (void)
+{
+return $2 ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  eval "$3=yes"
+else case e in #(
+  e) eval "$3=no" ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext ;;
+esac
+fi
+eval ac_res=\$$3
+	       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+printf "%s\n" "$ac_res" >&6; }
+  eval $as_lineno_stack; ${as_lineno_stack:+:} unset as_lineno
+
+} # ac_fn_c_check_func
 ac_configure_args_raw=
 for ac_arg
 do
@@ -3896,29 +3892,17 @@ printf "%s\n" "$as_me: Operating system is $platform" >&6;}
 #  Prepend compiler/linker variables from nc-config (if specified)              #
 #-------------------------------------------------------------------------------#
 
-# Enable nc-config by default,
-# except on Windows which currently needs special handling (see later):
+# Enable nc-config by default:
 
 # Check whether --with-nc-config was given.
 if test ${with_nc_config+y}
 then :
   withval=$with_nc_config;
 else case e in #(
-  e) with_nc_config=unset ;;
-esac
-fi
-
-
-if test "x${with_nc_config}" = xunset
-then :
-  if test "x$platform" = xWindows
-then :
-  with_nc_config=no
-else case e in #(
   e) with_nc_config=yes ;;
 esac
 fi
-fi
+
 
 if test "x${with_nc_config}" = xyes
 then :
@@ -3971,30 +3955,6 @@ else case e in #(
 esac
 fi
 
-
-# Check whether --with-nc-config-static was given.
-if test ${with_nc_config_static+y}
-then :
-  withval=$with_nc_config_static;
-else case e in #(
-  e) with_nc_config_static=unset ;;
-esac
-fi
-
-
-if test "x${with_nc_config_static}" = xunset
-then :
-  if test "x$platform" = xWindows || test "x$platform" = xmacOS
-then :
-  with_nc_config_static=yes
-else case e in #(
-  e) with_nc_config_static=no ;;
-esac
-fi
-
-
-fi
-
 if test "x${have_nc_config}" = xyes
 then :
 
@@ -4025,27 +3985,9 @@ printf %s "checking nc-config --cflags... " >&6; }
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${NC_CFLAGS}" >&5
 printf "%s\n" "${NC_CFLAGS}" >&6; }
 
-    nc_config_static_flag=""
-    if test "x${with_nc_config_static}" = xyes
-then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config allows --static option" >&5
-printf %s "checking nc-config allows --static option... " >&6; }
-       if nc-config --libs --static >/dev/null 2>&1
-then :
-  nc_config_static_flag="--static"
-          { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; }
-else case e in #(
-  e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
-printf "%s\n" "no" >&6; } ;;
-esac
-fi
-
-fi
-
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config --libs ${nc_config_static_flag}" >&5
-printf %s "checking nc-config --libs ${nc_config_static_flag}... " >&6; }
-    NC_LIBS=`nc-config --libs ${nc_config_static_flag}`
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config --libs" >&5
+printf %s "checking nc-config --libs... " >&6; }
+    NC_LIBS=`nc-config --libs`
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${NC_LIBS}" >&5
 printf "%s\n" "${NC_LIBS}" >&6; }
 
@@ -4056,21 +3998,68 @@ printf "%s\n" "${NC_LIBS}" >&6; }
     PKG_CFLAGS="${NC_CFLAGS} ${PKG_CFLAGS}"
     LIBS="${NC_LIBS} $LIBS"
 
-    # Check that settings from nc-config work:
-    ac_fn_c_check_func "$LINENO" "nc_close" "ac_cv_func_nc_close"
-if test "x$ac_cv_func_nc_close" = xyes
+    # Check that settings from nc-config work.
+    # If not, try LIBS from nc-config --static --libs.
+    # If that fails, continue without any settings from nc-config.
+    ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+nc_open("test.nc");
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Proceeding with settings from nc-config" >&5
 printf "%s\n" "$as_me: Proceeding with settings from nc-config" >&6;}
 else case e in #(
+  e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config --static --libs" >&5
+printf %s "checking nc-config --static --libs... " >&6; }
+       NC_LIBS=`nc-config --static --libs`
+       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${NC_LIBS}" >&5
+printf "%s\n" "${NC_LIBS}" >&6; }
+       LIBS="${NC_LIBS} ${SAVE_LIBS}"
+       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+nc_open("test.nc");
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Proceeding with settings from nc-config --static" >&5
+printf "%s\n" "$as_me: Proceeding with settings from nc-config --static" >&6;}
+else case e in #(
   e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Ignoring broken nc-config" >&5
 printf "%s\n" "$as_me: WARNING: Ignoring broken nc-config" >&2;}
-       PKG_CFLAGS="${SAVE_CFLAGS}"
-       LIBS="${SAVE_LIBS}"
+          have_nc_config=no
+          PKG_CFLAGS="${SAVE_CFLAGS}"
+          LIBS="${SAVE_LIBS}"
+          ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
        ;;
 esac
 fi
-
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
 
 
 else case e in #(
@@ -4084,32 +4073,33 @@ fi
 
 
 #-------------------------------------------------------------------------------#
-#  Append R compiler/linker variables to PKG variables for feature tests        #
+#  If netcdf is not linking, search for library dependencies                    #
 #-------------------------------------------------------------------------------#
 
-# CC is unchanged
-CFLAGS="${PKG_CFLAGS} ${R_CFLAGS}"
-CPPFLAGS="${PKG_CPPFLAGS} ${R_CPPFLAGS}"
-LDFLAGS="${PKG_LDFLAGS} ${R_LDFLAGS}"
-# No LIBS from R
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
 
-
-#-------------------------------------------------------------------------------#
-#  Set libraries to link on Windows                                             #
-#-------------------------------------------------------------------------------#
-# As of Rtools43, nc-config does not link all required libraries,
-# and it also tries to link libraries that are not installed.
-# If nc-config is fixed, this section could be removed,
-# and nc-config could be re-enabled above.
-
-if test "x$platform" = xWindows
+int
+main (void)
+{
+nc_open("test.nc");
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
 then :
 
+else case e in #(
+  e)
 
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find libraries that may be needed on Windows:" >&5
-printf "%s\n" "$as_me: Find libraries that may be needed on Windows:" >&6;}
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find library dependencies for linking netcdf:" >&5
+printf "%s\n" "$as_me: Find library dependencies for linking netcdf:" >&6;}
 
+  if test "x$platform" = xWindows
+then :
   LIBS="-ladvapi32 -lgdi32 -lcrypt32 -lwldap32 -lwsock32 -lws2_32 $LIBS"
+fi
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing atan" >&5
 printf %s "checking for library containing atan... " >&6; }
@@ -5797,8 +5787,22 @@ then :
 fi
 
 
-
+ ;;
+esac
 fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+#-------------------------------------------------------------------------------#
+#  Append R compiler/linker variables to PKG variables for feature tests        #
+#-------------------------------------------------------------------------------#
+
+# CC is unchanged
+CFLAGS="${PKG_CFLAGS} ${R_CFLAGS}"
+CPPFLAGS="${PKG_CPPFLAGS} ${R_CPPFLAGS}"
+LDFLAGS="${PKG_LDFLAGS} ${R_LDFLAGS}"
+# No LIBS from R
 
 
 #-------------------------------------------------------------------------------#
