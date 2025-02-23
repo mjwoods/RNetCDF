@@ -325,7 +325,7 @@ AS_IF([test "x${with_env_search}" == xyes], [
   # Windows only:
   AS_IF([test "x$platform" = xWindows], 
     [
-      AC_SEARCH_LIBS(InitializeSid, advadpi32)
+      AC_SEARCH_LIBS(InitializeSid, advapi32)
       AC_SEARCH_LIBS(CreateBitmap, gdi32)
       AC_SEARCH_LIBS(CryptMemAlloc, crypt32)
       AC_SEARCH_LIBS(ldap_init, wldap32)
