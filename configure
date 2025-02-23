@@ -698,7 +698,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
-with_mpicc
+with_cc
 with_nc_config
 with_pkg_config
 with_mpiexec
@@ -1328,8 +1328,8 @@ if test -n "$ac_init_help"; then
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-mpicc            command for C compiler from MPI, otherwise C
-                          compiler from R is used
+  --with-cc               command for C compiler, otherwise C compiler from R
+                          is used
   --with-nc-config        try compiler options from nc-config (default)
   --with-pkg-config       try compiler options from pkg-config (default unless
                           nc-config succeeds)
@@ -2646,37 +2646,40 @@ printf "%s\n" "${ENV_LIBS}" >&6; }
 
 
 #-------------------------------------------------------------------------------#
-#  Select compiler from R unless --with-mpicc has non-empty value               #
+#  Select compiler from R unless --with-cc has non-empty value                  #
 #-------------------------------------------------------------------------------#
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Select C compiler:" >&5
 printf "%s\n" "$as_me: Select C compiler:" >&6;}
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking C compiler from --with-mpicc" >&5
-printf %s "checking C compiler from --with-mpicc... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking C compiler from --with-cc" >&5
+printf %s "checking C compiler from --with-cc... " >&6; }
 
 
-# Check whether --with-mpicc was given.
-if test ${with_mpicc+y}
+# Check whether --with-cc was given.
+if test ${with_cc+y}
 then :
-  withval=$with_mpicc; CC="$withval"
+  withval=$with_cc; ARG_CC="$withval"
 else case e in #(
-  e) CC="" ;;
+  e) ARG_CC="" ;;
 esac
 fi
 
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ARG_CC}" >&5
+printf "%s\n" "${ARG_CC}" >&6; }
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CC" >&5
-printf "%s\n" "$CC" >&6; }
-
-if test -z "$CC"
+if test -n "${ARG_CC}"
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking C compiler from R" >&5
+  CC="${ARG_CC}"
+else case e in #(
+  e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking C compiler from R" >&5
 printf %s "checking C compiler from R... " >&6; }
    R_CC=`"${R_HOME}/bin/R" CMD config CC`
    CC="${R_CC}"
    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $CC" >&5
 printf "%s\n" "$CC" >&6; }
+ ;;
+esac
 fi
 
 
@@ -3977,24 +3980,21 @@ then :
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Check compiler/linker variables from nc-config:" >&5
 printf "%s\n" "$as_me: Check compiler/linker variables from nc-config:" >&6;}
 
-# TODO: use mpicc if given, otherwise NC_CC if defined, then R compiler...
+    SAVE_CC="$CC"
+    if test -z "${ARG_CC}"
+then :
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking NC_CC" >&5
-printf %s "checking NC_CC... " >&6; }
-    NC_CC=`nc-config --cc`
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${NC_CC}" >&5
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config --cc" >&5
+printf %s "checking nc-config --cc... " >&6; }
+        NC_CC=`nc-config --cc`
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${NC_CC}" >&5
 printf "%s\n" "${NC_CC}" >&6; }
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking NC_CC matches selected C compiler" >&5
-printf %s "checking NC_CC matches selected C compiler... " >&6; }
-    if test "$CC" != "${NC_CC}"
-then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no ... specify --with-mpicc if needed" >&5
-printf "%s\n" "no ... specify --with-mpicc if needed" >&6; }
-else case e in #(
-  e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-printf "%s\n" "yes" >&6; } ;;
-esac
+        CC="${NC_CC}"
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Specify --with-cc if a different compiler is needed" >&5
+printf "%s\n" "$as_me: Specify --with-cc if a different compiler is needed" >&6;}
+
+
 fi
 
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config --cflags" >&5
@@ -4107,7 +4107,8 @@ else case e in #(
 printf "%s\n" "$as_me: WARNING: Ignoring broken nc-config" >&2;}
         # Show later code that nc-config settings were not used:
         have_nc_config=no
-        # Restore CFLAGS and LIBS for later tests:
+        # Restore CC, CFLAGS and LIBS for later tests:
+        CC="${SAVE_CC}"
         CFLAGS="${R_CFLAGS}"
         LIBS=""
 
@@ -6994,8 +6995,8 @@ done
 
 if test "$has_mpi" != TRUE
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not available. Specify --with-mpicc if needed." >&5
-printf "%s\n" "$as_me: WARNING: MPI not available. Specify --with-mpicc if needed." >&2;}
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not available. Specify --with-cc if needed." >&5
+printf "%s\n" "$as_me: WARNING: MPI not available. Specify --with-cc if needed." >&2;}
 fi
 
 # Parallel I/O support in NetCDF:

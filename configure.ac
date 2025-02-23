@@ -35,26 +35,27 @@ AC_MSG_RESULT([${ENV_LIBS}])
 
 
 #-------------------------------------------------------------------------------#
-#  Select compiler from R unless --with-mpicc has non-empty value               #
+#  Select compiler from R unless --with-cc has non-empty value                  #
 #-------------------------------------------------------------------------------#
 
 AC_MSG_NOTICE([Select C compiler:])
 
-AC_MSG_CHECKING([C compiler from --with-mpicc])
+AC_MSG_CHECKING([C compiler from --with-cc])
 
-AC_ARG_WITH([mpicc],
-  AS_HELP_STRING([--with-mpicc],
-    [command for C compiler from MPI, otherwise C compiler from R is used]),
-  [CC="$withval"],
-  [CC=""])
+AC_ARG_WITH([cc],
+  AS_HELP_STRING([--with-cc],
+    [command for C compiler, otherwise C compiler from R is used]),
+  [ARG_CC="$withval"],
+  [ARG_CC=""])
+AC_MSG_RESULT([${ARG_CC}])
 
-AC_MSG_RESULT([$CC])
-
-AS_IF([test -z "$CC"],
+AS_IF([test -n "${ARG_CC}"],
+  [CC="${ARG_CC}"],
   [AC_MSG_CHECKING([C compiler from R])
    R_CC=`"${R_HOME}/bin/R" CMD config CC`
    CC="${R_CC}"
-   AC_MSG_RESULT([$CC])])
+   AC_MSG_RESULT([$CC])]
+)
 
 
 #-------------------------------------------------------------------------------#
@@ -126,16 +127,17 @@ AS_IF([test "x${have_nc_config}" = xyes],
   [
     AC_MSG_NOTICE([Check compiler/linker variables from nc-config:])
 
-# TODO: use mpicc if given, otherwise NC_CC if defined, then R compiler...
-
-    AC_MSG_CHECKING([NC_CC])
-    NC_CC=`nc-config --cc`
-    AC_MSG_RESULT([${NC_CC}])
-
-    AC_MSG_CHECKING([NC_CC matches selected C compiler])
-    AS_IF([test "$CC" != "${NC_CC}"],
-      [AC_MSG_RESULT([no ... specify --with-mpicc if needed])],
-      [AC_MSG_RESULT([yes])])
+    SAVE_CC="$CC"
+    AS_IF([test -z "${ARG_CC}"],
+      [
+        AC_MSG_CHECKING([nc-config --cc])
+        NC_CC=`nc-config --cc`
+        AC_MSG_RESULT([${NC_CC}])
+        
+        CC="${NC_CC}"
+        AC_MSG_NOTICE([Specify --with-cc if a different compiler is needed])
+      ]
+    )
 
     AC_MSG_CHECKING([nc-config --cflags])
     NC_CFLAGS=`nc-config --cflags`
@@ -188,7 +190,8 @@ AS_IF([test "x${have_nc_config}" = xyes],
         AC_MSG_WARN([Ignoring broken nc-config])
         # Show later code that nc-config settings were not used:
         have_nc_config=no
-        # Restore CFLAGS and LIBS for later tests:
+        # Restore CC, CFLAGS and LIBS for later tests:
+        CC="${SAVE_CC}"
         CFLAGS="${R_CFLAGS}"
         LIBS=""
       ]
@@ -440,7 +443,7 @@ AC_CHECK_HEADERS([mpi.h], [], [has_mpi=FALSE])
 AC_CHECK_FUNCS([MPI_Init], [], [has_mpi=FALSE])
 
 AS_IF([test "$has_mpi" != TRUE],
-  [AC_MSG_WARN([MPI not available. Specify --with-mpicc if needed.])])
+  [AC_MSG_WARN([MPI not available. Specify --with-cc if needed.])])
 
 # Parallel I/O support in NetCDF:
 AS_IF([test "$has_mpi" = TRUE],
