@@ -112,7 +112,7 @@ AC_MSG_NOTICE([Operating system is $platform])
 # Enable nc-config by default:
 AC_ARG_WITH([nc-config],
   AS_HELP_STRING([--with-nc-config],
-    [get compiler options from nc-config]),
+    [try compiler options from nc-config (default)]),
   [],
   [with_nc_config=yes])
 
@@ -207,11 +207,16 @@ AS_IF([test "x${have_nc_config}" = xyes],
 # Enable pkg-config by default:
 AC_ARG_WITH([pkg-config],
   AS_HELP_STRING([--with-pkg-config],
-    [get compiler options from pkg-config]),
+    [try compiler options from pkg-config (default unless nc-config succeeds)]),
   [],
   [with_pkg_config=yes])
 
+AS_IF([test "x${have_nc_config}" == xyes],
+  [with_pkg_config=no]
+)
+
 # Check that pkg-config has a netcdf module:
+
 have_pkg_config=no
 AS_IF([test "x${with_pkg_config}" == xyes],
   [

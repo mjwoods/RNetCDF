@@ -1330,8 +1330,9 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-mpicc            command for C compiler from MPI, otherwise C
                           compiler from R is used
-  --with-nc-config        get compiler options from nc-config
-  --with-pkg-config       get compiler options from pkg-config
+  --with-nc-config        try compiler options from nc-config (default)
+  --with-pkg-config       try compiler options from pkg-config (default unless
+                          nc-config succeeds)
   --with-mpiexec          command to run small parallel MPI tests after
                           installation (none by default)
 
@@ -4141,7 +4142,14 @@ esac
 fi
 
 
+if test "x${have_nc_config}" == xyes
+then :
+  with_pkg_config=no
+
+fi
+
 # Check that pkg-config has a netcdf module:
+
 have_pkg_config=no
 if test "x${with_pkg_config}" == xyes
 then :
