@@ -324,13 +324,7 @@ AS_IF([test "x${with_env_search}" == xyes], [
 
   # Windows only:
   AS_IF([test "x$platform" = xWindows], 
-    [
-      AC_SEARCH_LIBS(InitializeSid, advapi32)
-      AC_SEARCH_LIBS(CreateBitmap, gdi32)
-      AC_SEARCH_LIBS(CryptMemAlloc, crypt32)
-      AC_SEARCH_LIBS(ldap_init, wldap32)
-      AC_SEARCH_LIBS(bind, ws2_32)
-    ]
+    [LIBS="-ladvapi32 -lgdi32 -lcrypt32 -lwldap32 -lwsock32 -lws2_32 $LIBS"]
   )
 
   # Possible dependencies on all platforms:
