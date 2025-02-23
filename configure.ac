@@ -9,6 +9,7 @@ AS_IF([test -z "${R_HOME}"],
   AC_MSG_ERROR([could not determine R_HOME])
 )
 
+# TODO: create config.h instead of passing defs via command line
 
 #-------------------------------------------------------------------------------#
 #  Get compiler/linker variables from environment                               #
@@ -17,19 +18,20 @@ AS_IF([test -z "${R_HOME}"],
 AC_MSG_NOTICE([Find compiler/linker variables from environment:])
 
 AC_MSG_CHECKING([CFLAGS])
-PKG_CFLAGS="$CFLAGS"
-AC_MSG_RESULT([${PKG_CFLAGS}])
+ENV_CFLAGS="$CFLAGS"
+AC_MSG_RESULT([${ENV_CFLAGS}])
 
 AC_MSG_CHECKING([CPPFLAGS])
-PKG_CPPFLAGS="$CPPFLAGS"
-AC_MSG_RESULT([${PKG_CPPFLAGS}])
+ENV_CPPFLAGS="$CPPFLAGS"
+AC_MSG_RESULT([${ENV_CPPFLAGS}])
 
 AC_MSG_CHECKING([LDFLAGS])
-PKG_LDFLAGS="$LDFLAGS"
-AC_MSG_RESULT([${PKG_LDFLAGS}])
+ENV_LDFLAGS="$LDFLAGS"
+AC_MSG_RESULT([${ENV_LDFLAGS}])
 
 AC_MSG_CHECKING([LIBS])
-AC_MSG_RESULT([$LIBS])
+ENV_LIBS="$LIBS"
+AC_MSG_RESULT([${ENV_LIBS}])
 
 
 #-------------------------------------------------------------------------------#
@@ -73,18 +75,27 @@ AC_MSG_CHECKING([R_LDFLAGS])
 R_LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
 AC_MSG_RESULT([${R_LDFLAGS}])
 
-# No LIBS from R
+# No LIBS needed from R
 
+#-------------------------------------------------------------------------------#
+#  Initialise variables for tests and results                                   #
+#-------------------------------------------------------------------------------#
+
+# Initial compiler test with CC found earlier and compiler flags from R.
+# Original variable contents were copied to ENV_ variables earlier.
+CFLAGS="${R_CFLAGS}"
+CPPFLAGS="${R_CPPFLAGS}"
+LDFLAGS="${R_LDFLAGS}"
+LIBS=""
+
+# Results of package configuration (excluding settings inherited from R):
+PKG_CFLAGS=""
+PKG_CPPFLAGS=""
+PKG_LDFLAGS=""
 
 #-------------------------------------------------------------------------------#
 #  Identify OS                                                                  #
 #-------------------------------------------------------------------------------#
-
-# Initial compiler test with CC found earlier and compiler flags from R.
-# Original variable contents were copied to PKG_ variables earlier.
-CFLAGS="${R_CFLAGS}"
-CPPFLAGS="${R_CPPFLAGS}"
-LDFLAGS="${R_LDFLAGS}"
 
 AC_CHECK_DECLS([_WIN32],
   [platform=Windows],
@@ -95,7 +106,7 @@ AC_MSG_NOTICE([Operating system is $platform])
 
 
 #-------------------------------------------------------------------------------#
-#  Prepend compiler/linker variables from nc-config (if specified)              #
+#  Prepend compiler/linker variables from nc-config (if enabled)                #
 #-------------------------------------------------------------------------------#
 
 # Enable nc-config by default:
@@ -105,13 +116,17 @@ AC_ARG_WITH([nc-config],
   [],
   [with_nc_config=yes])
 
+# Check that nc-config program exists:
 AS_IF([test "x${with_nc_config}" = xyes],
   [AC_CHECK_PROG(have_nc_config, nc-config, yes, no, [], [])],
   [have_nc_config=no])
 
+# Get cflags and libs from nc-config and check if they work:
 AS_IF([test "x${have_nc_config}" = xyes],
   [
     AC_MSG_NOTICE([Check compiler/linker variables from nc-config:])
+
+# TODO: use mpicc if given, otherwise NC_CC if defined, then R compiler...
 
     AC_MSG_CHECKING([NC_CC])
     NC_CC=`nc-config --cc`
@@ -119,8 +134,8 @@ AS_IF([test "x${have_nc_config}" = xyes],
 
     AC_MSG_CHECKING([NC_CC matches selected C compiler])
     AS_IF([test "$CC" != "${NC_CC}"],
-          [AC_MSG_RESULT([no ... specify --with-mpicc if needed])],
-          [AC_MSG_RESULT([yes])])
+      [AC_MSG_RESULT([no ... specify --with-mpicc if needed])],
+      [AC_MSG_RESULT([yes])])
 
     AC_MSG_CHECKING([nc-config --cflags])
     NC_CFLAGS=`nc-config --cflags`
@@ -130,31 +145,54 @@ AS_IF([test "x${have_nc_config}" = xyes],
     NC_LIBS=`nc-config --libs`
     AC_MSG_RESULT([${NC_LIBS}])
 
-    # Prepend to PKG variables,
-    # saving original variables to roll back if tests fail below:
-    SAVE_CFLAGS="${PKG_CFLAGS}"
-    SAVE_LIBS="${LIBS}"
-    PKG_CFLAGS="${NC_CFLAGS} ${PKG_CFLAGS}"
-    LIBS="${NC_LIBS} $LIBS"
-
     # Check that settings from nc-config work.
-    # If not, try LIBS from nc-config --static --libs.
-    # If that fails, continue without any settings from nc-config.
+    nc_config_links=no
     AC_LANG([C])
-    AC_LINK_IFELSE([AC_LANG_PROGRAM([char nc_open (void);], [return nc_open ();])],
-      [AC_MSG_NOTICE([Proceeding with settings from nc-config])],
-      [AC_MSG_CHECKING([nc-config --static --libs])
-       NC_LIBS=`nc-config --static --libs`
-       AC_MSG_RESULT([${NC_LIBS}])
-       LIBS="${NC_LIBS} ${SAVE_LIBS}"
-       AC_LINK_IFELSE([AC_LANG_PROGRAM([char nc_open (void);], [return nc_open ();])],
-         [AC_MSG_NOTICE([Proceeding with settings from nc-config --static])],
-         [AC_MSG_WARN([Ignoring broken nc-config])
-          have_nc_config=no
-          PKG_CFLAGS="${SAVE_CFLAGS}"
-          LIBS="${SAVE_LIBS}"
-         ])
-      ])
+    AC_MSG_CHECKING([build with nc-config])
+    CFLAGS="${NC_CFLAGS} ${R_CFLAGS}"
+    LIBS="${NC_LIBS}"
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <netcdf.h>], [return nc_close (0);])],
+      [nc_config_links=yes])
+    AC_MSG_RESULT([${nc_config_links}])
+
+    # If settings did not work, try static libs:
+    AS_IF([test "x${nc_config_links}" != xyes],
+      [
+	AC_MSG_CHECKING([nc-config accepts --static])
+	AS_IF([nc-config --static --libs >/dev/null 2>&1],
+	  [
+            AC_MSG_RESULT([yes])
+
+            AC_MSG_CHECKING([nc-config --static --libs])
+	    NC_LIBS=`nc-config --static --libs`
+	    AC_MSG_RESULT([${NC_LIBS}])
+
+	    AC_MSG_CHECKING([build with static libs from nc-config])
+	    LIBS="${NC_LIBS}"
+	    AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <netcdf.h>], [return nc_close (0);])],
+	      [nc_config_links=yes])
+            AC_MSG_RESULT([${nc_config_links}])
+	  ],
+	  [AC_MSG_RESULT([no])]
+	)
+      ]
+    )
+
+    # Finalise nc-config checks:
+    AS_IF([test "x${nc_config_links}" == xyes],
+      [
+        AC_MSG_NOTICE([Proceeding with settings from nc-config])
+        # Keep CFLAGS and LIBS as-is, copy nc-config settings to results:
+        PKG_CFLAGS="${NC_CFLAGS}"
+      ], [
+        AC_MSG_WARN([Ignoring broken nc-config])
+        # Show later code that nc-config settings were not used:
+        have_nc_config=no
+        # Restore CFLAGS and LIBS for later tests:
+        CFLAGS="${R_CFLAGS}"
+        LIBS=""
+      ]
+    )
 
   ], [
     AC_MSG_NOTICE([Skipping nc-config])
@@ -163,16 +201,131 @@ AS_IF([test "x${have_nc_config}" = xyes],
 
 
 #-------------------------------------------------------------------------------#
-#  If netcdf is not linking, search for library dependencies                    #
+# If nc-config was skipped or broken, try settings from pkg-config (if enabled) #
 #-------------------------------------------------------------------------------#
 
-AC_LINK_IFELSE([AC_LANG_PROGRAM([char nc_open (void);], [return nc_open ();])], [], [
+# Enable pkg-config by default:
+AC_ARG_WITH([pkg-config],
+  AS_HELP_STRING([--with-pkg-config],
+    [get compiler options from pkg-config]),
+  [],
+  [with_pkg_config=yes])
+
+# Check that pkg-config has a netcdf module:
+have_pkg_config=no
+AS_IF([test "x${with_pkg_config}" == xyes],
+  [
+    AC_MSG_CHECKING([pkg-config has netcdf module])
+    AS_IF([pkg-config --exists netcdf],
+      [have_pkg_config=yes],
+      [have_pkg_config=no])
+    AC_MSG_RESULT([${have_pkg_config}])
+  ])
+
+# Get cflags and libs from pkg-config and check if they work:
+AS_IF([test "x${have_pkg_config}" = xyes],
+  [
+    AC_MSG_NOTICE([Check compiler/linker variables from pkg-config:])
+
+    AC_MSG_CHECKING([pkg-config --cflags netcdf])
+    PC_CFLAGS=`pkg-config --cflags netcdf`
+    AC_MSG_RESULT([${PC_CFLAGS}])
+
+    AC_MSG_CHECKING([pkg-config --libs netcdf])
+    PC_LIBS=`pkg-config --libs netcdf`
+    AC_MSG_RESULT([${PC_LIBS}])
+
+    # Check that settings from pkg-config work.
+    pkg_config_links=no
+    AC_LANG([C])
+    AC_MSG_CHECKING([build with pkg-config])
+    CFLAGS="${PC_CFLAGS} ${R_CFLAGS}"
+    LIBS="${PC_LIBS}"
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <netcdf.h>], [return nc_close (0);])],
+      [pkg_config_links=yes])
+    AC_MSG_RESULT([${pkg_config_links}])
+
+    # If settings did not work, try static libs:
+    AS_IF([test "x${pkg_config_links}" != xyes],
+      [
+	AC_MSG_CHECKING([pkg-config accepts --static])
+	AS_IF([pkg-config --static --libs netcdf >/dev/null 2>&1],
+	  [
+            AC_MSG_RESULT([yes])
+
+            AC_MSG_CHECKING([pkg-config --static --libs netcdf])
+	    PC_LIBS=`pkg-config --static --libs netcdf`
+	    AC_MSG_RESULT([${PC_LIBS}])
+
+	    AC_MSG_CHECKING([build with static libs from pkg-config])
+	    LIBS="${PC_LIBS}"
+	    AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <netcdf.h>], [return nc_close (0);])],
+	      [pkg_config_links=yes])
+            AC_MSG_RESULT([${pkg_config_links}])
+	  ],
+	  [AC_MSG_RESULT([no])]
+	)
+      ]
+    )
+
+    # Finalise pkg-config checks:
+    AS_IF([test "x${pkg_config_links}" == xyes],
+      [
+        AC_MSG_NOTICE([Proceeding with settings from pkg-config])
+        # Keep CFLAGS and LIBS as-is, copy pkg-config settings to results:
+        PKG_CFLAGS="${PC_CFLAGS}"
+      ], [
+        AC_MSG_WARN([Ignoring broken pkg-config])
+        have_pkg_config=no
+        # Restore CFLAGS and LIBS for later tests:
+        CFLAGS="${R_CFLAGS}"
+        LIBS=""
+      ]
+    )
+
+  ], [
+    AC_MSG_NOTICE([Skipping pkg-config])
+  ]
+)
+
+
+#-------------------------------------------------------------------------------#
+#  If nc-config and pkg-config did not succeed,                                 #
+#  search for library dependencies with settings from environment               #
+#-------------------------------------------------------------------------------#
+
+with_env_search=no
+AS_IF([test "x${have_nc_config}" != xyes],
+  [AS_IF([test "x${have_pkg_config}" != xyes], [with_env_search=yes])]
+)
+
+AS_IF([test "x${with_env_search}" == xyes], [
 
   AC_MSG_NOTICE([Find library dependencies for linking netcdf:])
 
-  AS_IF([test "x$platform" = xWindows], 
-    [LIBS="-ladvapi32 -lgdi32 -lcrypt32 -lwldap32 -lwsock32 -lws2_32 $LIBS"])
+  # Only use env variables if nc-config and/or pkg-config fails:
+  # CC is unchanged
+  CFLAGS="${ENV_CFLAGS} ${R_CFLAGS}"
+  CPPFLAGS="${ENV_CPPFLAGS} ${R_CPPFLAGS}"
+  LDFLAGS="${ENV_LDFLAGS} ${R_LDFLAGS}"
+  LIBS="${ENV_LIBS}"
 
+  PKG_CFLAGS="${ENV_CFLAGS}"
+  PKG_CPPFLAGS="${ENV_CPPFLAGS}"
+  PKG_LDFLAGS="${ENV_LDFLAGS}"
+
+  # Windows only:
+  AS_IF([test "x$platform" = xWindows], 
+    [
+      AC_SEARCH_LIBS(InitializeSid, advadpi32)
+      AC_SEARCH_LIBS(CreateBitmap, gdi32)
+      AC_SEARCH_LIBS(CryptMemAlloc, crypt32)
+      AC_SEARCH_LIBS(ldap_init, wldap32)
+      AC_SEARCH_LIBS(bind, ws2_32)
+    ]
+  )
+
+  # Possible dependencies on all platforms:
   AC_SEARCH_LIBS(atan, m)
 
   AC_SEARCH_LIBS(pthread_mutex_init, pthread)
@@ -181,6 +334,9 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([char nc_open (void);], [return nc_open ();])], 
   AC_SEARCH_LIBS(deflate, z)
   AC_SEARCH_LIBS(ZSTD_decompress, zstd)
   AC_SEARCH_LIBS(SZ_BufftoBuffDecompress, sz)
+  AC_SEARCH_LIBS(BZ2_bzDecompress, bz2)
+  AC_SEARCH_LIBS(LZ4_compress_default, lz4)
+  AC_SEARCH_LIBS(blosc_init, blosc)
 
   AC_SEARCH_LIBS(BCryptDecrypt, bcrypt)
   AC_SEARCH_LIBS(gpg_strerror, gpg-error)
@@ -210,17 +366,6 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([char nc_open (void);], [return nc_open ();])], 
   AC_SEARCH_LIBS(SDstart, mfhdf)
 
 ])
-
-
-#-------------------------------------------------------------------------------#
-#  Append R compiler/linker variables to PKG variables for feature tests        #
-#-------------------------------------------------------------------------------#
-
-# CC is unchanged
-CFLAGS="${PKG_CFLAGS} ${R_CFLAGS}"
-CPPFLAGS="${PKG_CPPFLAGS} ${R_CPPFLAGS}"
-LDFLAGS="${PKG_LDFLAGS} ${R_LDFLAGS}"
-# No LIBS from R
 
 
 #-------------------------------------------------------------------------------#

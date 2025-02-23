@@ -700,6 +700,7 @@ ac_user_opts='
 enable_option_checking
 with_mpicc
 with_nc_config
+with_pkg_config
 with_mpiexec
 '
       ac_precious_vars='build_alias
@@ -1330,6 +1331,7 @@ Optional Packages:
   --with-mpicc            command for C compiler from MPI, otherwise C
                           compiler from R is used
   --with-nc-config        get compiler options from nc-config
+  --with-pkg-config       get compiler options from pkg-config
   --with-mpiexec          command to run small parallel MPI tests after
                           installation (none by default)
 
@@ -2608,6 +2610,7 @@ then :
 
 fi
 
+# TODO: create config.h instead of passing defs via command line
 
 #-------------------------------------------------------------------------------#
 #  Get compiler/linker variables from environment                               #
@@ -2618,26 +2621,27 @@ printf "%s\n" "$as_me: Find compiler/linker variables from environment:" >&6;}
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CFLAGS" >&5
 printf %s "checking CFLAGS... " >&6; }
-PKG_CFLAGS="$CFLAGS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CFLAGS}" >&5
-printf "%s\n" "${PKG_CFLAGS}" >&6; }
+ENV_CFLAGS="$CFLAGS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ENV_CFLAGS}" >&5
+printf "%s\n" "${ENV_CFLAGS}" >&6; }
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking CPPFLAGS" >&5
 printf %s "checking CPPFLAGS... " >&6; }
-PKG_CPPFLAGS="$CPPFLAGS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_CPPFLAGS}" >&5
-printf "%s\n" "${PKG_CPPFLAGS}" >&6; }
+ENV_CPPFLAGS="$CPPFLAGS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ENV_CPPFLAGS}" >&5
+printf "%s\n" "${ENV_CPPFLAGS}" >&6; }
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LDFLAGS" >&5
 printf %s "checking LDFLAGS... " >&6; }
-PKG_LDFLAGS="$LDFLAGS"
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PKG_LDFLAGS}" >&5
-printf "%s\n" "${PKG_LDFLAGS}" >&6; }
+ENV_LDFLAGS="$LDFLAGS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ENV_LDFLAGS}" >&5
+printf "%s\n" "${ENV_LDFLAGS}" >&6; }
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking LIBS" >&5
 printf %s "checking LIBS... " >&6; }
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $LIBS" >&5
-printf "%s\n" "$LIBS" >&6; }
+ENV_LIBS="$LIBS"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${ENV_LIBS}" >&5
+printf "%s\n" "${ENV_LIBS}" >&6; }
 
 
 #-------------------------------------------------------------------------------#
@@ -2700,18 +2704,27 @@ R_LDFLAGS=`"${R_HOME}/bin/R" CMD config LDFLAGS`
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${R_LDFLAGS}" >&5
 printf "%s\n" "${R_LDFLAGS}" >&6; }
 
-# No LIBS from R
+# No LIBS needed from R
 
+#-------------------------------------------------------------------------------#
+#  Initialise variables for tests and results                                   #
+#-------------------------------------------------------------------------------#
+
+# Initial compiler test with CC found earlier and compiler flags from R.
+# Original variable contents were copied to ENV_ variables earlier.
+CFLAGS="${R_CFLAGS}"
+CPPFLAGS="${R_CPPFLAGS}"
+LDFLAGS="${R_LDFLAGS}"
+LIBS=""
+
+# Results of package configuration (excluding settings inherited from R):
+PKG_CFLAGS=""
+PKG_CPPFLAGS=""
+PKG_LDFLAGS=""
 
 #-------------------------------------------------------------------------------#
 #  Identify OS                                                                  #
 #-------------------------------------------------------------------------------#
-
-# Initial compiler test with CC found earlier and compiler flags from R.
-# Original variable contents were copied to PKG_ variables earlier.
-CFLAGS="${R_CFLAGS}"
-CPPFLAGS="${R_CPPFLAGS}"
-LDFLAGS="${R_LDFLAGS}"
 
 
 
@@ -3889,7 +3902,7 @@ printf "%s\n" "$as_me: Operating system is $platform" >&6;}
 
 
 #-------------------------------------------------------------------------------#
-#  Prepend compiler/linker variables from nc-config (if specified)              #
+#  Prepend compiler/linker variables from nc-config (if enabled)                #
 #-------------------------------------------------------------------------------#
 
 # Enable nc-config by default:
@@ -3904,6 +3917,7 @@ esac
 fi
 
 
+# Check that nc-config program exists:
 if test "x${with_nc_config}" = xyes
 then :
   # Extract the first word of "nc-config", so it can be a program name with args.
@@ -3955,11 +3969,14 @@ else case e in #(
 esac
 fi
 
+# Get cflags and libs from nc-config and check if they work:
 if test "x${have_nc_config}" = xyes
 then :
 
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Check compiler/linker variables from nc-config:" >&5
 printf "%s\n" "$as_me: Check compiler/linker variables from nc-config:" >&6;}
+
+# TODO: use mpicc if given, otherwise NC_CC if defined, then R compiler...
 
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking NC_CC" >&5
 printf %s "checking NC_CC... " >&6; }
@@ -3991,75 +4008,111 @@ printf %s "checking nc-config --libs... " >&6; }
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${NC_LIBS}" >&5
 printf "%s\n" "${NC_LIBS}" >&6; }
 
-    # Prepend to PKG variables,
-    # saving original variables to roll back if tests fail below:
-    SAVE_CFLAGS="${PKG_CFLAGS}"
-    SAVE_LIBS="${LIBS}"
-    PKG_CFLAGS="${NC_CFLAGS} ${PKG_CFLAGS}"
-    LIBS="${NC_LIBS} $LIBS"
-
     # Check that settings from nc-config work.
-    # If not, try LIBS from nc-config --static --libs.
-    # If that fails, continue without any settings from nc-config.
+    nc_config_links=no
     ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
 ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking build with nc-config" >&5
+printf %s "checking build with nc-config... " >&6; }
+    CFLAGS="${NC_CFLAGS} ${R_CFLAGS}"
+    LIBS="${NC_LIBS}"
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-char nc_open (void);
+#include <netcdf.h>
 int
 main (void)
 {
-return nc_open ();
+return nc_close (0);
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Proceeding with settings from nc-config" >&5
-printf "%s\n" "$as_me: Proceeding with settings from nc-config" >&6;}
-else case e in #(
-  e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config --static --libs" >&5
+  nc_config_links=yes
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${nc_config_links}" >&5
+printf "%s\n" "${nc_config_links}" >&6; }
+
+    # If settings did not work, try static libs:
+    if test "x${nc_config_links}" != xyes
+then :
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config accepts --static" >&5
+printf %s "checking nc-config accepts --static... " >&6; }
+	if nc-config --static --libs >/dev/null 2>&1
+then :
+
+            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+
+            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config --static --libs" >&5
 printf %s "checking nc-config --static --libs... " >&6; }
-       NC_LIBS=`nc-config --static --libs`
-       { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${NC_LIBS}" >&5
+	    NC_LIBS=`nc-config --static --libs`
+	    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${NC_LIBS}" >&5
 printf "%s\n" "${NC_LIBS}" >&6; }
-       LIBS="${NC_LIBS} ${SAVE_LIBS}"
-       cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+
+	    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking build with static libs from nc-config" >&5
+printf %s "checking build with static libs from nc-config... " >&6; }
+	    LIBS="${NC_LIBS}"
+	    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-char nc_open (void);
+#include <netcdf.h>
 int
 main (void)
 {
-return nc_open ();
+return nc_close (0);
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Proceeding with settings from nc-config --static" >&5
-printf "%s\n" "$as_me: Proceeding with settings from nc-config --static" >&6;}
+  nc_config_links=yes
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${nc_config_links}" >&5
+printf "%s\n" "${nc_config_links}" >&6; }
+
 else case e in #(
-  e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Ignoring broken nc-config" >&5
+  e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+	 ;;
+esac
+fi
+
+
+fi
+
+    # Finalise nc-config checks:
+    if test "x${nc_config_links}" == xyes
+then :
+
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Proceeding with settings from nc-config" >&5
+printf "%s\n" "$as_me: Proceeding with settings from nc-config" >&6;}
+        # Keep CFLAGS and LIBS as-is, copy nc-config settings to results:
+        PKG_CFLAGS="${NC_CFLAGS}"
+
+else case e in #(
+  e)
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Ignoring broken nc-config" >&5
 printf "%s\n" "$as_me: WARNING: Ignoring broken nc-config" >&2;}
-          have_nc_config=no
-          PKG_CFLAGS="${SAVE_CFLAGS}"
-          LIBS="${SAVE_LIBS}"
-          ;;
+        # Show later code that nc-config settings were not used:
+        have_nc_config=no
+        # Restore CFLAGS and LIBS for later tests:
+        CFLAGS="${R_CFLAGS}"
+        LIBS=""
+
+     ;;
 esac
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-       ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
 
 
 else case e in #(
@@ -4073,34 +4126,552 @@ fi
 
 
 #-------------------------------------------------------------------------------#
-#  If netcdf is not linking, search for library dependencies                    #
+# If nc-config was skipped or broken, try settings from pkg-config (if enabled) #
 #-------------------------------------------------------------------------------#
 
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+# Enable pkg-config by default:
+
+# Check whether --with-pkg-config was given.
+if test ${with_pkg_config+y}
+then :
+  withval=$with_pkg_config;
+else case e in #(
+  e) with_pkg_config=yes ;;
+esac
+fi
+
+
+# Check that pkg-config has a netcdf module:
+have_pkg_config=no
+if test "x${with_pkg_config}" == xyes
+then :
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking pkg-config has netcdf module" >&5
+printf %s "checking pkg-config has netcdf module... " >&6; }
+    if pkg-config --exists netcdf
+then :
+  have_pkg_config=yes
+else case e in #(
+  e) have_pkg_config=no ;;
+esac
+fi
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${have_pkg_config}" >&5
+printf "%s\n" "${have_pkg_config}" >&6; }
+
+fi
+
+# Get cflags and libs from pkg-config and check if they work:
+if test "x${have_pkg_config}" = xyes
+then :
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Check compiler/linker variables from pkg-config:" >&5
+printf "%s\n" "$as_me: Check compiler/linker variables from pkg-config:" >&6;}
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking pkg-config --cflags netcdf" >&5
+printf %s "checking pkg-config --cflags netcdf... " >&6; }
+    PC_CFLAGS=`pkg-config --cflags netcdf`
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PC_CFLAGS}" >&5
+printf "%s\n" "${PC_CFLAGS}" >&6; }
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking pkg-config --libs netcdf" >&5
+printf %s "checking pkg-config --libs netcdf... " >&6; }
+    PC_LIBS=`pkg-config --libs netcdf`
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PC_LIBS}" >&5
+printf "%s\n" "${PC_LIBS}" >&6; }
+
+    # Check that settings from pkg-config work.
+    pkg_config_links=no
+    ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking build with pkg-config" >&5
+printf %s "checking build with pkg-config... " >&6; }
+    CFLAGS="${PC_CFLAGS} ${R_CFLAGS}"
+    LIBS="${PC_LIBS}"
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-char nc_open (void);
+#include <netcdf.h>
 int
 main (void)
 {
-return nc_open ();
+return nc_close (0);
   ;
   return 0;
 }
 _ACEOF
 if ac_fn_c_try_link "$LINENO"
 then :
+  pkg_config_links=yes
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${pkg_config_links}" >&5
+printf "%s\n" "${pkg_config_links}" >&6; }
+
+    # If settings did not work, try static libs:
+    if test "x${pkg_config_links}" != xyes
+then :
+
+	{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking pkg-config accepts --static" >&5
+printf %s "checking pkg-config accepts --static... " >&6; }
+	if pkg-config --static --libs netcdf >/dev/null 2>&1
+then :
+
+            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+
+            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking pkg-config --static --libs netcdf" >&5
+printf %s "checking pkg-config --static --libs netcdf... " >&6; }
+	    PC_LIBS=`pkg-config --static --libs netcdf`
+	    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${PC_LIBS}" >&5
+printf "%s\n" "${PC_LIBS}" >&6; }
+
+	    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking build with static libs from pkg-config" >&5
+printf %s "checking build with static libs from pkg-config... " >&6; }
+	    LIBS="${PC_LIBS}"
+	    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+#include <netcdf.h>
+int
+main (void)
+{
+return nc_close (0);
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  pkg_config_links=yes
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${pkg_config_links}" >&5
+printf "%s\n" "${pkg_config_links}" >&6; }
+
+else case e in #(
+  e) { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+	 ;;
+esac
+fi
+
+
+fi
+
+    # Finalise pkg-config checks:
+    if test "x${pkg_config_links}" == xyes
+then :
+
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Proceeding with settings from pkg-config" >&5
+printf "%s\n" "$as_me: Proceeding with settings from pkg-config" >&6;}
+        # Keep CFLAGS and LIBS as-is, copy pkg-config settings to results:
+        PKG_CFLAGS="${PC_CFLAGS}"
 
 else case e in #(
   e)
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Ignoring broken pkg-config" >&5
+printf "%s\n" "$as_me: WARNING: Ignoring broken pkg-config" >&2;}
+        have_pkg_config=no
+        # Restore CFLAGS and LIBS for later tests:
+        CFLAGS="${R_CFLAGS}"
+        LIBS=""
+
+     ;;
+esac
+fi
+
+
+else case e in #(
+  e)
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Skipping pkg-config" >&5
+printf "%s\n" "$as_me: Skipping pkg-config" >&6;}
+
+ ;;
+esac
+fi
+
+
+#-------------------------------------------------------------------------------#
+#  If nc-config and pkg-config did not succeed,                                 #
+#  search for library dependencies with settings from environment               #
+#-------------------------------------------------------------------------------#
+
+with_env_search=no
+if test "x${have_nc_config}" != xyes
+then :
+  if test "x${have_pkg_config}" != xyes
+then :
+  with_env_search=yes
+fi
+
+fi
+
+if test "x${with_env_search}" == xyes
+then :
+
 
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find library dependencies for linking netcdf:" >&5
 printf "%s\n" "$as_me: Find library dependencies for linking netcdf:" >&6;}
 
+  # Only use env variables if nc-config and/or pkg-config fails:
+  # CC is unchanged
+  CFLAGS="${ENV_CFLAGS} ${R_CFLAGS}"
+  CPPFLAGS="${ENV_CPPFLAGS} ${R_CPPFLAGS}"
+  LDFLAGS="${ENV_LDFLAGS} ${R_LDFLAGS}"
+  LIBS="${ENV_LIBS}"
+
+  PKG_CFLAGS="${ENV_CFLAGS}"
+  PKG_CPPFLAGS="${ENV_CPPFLAGS}"
+  PKG_LDFLAGS="${ENV_LDFLAGS}"
+
+  # Windows only:
   if test "x$platform" = xWindows
 then :
-  LIBS="-ladvapi32 -lgdi32 -lcrypt32 -lwldap32 -lwsock32 -lws2_32 $LIBS"
+
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing InitializeSid" >&5
+printf %s "checking for library containing InitializeSid... " >&6; }
+if test ${ac_cv_search_InitializeSid+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char InitializeSid (void);
+int
+main (void)
+{
+return InitializeSid ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' advadpi32
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_InitializeSid=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_InitializeSid+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_InitializeSid+y}
+then :
+
+else case e in #(
+  e) ac_cv_search_InitializeSid=no ;;
+esac
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_InitializeSid" >&5
+printf "%s\n" "$ac_cv_search_InitializeSid" >&6; }
+ac_res=$ac_cv_search_InitializeSid
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
 fi
 
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing CreateBitmap" >&5
+printf %s "checking for library containing CreateBitmap... " >&6; }
+if test ${ac_cv_search_CreateBitmap+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char CreateBitmap (void);
+int
+main (void)
+{
+return CreateBitmap ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' gdi32
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_CreateBitmap=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_CreateBitmap+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_CreateBitmap+y}
+then :
+
+else case e in #(
+  e) ac_cv_search_CreateBitmap=no ;;
+esac
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_CreateBitmap" >&5
+printf "%s\n" "$ac_cv_search_CreateBitmap" >&6; }
+ac_res=$ac_cv_search_CreateBitmap
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing CryptMemAlloc" >&5
+printf %s "checking for library containing CryptMemAlloc... " >&6; }
+if test ${ac_cv_search_CryptMemAlloc+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char CryptMemAlloc (void);
+int
+main (void)
+{
+return CryptMemAlloc ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' crypt32
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_CryptMemAlloc=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_CryptMemAlloc+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_CryptMemAlloc+y}
+then :
+
+else case e in #(
+  e) ac_cv_search_CryptMemAlloc=no ;;
+esac
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_CryptMemAlloc" >&5
+printf "%s\n" "$ac_cv_search_CryptMemAlloc" >&6; }
+ac_res=$ac_cv_search_CryptMemAlloc
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing ldap_init" >&5
+printf %s "checking for library containing ldap_init... " >&6; }
+if test ${ac_cv_search_ldap_init+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char ldap_init (void);
+int
+main (void)
+{
+return ldap_init ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' wldap32
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_ldap_init=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_ldap_init+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_ldap_init+y}
+then :
+
+else case e in #(
+  e) ac_cv_search_ldap_init=no ;;
+esac
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_ldap_init" >&5
+printf "%s\n" "$ac_cv_search_ldap_init" >&6; }
+ac_res=$ac_cv_search_ldap_init
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing bind" >&5
+printf %s "checking for library containing bind... " >&6; }
+if test ${ac_cv_search_bind+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char bind (void);
+int
+main (void)
+{
+return bind ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ws2_32
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_bind=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_bind+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_bind+y}
+then :
+
+else case e in #(
+  e) ac_cv_search_bind=no ;;
+esac
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_bind" >&5
+printf "%s\n" "$ac_cv_search_bind" >&6; }
+ac_res=$ac_cv_search_bind
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+
+
+fi
+
+  # Possible dependencies on all platforms:
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing atan" >&5
 printf %s "checking for library containing atan... " >&6; }
 if test ${ac_cv_search_atan+y}
@@ -4499,6 +5070,207 @@ fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_SZ_BufftoBuffDecompress" >&5
 printf "%s\n" "$ac_cv_search_SZ_BufftoBuffDecompress" >&6; }
 ac_res=$ac_cv_search_SZ_BufftoBuffDecompress
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing BZ2_bzDecompress" >&5
+printf %s "checking for library containing BZ2_bzDecompress... " >&6; }
+if test ${ac_cv_search_BZ2_bzDecompress+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char BZ2_bzDecompress (void);
+int
+main (void)
+{
+return BZ2_bzDecompress ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' bz2
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_BZ2_bzDecompress=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_BZ2_bzDecompress+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_BZ2_bzDecompress+y}
+then :
+
+else case e in #(
+  e) ac_cv_search_BZ2_bzDecompress=no ;;
+esac
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_BZ2_bzDecompress" >&5
+printf "%s\n" "$ac_cv_search_BZ2_bzDecompress" >&6; }
+ac_res=$ac_cv_search_BZ2_bzDecompress
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing LZ4_compress_default" >&5
+printf %s "checking for library containing LZ4_compress_default... " >&6; }
+if test ${ac_cv_search_LZ4_compress_default+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char LZ4_compress_default (void);
+int
+main (void)
+{
+return LZ4_compress_default ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' lz4
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_LZ4_compress_default=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_LZ4_compress_default+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_LZ4_compress_default+y}
+then :
+
+else case e in #(
+  e) ac_cv_search_LZ4_compress_default=no ;;
+esac
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_LZ4_compress_default" >&5
+printf "%s\n" "$ac_cv_search_LZ4_compress_default" >&6; }
+ac_res=$ac_cv_search_LZ4_compress_default
+if test "$ac_res" != no
+then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+fi
+
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for library containing blosc_init" >&5
+printf %s "checking for library containing blosc_init... " >&6; }
+if test ${ac_cv_search_blosc_init+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char blosc_init (void);
+int
+main (void)
+{
+return blosc_init ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' blosc
+do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"
+then :
+  ac_cv_search_blosc_init=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext
+  if test ${ac_cv_search_blosc_init+y}
+then :
+  break
+fi
+done
+if test ${ac_cv_search_blosc_init+y}
+then :
+
+else case e in #(
+  e) ac_cv_search_blosc_init=no ;;
+esac
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_blosc_init" >&5
+printf "%s\n" "$ac_cv_search_blosc_init" >&6; }
+ac_res=$ac_cv_search_blosc_init
 if test "$ac_res" != no
 then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
@@ -5787,22 +6559,8 @@ then :
 fi
 
 
- ;;
-esac
+
 fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-
-
-#-------------------------------------------------------------------------------#
-#  Append R compiler/linker variables to PKG variables for feature tests        #
-#-------------------------------------------------------------------------------#
-
-# CC is unchanged
-CFLAGS="${PKG_CFLAGS} ${R_CFLAGS}"
-CPPFLAGS="${PKG_CPPFLAGS} ${R_CPPFLAGS}"
-LDFLAGS="${PKG_LDFLAGS} ${R_LDFLAGS}"
-# No LIBS from R
 
 
 #-------------------------------------------------------------------------------#
