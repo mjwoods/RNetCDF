@@ -306,7 +306,7 @@ AS_IF([test "x${have_nc_config}" != xyes],
 
 AS_IF([test "x${with_env_search}" == xyes], [
 
-  AC_MSG_NOTICE([Find library dependencies for linking netcdf:])
+  AC_MSG_NOTICE([Find typical library dependencies for linking netcdf:])
 
   # Only use env variables if nc-config and/or pkg-config fails:
   # CC is unchanged

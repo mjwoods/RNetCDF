@@ -4322,8 +4322,8 @@ if test "x${with_env_search}" == xyes
 then :
 
 
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find library dependencies for linking netcdf:" >&5
-printf "%s\n" "$as_me: Find library dependencies for linking netcdf:" >&6;}
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Find typical library dependencies for linking netcdf:" >&5
+printf "%s\n" "$as_me: Find typical library dependencies for linking netcdf:" >&6;}
 
   # Only use env variables if nc-config and/or pkg-config fails:
   # CC is unchanged
