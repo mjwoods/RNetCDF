@@ -19,7 +19,7 @@ jobs:
       matrix:
         config:
           - {os: ubuntu-latest, r: 'release', mpi: 'openmpi'}
-          - {os: ubuntu-latest, r: 'release', mpi: 'mpich'}
+          - {os: ubuntu-22.04, r: 'release', mpi: 'mpich'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -119,8 +119,7 @@ jobs:
           mpicc="mpicc.${{ matrix.config.mpi }}"
           mpiexec="mpiexec.${{ matrix.config.mpi }}"
           R CMD check --no-manual \
-            --install-args="--configure-args='--without-nc-config \
-              --with-mpiexec=$mpiexec --with-mpicc=$mpicc'" \
+            --install-args="--configure-args='--with-mpiexec=$mpiexec'" \
             RNetCDF_*.*-*.tar.gz
           echo ::endgroup::
         shell: bash
