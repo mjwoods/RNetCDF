@@ -1317,8 +1317,7 @@ R_nc_enum_factor (R_nc_buf *io)
   /* Create a hashed environment for value-index pairs.
      Members inherit PROTECTion from the env.
    */
-  cmd = PROTECT(lang1 (install ("new.env")));
-  env = PROTECT(eval (cmd, R_BaseEnv));
+  env = PROTECT(R_NewEnv(R_BaseEnv, 1, 29));
 
   /* Read values and names of netcdf enum members.
      Store names as R factor levels.
