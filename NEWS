@@ -1,3 +1,11 @@
+Version 2.10-1, 2025-04-13
+  * Detect and work around broken nc-config in configure script
+    - Try static option with nc-config if linking fails without it
+    - Use compiler from nc-config which may enable MPI
+    - Try pkg-config if nc-config fails or is disabled
+  * Prepare for upcoming change to bit64 package namespace
+  * Remove call to non-API entry point in R 
+
 Version 2.9-2, 2024-03-24
   * Use pkg-config on Windows to fix linking with upcoming Rtools version
 

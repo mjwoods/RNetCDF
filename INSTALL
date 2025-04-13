@@ -17,17 +17,23 @@ software will generally not work.
 R CMD INSTALL Options
 =====================
 
-Libraries and include files are usually detected automatically by nc-config, 
-which is part of most NetCDF4 installations. If this causes problems, you can 
-disable nc-config using --without-nc-config.
+NetCDF libraries and include files are usually detected automatically during
+installation of RNetCDF.
 
-Shared or static libraries can be requested from nc-config, based on configure 
-option --with-nc-config-static. Default values of this setting vary by 
-platform, with shared libraries typically used in Unix-alikes and static 
-libraries on Windows and macOS.
+The configure script first tries nc-config, which is part of most NetCDF4
+installations. If this causes problems, use option --without-nc-config.
 
-The configure script can accept variables to define extra directories and
-libraries:
+If nc-config fails or is disabled, the configure script next tries pkg-config.
+This can also be disabled if required using --without-pkg-config.
+
+When nc-config or pkg-config are used, they are tested twice. The first
+attempt uses libraries returned by the --libs option, and the second attempt
+uses --static --libs. This approach means that RNetCDF finds shared libraries
+if they are available, before falling back to static libraries.
+
+If both nc-config and pkg-config fail or are disabled, the configure script
+searches for libraries and header files in system-specific default paths.
+Additional paths and libraries can be defined via the following variables:
 
 CPPFLAGS='-I<incdir> [-I<incdir> ...]'  # extra directories of header files
 LDFLAGS='-L<libdir> [-L<libdir> ...]'   # extra directories for libraries
@@ -35,12 +41,6 @@ LIBS='-l<libname> [-l<libname> ...]'    # extra libraries to link
 
 Definitions for the above variables may be appended to the configure command 
 line or passed through the environment.
-
-The final set of directories and libraries is obtained by joining variables 
-from nc-config (if enabled), the above variables, and settings used when 
-building R, in that order. The directories are searched in left-to-right order 
-for required header files or libraries. The libraries are searched in 
-left-to-right order for functions.
 
 Some R installations prepend the R library directory when linking the RNetCDF 
 shared library, which may cause problems in rare cases when unwanted versions 
@@ -73,10 +73,13 @@ I/O support is detected, packages Rmpi or pbdMPI are installed, and option
 Most MPI installations provide a compiler driver (e.g. mpicc) that simplifies 
 the building of MPI software. This involves setting paths to headers and 
 libraries, as well as linking libraries, in ways that may depend on compiler 
-flags. The configure script has an option --with-mpicc=..., which allows the 
-MPI compiler command to be specified. The MPI compiler command should be the 
-same as that used when building the NetCDF library, which can often be found by 
-running the command 'nc-config --cc'.
+flags. If an MPI compiler driver was used to install the NetCDF library,
+this will often be reported by nc-config, which is used in the configure
+script by default.
+
+An alternative compiler can be specified (if needed) using the configure
+script option --with-cc. This option overrides the compilers reported by R
+and nc-config.
 
 Note that the NetCDF library supports several distinct file formats, and 
 parallel I/O support is implemented separately for netcdf4 (hdf5) format and 
@@ -90,7 +93,7 @@ R CMD INSTALL Example
 =====================
 
 R CMD INSTALL --configure-args="CPPFLAGS=-I/sw/include \
-    LDFLAGS=-L/sw/lib LIBS=-lhdf5 --with-mpicc=mpicc --with-mpiexec=mpiexec" \
+    LDFLAGS=-L/sw/lib LIBS=-lhdf5 --with-mpiexec=mpiexec" \
     RNetCDF_2.9-2.tar.gz
 
 
