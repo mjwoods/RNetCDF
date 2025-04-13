@@ -2,14 +2,14 @@
  *
  *  Name:       common.c
  *
- *  Version:    2.9-2
+ *  Version:    2.10-1
  *
  *  Purpose:    RNetCDF initialisation
  *
  *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
  *              Milton Woods (miltonjwoods@gmail.com)
  *
- *  Copyright (C) 2004-2024 Pavel Michna and Milton Woods.
+ *  Copyright (C) 2004-2025 Pavel Michna and Milton Woods.
  *
  *=============================================================================*
  *

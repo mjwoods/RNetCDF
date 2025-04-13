@@ -2,14 +2,14 @@
 #
 #  Name:       RNetCDF-test.R
 #
-#  Version:    2.9-2
+#  Version:    2.10-1
 #
 #  Purpose:    Test functions to the NetCDF interface for R.
 #
 #  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
 #              Milton Woods (miltonjwoods@gmail.com)
 #
-#  Copyright (C) 2004-2024 Pavel Michna and Milton Woods.
+#  Copyright (C) 2004-2025 Pavel Michna and Milton Woods.
 #
 #===============================================================================#
 #
