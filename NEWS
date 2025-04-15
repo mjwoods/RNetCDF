@@ -1,3 +1,6 @@
+Version 2.10-2, 2025-04-15
+  * Fix bashism in configure.ac
+
 Version 2.10-1, 2025-04-13
   * Detect and work around broken nc-config in configure script
     - Try static option with nc-config if linking fails without it
