@@ -4093,7 +4093,7 @@ fi
 fi
 
     # Finalise nc-config checks:
-    if test "x${nc_config_links}" == xyes
+    if test "x${nc_config_links}" = xyes
 then :
 
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Proceeding with settings from nc-config" >&5
@@ -4143,7 +4143,7 @@ esac
 fi
 
 
-if test "x${have_nc_config}" == xyes
+if test "x${have_nc_config}" = xyes
 then :
   with_pkg_config=no
 
@@ -4152,7 +4152,7 @@ fi
 # Check that pkg-config has a netcdf module:
 
 have_pkg_config=no
-if test "x${with_pkg_config}" == xyes
+if test "x${with_pkg_config}" = xyes
 then :
 
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking pkg-config has netcdf module" >&5
@@ -4272,7 +4272,7 @@ fi
 fi
 
     # Finalise pkg-config checks:
-    if test "x${pkg_config_links}" == xyes
+    if test "x${pkg_config_links}" = xyes
 then :
 
         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Proceeding with settings from pkg-config" >&5
@@ -4319,7 +4319,7 @@ fi
 
 fi
 
-if test "x${with_env_search}" == xyes
+if test "x${with_env_search}" = xyes
 then :
 
 
