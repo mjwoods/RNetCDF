@@ -5,7 +5,7 @@ set -e
 set -u
 
 # Check inputs:
-if [[ $# -ne 1 ]]; then
+if [ $# -ne 1 ]; then
   echo "Usage: $0 x.y-z" >&2
   exit 1
 fi
@@ -22,7 +22,7 @@ cd "$thisdir/.."
 
 # Use GNU versions of some utilities:
 kernel=$( uname )
-if [[ "$kernel" == Darwin ]]; then
+if [ "$kernel" = Darwin ]; then
   alias date=gdate # MacPorts coreutils
   alias find=gfind # MacPorts findutils
   alias sed=gsed   # MacPorts gsed
