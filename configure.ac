@@ -2,7 +2,7 @@
 #  Initialize                                                    		#
 #-------------------------------------------------------------------------------#
 
-AC_INIT([RNetCDF],[2.10-1])
+AC_INIT([RNetCDF],[2.10-2])
 
 : ${R_HOME=`R RHOME`}
 AS_IF([test -z "${R_HOME}"],
@@ -181,7 +181,7 @@ AS_IF([test "x${have_nc_config}" = xyes],
     )
 
     # Finalise nc-config checks:
-    AS_IF([test "x${nc_config_links}" == xyes],
+    AS_IF([test "x${nc_config_links}" = xyes],
       [
         AC_MSG_NOTICE([Proceeding with settings from nc-config])
         # Keep CFLAGS and LIBS as-is, copy nc-config settings to results:
@@ -214,14 +214,14 @@ AC_ARG_WITH([pkg-config],
   [],
   [with_pkg_config=yes])
 
-AS_IF([test "x${have_nc_config}" == xyes],
+AS_IF([test "x${have_nc_config}" = xyes],
   [with_pkg_config=no]
 )
 
 # Check that pkg-config has a netcdf module:
 
 have_pkg_config=no
-AS_IF([test "x${with_pkg_config}" == xyes],
+AS_IF([test "x${with_pkg_config}" = xyes],
   [
     AC_MSG_CHECKING([pkg-config has netcdf module])
     AS_IF([pkg-config --exists netcdf],
@@ -277,7 +277,7 @@ AS_IF([test "x${have_pkg_config}" = xyes],
     )
 
     # Finalise pkg-config checks:
-    AS_IF([test "x${pkg_config_links}" == xyes],
+    AS_IF([test "x${pkg_config_links}" = xyes],
       [
         AC_MSG_NOTICE([Proceeding with settings from pkg-config])
         # Keep CFLAGS and LIBS as-is, copy pkg-config settings to results:
@@ -307,7 +307,7 @@ AS_IF([test "x${have_nc_config}" != xyes],
   [AS_IF([test "x${have_pkg_config}" != xyes], [with_env_search=yes])]
 )
 
-AS_IF([test "x${with_env_search}" == xyes], [
+AS_IF([test "x${with_env_search}" = xyes], [
 
   AC_MSG_NOTICE([Find typical library dependencies for linking netcdf:])
 
