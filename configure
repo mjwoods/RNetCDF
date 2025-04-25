@@ -3977,8 +3977,10 @@ fi
 if test "x${have_nc_config}" = xyes
 then :
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Check compiler/linker variables from nc-config:" >&5
-printf "%s\n" "$as_me: Check compiler/linker variables from nc-config:" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking compiler/linker variables from nc-config" >&5
+printf "%s\n" "$as_me: Checking compiler/linker variables from nc-config" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: To skip nc-config, use --without-nc-config" >&5
+printf "%s\n" "$as_me: To skip nc-config, use --without-nc-config" >&6;}
 
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config --cflags" >&5
 printf %s "checking nc-config --cflags... " >&6; }
@@ -4155,8 +4157,10 @@ fi
 if test "x${have_pkg_config}" = xyes
 then :
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Check compiler/linker variables from pkg-config:" >&5
-printf "%s\n" "$as_me: Check compiler/linker variables from pkg-config:" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking compiler/linker variables from pkg-config" >&5
+printf "%s\n" "$as_me: Checking compiler/linker variables from pkg-config" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: To skip pkg-config, use --without-pkg-config" >&5
+printf "%s\n" "$as_me: To skip pkg-config, use --without-pkg-config" >&6;}
 
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking pkg-config --cflags netcdf" >&5
 printf %s "checking pkg-config --cflags netcdf... " >&6; }
@@ -6639,12 +6643,6 @@ fi
 
 done
 
-if test "$has_mpi" != TRUE
-then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not available. If needed, specify MPI compiler using --with-cc." >&5
-printf "%s\n" "$as_me: WARNING: MPI not available. If needed, specify MPI compiler using --with-cc." >&2;}
-fi
-
 # Parallel I/O support in NetCDF:
 if test "$has_mpi" = TRUE
 then :
@@ -6776,8 +6774,10 @@ fi
 else case e in #(
   e)
     has_parallel=FALSE
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: NetCDF parallel I/O requires MPI" >&5
-printf "%s\n" "$as_me: WARNING: NetCDF parallel I/O requires MPI" >&2;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not found - RNetCDF parallel I/O support is not enabled." >&5
+printf "%s\n" "$as_me: WARNING: MPI not found - RNetCDF parallel I/O support is not enabled." >&2;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: If NetCDF was built with an MPI compiler, specify the compiler via --with-cc" >&5
+printf "%s\n" "$as_me: If NetCDF was built with an MPI compiler, specify the compiler via --with-cc" >&6;}
    ;;
 esac
 fi
