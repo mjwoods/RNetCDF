@@ -119,7 +119,7 @@ jobs:
           mpicc="mpicc.${{ matrix.config.mpi }}"
           mpiexec="mpiexec.${{ matrix.config.mpi }}"
           R CMD check --no-manual \
-            --install-args="--configure-args='--with-mpiexec=$mpiexec'" \
+            --install-args="--configure-args='--with-cc=$mpicc --with-mpiexec=$mpiexec'" \
             RNetCDF_*.*-*.tar.gz
           echo ::endgroup::
         shell: bash

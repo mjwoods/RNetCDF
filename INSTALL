@@ -46,7 +46,7 @@ Some R installations prepend the R library directory when linking the RNetCDF
 shared library, which may cause problems in rare cases when unwanted versions 
 of other libraries are installed in the same directory. A possible solution 
 involves passing the full pathname of the desired library through the LIBS 
-variable, as explained below.
+variable, as explained next.
 
 Note that libraries may be specified in LIBS in a few different ways. The most 
 common way is '-l<libname>' as shown above, and the compiler will typically 
@@ -74,12 +74,15 @@ Most MPI installations provide a compiler driver (e.g. mpicc) that simplifies
 the building of MPI software. This involves setting paths to headers and 
 libraries, as well as linking libraries, in ways that may depend on compiler 
 flags. If an MPI compiler driver was used to install the NetCDF library,
-this will often be reported by nc-config, which is used in the configure
-script by default.
+this will often be reported by command "nc-config --cc".
 
-An alternative compiler can be specified (if needed) using the configure
-script option --with-cc. This option overrides the compilers reported by R
-and nc-config.
+Although nc-config is used by default in the RNetCDF configure script, the
+compiler reported by nc-config may not be compatible with R headers, so it
+cannot be used automatically when building RNetCDF. Users can specify an
+alternative compiler (e.g. mpicc) using the configure script option
+--with-cc. This option overrides the compiler used to build R, and users
+are advised to check the installation log messages for warnings that indicate
+incompatibilities with R headers or RNetCDF code.
 
 Note that the NetCDF library supports several distinct file formats, and 
 parallel I/O support is implemented separately for netcdf4 (hdf5) format and 
@@ -93,7 +96,7 @@ R CMD INSTALL Example
 =====================
 
 R CMD INSTALL --configure-args="CPPFLAGS=-I/sw/include \
-    LDFLAGS=-L/sw/lib LIBS=-lhdf5 --with-mpiexec=mpiexec" \
+    LDFLAGS=-L/sw/lib LIBS=-lhdf5 --with-cc=mpicc --with-mpiexec=mpiexec" \
     RNetCDF_2.10-2.tar.gz
 
 

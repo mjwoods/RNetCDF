@@ -3977,25 +3977,10 @@ fi
 if test "x${have_nc_config}" = xyes
 then :
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Check compiler/linker variables from nc-config:" >&5
-printf "%s\n" "$as_me: Check compiler/linker variables from nc-config:" >&6;}
-
-    SAVE_CC="$CC"
-    if test -z "${ARG_CC}"
-then :
-
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config --cc" >&5
-printf %s "checking nc-config --cc... " >&6; }
-        NC_CC=`nc-config --cc`
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${NC_CC}" >&5
-printf "%s\n" "${NC_CC}" >&6; }
-
-        CC="${NC_CC}"
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Specify --with-cc if a different compiler is needed" >&5
-printf "%s\n" "$as_me: Specify --with-cc if a different compiler is needed" >&6;}
-
-
-fi
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking compiler/linker variables from nc-config" >&5
+printf "%s\n" "$as_me: Checking compiler/linker variables from nc-config" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: To skip nc-config, use --without-nc-config" >&5
+printf "%s\n" "$as_me: To skip nc-config, use --without-nc-config" >&6;}
 
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config --cflags" >&5
 printf %s "checking nc-config --cflags... " >&6; }
@@ -4107,8 +4092,7 @@ else case e in #(
 printf "%s\n" "$as_me: WARNING: Ignoring broken nc-config" >&2;}
         # Show later code that nc-config settings were not used:
         have_nc_config=no
-        # Restore CC, CFLAGS and LIBS for later tests:
-        CC="${SAVE_CC}"
+        # Restore CFLAGS and LIBS for later tests:
         CFLAGS="${R_CFLAGS}"
         LIBS=""
 
@@ -4173,8 +4157,10 @@ fi
 if test "x${have_pkg_config}" = xyes
 then :
 
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Check compiler/linker variables from pkg-config:" >&5
-printf "%s\n" "$as_me: Check compiler/linker variables from pkg-config:" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Checking compiler/linker variables from pkg-config" >&5
+printf "%s\n" "$as_me: Checking compiler/linker variables from pkg-config" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: To skip pkg-config, use --without-pkg-config" >&5
+printf "%s\n" "$as_me: To skip pkg-config, use --without-pkg-config" >&6;}
 
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking pkg-config --cflags netcdf" >&5
 printf %s "checking pkg-config --cflags netcdf... " >&6; }
@@ -6657,11 +6643,41 @@ fi
 
 done
 
-if test "$has_mpi" != TRUE
+ac_fn_check_decl "$LINENO" "MPI_INFO_NULL" "ac_cv_have_decl_MPI_INFO_NULL" "#include <mpi.h>
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_MPI_INFO_NULL" = xyes
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not available. Specify --with-cc if needed." >&5
-printf "%s\n" "$as_me: WARNING: MPI not available. Specify --with-cc if needed." >&2;}
+  ac_have_decl=1
+else case e in #(
+  e) ac_have_decl=0 ;;
+esac
 fi
+printf "%s\n" "#define HAVE_DECL_MPI_INFO_NULL $ac_have_decl" >>confdefs.h
+if test $ac_have_decl = 1
+then :
+
+else case e in #(
+  e) has_mpi=FALSE ;;
+esac
+fi
+ac_fn_check_decl "$LINENO" "MPI_Info_c2f" "ac_cv_have_decl_MPI_Info_c2f" "#include <mpi.h>
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_MPI_Info_c2f" = xyes
+then :
+  ac_have_decl=1
+else case e in #(
+  e) ac_have_decl=0 ;;
+esac
+fi
+printf "%s\n" "#define HAVE_DECL_MPI_INFO_C2F $ac_have_decl" >>confdefs.h
+if test $ac_have_decl = 1
+then :
+
+else case e in #(
+  e) has_mpi=FALSE ;;
+esac
+fi
+
 
 # Parallel I/O support in NetCDF:
 if test "$has_mpi" = TRUE
@@ -6724,44 +6740,6 @@ esac
 fi
 
 
-    ac_fn_check_decl "$LINENO" "MPI_INFO_NULL" "ac_cv_have_decl_MPI_INFO_NULL" "#include <mpi.h>
-
-" "$ac_c_undeclared_builtin_options" "CFLAGS"
-if test "x$ac_cv_have_decl_MPI_INFO_NULL" = xyes
-then :
-  ac_have_decl=1
-else case e in #(
-  e) ac_have_decl=0 ;;
-esac
-fi
-printf "%s\n" "#define HAVE_DECL_MPI_INFO_NULL $ac_have_decl" >>confdefs.h
-if test $ac_have_decl = 1
-then :
-
-else case e in #(
-  e) has_parallel=FALSE ;;
-esac
-fi
-ac_fn_check_decl "$LINENO" "MPI_Info_c2f" "ac_cv_have_decl_MPI_Info_c2f" "#include <mpi.h>
-
-" "$ac_c_undeclared_builtin_options" "CFLAGS"
-if test "x$ac_cv_have_decl_MPI_Info_c2f" = xyes
-then :
-  ac_have_decl=1
-else case e in #(
-  e) ac_have_decl=0 ;;
-esac
-fi
-printf "%s\n" "#define HAVE_DECL_MPI_INFO_C2F $ac_have_decl" >>confdefs.h
-if test $ac_have_decl = 1
-then :
-
-else case e in #(
-  e) has_parallel=FALSE ;;
-esac
-fi
-
-
 
   for ac_func in nc_create_par_fortran nc_open_par_fortran nc_var_par_access
 do :
@@ -6794,8 +6772,10 @@ fi
 else case e in #(
   e)
     has_parallel=FALSE
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: NetCDF parallel I/O requires MPI" >&5
-printf "%s\n" "$as_me: WARNING: NetCDF parallel I/O requires MPI" >&2;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not found - RNetCDF parallel I/O support is not enabled." >&5
+printf "%s\n" "$as_me: WARNING: MPI not found - RNetCDF parallel I/O support is not enabled." >&2;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: If NetCDF was built with an MPI compiler, try the compiler via --with-cc" >&5
+printf "%s\n" "$as_me: If NetCDF was built with an MPI compiler, try the compiler via --with-cc" >&6;}
    ;;
 esac
 fi
