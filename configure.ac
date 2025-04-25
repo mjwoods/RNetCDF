@@ -425,6 +425,9 @@ AC_CHECK_HEADERS([mpi.h], [], [has_mpi=FALSE])
 
 AC_CHECK_FUNCS([MPI_Init], [], [has_mpi=FALSE])
 
+AC_CHECK_DECLS([MPI_INFO_NULL, MPI_Info_c2f], [], [has_mpi=FALSE],
+  [#include <mpi.h>])
+
 # Parallel I/O support in NetCDF:
 AS_IF([test "$has_mpi" = TRUE],
   [
@@ -436,10 +439,6 @@ AS_IF([test "$has_mpi" = TRUE],
     AC_CHECK_DECLS([NC_COLLECTIVE, NC_INDEPENDENT], [], [has_parallel=FALSE],
       [#include <netcdf.h>
        #include <netcdf_par.h>
-      ])
-
-    AC_CHECK_DECLS([MPI_INFO_NULL, MPI_Info_c2f], [], [has_parallel=FALSE],
-      [#include <mpi.h>
       ])
 
     AC_CHECK_FUNCS(

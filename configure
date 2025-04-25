@@ -6643,6 +6643,42 @@ fi
 
 done
 
+ac_fn_check_decl "$LINENO" "MPI_INFO_NULL" "ac_cv_have_decl_MPI_INFO_NULL" "#include <mpi.h>
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_MPI_INFO_NULL" = xyes
+then :
+  ac_have_decl=1
+else case e in #(
+  e) ac_have_decl=0 ;;
+esac
+fi
+printf "%s\n" "#define HAVE_DECL_MPI_INFO_NULL $ac_have_decl" >>confdefs.h
+if test $ac_have_decl = 1
+then :
+
+else case e in #(
+  e) has_mpi=FALSE ;;
+esac
+fi
+ac_fn_check_decl "$LINENO" "MPI_Info_c2f" "ac_cv_have_decl_MPI_Info_c2f" "#include <mpi.h>
+" "$ac_c_undeclared_builtin_options" "CFLAGS"
+if test "x$ac_cv_have_decl_MPI_Info_c2f" = xyes
+then :
+  ac_have_decl=1
+else case e in #(
+  e) ac_have_decl=0 ;;
+esac
+fi
+printf "%s\n" "#define HAVE_DECL_MPI_INFO_C2F $ac_have_decl" >>confdefs.h
+if test $ac_have_decl = 1
+then :
+
+else case e in #(
+  e) has_mpi=FALSE ;;
+esac
+fi
+
+
 # Parallel I/O support in NetCDF:
 if test "$has_mpi" = TRUE
 then :
@@ -6695,44 +6731,6 @@ else case e in #(
 esac
 fi
 printf "%s\n" "#define HAVE_DECL_NC_INDEPENDENT $ac_have_decl" >>confdefs.h
-if test $ac_have_decl = 1
-then :
-
-else case e in #(
-  e) has_parallel=FALSE ;;
-esac
-fi
-
-
-    ac_fn_check_decl "$LINENO" "MPI_INFO_NULL" "ac_cv_have_decl_MPI_INFO_NULL" "#include <mpi.h>
-
-" "$ac_c_undeclared_builtin_options" "CFLAGS"
-if test "x$ac_cv_have_decl_MPI_INFO_NULL" = xyes
-then :
-  ac_have_decl=1
-else case e in #(
-  e) ac_have_decl=0 ;;
-esac
-fi
-printf "%s\n" "#define HAVE_DECL_MPI_INFO_NULL $ac_have_decl" >>confdefs.h
-if test $ac_have_decl = 1
-then :
-
-else case e in #(
-  e) has_parallel=FALSE ;;
-esac
-fi
-ac_fn_check_decl "$LINENO" "MPI_Info_c2f" "ac_cv_have_decl_MPI_Info_c2f" "#include <mpi.h>
-
-" "$ac_c_undeclared_builtin_options" "CFLAGS"
-if test "x$ac_cv_have_decl_MPI_Info_c2f" = xyes
-then :
-  ac_have_decl=1
-else case e in #(
-  e) ac_have_decl=0 ;;
-esac
-fi
-printf "%s\n" "#define HAVE_DECL_MPI_INFO_C2F $ac_have_decl" >>confdefs.h
 if test $ac_have_decl = 1
 then :
 
