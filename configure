@@ -6776,8 +6776,8 @@ else case e in #(
     has_parallel=FALSE
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not found - RNetCDF parallel I/O support is not enabled." >&5
 printf "%s\n" "$as_me: WARNING: MPI not found - RNetCDF parallel I/O support is not enabled." >&2;}
-    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: If NetCDF was built with an MPI compiler, specify the compiler via --with-cc" >&5
-printf "%s\n" "$as_me: If NetCDF was built with an MPI compiler, specify the compiler via --with-cc" >&6;}
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: If NetCDF was built with an MPI compiler, try the compiler via --with-cc" >&5
+printf "%s\n" "$as_me: If NetCDF was built with an MPI compiler, try the compiler via --with-cc" >&6;}
    ;;
 esac
 fi

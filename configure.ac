@@ -453,7 +453,7 @@ AS_IF([test "$has_mpi" = TRUE],
   ], [
     has_parallel=FALSE
     AC_MSG_WARN([MPI not found - RNetCDF parallel I/O support is not enabled.])
-    AC_MSG_NOTICE([If NetCDF was built with an MPI compiler, specify the compiler via --with-cc])
+    AC_MSG_NOTICE([If NetCDF was built with an MPI compiler, try the compiler via --with-cc])
   ])
 
 
