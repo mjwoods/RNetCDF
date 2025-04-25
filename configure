@@ -3980,23 +3980,6 @@ then :
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Check compiler/linker variables from nc-config:" >&5
 printf "%s\n" "$as_me: Check compiler/linker variables from nc-config:" >&6;}
 
-    SAVE_CC="$CC"
-    if test -z "${ARG_CC}"
-then :
-
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config --cc" >&5
-printf %s "checking nc-config --cc... " >&6; }
-        NC_CC=`nc-config --cc`
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: ${NC_CC}" >&5
-printf "%s\n" "${NC_CC}" >&6; }
-
-        CC="${NC_CC}"
-        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Specify --with-cc if a different compiler is needed" >&5
-printf "%s\n" "$as_me: Specify --with-cc if a different compiler is needed" >&6;}
-
-
-fi
-
     { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking nc-config --cflags" >&5
 printf %s "checking nc-config --cflags... " >&6; }
     NC_CFLAGS=`nc-config --cflags`
@@ -4107,8 +4090,7 @@ else case e in #(
 printf "%s\n" "$as_me: WARNING: Ignoring broken nc-config" >&2;}
         # Show later code that nc-config settings were not used:
         have_nc_config=no
-        # Restore CC, CFLAGS and LIBS for later tests:
-        CC="${SAVE_CC}"
+        # Restore CFLAGS and LIBS for later tests:
         CFLAGS="${R_CFLAGS}"
         LIBS=""
 
@@ -6659,8 +6641,8 @@ done
 
 if test "$has_mpi" != TRUE
 then :
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not available. Specify --with-cc if needed." >&5
-printf "%s\n" "$as_me: WARNING: MPI not available. Specify --with-cc if needed." >&2;}
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: MPI not available. If needed, specify MPI compiler using --with-cc." >&5
+printf "%s\n" "$as_me: WARNING: MPI not available. If needed, specify MPI compiler using --with-cc." >&2;}
 fi
 
 # Parallel I/O support in NetCDF:

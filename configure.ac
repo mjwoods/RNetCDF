@@ -127,18 +127,6 @@ AS_IF([test "x${have_nc_config}" = xyes],
   [
     AC_MSG_NOTICE([Check compiler/linker variables from nc-config:])
 
-    SAVE_CC="$CC"
-    AS_IF([test -z "${ARG_CC}"],
-      [
-        AC_MSG_CHECKING([nc-config --cc])
-        NC_CC=`nc-config --cc`
-        AC_MSG_RESULT([${NC_CC}])
-        
-        CC="${NC_CC}"
-        AC_MSG_NOTICE([Specify --with-cc if a different compiler is needed])
-      ]
-    )
-
     AC_MSG_CHECKING([nc-config --cflags])
     NC_CFLAGS=`nc-config --cflags`
     AC_MSG_RESULT([${NC_CFLAGS}])
@@ -190,8 +178,7 @@ AS_IF([test "x${have_nc_config}" = xyes],
         AC_MSG_WARN([Ignoring broken nc-config])
         # Show later code that nc-config settings were not used:
         have_nc_config=no
-        # Restore CC, CFLAGS and LIBS for later tests:
-        CC="${SAVE_CC}"
+        # Restore CFLAGS and LIBS for later tests:
         CFLAGS="${R_CFLAGS}"
         LIBS=""
       ]
@@ -437,7 +424,7 @@ AC_CHECK_HEADERS([mpi.h], [], [has_mpi=FALSE])
 AC_CHECK_FUNCS([MPI_Init], [], [has_mpi=FALSE])
 
 AS_IF([test "$has_mpi" != TRUE],
-  [AC_MSG_WARN([MPI not available. Specify --with-cc if needed.])])
+  [AC_MSG_WARN([MPI not available. If needed, specify MPI compiler using --with-cc.])])
 
 # Parallel I/O support in NetCDF:
 AS_IF([test "$has_mpi" = TRUE],
