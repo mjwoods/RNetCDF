@@ -1477,11 +1477,12 @@ if (mpiexec != "") {
              pattern=paste0(mpipkg, ".*\\.R"),
              full.names=TRUE)
       stopifnot(length(demoscripts) >= 1)
+      Rscript <- file.path(R.home("bin"), "Rscript")
       for (demoscript in demoscripts) {
 	ncfile <- tempfile("RNetCDF-MPI-test", fileext=".nc")
 	cat("Running script", demoscript, "with MPI ...\n")
 	x <- system2(mpiexec,
-	  args=c('-n', '2', 'Rscript', '--vanilla', demoscript, ncfile))
+	  args=shQuote(c('-n', '2', Rscript, '--vanilla', demoscript, ncfile)))
 	unlink(ncfile)
 	tally <- testfun(x, 0, tally)
       }
