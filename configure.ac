@@ -109,7 +109,22 @@ AC_MSG_NOTICE([Operating system is $platform])
 #  Test R features                                                              #
 #-------------------------------------------------------------------------------#
 
-AC_CHECK_DECLS([R_getVarEx, R_NewEnv], [], [], [#include <R.h>])
+AC_MSG_NOTICE([Checking R API features])
+
+AC_MSG_CHECKING([CPPFLAGS for compiling R headers])
+R_H_CPPFLAGS=`"${R_HOME}/bin/R" CMD config --cppflags`
+AC_MSG_RESULT([${R_H_CPPFLAGS}])
+
+SAVE_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="${R_H_CPPFLAGS} $CPPFLAGS"
+
+AC_CHECK_DECLS([R_getVarEx, R_NewEnv], [], [], [
+#include <R.h>
+#include <Rinternals.h>
+])
+
+CPPFLAGS="${SAVE_CPPFLAGS}"
+
 
 #-------------------------------------------------------------------------------#
 #  Prepend compiler/linker variables from nc-config (if enabled)                #
