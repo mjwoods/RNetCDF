@@ -10,5 +10,10 @@ cd "$thisdir/.."
 
 # Update configure for Unix-like platforms:
 autoconf configure.ac > configure
-rm -rf autom4te.cache
 
+# Update config.h.in:
+autoheader
+
+# Cleanup
+rm -rf autom4te.cache
+rm -f src/config.h.in~

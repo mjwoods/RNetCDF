@@ -451,7 +451,8 @@ AS_IF([test "$has_mpi" = TRUE],
       [], [has_parallel=FALSE])
 
     AS_IF([test "$has_parallel" = TRUE],
-      [AC_DEFINE(HAVE_NETCDF_MPI)],
+      [AC_DEFINE(HAVE_NETCDF_MPI, 1,
+         [Define if NetCDF supports parallel I/O])],
       [AC_MSG_WARN([Parallel I/O not supported by NetCDF installation])])
 
   ], [
@@ -489,8 +490,8 @@ AC_SEARCH_LIBS(ut_read_xml, udunits2,
 
 # Define HAVE_LIBUDUNITS2 if all udunits2 checks were successful:
 AS_IF([test "$has_udunits" = "TRUE"],
-  AC_DEFINE(HAVE_LIBUDUNITS2),
-  AC_MSG_WARN([disabling calendar functions in RNetCDF])
+  [AC_DEFINE(HAVE_LIBUDUNITS2, 1, [Define if UDUNITS-2 is available])],
+  [AC_MSG_WARN([disabling calendar functions in RNetCDF])]
 )
 
 
@@ -539,6 +540,7 @@ AC_SUBST(PKG_LDFLAGS)
 #  Do substitution                               	                 	#
 #-------------------------------------------------------------------------------#
 
+AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_FILES([src/Makefile.common R/config.R])
 AC_OUTPUT
 
