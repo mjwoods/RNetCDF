@@ -32,6 +32,14 @@
    don't. */
 #undef HAVE_DECL_NC_PERSIST
 
+/* Define to 1 if you have the declaration of 'R_getVarEx', and to 0 if you
+   don't. */
+#undef HAVE_DECL_R_GETVAREX
+
+/* Define to 1 if you have the declaration of 'R_NewEnv', and to 0 if you
+   don't. */
+#undef HAVE_DECL_R_NEWENV
+
 /* Define to 1 if you have the declaration of '_WIN32', and to 0 if you don't.
    */
 #undef HAVE_DECL__WIN32
