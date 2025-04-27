@@ -1317,7 +1317,7 @@ R_nc_enum_factor (R_nc_buf *io)
   /* Create a hashed environment for value-index pairs.
      Members inherit PROTECTion from the env.
    */
-#ifdef HAVE_DECL_R_NEWENV
+#if defined(HAVE_DECL_R_NEWENV) && (HAVE_DECL_R_NEWENV == 1)
   env = PROTECT(R_NewEnv(R_BaseEnv, TRUE, 0));
 #else
   cmd = PROTECT(lang1 (install ("new.env")));
@@ -1362,7 +1362,7 @@ R_nc_enum_factor (R_nc_buf *io)
   any_undef = 0;
   for (ifac=0, inval=io->cbuf; ifac<nfac; ifac++, inval+=size) {
     symbol = PROTECT(R_nc_char_symbol (inval, size, work));
-#ifdef HAVE_DECL_R_GETVAREX
+#if defined(HAVE_DECL_R_GETVAREX) && (HAVE_DECL_R_GETVAREX == 1)
     index = R_getVarEx(symbol, env, FALSE, R_UnboundValue);
 #else
     index = findVar (symbol, env);
