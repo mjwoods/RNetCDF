@@ -178,6 +178,9 @@ R_nc_create (SEXP filename, SEXP clobber, SEXP share, SEXP prefill,
 #endif
   }
 
+  /*-- Close any stale netcdf handles that could point to this file -----------*/
+  R_gc();
+
   /*-- Create the file --------------------------------------------------------*/
   filep = R_nc_strarg (filename);
   if (strlen (filep) > 0) {
@@ -298,6 +301,9 @@ R_nc_open (SEXP filename, SEXP write, SEXP share, SEXP prefill,
   } else {
     fillmode = NC_NOFILL;
   }
+
+  /*-- Close any stale netcdf handles that could point to this file -----------*/
+  R_gc();
 
   /*-- Open the file ----------------------------------------------------------*/
   filep = R_nc_strarg (filename);
