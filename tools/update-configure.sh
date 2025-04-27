@@ -16,4 +16,4 @@ autoheader
 
 # Cleanup
 rm -rf autom4te.cache
-
+rm -f src/config.h.in~
