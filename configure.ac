@@ -105,6 +105,11 @@ AC_CHECK_DECLS([_WIN32],
      [platform=Unix-alike])])
 AC_MSG_NOTICE([Operating system is $platform])
 
+#-------------------------------------------------------------------------------#
+#  Test R features                                                              #
+#-------------------------------------------------------------------------------#
+
+AC_CHECK_DECLS([R_getVarEx, R_NewEnv], [], [], [#include <R.h>])
 
 #-------------------------------------------------------------------------------#
 #  Prepend compiler/linker variables from nc-config (if enabled)                #
