@@ -6973,7 +6973,11 @@ R_nc_enum_factor (R_nc_buf *io)
   }
 
   /* Allow garbage collection of env and levels */
+#if defined(R_VERSION) && R_VERSION >= R_Version(4, 1, 0)
+  UNPROTECT(2);
+#else
   UNPROTECT(3);
+#endif
 }
 
 
