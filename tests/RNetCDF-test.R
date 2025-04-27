@@ -1340,14 +1340,23 @@ for (format in c("classic","offset64","data64","classic4","netcdf4")) {
   y <- var.get.nc(nc, "packvar", unpack=TRUE)
   tally <- testfun(x,y,tally)
 
-  cat("Check that closing any NetCDF handle closes the file for all handles ... ")
+  cat("Check that repeated closing of NetCDF file does not cause error ... ")
   close.nc(nc)
-  y <- try(file.inq.nc(grpinfo$self), silent=TRUE)
-  tally <- testfun(inherits(y, "try-error"), TRUE, tally)  
+  y <- try(close.nc(nc), silent=TRUE)
+  tally <- testfun(inherits(y, "try-error"), FALSE, tally)
+
+  cat("Check that closing any copy of a NetCDF handle closes all copies ... ")
+  nc <- open.nc(ncfile)
+  y <- file.inq.nc(nc)
+  nc2 <- nc
+  close.nc(nc2)
+  y <- try(file.inq.nc(nc), silent=TRUE)
+  tally <- testfun(inherits(y, "try-error"), TRUE, tally)
 
   cat("Check that garbage collector closes file that is not referenced ... ")
+  nc <- open.nc(ncfile)
+  y <- file.inq.nc(nc)
   attr(nc,"handle_ptr") <- NULL # NetCDF objects should not normally be modified
-  rm(grpinfo)
   gc()
   y <- try(file.inq.nc(nc), silent=TRUE)
   tally <- testfun(inherits(y, "try-error"), TRUE, tally)
