@@ -540,6 +540,7 @@ AC_SUBST(PKG_LDFLAGS)
 #  Do substitution                               	                 	#
 #-------------------------------------------------------------------------------#
 
+AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_FILES([src/Makefile.common R/config.R])
 AC_OUTPUT
 
