@@ -1,0 +1,175 @@
+/* src/config.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Define to 1 if you have the declaration of 'MPI_Info_c2f', and to 0 if you
+   don't. */
+#undef HAVE_DECL_MPI_INFO_C2F
+
+/* Define to 1 if you have the declaration of 'MPI_INFO_NULL', and to 0 if you
+   don't. */
+#undef HAVE_DECL_MPI_INFO_NULL
+
+/* Define to 1 if you have the declaration of 'NC_64BIT_DATA', and to 0 if you
+   don't. */
+#undef HAVE_DECL_NC_64BIT_DATA
+
+/* Define to 1 if you have the declaration of 'NC_COLLECTIVE', and to 0 if you
+   don't. */
+#undef HAVE_DECL_NC_COLLECTIVE
+
+/* Define to 1 if you have the declaration of 'NC_DISKLESS', and to 0 if you
+   don't. */
+#undef HAVE_DECL_NC_DISKLESS
+
+/* Define to 1 if you have the declaration of 'NC_FORMAT_64BIT_DATA', and to 0
+   if you don't. */
+#undef HAVE_DECL_NC_FORMAT_64BIT_DATA
+
+/* Define to 1 if you have the declaration of 'NC_INDEPENDENT', and to 0 if
+   you don't. */
+#undef HAVE_DECL_NC_INDEPENDENT
+
+/* Define to 1 if you have the declaration of 'NC_PERSIST', and to 0 if you
+   don't. */
+#undef HAVE_DECL_NC_PERSIST
+
+/* Define to 1 if you have the declaration of '_WIN32', and to 0 if you don't.
+   */
+#undef HAVE_DECL__WIN32
+
+/* Define to 1 if you have the declaration of '__APPLE__', and to 0 if you
+   don't. */
+#undef HAVE_DECL___APPLE__
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* Define if UDUNITS-2 is available */
+#undef HAVE_LIBUDUNITS2
+
+/* Define to 1 if you have the <mpi.h> header file. */
+#undef HAVE_MPI_H
+
+/* Define to 1 if you have the 'MPI_Init' function. */
+#undef HAVE_MPI_INIT
+
+/* Define to 1 if you have the 'nc_create_par_fortran' function. */
+#undef HAVE_NC_CREATE_PAR_FORTRAN
+
+/* Define to 1 if you have the 'nc_def_var_filter' function. */
+#undef HAVE_NC_DEF_VAR_FILTER
+
+/* Define to 1 if you have the 'nc_get_var_chunk_cache' function. */
+#undef HAVE_NC_GET_VAR_CHUNK_CACHE
+
+/* Define to 1 if you have the 'nc_inq_var_endian' function. */
+#undef HAVE_NC_INQ_VAR_ENDIAN
+
+/* Define to 1 if you have the 'nc_inq_var_filter_ids' function. */
+#undef HAVE_NC_INQ_VAR_FILTER_IDS
+
+/* Define to 1 if you have the 'nc_inq_var_filter_info' function. */
+#undef HAVE_NC_INQ_VAR_FILTER_INFO
+
+/* Define to 1 if you have the 'nc_inq_var_szip' function. */
+#undef HAVE_NC_INQ_VAR_SZIP
+
+/* Define to 1 if you have the 'nc_open_par_fortran' function. */
+#undef HAVE_NC_OPEN_PAR_FORTRAN
+
+/* Define to 1 if you have the 'nc_reclaim_data' function. */
+#undef HAVE_NC_RECLAIM_DATA
+
+/* Define to 1 if you have the 'nc_rename_grp' function. */
+#undef HAVE_NC_RENAME_GRP
+
+/* Define to 1 if you have the 'nc_var_par_access' function. */
+#undef HAVE_NC_VAR_PAR_ACCESS
+
+/* Define to 1 if you have the <netcdf_filter.h> header file. */
+#undef HAVE_NETCDF_FILTER_H
+
+/* Define to 1 if you have the <netcdf.h> header file. */
+#undef HAVE_NETCDF_H
+
+/* Define if NetCDF supports parallel I/O */
+#undef HAVE_NETCDF_MPI
+
+/* Define to 1 if you have the <netcdf_par.h> header file. */
+#undef HAVE_NETCDF_PAR_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdio.h> header file. */
+#undef HAVE_STDIO_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <udunits2.h> header file. */
+#undef HAVE_UDUNITS2_H
+
+/* Define to 1 if you have the <udunits2/udunits2.h> header file. */
+#undef HAVE_UDUNITS2_UDUNITS2_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* The size of 'int', as computed by sizeof. */
+#undef SIZEOF_INT
+
+/* The size of 'long long', as computed by sizeof. */
+#undef SIZEOF_LONG_LONG
+
+/* The size of 'size_t', as computed by sizeof. */
+#undef SIZEOF_SIZE_T
+
+/* Define to 1 if all of the C89 standard headers exist (not just the ones
+   required in a freestanding environment). This macro is provided for
+   backward compatibility; new code need not use it. */
+#undef STDC_HEADERS
+
+/* Define to the equivalent of the C99 'restrict' keyword, or to
+   nothing if this is not supported.  Do not define if restrict is
+   supported only directly.  */
+#undef restrict
+/* Work around a bug in older versions of Sun C++, which did not
+   #define __restrict__ or support _Restrict or __restrict__
+   even though the corresponding Sun C compiler ended up with
+   "#define restrict _Restrict" or "#define restrict __restrict__"
+   in the previous line.  This workaround can be removed once
+   we assume Oracle Developer Studio 12.5 (2016) or later.  */
+#if defined __SUNPRO_CC && !defined __RESTRICT && !defined __restrict__
+# define _Restrict
+# define __restrict__
+#endif
