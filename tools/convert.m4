@@ -38,6 +38,8 @@ dnl Insert warning into generated C code:
  *  Includes
 \*=============================================================================*/
 
+#include "config.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
