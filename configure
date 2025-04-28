@@ -3904,31 +3904,6 @@ fi
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Operating system is $platform" >&5
 printf "%s\n" "$as_me: Operating system is $platform" >&6;}
 
-#-------------------------------------------------------------------------------#
-#  Test R features                                                              #
-#-------------------------------------------------------------------------------#
-
-ac_fn_check_decl "$LINENO" "R_getVarEx" "ac_cv_have_decl_R_getVarEx" "#include <R.h>
-" "$ac_c_undeclared_builtin_options" "CFLAGS"
-if test "x$ac_cv_have_decl_R_getVarEx" = xyes
-then :
-  ac_have_decl=1
-else case e in #(
-  e) ac_have_decl=0 ;;
-esac
-fi
-printf "%s\n" "#define HAVE_DECL_R_GETVAREX $ac_have_decl" >>confdefs.h
-ac_fn_check_decl "$LINENO" "R_NewEnv" "ac_cv_have_decl_R_NewEnv" "#include <R.h>
-" "$ac_c_undeclared_builtin_options" "CFLAGS"
-if test "x$ac_cv_have_decl_R_NewEnv" = xyes
-then :
-  ac_have_decl=1
-else case e in #(
-  e) ac_have_decl=0 ;;
-esac
-fi
-printf "%s\n" "#define HAVE_DECL_R_NEWENV $ac_have_decl" >>confdefs.h
-
 
 #-------------------------------------------------------------------------------#
 #  Prepend compiler/linker variables from nc-config (if enabled)                #

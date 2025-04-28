@@ -49,6 +49,7 @@ dnl Insert warning into generated C code:
 
 #include <R.h>
 #include <Rinternals.h>
+#include <Rversion.h>
 
 #include <netcdf.h>
 
@@ -1300,7 +1301,10 @@ R_nc_char_symbol (char *in, size_t size, char *work)
 static void
 R_nc_enum_factor (R_nc_buf *io)
 {
-  SEXP levels, env, cmd, symbol, index;
+  SEXP levels, env, symbol, index;
+#if !defined(R_VERSION) || R_VERSION < R_Version(4, 1, 0)
+  SEXP cmd;
+#endif
   size_t size, nmem, ifac, nfac;
   char *memname, *memval, *work, *inval;
   int ncid, imem, imemmax, *out, any_undef;
@@ -1319,7 +1323,7 @@ R_nc_enum_factor (R_nc_buf *io)
   /* Create a hashed environment for value-index pairs.
      Members inherit PROTECTion from the env.
    */
-#if defined(HAVE_DECL_R_NEWENV) && (HAVE_DECL_R_NEWENV == 1)
+#if defined(R_VERSION) && R_VERSION >= R_Version(4, 1, 0)
   env = PROTECT(R_NewEnv(R_BaseEnv, TRUE, 0));
 #else
   cmd = PROTECT(lang1 (install ("new.env")));
@@ -1364,7 +1368,7 @@ R_nc_enum_factor (R_nc_buf *io)
   any_undef = 0;
   for (ifac=0, inval=io->cbuf; ifac<nfac; ifac++, inval+=size) {
     symbol = PROTECT(R_nc_char_symbol (inval, size, work));
-#if defined(HAVE_DECL_R_GETVAREX) && (HAVE_DECL_R_GETVAREX == 1)
+#if defined(R_VERSION) && R_VERSION >= R_Version(4, 5, 0)
     index = R_getVarEx(symbol, env, FALSE, R_UnboundValue);
 #else
     index = findVar (symbol, env);
@@ -1385,7 +1389,11 @@ R_nc_enum_factor (R_nc_buf *io)
   }
 
   /* Allow garbage collection of env and levels */
+#if defined(R_VERSION) && R_VERSION >= R_Version(4, 1, 0)
+  UNPROTECT(2);
+#else
   UNPROTECT(3);
+#endif
 }
 
 
