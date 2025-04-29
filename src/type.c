@@ -2,7 +2,7 @@
  *
  *  Name:       type.c
  *
- *  Version:    2.10-3
+ *  Version:    2.11-1
  *
  *  Purpose:    NetCDF type functions for RNetCDF
  *
