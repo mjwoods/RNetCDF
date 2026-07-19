@@ -64,7 +64,7 @@ R_nc_strcmp (SEXP var, const char *str)
 size_t
 R_nc_strnlen (const char *str, char chr, size_t maxlen)
 {
-  char *nullchr;
+  const char *nullchr;
   nullchr = memchr(str, (int) chr, maxlen);
   return (nullchr == NULL) ? maxlen : ((size_t) (nullchr - str));
 }
