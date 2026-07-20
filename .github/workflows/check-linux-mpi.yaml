@@ -89,7 +89,14 @@ jobs:
             Rmpi_type <- "MPICH2"
             pbdMPI_type <- "MPICH3"
             mpi_include <- sprintf("/usr/include/%s-linux-gnu/mpich", arch)
-            mpi_lib <- sprintf("/usr/lib/%s-linux-gnu/mpich/lib", arch)
+            # Workaround missing libopa and libmpl in recent mpich packages:
+            mpi_lib_real <- sprintf("/usr/lib/%s-linux-gnu/mpich/lib", arch)
+            mpi_lib <- "mpich"
+            dir.create(mpi_lib)
+            for (destlib in c("libmpich.so", "libopa.so", "libmpl.so")) {
+              file.symlink(file.path(mpi_lib_real, "libmpich.so"),
+                file.path(mpi_lib, destlib))
+            }
           } else {
             stop("Unknown MPI variant")
           }
@@ -120,6 +127,8 @@ jobs:
           Rscript -e "library(Rmpi); library(pbdMPI);"
           mpicc="mpicc.${{ matrix.config.mpi }}"
           mpiexec="mpiexec.${{ matrix.config.mpi }}"
+          export LD_LIBRARY_PATH="$PWD/mpich:$LD_LIBRARY_PATH"
+          echo "LD_LIBRARY_PATH='$LD_LIBRARY_PATH'"
           R CMD check --no-manual \
             --install-args="--configure-args='--with-cc=$mpicc --with-mpiexec=$mpiexec'" \
             RNetCDF_*.*-*.tar.gz
