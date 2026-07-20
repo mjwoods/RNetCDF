@@ -91,7 +91,7 @@ jobs:
             mpi_include <- sprintf("/usr/include/%s-linux-gnu/mpich", arch)
             # Workaround missing libopa and libmpl in recent mpich packages:
             mpi_lib_real <- sprintf("/usr/lib/%s-linux-gnu/mpich/lib", arch)
-            mpi_lib <- "mpich"
+            mpi_lib <- file.path(getwd(), "mpich")
             dir.create(mpi_lib)
             for (destlib in c("libmpich.so", "libopa.so", "libmpl.so")) {
               file.symlink(file.path(mpi_lib_real, "libmpich.so"),
