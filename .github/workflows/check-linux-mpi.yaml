@@ -60,7 +60,8 @@ jobs:
           echo ::endgroup::
           echo ::group::configure
           inc_path="/usr/include/hdf5/${{ matrix.config.mpi }}"
-          lib_path="/usr/lib/x86_64-linux-gnu/hdf5/${{ matrix.config.mpi }}"
+          arch=$( uname -m )
+          lib_path="/usr/lib/${arch}-linux-gnu/hdf5/${{ matrix.config.mpi }}"
           ./configure CC="mpicc.${{ matrix.config.mpi }}" \
             CPPFLAGS="-I${inc_path}" \
             LDFLAGS="-L${lib_path} -Wl,-rpath=${lib_path}"
@@ -78,16 +79,17 @@ jobs:
           cat("::group::bit64\n")
           install.packages("bit64")
           cat("::endgroup::\n")
+          arch <- Sys.info()["machine"]
           if ("${{ matrix.config.mpi }}" == "openmpi") {
             Rmpi_type <- "OPENMPI"
             pbdMPI_type <- "OPENMPI"
-            mpi_include <- "/usr/lib/x86_64-linux-gnu/openmpi/include"
-            mpi_lib <- "/usr/lib/x86_64-linux-gnu/openmpi/lib"
+            mpi_include <- sprintf("/usr/lib/%s-linux-gnu/openmpi/include", arch)
+            mpi_lib <- sprintf("/usr/lib/%s-linux-gnu/openmpi/lib", arch)
           } else if ("${{ matrix.config.mpi }}" == "mpich") {
             Rmpi_type <- "MPICH2"
             pbdMPI_type <- "MPICH3"
-            mpi_include <- "/usr/include/x86_64-linux-gnu/mpich"
-            mpi_lib <- "/usr/lib/x86_64-linux-gnu"
+            mpi_include <- sprintf("/usr/include/%s-linux-gnu/mpich", arch)
+            mpi_lib <- sprintf("/usr/lib/%s-linux-gnu/mpich/lib", arch)
           } else {
             stop("Unknown MPI variant")
           }
