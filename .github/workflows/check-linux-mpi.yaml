@@ -26,11 +26,11 @@ jobs:
       R_KEEP_PKG_SOURCE: yes
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: RNetCDF
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: Unidata/netcdf-c
           path: netcdf-c
@@ -137,7 +137,7 @@ jobs:
 
       - name: Upload check directory
         if: success() || failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_${{ matrix.config.mpi }}
           path: RNetCDF.Rcheck/
