@@ -74,7 +74,7 @@ Arrays of type \code{character} drop the fastest-varying dimension of the corres
 The arguments marked for \code{"netcdf4"} format refer to the chunk cache used for reading and writing variables. Default cache settings are defined by the NetCDF library, and they can be adjusted for each variable to improve performance in some applications.
 }
 
-\references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
+\references{\url{https://www.unidata.ucar.edu/software/netcdf}}
 
 \note{\code{NC_BYTE} is always interpreted as signed.}
 

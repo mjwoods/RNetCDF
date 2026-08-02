@@ -1,6 +1,6 @@
 Package: RNetCDF
 Version: 2.11-2
-Date: 2026-07-19
+Date: 2026-08-02
 Title: Interface to 'NetCDF' Datasets
 Authors@R: c(person("Pavel", "Michna", role = "aut",
                     email = "rnetcdf-devel@bluewin.ch"),
@@ -16,7 +16,7 @@ Description: An interface to the 'NetCDF' file formats designed by Unidata
   of time units are enabled by 'UDUNITS' version 2, also from Unidata.
 License: GPL (>= 2) | file LICENSE
 URL: https://github.com/mjwoods/RNetCDF
-     https://www.unidata.ucar.edu/software/netcdf/
-     https://www.unidata.ucar.edu/software/udunits/
+     https://www.unidata.ucar.edu/software/netcdf
+     https://www.unidata.ucar.edu/software/udunits
 BugReports: https://github.com/mjwoods/RNetCDF/issues
 NeedsCompilation: yes
