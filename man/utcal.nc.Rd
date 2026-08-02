@@ -27,9 +27,9 @@ Conversions involving alternative calendars are not supported by UDUNITS, but th
 
 \seealso{\code{\link{utinvcal.nc}}}
 
-\references{\url{https://www.unidata.ucar.edu/software/udunits/}
+\references{\url{https://www.unidata.ucar.edu/software/udunits}
 
-\url{http://cfconventions.org}}
+\url{https://cfconventions.org}}
 
 \author{Pavel Michna, Milton Woods}
 
@@ -69,7 +69,7 @@ if (inherits(try(utcal.nc("seconds since 1970-01-01", 0)), "try-error")) {
   att.put.nc(nc, "NC_GLOBAL", "references", "NC_CHAR",
     "https://www.unidata.ucar.edu/software/udunits")
   att.put.nc(nc, "NC_GLOBAL", "comment", "NC_CHAR",
-    "Uses attributes recommended by http://cfconventions.org")
+    "Uses attributes recommended by https://cfconventions.org")
 
   # Define time coordinate and attributes:
   dim.def.nc(nc, "time", nt)

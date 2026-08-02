@@ -33,7 +33,7 @@
 
 \details{This function obtains information about a NetCDF data type, which could be builtin or user-defined. The items in the return list depend on the class of the NetCDF type.}
 
-\references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
+\references{\url{https://www.unidata.ucar.edu/software/netcdf}}
 
 \author{Pavel Michna, Milton Woods}
 

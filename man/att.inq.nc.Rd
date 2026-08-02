@@ -29,7 +29,7 @@
 Valid attribute ID numbers range from 0 to the number of attributes minus 1. The number of attributes of a file, group, or variable can be found using the relevant inquiry function (\code{\link[RNetCDF]{file.inq.nc}}, \code{\link[RNetCDF]{grp.inq.nc}}, or \code{\link[RNetCDF]{var.inq.nc}}).
 }
 
-\references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
+\references{\url{https://www.unidata.ucar.edu/software/netcdf}}
 
 \author{Pavel Michna, Milton Woods}
 

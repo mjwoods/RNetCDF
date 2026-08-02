@@ -35,7 +35,7 @@ Valid attribute ID numbers range from 0 to the number of attributes minus 1. The
 
 \details{This function returns the value of the attribute.}
 
-\references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
+\references{\url{https://www.unidata.ucar.edu/software/netcdf}}
 
 \note{\code{NC_BYTE} is always interpreted as signed.}
 

@@ -38,7 +38,7 @@
 
 \details{This function returns information about a NetCDF variable, including its name, ID, type, number of dimensions, a vector of the dimension IDs, and the number of attributes.}
 
-\references{\url{https://www.unidata.ucar.edu/software/netcdf/}}
+\references{\url{https://www.unidata.ucar.edu/software/netcdf}}
 
 \author{Pavel Michna, Milton Woods}
 
