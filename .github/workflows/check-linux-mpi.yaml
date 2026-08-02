@@ -19,18 +19,18 @@ jobs:
       matrix:
         config:
           - {os: ubuntu-latest, r: 'release', mpi: 'openmpi'}
-          - {os: ubuntu-22.04, r: 'release', mpi: 'mpich'}
+          - {os: ubuntu-latest, r: 'release', mpi: 'mpich'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           path: RNetCDF
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: Unidata/netcdf-c
           path: netcdf-c
@@ -46,8 +46,8 @@ jobs:
       - name: Install system dependencies
         run: |
           case "${{ matrix.config.mpi }}" in
-            openmpi) sudo apt-get install -y libhdf5-openmpi-dev openmpi-bin ;;
-            mpich) sudo apt-get install -y libhdf5-mpich-dev mpich ;;
+            openmpi) sudo apt-get install -y libhdf5-openmpi-dev openmpi-bin libxml2-dev ;;
+            mpich) sudo apt-get install -y libhdf5-mpich-dev mpich libxml2-dev ;;
             *) echo "Unknown MPI variant"; exit 1 ;;
           esac
         shell: bash
@@ -60,7 +60,8 @@ jobs:
           echo ::endgroup::
           echo ::group::configure
           inc_path="/usr/include/hdf5/${{ matrix.config.mpi }}"
-          lib_path="/usr/lib/x86_64-linux-gnu/hdf5/${{ matrix.config.mpi }}"
+          arch=$( uname -m )
+          lib_path="/usr/lib/${arch}-linux-gnu/hdf5/${{ matrix.config.mpi }}"
           ./configure CC="mpicc.${{ matrix.config.mpi }}" \
             CPPFLAGS="-I${inc_path}" \
             LDFLAGS="-L${lib_path} -Wl,-rpath=${lib_path}"
@@ -78,16 +79,24 @@ jobs:
           cat("::group::bit64\n")
           install.packages("bit64")
           cat("::endgroup::\n")
+          arch <- Sys.info()["machine"]
           if ("${{ matrix.config.mpi }}" == "openmpi") {
             Rmpi_type <- "OPENMPI"
             pbdMPI_type <- "OPENMPI"
-            mpi_include <- "/usr/lib/x86_64-linux-gnu/openmpi/include"
-            mpi_lib <- "/usr/lib/x86_64-linux-gnu/openmpi/lib"
+            mpi_include <- sprintf("/usr/lib/%s-linux-gnu/openmpi/include", arch)
+            mpi_lib <- sprintf("/usr/lib/%s-linux-gnu/openmpi/lib", arch)
           } else if ("${{ matrix.config.mpi }}" == "mpich") {
             Rmpi_type <- "MPICH2"
             pbdMPI_type <- "MPICH3"
-            mpi_include <- "/usr/include/x86_64-linux-gnu/mpich"
-            mpi_lib <- "/usr/lib/x86_64-linux-gnu"
+            mpi_include <- sprintf("/usr/include/%s-linux-gnu/mpich", arch)
+            # Workaround missing libopa and libmpl in recent mpich packages:
+            mpi_lib_real <- sprintf("/usr/lib/%s-linux-gnu/mpich/lib", arch)
+            mpi_lib <- file.path(getwd(), "mpich")
+            dir.create(mpi_lib)
+            for (destlib in c("libmpich.so", "libopa.so", "libmpl.so")) {
+              file.symlink(file.path(mpi_lib_real, "libmpich.so"),
+                file.path(mpi_lib, destlib))
+            }
           } else {
             stop("Unknown MPI variant")
           }
@@ -118,6 +127,8 @@ jobs:
           Rscript -e "library(Rmpi); library(pbdMPI);"
           mpicc="mpicc.${{ matrix.config.mpi }}"
           mpiexec="mpiexec.${{ matrix.config.mpi }}"
+          export LD_LIBRARY_PATH="$PWD/mpich:$LD_LIBRARY_PATH"
+          echo "LD_LIBRARY_PATH='$LD_LIBRARY_PATH'"
           R CMD check --no-manual \
             --install-args="--configure-args='--with-cc=$mpicc --with-mpiexec=$mpiexec'" \
             RNetCDF_*.*-*.tar.gz
@@ -126,7 +137,7 @@ jobs:
 
       - name: Upload check directory
         if: success() || failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.config.os }}_r-${{ matrix.config.r }}_${{ matrix.config.mpi }}
           path: RNetCDF.Rcheck/

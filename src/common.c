@@ -2,14 +2,14 @@
  *
  *  Name:       common.c
  *
- *  Version:    2.11-1
+ *  Version:    2.11-2
  *
  *  Purpose:    Common definitions for RNetCDF functions
  *
  *  Author:     Pavel Michna (rnetcdf-devel@bluewin.ch)
  *              Milton Woods (miltonjwoods@gmail.com)
  *
- *  Copyright (C) 2004-2025 Pavel Michna and Milton Woods.
+ *  Copyright (C) 2004-2026 Pavel Michna and Milton Woods.
  *
  *=============================================================================*
  *
@@ -64,7 +64,7 @@ R_nc_strcmp (SEXP var, const char *str)
 size_t
 R_nc_strnlen (const char *str, char chr, size_t maxlen)
 {
-  char *nullchr;
+  const char *nullchr;
   nullchr = memchr(str, (int) chr, maxlen);
   return (nullchr == NULL) ? maxlen : ((size_t) (nullchr - str));
 }
